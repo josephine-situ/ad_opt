@@ -1,0 +1,76 @@
+Feature,Importance
+Avg_ monthly searches,0.19325286075134301
+bert_9,0.11909253312085669
+Competition (indexed value),0.09798268453855259
+Top of page bid (low range),0.09671073277041907
+Avg_ CPC,0.08850287935571403
+days_to_next_course_start,0.08045590514539937
+day_of_week=Tuesday,0.07118252259309685
+bert_4,0.05828392263252147
+day_of_week=Saturday,0.03266121252637355
+bert_43,0.025561602336225276
+bert_0,0.024417003592249183
+bert_40,0.016621145147734433
+Match type=Broad match,0.01271309061400447
+bert_21,0.012158196145390437
+bert_31,0.011158163231706295
+Region=USA,0.01010193964178029
+bert_23,0.006021368757130014
+day_of_week=Friday,0.006015532128213653
+bert_3,0.0055323766715151546
+bert_27,0.004270697638317085
+bert_49,0.003581505234687423
+bert_25,0.0033926274853588196
+bert_19,0.0032066233767117694
+month,0.0028442606000729826
+bert_35,0.0024344088543163936
+bert_20,0.002373182326604213
+bert_1,0.001983988479723048
+bert_42,0.001878080915894829
+bert_24,0.0014848187770888012
+day_of_week=Thursday,0.0013861317054783436
+bert_46,0.0013803256967130455
+bert_8,0.0013576772088074016
+Match type=Exact match,0.0
+Match type=Phrase match,0.0
+Region=A,0.0
+Region=B,0.0
+Region=C,0.0
+Three month change,0.0
+Top of page bid (high range),0.0
+YoY change,0.0
+bert_10,0.0
+bert_11,0.0
+bert_12,0.0
+bert_13,0.0
+bert_14,0.0
+bert_15,0.0
+bert_16,0.0
+bert_17,0.0
+bert_18,0.0
+bert_2,0.0
+bert_22,0.0
+bert_26,0.0
+bert_28,0.0
+bert_29,0.0
+bert_30,0.0
+bert_32,0.0
+bert_33,0.0
+bert_34,0.0
+bert_36,0.0
+bert_37,0.0
+bert_38,0.0
+bert_39,0.0
+bert_41,0.0
+bert_44,0.0
+bert_45,0.0
+bert_47,0.0
+bert_48,0.0
+bert_5,0.0
+bert_6,0.0
+bert_7,0.0
+day_of_week=Monday,0.0
+day_of_week=Sunday,0.0
+day_of_week=Wednesday,0.0
+is_public_holiday,0.0
+is_weekend,0.0

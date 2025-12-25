@@ -1,0 +1,117 @@
+========== Env & Dir ==========
+Host: node3109
+Start: Mon Dec  1 12:42:05 EST 2025
+Submit dir: /orcd/home/002/jositu/mlopt-final
+PWD: /orcd/home/002/jositu/mlopt-final
+===============================
+Load modules...
+Activate environment...
+Running with JULIA_NUM_THREADS=8
+Running prediction_modeling.py
+Running with 8 Julia threads.
+======================================================================
+Prediction Modeling for Ad Optimization
+======================================================================
+Target: conversion
+Models: lr, oct, rf, xgb
+Embedding method: bert
+======================================================================
+Loading data from clean_data...
+  Train: 29694 rows, Test: 9899 rows
+
+Features (64): Match type, Region, day_of_week, is_weekend, month...
+Target: conversion
+Train shape: (29694, 64), Test shape: (9899, 64)
+
+--- Linear Regression ---
+Train MSE: 0.0518
+Test MSE:  0.1067
+Model saved to models/lr_conversion.json
+
+--- Optimal Cart Trees ---
+Train MSE: 0.0417
+Test MSE:  0.0520
+Model saved to models/ort_conversion.json
+
+--- Random Forest ---
+Train MSE: 0.0437
+Test MSE:  0.0624
+Model saved to models/rf_conversion.json
+
+--- XGBoost ---
+Train MSE: 0.2529
+Test MSE:  0.0795
+Model saved to models/xgb_conversion.json
+
+======================================================================
+Model Performance Summary (Test MSE)
+======================================================================
+  ORT   : 0.0520
+  RF    : 0.0624
+  XGB   : 0.0795
+  LR    : 0.1067
+
+Best model: ORT
+======================================================================
+There is a more recent IAI release (v3.2.2) available.
+fold 1; train: 0.03469; valid: 0.05231; cp=>0.01021 minbucket=>0.01 max_depth=>2
+fold 1; train: 0.02294; valid: 0.02287; cp=>0.001549 minbucket=>0.02 max_depth=>2
+fold 1; train: 0.01754; valid: 0.01368; cp=>0.0007214 minbucket=>0.05 max_depth=>2
+fold 1; train: 0.04472; valid: 0.04858; cp=>0.006299 minbucket=>0.01 max_depth=>4
+fold 1; train: 0.03318; valid: 0.0285; cp=>0.001393 minbucket=>0.02 max_depth=>4
+fold 1; train: 0.02406; valid: 0.01678; cp=>0.00002768 minbucket=>0.05 max_depth=>4
+fold 1; train: 0.04907; valid: 0.04627; cp=>0.001912 minbucket=>0.01 max_depth=>6
+fold 1; train: 0.03421; valid: 0.02495; cp=>0.000859 minbucket=>0.02 max_depth=>6
+fold 1; train: 0.02192; valid: 0.01788; cp=>0 minbucket=>0.05 max_depth=>6
+fold 1; train: 0.04959; valid: 0.04351; cp=>0.002518 minbucket=>0.01 max_depth=>8
+fold 1; train: 0.0367; valid: 0.0306; cp=>0.002924 minbucket=>0.02 max_depth=>8
+fold 1; train: 0.02159; valid: 0.01575; cp=>0 minbucket=>0.05 max_depth=>8
+fold 2; train: 0.05567; valid: 0; cp=>0.513 minbucket=>0.01 max_depth=>2
+fold 2; train: 0.03086; valid: 0; cp=>0.5071 minbucket=>0.02 max_depth=>2
+fold 2; train: 0.01951; valid: 0.00739; cp=>0.0003727 minbucket=>0.05 max_depth=>2
+fold 2; train: 0.06131; valid: 0; cp=>0.5131 minbucket=>0.01 max_depth=>4
+fold 2; train: 0.04143; valid: 0; cp=>0.5057 minbucket=>0.02 max_depth=>4
+fold 2; train: 0.02441; valid: 0.001907; cp=>0.00002751 minbucket=>0.05 max_depth=>4
+fold 2; train: 0.06304; valid: 0; cp=>0.5127 minbucket=>0.01 max_depth=>6
+fold 2; train: 0.04243; valid: 0; cp=>0.5057 minbucket=>0.02 max_depth=>6
+fold 2; train: 0.02306; valid: 0.00445; cp=>0.00005196 minbucket=>0.05 max_depth=>6
+fold 2; train: 0.06422; valid: 0; cp=>0.5127 minbucket=>0.01 max_depth=>8
+fold 2; train: 0.04545; valid: 0.001345; cp=>0.009941 minbucket=>0.02 max_depth=>8
+fold 2; train: 0.02567; valid: 0.003812; cp=>0.005153 minbucket=>0.05 max_depth=>8
+fold 3; train: 0.03553; valid: 0.08997; cp=>0.002569 minbucket=>0.01 max_depth=>2
+fold 3; train: 0.02178; valid: 0.04674; cp=>0.0006248 minbucket=>0.02 max_depth=>2
+fold 3; train: 0.01583; valid: 0.02688; cp=>0.0006248 minbucket=>0.05 max_depth=>2
+fold 3; train: 0.04393; valid: 0.07534; cp=>0.005761 minbucket=>0.01 max_depth=>4
+fold 3; train: 0.03496; valid: 0.04467; cp=>0.000349 minbucket=>0.02 max_depth=>4
+fold 3; train: 0.02181; valid: 0.02086; cp=>0.00002269 minbucket=>0.05 max_depth=>4
+fold 3; train: 0.04734; valid: 0.07141; cp=>0.003256 minbucket=>0.01 max_depth=>6
+fold 3; train: 0.03476; valid: 0.03362; cp=>0.000007531 minbucket=>0.02 max_depth=>6
+fold 3; train: 0.02152; valid: 0.02043; cp=>0.000002157 minbucket=>0.05 max_depth=>6
+fold 3; train: 0.0467; valid: 0.07102; cp=>0.001303 minbucket=>0.01 max_depth=>8
+fold 3; train: 0.03489; valid: 0.03163; cp=>0.0009197 minbucket=>0.02 max_depth=>8
+fold 3; train: 0.02152; valid: 0.02446; cp=>0.00002178 minbucket=>0.05 max_depth=>8
+fold 4; train: 0.05437; valid: -0.0000113; cp=>0.5134 minbucket=>0.01 max_depth=>2
+fold 4; train: 0.03098; valid: -0.0000113; cp=>0.5074 minbucket=>0.02 max_depth=>2
+fold 4; train: 0.01953; valid: 0.007335; cp=>0.009269 minbucket=>0.05 max_depth=>2
+fold 4; train: 0.05923; valid: -0.0000113; cp=>0.5131 minbucket=>0.01 max_depth=>4
+fold 4; train: 0.03887; valid: -0.0000113; cp=>0.5057 minbucket=>0.02 max_depth=>4
+fold 4; train: 0.02384; valid: 0.01175; cp=>0.000005317 minbucket=>0.05 max_depth=>4
+fold 4; train: 0.06276; valid: -0.0000113; cp=>0.5127 minbucket=>0.01 max_depth=>6
+fold 4; train: 0.03761; valid: -0.0000113; cp=>0.5072 minbucket=>0.02 max_depth=>6
+fold 4; train: 0.02365; valid: 0.009148; cp=>0.00006745 minbucket=>0.05 max_depth=>6
+fold 4; train: 0.06226; valid: -0.0000113; cp=>0.513 minbucket=>0.01 max_depth=>8
+fold 4; train: 0.03811; valid: -0.0000113; cp=>0.5074 minbucket=>0.02 max_depth=>8
+fold 4; train: 0.02365; valid: 0.009445; cp=>0.00001484 minbucket=>0.05 max_depth=>8
+fold 5; train: 0.04147; valid: 0.0361; cp=>0.001567 minbucket=>0.01 max_depth=>2
+fold 5; train: 0.02442; valid: 0.02073; cp=>0.001881 minbucket=>0.02 max_depth=>2
+fold 5; train: 0.01703; valid: 0.0155; cp=>0.007821 minbucket=>0.05 max_depth=>2
+fold 5; train: 0.05863; valid: 0.007481; cp=>0.01141 minbucket=>0.01 max_depth=>4
+fold 5; train: 0.04278; valid: 0.0004666; cp=>0.01036 minbucket=>0.02 max_depth=>4
+fold 5; train: 0.02458; valid: -0.00004884; cp=>0.503 minbucket=>0.05 max_depth=>4
+fold 5; train: 0.06466; valid: 0.01115; cp=>0.002185 minbucket=>0.01 max_depth=>6
+fold 5; train: 0.04246; valid: 0.0007774; cp=>0.01017 minbucket=>0.02 max_depth=>6
+fold 5; train: 0.0248; valid: 0.002478; cp=>0.00681 minbucket=>0.05 max_depth=>6
+fold 5; train: 0.06168; valid: 0.003797; cp=>0.01103 minbucket=>0.01 max_depth=>8
+fold 5; train: 0.04192; valid: 0.005082; cp=>0.007832 minbucket=>0.02 max_depth=>8
+fold 5; train: 0.0248; valid: 0.0008363; cp=>0.006357 minbucket=>0.05 max_depth=>8
+End: Mon Dec  1 13:04:14 EST 2025

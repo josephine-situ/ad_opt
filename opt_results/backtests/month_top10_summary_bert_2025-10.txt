@@ -1,0 +1,8 @@
+Month: 2025-10
+Total cost (month): $10,425.90
+Total conversion value (month): $59,971.75
+Actual profit (month): $49,545.85
+Expected profit (sum of daily top-10): $79,919.30
+Difference (expected - actual): $30,373.45
+Days in month: 31
+Daily budget: $336.32

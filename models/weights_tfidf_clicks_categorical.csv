@@ -1,0 +1,5 @@
+feature,level,weight
+Region,A,-0.32441847014131764
+Region,C,2.1668872002088824
+Match type,Exact match,-0.6185636148539309
+Match type,Broad match,4.83024344566961

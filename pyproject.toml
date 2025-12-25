@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ad-bid-optimizer"
+version = "0.1.0"
+description = "Machine Learning Optimization for Google Ads Bid Management"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "Author Name", email = "author@example.com"}
+]
+license = {text = "MIT"}
+
+dependencies = [
+    "pandas>=1.5.3",
+    "numpy>=1.24.3",
+    "scikit-learn>=1.2.2",
+    "scipy>=1.10.1",
+    "openpyxl>=3.0.10",
+    "holidays>=0.83",
+    "torch>=2.0.0",
+]
+
+[project.optional-dependencies]
+bert = [
+    "sentence-transformers>=5.1.2",
+    "transformers>=4.35.2",
+]
+
+ml = [
+    "interpretableai>=2.11.2",
+]
+
+optimization = [
+    "gurobipy>=10.0.1",
+]
+
+dev = [
+    "pytest>=7.3.1",
+    "black>=23.3.0",
+    "pylint>=2.12.2",
+    "mypy>=1.0.0",
+]
+
+[tool.setuptools]
+packages = ["utils", "scripts"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+[tool.pylint.messages_control]
+disable = [
+    "C0103",  # Invalid name
+    "W0212",  # Protected access
+    "R0913",  # Too many arguments
+    "R0914",  # Too many local variables
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
