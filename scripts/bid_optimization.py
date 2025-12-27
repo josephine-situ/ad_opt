@@ -43,7 +43,7 @@ except ImportError:
     iai = None
 
 
-def load_embeddings_data(keywords, embedding_method='bert', output_dir='data'):
+def load_embeddings_data(keywords, embedding_method='bert', output_dir='data/embeddings'):
     """Load embeddings from file."""
     embeddings_file = Path(output_dir) / f'unique_keyword_embeddings_{embedding_method}.csv'
     
@@ -53,6 +53,73 @@ def load_embeddings_data(keywords, embedding_method='bert', output_dir='data'):
         embedding_method=embedding_method,
         keywords=keywords
     )
+    
+    return embedding_df
+
+
+def create_feature_matrix_with_embeddings(keywords, embedding_method='bert', n_components=50, models_dir='models'):
+    """Generate embeddings for keywords using saved embedding pipeline.
+    
+    Loads the saved vectorizer/transformer, SVD, and normalizer from models_dir
+    and applies them to the provided keywords to create embeddings.
+    
+    Args:
+        keywords: list or Series of keyword strings
+        embedding_method: 'bert' or 'tfidf'
+        n_components: number of SVD components used (should match training)
+        models_dir: directory containing saved pipeline pickle files
+    
+    Returns:
+        DataFrame with columns ['{method}_0' ... '{method}_N', 'Keyword']
+    """
+    import pickle
+    
+    # Ensure keywords is a list
+    if not isinstance(keywords, list):
+        keywords = list(keywords)
+    
+    print(f"Generating {embedding_method.upper()} embeddings for {len(keywords)} keywords...")
+    
+    # Load the saved pipeline
+    pipeline_file = Path(models_dir) / f'{embedding_method}_pipeline_{n_components}d.pkl'
+    if not pipeline_file.exists():
+        raise FileNotFoundError(
+            f"Embedding pipeline not found: {pipeline_file}. "
+            f"Please ensure tidy_get_data.py has been run with add_embeddings(save_models=True)."
+        )
+    
+    with open(pipeline_file, 'rb') as f:
+        pipeline = pickle.load(f)
+    
+    vectorizer = pipeline['vectorizer'] if 'vectorizer' in pipeline else pipeline.get('transformer')
+    svd = pipeline.get('svd')
+    normalizer = pipeline.get('normalizer')
+    
+    if vectorizer is None or svd is None or normalizer is None:
+        raise ValueError(
+            f"Invalid pipeline format. Expected keys: 'vectorizer'/'transformer', 'svd', 'normalizer'. "
+            f"Got keys: {list(pipeline.keys())}"
+        )
+    
+    # Apply the pipeline
+    if embedding_method == 'tfidf':
+        # TF-IDF pipeline
+        embeddings = vectorizer.transform(keywords)  # sparse matrix
+        embeddings = svd.transform(embeddings)  # dense array
+    else:  # bert
+        # BERT pipeline
+        embeddings = vectorizer.encode(keywords)  # array of shape (n, 384)
+        embeddings = svd.transform(embeddings)  # reduce to n_components
+    
+    # Apply L2 normalization
+    embeddings = normalizer.transform(embeddings)
+    
+    # Create DataFrame with embedding columns
+    embedding_cols = [f'{embedding_method}_{i}' for i in range(n_components)]
+    embedding_df = pd.DataFrame(embeddings, columns=embedding_cols)
+    embedding_df['Keyword'] = keywords
+    
+    print(f"  Generated embeddings with shape {embeddings.shape}")
     
     return embedding_df
 
@@ -258,7 +325,7 @@ def extract_weights(lnr_conv, lnr_clicks, embedding_method='bert', n_embeddings=
     }
 
 
-def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, regions=None, match_types=None, training_data_path='clean_data/ad_opt_data_bert.csv', weights_dict=None, alg_conv='lr', alg_clicks='lr'):
+def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, regions=None, match_types=None, training_data_path='data/clean/ad_opt_data_bert.csv', weights_dict=None, alg_conv='lr', alg_clicks='lr'):
     """Create feature matrix/matrices for all keyword-region-match combinations for a specific day.
     
     Merges on exact keyword-match type-region combinations from historical data.
@@ -1220,8 +1287,8 @@ def main():
     parser.add_argument(
         '--data-dir',
         type=str,
-        default='clean_data',
-        help='Directory containing embeddings and models (default: clean_data)'
+        default='data/clean',
+        help='Directory containing embeddings and models (default: data/clean)'
     )
     parser.add_argument(
         '--models-dir',
@@ -1239,10 +1306,27 @@ def main():
     print("=" * 70)
     
     try:
-        # Load embeddings data
-        embeddings_file = Path(args.data_dir) / f'unique_keyword_embeddings_{args.embedding_method}.csv'
-        keyword_df = pd.read_csv(str(embeddings_file))
-        print(f"Loaded {len(keyword_df)} keywords from {embeddings_file}")
+        # Load new keywords from classified keywords file
+        classified_keywords_file = Path('data/gkp') / 'keywords_classified.csv'
+        if classified_keywords_file.exists():
+            classified_df = pd.read_csv(str(classified_keywords_file))
+            new_keywords = classified_df['Keyword'].tolist()
+            print(f"Loaded {len(new_keywords)} new keywords from {classified_keywords_file}")
+            keywords_to_embed = new_keywords
+        else:
+            # Fall back to loading from training data
+            training_data_file = Path(args.data_dir) / f'ad_opt_data_{args.embedding_method}.csv'
+            training_df = pd.read_csv(str(training_data_file))
+            keywords_to_embed = training_df['Keyword'].unique().tolist()
+            print(f"Loaded {len(keywords_to_embed)} unique keywords from training data")
+        
+        # Generate embeddings using saved pipeline
+        keyword_df = create_feature_matrix_with_embeddings(
+            keywords_to_embed,
+            embedding_method=args.embedding_method,
+            n_components=50,
+            models_dir=args.models_dir
+        )
         
         # Load weights from CSV files (no IAI required)
         weights_dict = load_weights_from_csv(

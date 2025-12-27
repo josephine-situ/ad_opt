@@ -3,8 +3,8 @@
 Per-day optimization over a specified month and comparison vs actuals.
 
 For the specified month (YYYY-MM), this script:
- - Loads training data `clean_data/ad_opt_data_{embedding}.csv`
- - Loads embeddings `clean_data/unique_keyword_embeddings_{embedding}.csv`
+ - Loads training data `data/clean/ad_opt_data_{embedding}.csv`
+ - Loads embeddings `data/clean/unique_keyword_embeddings_{embedding}.csv`
  - Loads model weights from `models/weights_{embedding}_*` CSVs
  - For each calendar day in the month:
      - Builds the feature matrix (using `create_feature_matrix` from `bid_optimization`) for that day
@@ -112,7 +112,7 @@ def main():
     root = Path(__file__).resolve().parent.parent
 
     # Load training data
-    training_file = root / 'clean_data' / f'ad_opt_data_{args.embedding_method}.csv'
+    training_file = root / 'data' / 'clean' / f'ad_opt_data_{args.embedding_method}.csv'
     if not training_file.exists():
         print(f"Training data not found: {training_file}")
         sys.exit(1)
@@ -145,7 +145,7 @@ def main():
         return
 
     # Load embeddings
-    emb_file = root / 'clean_data' / f'unique_keyword_embeddings_{args.embedding_method}.csv'
+    emb_file = root / 'data' / 'clean' / f'unique_keyword_embeddings_{args.embedding_method}.csv'
     if not emb_file.exists():
         print(f"Embeddings file not found: {emb_file}")
         sys.exit(1)

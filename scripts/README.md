@@ -29,16 +29,16 @@ python scripts/tidy_get_data.py --embedding-method bert --n-components 50
 python scripts/tidy_get_data.py \
   --embedding-method tfidf \          # or 'bert'
   --n-components 50 \                 # embedding dimensions
-  --output-dir data \                 # output directory
-  --data-dir .                         # input data directory
+  --output-dir data/clean \           # output directory
+  --data-dir data/reports             # input data directory
 ```
 
 ## Output Files
 
 Running the pipeline generates:
-- `data/ad_opt_data_{method}.csv` - Full dataset with embeddings
-- `data/train_{method}.csv` - Training set (75%)
-- `data/test_{method}.csv` - Test set (25%)
+- `data/clean/ad_opt_data_{method}.csv` - Full dataset with embeddings
+- `data/clean/train_{method}.csv` - Training set (75%)
+- `data/clean/test_{method}.csv` - Test set (25%)
 
 Where `{method}` is either `tfidf` or `bert`.
 

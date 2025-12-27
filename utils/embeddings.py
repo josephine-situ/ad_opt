@@ -51,7 +51,7 @@ def get_bert_embedding(text_list, model, tokenizer, device):
     return cls_embeddings.cpu().numpy()
 
 
-def get_tfidf_embeddings(unique_texts, n_components=50, ngram_range=(1, 2), min_df=1):
+def get_tfidf_embeddings(unique_texts, n_components=50, ngram_range=(1, 2), min_df=1, return_model=False):
     """
     Generate TF-IDF embeddings reduced to n_components via TruncatedSVD and L2 normalized.
     
@@ -62,9 +62,11 @@ def get_tfidf_embeddings(unique_texts, n_components=50, ngram_range=(1, 2), min_
     - n_components (int): Target embedding dimension. Default 50.
     - ngram_range (tuple): (min_n, max_n) for n-grams. Default (1, 2).
     - min_df (int): Minimum document frequency. Default 1 (keep all terms).
+    - return_model (bool): If True, return tuple (embeddings_df, vectorizer, svd, normalizer). Default False.
     
     Returns:
     - pd.DataFrame: Columns ['tfidf_0', 'tfidf_1', ..., 'text'] with shape (n_texts, n_components + 1).
+    - (Optional) tuple: (embeddings_df, vectorizer, svd, normalizer) if return_model=True
     """
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.decomposition import TruncatedSVD
@@ -89,10 +91,12 @@ def get_tfidf_embeddings(unique_texts, n_components=50, ngram_range=(1, 2), min_
     )
     embedding_df['text'] = unique_texts
     
+    if return_model:
+        return embedding_df, {'vectorizer': vectorizer, 'svd': svd, 'normalizer': normalizer}
     return embedding_df
 
 
-def get_bert_embeddings_pipeline(unique_texts, n_components=50, model_name='all-MiniLM-L6-v2', batch_size=32):
+def get_bert_embeddings_pipeline(unique_texts, n_components=50, model_name='all-MiniLM-L6-v2', batch_size=32, return_model=False):
     """
     Generate BERT embeddings (via sentence-transformers) reduced to n_components via TruncatedSVD and L2 normalized.
     
@@ -103,9 +107,12 @@ def get_bert_embeddings_pipeline(unique_texts, n_components=50, model_name='all-
     - n_components (int): Target embedding dimension. Default 50.
     - model_name (str): Sentence-transformers model identifier. Default 'all-MiniLM-L6-v2' (fast, 384D).
     - batch_size (int): Batch size for encoding. Default 32.
+    - return_model (bool): If True, return tuple (embeddings_df, model_dict). Default False.
     
     Returns:
     - pd.DataFrame: Columns ['bert_0', 'bert_1', ..., 'text'] with shape (n_texts, n_components + 1).
+    - (Optional) tuple: (embeddings_df, model_dict) if return_model=True
+        where model_dict = {'transformer': model, 'svd': svd, 'normalizer': normalizer}
     
     Notes:
     - Requires: pip install sentence-transformers transformers>=4.35.2
@@ -155,4 +162,6 @@ def get_bert_embeddings_pipeline(unique_texts, n_components=50, model_name='all-
     )
     embedding_df['text'] = unique_texts
     
+    if return_model:
+        return embedding_df, {'transformer': model, 'svd': svd, 'normalizer': normalizer}
     return embedding_df

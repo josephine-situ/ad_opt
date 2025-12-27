@@ -9,8 +9,8 @@ This script:
  4. Runs linear programming optimization using bid_optimization.optimize_bids_embedded()
 
 Outputs:
- - `clean_data/new_keyword_embeddings_tfidf.csv`
- - `clean_data/new_keyword_embeddings_bert.csv`
+ - `data/clean/new_keyword_embeddings_tfidf.csv`
+ - `data/clean/new_keyword_embeddings_bert.csv`
  - `opt_results/optimized_bids_new_keywords_{embedding_method}.csv`
 
 Usage:
@@ -57,8 +57,8 @@ def generate_embeddings_for_new_keywords(root, embedding_method):
     Returns:
         DataFrame with embeddings
     """
-    combined_file = root / 'raw_data' / 'combined_kw_ads_data2.csv'
-    unique_file = root / 'raw_data' / 'unique_keywords.csv'
+    combined_file = root / 'data' / 'combined_kw_ads_data2.csv'
+    unique_file = root / 'data' / 'unique_keywords.csv'
 
     if not combined_file.exists() or not unique_file.exists():
         print("ERROR: Could not find source files to compute new keywords.")
@@ -344,14 +344,14 @@ def main():
         sys.exit(1)
     
     # Save embeddings
-    out_embedding = root / 'clean_data' / f'new_keyword_embeddings_{embedding_method}.csv'
+    out_embedding = root / 'data' / 'clean' / f'new_keyword_embeddings_{embedding_method}.csv'
     out_embedding.parent.mkdir(parents=True, exist_ok=True)
     embedding_df.to_csv(out_embedding, index=False)
     print(f"Saved embeddings: {out_embedding}")
 
     # Step 2: Load ads data and create feature matrix
     print(f"\n[Step 2] Creating feature matrix...")
-    ads_file = root / 'raw_data' / 'combined_kw_ads_data2.csv'
+    ads_file = root / 'data' / 'combined_kw_ads_data2.csv'
     ads_df = pd.read_csv(ads_file)
     
     feature_matrix, keyword_idx_list, region_list, match_list = create_feature_matrix(embedding_df, ads_df, embedding_method, target_day=target_day)

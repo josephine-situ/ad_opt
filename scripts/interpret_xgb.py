@@ -29,7 +29,7 @@ print("=" * 70)
 print("\n1. Loading test data...")
 
 embedding_choice = 'bert' if EMBEDDING_METHOD == 'bert' else 'tfidf'
-test_file = Path(__file__).parent.parent / 'clean_data' / f'test_{embedding_choice}.csv'
+test_file = Path(__file__).parent.parent / 'data' / 'clean' / f'test_{embedding_choice}.csv'
 
 X_test = pd.read_csv(test_file)
 
