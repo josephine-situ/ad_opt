@@ -43,15 +43,20 @@ def load_data(data_dir='data/clean', embedding_method='tfidf'):
     return df_train, df_test
 
 
-def get_features(df):
-    """Extract all feature columns except Conv. value and Clicks (target variables).
+def get_features(df, target='conversion'):
+    """Extract all feature columns except target variable and metadata.
+    When target is 'conversion', Clicks is included as a predictor.
     Convert categorical columns to category dtype for IAI compatibility."""
     
     # Make a copy to avoid modifying original
     df_features = df.copy()
     
-    # Exclude target variables and any metadata columns
-    excluded_cols = {'Conv. value', 'Clicks', 'Day', 'Keyword'}
+    # Exclude target variable and metadata columns
+    if target == 'conversion':
+        excluded_cols = {'Conv. value', 'Day', 'Keyword'}
+    else:  # target == 'clicks'
+        excluded_cols = {'Clicks', 'Conv. value', 'Day', 'Keyword'}
+    
     feature_cols = [col for col in df_features.columns if col not in excluded_cols]
     
     # Identify and convert categorical columns (string dtype) to category dtype
@@ -237,8 +242,8 @@ def main():
         # Load data
         df_train, df_test = load_data(args.data_dir, args.embedding_method)
         
-        X_train, features = get_features(df_train)
-        X_test, _ = get_features(df_test)
+        X_train, features = get_features(df_train, args.target)
+        X_test, _ = get_features(df_test, args.target)
         y_train = get_target(df_train, args.target)
         y_test = get_target(df_test, args.target)
         
