@@ -62,113 +62,207 @@ project/
 
 ## Quick Start
 
-### 1. Setup
+### 1. Environment Setup
+
+#### Option A: Using Conda (Recommended)
 
 ```bash
+# Create conda environment with Python 3.10+
+conda create -n mlopt python=3.10
+
+# Activate environment
+conda activate mlopt
+
 # Clone repository
-git clone https://github.com/seehanahtang/mlopt-final.git
-cd mlopt-final
+git clone https://github.com/josephine-situ/ad_opt.git
+cd ad_opt
 
-# Install core dependencies using pyproject.toml
-pip install -e .
-
-# Optional: For BERT embeddings
-pip install -e ".[bert]"
-
-# Optional: For model training with IAI
-pip install -e ".[ml]"
-
-# Optional: For bid optimization with Gurobi
-pip install -e ".[optimization]"
-
-# Or install everything
+# Install all dependencies (core + optional)
 pip install -e ".[bert,ml,optimization]"
 ```
 
+#### Option B: Using venv
+
+```bash
+# Clone repository
+git clone https://github.com/josephine-situ/ad_opt.git
+cd ad_opt
+
+# Create virtual environment
+python -m venv venv
+
+# Activate environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install all dependencies
+pip install -e ".[bert,ml,optimization]"
+```
+
+**Dependency Installation Details:**
+
+```bash
+# Core only (data processing, embeddings)
+pip install -e .
+
+# Optional packages:
+pip install -e ".[bert]"           # BERT embeddings (sentence-transformers)
+pip install -e ".[ml]"             # IAI model training (requires license)
+pip install -e ".[optimization]"   # Gurobi optimization (requires license)
+
+# All optional packages (recommended for full pipeline)
+pip install -e ".[bert,ml,optimization]"
+
+# Development tools
+pip install -e ".[dev]"            # pytest, black, pylint, mypy
+```
+
 **Note on Commercial Licenses:**
-- **IAI (InterpretableAI):** Requires commercial license from https://www.interpretable.ai/
-- **Gurobi:** Requires commercial license from https://www.gurobi.com/
+- **IAI (InterpretableAI):** Required for model training. Get license from https://www.interpretable.ai/
+- **Gurobi:** Required for bid optimization. Get license from https://www.gurobi.com/
 
 The script will automatically detect if running on the Engaging cluster (SLURM) and configure IAI appropriately.
 
-### 2. Data Preparation
+### 2. Running the Full Pipeline
+
+Once setup is complete, run the pipeline end-to-end:
 
 ```bash
-# Generate TF-IDF embeddings and prepare datasets
+# 1. Prepare data with TF-IDF embeddings
 python scripts/tidy_get_data.py --embedding-method tfidf
 
-# Or use BERT embeddings (slower, but more semantic)
+# 2. Train prediction models (conversion value)
+python scripts/prediction_modeling.py --target conversion --embedding-method tfidf
+
+# 3. Train prediction models (clicks)
+python scripts/prediction_modeling.py --target clicks --embedding-method tfidf
+
+# 4. Optimize bids
+python scripts/bid_optimization.py \
+  --embedding-method tfidf \
+  --budget 68096.51 \
+  --max-bid 100
+
+# Results will be saved to opt_results/ directory
+```
+
+**Alternative: Using BERT embeddings (slower but more accurate)**
+
+```bash
+# Replace --embedding-method tfidf with --embedding-method bert
 python scripts/tidy_get_data.py --embedding-method bert
+python scripts/prediction_modeling.py --target conversion --embedding-method bert
+python scripts/prediction_modeling.py --target clicks --embedding-method bert
+python scripts/bid_optimization.py --embedding-method bert --budget 68096.51
+```
+
+### 3. Data Preparation Details
+
+The `tidy_get_data.py` script handles the full data pipeline:
+
+```bash
+python scripts/tidy_get_data.py --embedding-method tfidf --force-reload
 ```
 
 This script:
 - Loads and combines 2024 and 2025 keyword data from `data/reports/`
 - Cleans currency, percentages, and text
-- Extracts temporal features (holidays, weekends, etc.)
-- Merges with Google Keyword Planner data
+- Extracts temporal features (holidays, weekends, days to course start)
+- Retrieves monthly search volume from Google Keyword Planner data
+- Calculates time series statistics (3-month/6-month averages, momentum)
 - Generates keyword embeddings (TF-IDF or BERT)
-- Removes rows with missing values
+- Imputes missing values
+- Removes rows with remaining missing values
 - Creates train/test splits (75/25)
-- Saves processed datasets to `data/clean/` directory
+- Saves processed datasets and embedding models to `data/clean/` and `models/`
 
 **Output files:**
-- `data/clean/ad_opt_data_tfidf.csv` - Full dataset
-- `data/clean/train_tfidf.csv` - Training set (~53k rows)
-- `data/clean/test_tfidf.csv` - Test set (~18k rows)
+```
+data/clean/
+├── ad_opt_data_tfidf.csv           # Full dataset (~71k rows × 60 cols)
+├── train_tfidf.csv                 # Training set (~53k rows)
+├── test_tfidf.csv                  # Test set (~18k rows)
+├── unique_keyword_embeddings_tfidf.csv
 
-### 3. Train Prediction Models
+models/
+├── tfidf_pipeline_50d.pkl          # Saved TF-IDF vectorizer, SVD, normalizer
+└── (embedding pipeline for inference)
+```
+
+**Options:**
+```bash
+# Force reload all caches (useful if data changes)
+python scripts/tidy_get_data.py --embedding-method tfidf --force-reload
+
+# Use BERT embeddings (slower)
+python scripts/tidy_get_data.py --embedding-method bert
+```
+
+### 4. Train Prediction Models
+
+Train models to predict conversion value or clicks:
 
 ```bash
-# Train models to predict conversion value
+# Predict conversion value (with Clicks as a predictor)
 python scripts/prediction_modeling.py --target conversion
 
-# Or predict clicks
+# Predict clicks
 python scripts/prediction_modeling.py --target clicks
 
 # Train only specific models
-python scripts/prediction_modeling.py --target conversion --models lr oct
+python scripts/prediction_modeling.py --target conversion --models lr ort
 
 # Use BERT embeddings
 python scripts/prediction_modeling.py --target conversion --embedding-method bert
-
-# On Engaging
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python scripts/prediction_modeling.py --target conversion --embedding-method bert
 ```
 
 Trains and compares:
 - Linear Regression (LR) with feature selection
-- Optimal Cart Trees (OCT)
+- Optimal Regression Trees (ORT)
 - Random Forests (RF)
 - XGBoost (XGB)
 
-**Requirements:** IAI library (`pip install -e ".[ml]"`)
+**Requirements:** IAI library (included in `pip install -e ".[ml]"`)
 
-**Features:**
-- Automatically uses all columns except targets and metadata
-- Converts categorical columns to proper dtype for IAI
-- 5-fold cross-validation with hyperparameter grid search
-- Saves best model from each training run
+**Output:** Models saved to `models/` directory:
+```
+models/
+├── lr_tfidf_conversion.json
+├── ort_tfidf_conversion.json
+├── rf_tfidf_conversion.json
+├── xgb_tfidf_conversion.json
+├── lr_tfidf_clicks.json
+├── ort_tfidf_clicks.json
+├── rf_tfidf_clicks.json
+├── xgb_tfidf_clicks.json
+└── (weight CSVs for each model)
+```
 
-**Output:** Models saved to `models/` directory (one per model type and target)
+### 5. Optimize Bids
 
-### 4. Optimize Bids
+Use trained models to optimize keyword bids:
 
 ```bash
 python scripts/bid_optimization.py \
+  --embedding-method tfidf \
+  --alg-conv lr \
+  --alg-clicks ort \
   --budget 68096.51 \
   --max-bid 100 \
-  --max-active 14229 \
-  --output optimized_bids.csv
+  --models-dir models
 ```
 
-Uses Gurobi linear programming to maximize profit given:
-- Budget constraint
-- Maximum individual bid
-- Maximum number of active keywords
+Uses Gurobi linear programming to maximize profit:
+- Loads new keywords from `data/gkp/keywords_classified.csv`
+- Generates embeddings using saved pipeline
+- Loads trained models for conversion and clicks prediction
+- Solves optimization problem subject to budget and bid constraints
 
-**Requirements:** Gurobi solver (commercial license required)
+**Requirements:** Gurobi solver (included in `pip install -e ".[optimization]"`)
 
-**Output:** `optimized_bids.csv` with recommended bids
+**Output:** Optimized bids saved to `opt_results/` directory
 
 ## Modules
 
