@@ -90,11 +90,11 @@ def train_linear_regression(X_train, y_train, X_test, y_test, target='conversion
     grid_lr.fit_cv(X_train, y_train, validation_criterion='mse', n_folds=5)
     
     # Evaluate on test set
-    mse_train = grid_lr.score(X_train, y_train, criterion='mse')
-    mse_test = grid_lr.score(X_test, y_test, criterion='mse')
+    r2_train = grid_lr.score(X_train, y_train, criterion='mse')
+    r2_test = grid_lr.score(X_test, y_test, criterion='mse')
     
-    print(f"Train MSE: {mse_train:.4f}")
-    print(f"Test MSE:  {mse_test:.4f}")
+    print(f"Train R²: {r2_train:.4f}")
+    print(f"Test R²:  {r2_test:.4f}")
     
     # Save model
     lnr = grid_lr.get_learner()
@@ -102,7 +102,7 @@ def train_linear_regression(X_train, y_train, X_test, y_test, target='conversion
     lnr.write_json(model_path)
     print(f"Model saved to {model_path}")
     
-    return grid_lr, mse_test
+    return grid_lr, r2_test
 
 
 def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_method='tfidf', seed=42):
@@ -122,11 +122,11 @@ def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_m
     grid_ort.fit_cv(X_train, y_train, validation_criterion='mse', n_folds=5, verbose=True)
     
     # Evaluate on test set
-    mse_train = grid_ort.score(X_train, y_train, criterion='mse')
-    mse_test = grid_ort.score(X_test, y_test, criterion='mse')
+    r2_train = grid_ort.score(X_train, y_train, criterion='mse')
+    r2_test = grid_ort.score(X_test, y_test, criterion='mse')
     
-    print(f"Train MSE: {mse_train:.4f}")
-    print(f"Test MSE:  {mse_test:.4f}")
+    print(f"Train R²: {r2_train:.4f}")
+    print(f"Test R²:  {r2_test:.4f}")
     
     # Save model
     lnr = grid_ort.get_learner()
@@ -134,7 +134,7 @@ def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_m
     lnr.write_json(model_path)
     print(f"Model saved to {model_path}")
     
-    return grid_ort, mse_test
+    return grid_ort, r2_test
 
 
 def train_random_forest(X_train, y_train, X_test, y_test, target='conversion', embedding_method='tfidf', seed=42):
@@ -151,11 +151,11 @@ def train_random_forest(X_train, y_train, X_test, y_test, target='conversion', e
     grid_rf.fit_cv(X_train, y_train, validation_criterion='mse', n_folds=5)
     
     # Evaluate on test set
-    mse_train = grid_rf.score(X_train, y_train, criterion='mse')
-    mse_test = grid_rf.score(X_test, y_test, criterion='mse')
+    r2_train = grid_rf.score(X_train, y_train, criterion='mse')
+    r2_test = grid_rf.score(X_test, y_test, criterion='mse')
     
-    print(f"Train MSE: {mse_train:.4f}")
-    print(f"Test MSE:  {mse_test:.4f}")
+    print(f"Train R²: {r2_train:.4f}")
+    print(f"Test R²:  {r2_test:.4f}")
     
     # Save model
     lnr = grid_rf.get_learner()
@@ -163,7 +163,7 @@ def train_random_forest(X_train, y_train, X_test, y_test, target='conversion', e
     lnr.write_json(model_path)
     print(f"Model saved to {model_path}")
     
-    return grid_rf, mse_test
+    return grid_rf, r2_test
 
 
 def train_xgboost(X_train, y_train, X_test, y_test, target='conversion', embedding_method='tfidf', seed=42):
@@ -180,11 +180,11 @@ def train_xgboost(X_train, y_train, X_test, y_test, target='conversion', embeddi
     grid_xgb.fit_cv(X_train, y_train, validation_criterion='mse', n_folds=5)
     
     # Evaluate on test set
-    mse_train = grid_xgb.score(X_train, y_train, criterion='mse')
-    mse_test = grid_xgb.score(X_test, y_test, criterion='mse')
+    r2_train = grid_xgb.score(X_train, y_train, criterion='mse')
+    r2_test = grid_xgb.score(X_test, y_test, criterion='mse')
     
-    print(f"Train MSE: {mse_train:.4f}")
-    print(f"Test MSE:  {mse_test:.4f}")
+    print(f"Train R²: {r2_train:.4f}")
+    print(f"Test R²:  {r2_test:.4f}")
     
     # Save model
     lnr = grid_xgb.get_learner()
@@ -192,7 +192,7 @@ def train_xgboost(X_train, y_train, X_test, y_test, target='conversion', embeddi
     lnr.write_json(model_path)
     print(f"Model saved to {model_path}")
     
-    return grid_xgb, mse_test
+    return grid_xgb, r2_test
 
 
 def main():
@@ -258,29 +258,29 @@ def main():
         results = {}
         
         if 'lr' in args.models:
-            _, mse = train_linear_regression(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
-            results['LR'] = mse
+            _, r2 = train_linear_regression(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
+            results['LR'] = r2
         
         if 'ort' in args.models:
-            _, mse = train_ort(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
-            results['ORT'] = mse
+            _, r2 = train_ort(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
+            results['ORT'] = r2
         
         if 'rf' in args.models:
-            _, mse = train_random_forest(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
-            results['RF'] = mse
+            _, r2 = train_random_forest(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
+            results['RF'] = r2
         
         if 'xgb' in args.models:
-            _, mse = train_xgboost(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
-            results['XGB'] = mse
+            _, r2 = train_xgboost(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
+            results['XGB'] = r2
         
         # Print summary
         print("\n" + "=" * 70)
-        print("Model Performance Summary (Test MSE)")
+        print("Model Performance Summary (Test R²)")
         print("=" * 70)
-        for model_name, mse in sorted(results.items(), key=lambda x: x[1]):
-            print(f"  {model_name:6s}: {mse:.4f}")
+        for model_name, r2 in sorted(results.items(), key=lambda x: x[1], reverse=True):
+            print(f"  {model_name:6s}: {r2:.4f}")
         
-        best_model = min(results, key=results.get)
+        best_model = max(results, key=results.get)
         print(f"\nBest model: {best_model}")
         print("=" * 70)
         
