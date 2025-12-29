@@ -22,7 +22,7 @@ echo "Load modules..."
 module load miniforge
 
 echo "Activate environment..."
-conda activate mlopt_env
+conda activate adopt_env
 
 # --- CRITICAL OPTIMIZATION FOR IAI ---
 # This ensures Julia uses all 8 cores we requested above.
