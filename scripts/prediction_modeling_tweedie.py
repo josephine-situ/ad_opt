@@ -409,7 +409,7 @@ def train_xgb_tweedie(
         reg_alpha=0.0,
         reg_lambda=1.0,
         tree_method="hist",
-        n_jobs=-1,
+        n_jobs=1,  # Disable XGB parallelization; GridSearchCV will parallelize
     )
 
     pipe = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
@@ -431,7 +431,7 @@ def train_xgb_tweedie(
             _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
         ),
         cv=cv,
-        n_jobs=-1,
+        n_jobs=-1,  # Parallelize across CV folds + params (safe since XGBoost uses n_jobs=1)
         refit=True,
     )
 
@@ -506,9 +506,9 @@ def train_rf_tweedie(
         colsample_bynode=0.8,
         reg_alpha=0.0,
         reg_lambda=1.0,
-        learning_rate=1.0,
+        learning_rate=0.01,  # Low learning rate for RF-like behavior (not boosting)
         tree_method="hist",
-        n_jobs=-1,
+        n_jobs=1,  # Disable XGB parallelization; GridSearchCV will parallelize
     )
 
     pipe = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
@@ -529,7 +529,7 @@ def train_rf_tweedie(
             _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
         ),
         cv=cv,
-        n_jobs=-1,
+        n_jobs=-1,  # Parallelize across CV folds + params (safe since XGBoost uses n_jobs=1)
         refit=True,
     )
 
