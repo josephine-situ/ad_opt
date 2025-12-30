@@ -133,7 +133,6 @@ Thumbs.db
 .DS_Store
 
 # Project-specific
-*.parquet
 *.xlsx
 *.xls
 optimized_bids.csv

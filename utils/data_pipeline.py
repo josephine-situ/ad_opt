@@ -469,6 +469,14 @@ def merge_with_ads_data(kw_df, gkp_df=None):
     search_cols_to_drop = [col for col in merged_df.columns if col.startswith('searches_')]
     merged_df.drop(columns=search_cols_to_drop, errors='ignore', inplace=True)
     
+    # Calculate EPC (Expected conversion value Per Click)
+    # Avoid division by zero by using fillna
+    merged_df['EPC'] = merged_df.apply(
+        lambda row: row['Conv. value'] / row['Clicks'] if row['Clicks'] > 0 else None,
+        axis=1
+    )
+    print(f"  Calculated EPC (Expected Conversion value Per Click)")
+    
     # Check for NaNs introduced at this step
     ts_stat_cols = ['last_month_searches', 'three_month_avg', 'six_month_avg', 'mom_change', 'search_trend']
     ts_stat_cols = [col for col in ts_stat_cols if col in merged_df.columns]
@@ -581,7 +589,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     
     # Check for missing required columns
     missing_cols = [col for col in feature_cols if col not in df.columns]
-    target_cols = ['Conv. value', 'Clicks']
+    target_cols = ['Conv. value', 'Clicks', 'EPC']
     missing_targets = [col for col in target_cols if col not in df.columns]
     
     if missing_cols:

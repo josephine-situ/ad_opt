@@ -34,8 +34,8 @@ echo "Running prediction_modeling.py - clicks prediction"
 LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target clicks --embedding-method tfidf
 LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target clicks --embedding-method bert
 
-echo "Running prediction_modeling.py - conversion prediction"
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target conversion --embedding-method tfidf
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target conversion --embedding-method bert
+echo "Running prediction_modeling.py - conversion value per click prediction"
+LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target epc --embedding-method tfidf
+LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target epc --embedding-method bert
 
 echo "End: $(date)"
