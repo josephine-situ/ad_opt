@@ -310,8 +310,8 @@ def main():
         '--models',
         type=str,
         nargs='+',
-        default=['lr', 'ort', 'rf', 'xgb'],
-        choices=['lr', 'ort', 'rf', 'xgb'],
+        default=['ort', 'rf', 'xgb'], # removed 'lr' as using tweedie loss
+        choices=['ort', 'rf', 'xgb'],
         help='Models to train (default: all)'
     )
     
