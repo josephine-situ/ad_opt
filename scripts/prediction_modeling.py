@@ -184,6 +184,7 @@ def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_m
             criterion='tweedie',
             tweedie_variance_power=tweedie_power,
             show_progress=False,  # <--- Disables the "inner" progress bar
+            normalize_y=False,
         ),
         max_depth=[2, 4, 6, 8],
         minbucket=[0.01, 0.02, 0.05],
@@ -219,7 +220,8 @@ def train_random_forest(X_train, y_train, X_test, y_test, target='conversion', e
         iai.RandomForestRegressor(
             random_seed=seed,
             criterion='tweedie',
-            tweedie_variance_power=tweedie_power
+            tweedie_variance_power=tweedie_power,
+            normalize_y=False,
         ),
         max_depth=[2, 4, 6, 8],
         minbucket=[0.01, 0.02, 0.05],
@@ -255,7 +257,8 @@ def train_xgboost(X_train, y_train, X_test, y_test, target='conversion', embeddi
         iai.XGBoostRegressor(
             random_seed=seed,
             criterion='tweedie',
-            tweedie_variance_power=tweedie_power
+            tweedie_variance_power=tweedie_power,
+            normalize_y=False,
         ),
         max_depth=[2, 4, 6, 8],
         minbucket=[0.01, 0.02, 0.05],
