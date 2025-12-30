@@ -38,6 +38,7 @@ Notes
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -54,6 +55,7 @@ from sklearn.linear_model import TweedieRegressor
 from sklearn.metrics import mean_tweedie_deviance
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 try:
@@ -67,6 +69,41 @@ try:
     import xgboost as xgb  # type: ignore
 except Exception:
     xgb = None
+
+try:
+    import scipy.sparse as sp  # type: ignore
+except Exception:
+    sp = None
+
+
+def _default_xgb_n_jobs() -> int:
+    """Choose a reasonable thread count for XGBoost on clusters.
+
+    We prefer SLURM_CPUS_PER_TASK when available. This keeps training within the
+    resources allocated by the scheduler.
+    """
+
+    for key in ("SLURM_CPUS_PER_TASK", "OMP_NUM_THREADS"):
+        val = os.environ.get(key)
+        if val:
+            try:
+                n = int(val)
+                if n >= 1:
+                    return n
+            except Exception:
+                pass
+    return int(os.cpu_count() or 1)
+
+
+def _to_float32_csr(X):
+    """Cast matrices to float32; prefer CSR for sparse.
+
+    This avoids a class of XGBoost crashes/slow paths on some HPC builds.
+    """
+
+    if sp is not None and sp.issparse(X):
+        return X.tocsr().astype(np.float32)
+    return np.asarray(X, dtype=np.float32)
 
 
 def load_data(data_dir: str = "data/clean", embedding_method: str = "tfidf") -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -397,6 +434,12 @@ def train_xgb_tweedie(
 
     preprocessor, _, _ = build_preprocessor(X_train)
 
+    # IMPORTANT: XGBoost has been observed to segfault under joblib/loky
+    # multiprocessing on some clusters (esp. when xgboost is installed outside
+    # the active conda env). We therefore run GridSearchCV serially (n_jobs=1)
+    # and use XGBoost's internal threading (n_jobs) to utilize CPUs.
+    xgb_n_jobs = _default_xgb_n_jobs()
+
     model = xgb.XGBRegressor(
         objective="reg:tweedie",
         tweedie_variance_power=power,
@@ -409,10 +452,16 @@ def train_xgb_tweedie(
         reg_alpha=0.0,
         reg_lambda=1.0,
         tree_method="hist",
-        n_jobs=1,  # Disable XGB parallelization; GridSearchCV will parallelize
+        n_jobs=xgb_n_jobs,
     )
 
-    pipe = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
+    pipe = Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
+            ("model", model),
+        ]
+    )
 
     param_grid = {
         "model__max_depth": [3, 5, 7],
@@ -431,7 +480,7 @@ def train_xgb_tweedie(
             _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
         ),
         cv=cv,
-        n_jobs=-1,  # Parallelize across CV folds + params (safe since XGBoost uses n_jobs=1)
+        n_jobs=1,
         refit=True,
     )
 
@@ -496,6 +545,9 @@ def train_rf_tweedie(
 
     preprocessor, _, _ = build_preprocessor(X_train)
 
+    # See note in train_xgb_tweedie re: avoiding joblib/loky multiprocessing.
+    xgb_n_jobs = _default_xgb_n_jobs()
+
     model = xgb.XGBRFRegressor(
         objective="reg:tweedie",
         tweedie_variance_power=power,
@@ -508,10 +560,16 @@ def train_rf_tweedie(
         reg_lambda=1.0,
         learning_rate=0.01,  # Low learning rate for RF-like behavior (not boosting)
         tree_method="hist",
-        n_jobs=1,  # Disable XGB parallelization; GridSearchCV will parallelize
+        n_jobs=xgb_n_jobs,
     )
 
-    pipe = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
+    pipe = Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
+            ("model", model),
+        ]
+    )
 
     param_grid = {
         "model__max_depth": [3, 5, 7],
@@ -529,7 +587,7 @@ def train_rf_tweedie(
             _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
         ),
         cv=cv,
-        n_jobs=-1,  # Parallelize across CV folds + params (safe since XGBoost uses n_jobs=1)
+        n_jobs=1,
         refit=True,
     )
 
