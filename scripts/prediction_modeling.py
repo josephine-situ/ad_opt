@@ -187,11 +187,10 @@ def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_m
             normalize_y=False,
         ),
         max_depth=[2, 4, 6, 8],
-        minbucket=[0.01, 0.02, 0.05],
-        
+        minbucket=[0.02, 0.05, 0.1],
     )
     
-    grid_ort.fit_cv(X_train, y_train, validation_criterion='tweedie', n_folds=5, verbose=True)
+    grid_ort.fit_cv(X_train, y_train, validation_criterion='tweedie', n_folds=3, verbose=True)
     
     # Evaluate on test set
     tweedie_train = grid_ort.score(X_train, y_train, criterion='tweedie')
