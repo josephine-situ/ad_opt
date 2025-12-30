@@ -31,7 +31,8 @@ Notes
 -----
 - Tweedie variance power defaults:
   - clicks: 1.0 (Poisson)
-  - conversion / epc: 1.5
+    - conversion: 1.5
+        - epc (aggregated EPC with weights): 1.5
 - Targets are assumed to be non-negative.
 """
 
@@ -50,10 +51,12 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sklearn.compose import ColumnTransformer
+from sklearn.base import clone
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import TweedieRegressor
 from sklearn.metrics import mean_tweedie_deviance
 from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.model_selection import ParameterGrid
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -139,6 +142,8 @@ def get_target(df: pd.DataFrame, target: str = "conversion") -> pd.Series:
     if target == "conversion":
         return df["Conv. value"]
     if target == "epc":
+        if "EPC" not in df.columns:
+            raise KeyError("EPC target requires an 'EPC' column")
         return df["EPC"]
     if target == "clicks":
         return df["Clicks"]
@@ -147,7 +152,11 @@ def get_target(df: pd.DataFrame, target: str = "conversion") -> pd.Series:
 
 def get_tweedie_power(target: str) -> float:
     # clicks ~= counts -> Poisson
-    return 1.0 if target == "clicks" else 1.5
+    if target == "clicks":
+        return 1.0
+    if target == "epc":
+        return 1.5
+    return 1.5
 
 
 def _as_numpy(x: Iterable[float]) -> np.ndarray:
@@ -156,7 +165,154 @@ def _as_numpy(x: Iterable[float]) -> np.ndarray:
     return np.asarray(list(x), dtype=float)
 
 
-def tweedie_d2_score(y_true: Iterable[float], y_pred: Iterable[float], power: float) -> float:
+def _weighted_mean(values: Iterable[float], sample_weight: Optional[Iterable[float]]) -> float:
+    v = _as_numpy(values)
+    if sample_weight is None:
+        return float(np.mean(v))
+    w = _as_numpy(sample_weight)
+    return float(np.average(v, weights=w))
+
+
+def _quantiles(values: Iterable[float], qs: Iterable[float] = (0.0, 0.01, 0.5, 0.99, 1.0)) -> Dict[float, float]:
+    v = _as_numpy(values)
+    if v.size == 0:
+        return {float(q): float("nan") for q in qs}
+    out: Dict[float, float] = {}
+    for q in qs:
+        out[float(q)] = float(np.quantile(v, q))
+    return out
+
+
+def _print_diagnostics(
+    *,
+    label: str,
+    y_true: Iterable[float],
+    y_pred: Iterable[float],
+    sample_weight: Optional[Iterable[float]] = None,
+) -> None:
+    yt = _as_numpy(y_true)
+    yp = _as_numpy(y_pred)
+
+    mean_y = _weighted_mean(yt, None)
+    mean_p = _weighted_mean(yp, None)
+    bias = compute_global_bias(yt, yp)
+
+    msg = f"  [{label}] mean(y)={mean_y:.4f} mean(pred)={mean_p:.4f} bias={bias:.4f}"
+    if sample_weight is not None:
+        wmean_y = _weighted_mean(yt, sample_weight)
+        wmean_p = _weighted_mean(yp, sample_weight)
+        wbias = compute_global_bias(yt, yp, sample_weight=sample_weight)
+        msg += f" | wmean(y)={wmean_y:.4f} wmean(pred)={wmean_p:.4f} wbias={wbias:.4f}"
+    print(msg)
+
+    qy = _quantiles(yt)
+    qp = _quantiles(yp)
+    print(
+        "  [{label}] quantiles y: "
+        "min={y0:.4g} p1={y1:.4g} med={y50:.4g} p99={y99:.4g} max={y100:.4g}".format(
+            label=label,
+            y0=qy[0.0],
+            y1=qy[0.01],
+            y50=qy[0.5],
+            y99=qy[0.99],
+            y100=qy[1.0],
+        )
+    )
+    print(
+        "  [{label}] quantiles pred: "
+        "min={p0:.4g} p1={p1:.4g} med={p50:.4g} p99={p99:.4g} max={p100:.4g}".format(
+            label=label,
+            p0=qp[0.0],
+            p1=qp[0.01],
+            p50=qp[0.5],
+            p99=qp[0.99],
+            p100=qp[1.0],
+        )
+    )
+
+
+def _grid_search_cv_deviance(
+    *,
+    base_estimator: Pipeline,
+    param_grid: Dict[str, List[object]],
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: KFold,
+    power: float,
+    sample_weight: Optional[pd.Series],
+    fit_weight_param: str,
+) -> Tuple[Pipeline, Dict[str, object], float]:
+    """Simple, weight-aware CV grid search.
+
+    We implement this because sklearn's GridSearchCV scoring callback doesn't
+    receive per-fold sample_weight.
+
+    Returns (best_estimator_fit_on_full_data, best_params, best_cv_deviance).
+    """
+
+    best_params: Optional[Dict[str, object]] = None
+    best_score: float = float("inf")
+
+    for params in ParameterGrid(param_grid):
+        fold_scores: List[float] = []
+        for train_idx, val_idx in cv.split(X, y):
+            X_tr = X.iloc[train_idx]
+            y_tr = y.iloc[train_idx]
+            X_va = X.iloc[val_idx]
+            y_va = y.iloc[val_idx]
+
+            w_tr = None
+            w_va = None
+            if sample_weight is not None:
+                w_tr = sample_weight.iloc[train_idx]
+                w_va = sample_weight.iloc[val_idx]
+
+            est = clone(base_estimator)
+            est.set_params(**params)
+
+            fit_params = {}
+            if w_tr is not None:
+                fit_params[fit_weight_param] = _as_numpy(w_tr)
+
+            est.fit(X_tr, y_tr, **fit_params)
+
+            y_hat = np.maximum(_as_numpy(est.predict(X_va)), 1e-12)
+            fold_scores.append(
+                float(
+                    mean_tweedie_deviance(
+                        _as_numpy(y_va),
+                        y_hat,
+                        power=power,
+                        sample_weight=_as_numpy(w_va) if w_va is not None else None,
+                    )
+                )
+            )
+
+        score = float(np.mean(fold_scores))
+        if score < best_score:
+            best_score = score
+            best_params = dict(params)
+
+    if best_params is None:
+        raise RuntimeError("Grid search failed to evaluate any parameters.")
+
+    best = clone(base_estimator)
+    best.set_params(**best_params)
+    final_fit_params = {}
+    if sample_weight is not None:
+        final_fit_params[fit_weight_param] = _as_numpy(sample_weight)
+    best.fit(X, y, **final_fit_params)
+
+    return best, best_params, best_score
+
+
+def tweedie_d2_score(
+    y_true: Iterable[float],
+    y_pred: Iterable[float],
+    power: float,
+    *,
+    sample_weight: Optional[Iterable[float]] = None,
+) -> float:
     """Compute Tweedie D^2 (deviance-based R^2).
 
     D^2 = 1 - D(y, y_pred) / D(y, y_mean)
@@ -171,41 +327,103 @@ def tweedie_d2_score(y_true: Iterable[float], y_pred: Iterable[float], power: fl
     baseline = np.full_like(yt, np.mean(yt), dtype=float)
     baseline = np.maximum(baseline, 1e-12)
 
-    dev_model = mean_tweedie_deviance(yt, yp, power=power)
-    dev_null = mean_tweedie_deviance(yt, baseline, power=power)
+    sw = None
+    if sample_weight is not None:
+        sw = _as_numpy(sample_weight)
+
+    dev_model = mean_tweedie_deviance(yt, yp, power=power, sample_weight=sw)
+    dev_null = mean_tweedie_deviance(yt, baseline, power=power, sample_weight=sw)
 
     if dev_null == 0:
         return float("nan")
     return float(1.0 - (dev_model / dev_null))
 
 
-def compute_global_bias(y_true: Iterable[float], y_pred: Iterable[float]) -> float:
+def compute_global_bias(
+    y_true: Iterable[float],
+    y_pred: Iterable[float],
+    *,
+    sample_weight: Optional[Iterable[float]] = None,
+) -> float:
     yt = _as_numpy(y_true)
     yp = _as_numpy(y_pred)
-    return float(np.mean(yp) - np.mean(yt))
+    if sample_weight is None:
+        return float(np.mean(yp) - np.mean(yt))
+    sw = _as_numpy(sample_weight)
+    return float(np.average(yp, weights=sw) - np.average(yt, weights=sw))
 
 
-def compute_top_decile_lift(y_true: Iterable[float], y_pred: Iterable[float]) -> float:
+def compute_top_decile_lift(
+    y_true: Iterable[float],
+    y_pred: Iterable[float],
+    *,
+    sample_weight: Optional[Iterable[float]] = None,
+) -> float:
     yt = _as_numpy(y_true)
     yp = _as_numpy(y_pred)
     if yt.size == 0:
         return float("nan")
-    overall_mean = float(np.mean(yt))
+    if sample_weight is None:
+        overall_mean = float(np.mean(yt))
+    else:
+        sw = _as_numpy(sample_weight)
+        overall_mean = float(np.average(yt, weights=sw))
     if overall_mean == 0:
         return float("nan")
     n_top = max(1, int(0.1 * yt.size))
     top_idx = np.argsort(yp)[-n_top:]
-    top_mean = float(np.mean(yt[top_idx]))
+    if sample_weight is None:
+        top_mean = float(np.mean(yt[top_idx]))
+    else:
+        sw = _as_numpy(sample_weight)
+        top_mean = float(np.average(yt[top_idx], weights=sw[top_idx]))
     return float(top_mean / overall_mean)
 
 
-def compute_conditional_mae(y_true: Iterable[float], y_pred: Iterable[float]) -> float:
+def compute_conditional_mae(
+    y_true: Iterable[float],
+    y_pred: Iterable[float],
+    *,
+    sample_weight: Optional[Iterable[float]] = None,
+) -> float:
     yt = _as_numpy(y_true)
     yp = _as_numpy(y_pred)
     mask = yt > 0
     if not np.any(mask):
         return float("nan")
-    return float(np.mean(np.abs(yt[mask] - yp[mask])))
+    abs_err = np.abs(yt[mask] - yp[mask])
+    if sample_weight is None:
+        return float(np.mean(abs_err))
+    sw = _as_numpy(sample_weight)
+    return float(np.average(abs_err, weights=sw[mask]))
+
+
+def prepare_xyw(df: pd.DataFrame, target: str) -> Tuple[pd.DataFrame, pd.Series, Optional[pd.Series], List[str]]:
+    """Prepare features, target, and optional sample weights.
+
+        For aggregated EPC modeling:
+            - Filter rows where Clicks <= 0 (EPC undefined)
+            - Target: EPC (existing column)
+            - sample_weight: Clicks
+    """
+
+    df_use = df
+    sample_weight: Optional[pd.Series] = None
+
+    if target == "epc":
+        if "Clicks" not in df.columns or "EPC" not in df.columns:
+            raise KeyError("EPC target requires 'Clicks' and 'EPC' columns")
+        mask = df["Clicks"] > 0
+        n_before = int(len(df))
+        n_after = int(mask.sum())
+        if n_after < n_before:
+            print(f"  [EPC] Filtered rows: {n_before} -> {n_after} (Clicks>0)")
+        df_use = df.loc[mask].copy()
+        sample_weight = df_use["Clicks"].astype(float)
+
+    X, feature_cols = get_features(df_use, target)
+    y = get_target(df_use, target)
+    return X, y, sample_weight, feature_cols
 
 
 def build_preprocessor(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], List[str]]:
@@ -260,6 +478,8 @@ def train_glm_tweedie(
     seed: int,
     out_dir: Path,
     cv_folds: int,
+    sample_weight_train: Optional[pd.Series] = None,
+    sample_weight_test: Optional[pd.Series] = None,
 ) -> Tuple[Pipeline, float, Dict[str, float]]:
     print("\n--- Tweedie GLM (scikit-learn) ---")
     power = get_tweedie_power(target)
@@ -288,31 +508,49 @@ def train_glm_tweedie(
 
     cv = KFold(n_splits=cv_folds, shuffle=True, random_state=seed)
 
-    # GridSearchCV maximizes score; use negative deviance as the scoring objective.
-    grid = GridSearchCV(
-        estimator=pipe,
-        param_grid=param_grid,
-        scoring=lambda est, X, y: -mean_tweedie_deviance(
-            _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
-        ),
-        cv=cv,
-        n_jobs=-1,
-        refit=True,
-    )
+    if sample_weight_train is None:
+        # GridSearchCV maximizes score; use negative deviance as the scoring objective.
+        grid = GridSearchCV(
+            estimator=pipe,
+            param_grid=param_grid,
+            scoring=lambda est, X, y: -mean_tweedie_deviance(
+                _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
+            ),
+            cv=cv,
+            n_jobs=-1,
+            refit=True,
+        )
 
-    grid.fit(X_train, y_train)
-    best: Pipeline = grid.best_estimator_
+        grid.fit(X_train, y_train)
+        best: Pipeline = grid.best_estimator_
+        best_params = grid.best_params_
+    else:
+        # Weight-aware CV selection (important for EPC where weights=Clicks)
+        best, best_params, best_cv_dev = _grid_search_cv_deviance(
+            base_estimator=pipe,
+            param_grid={k: list(v) for k, v in param_grid.items()},
+            X=X_train,
+            y=y_train,
+            cv=cv,
+            power=power,
+            sample_weight=sample_weight_train,
+            fit_weight_param="model__sample_weight",
+        )
+        print(f"  [GLM] Best CV deviance (weighted): {best_cv_dev:.6f}")
 
     y_pred_train = best.predict(X_train)
     y_pred_test = best.predict(X_test)
 
-    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power)
-    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power)
+    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power, sample_weight=sample_weight_train)
+    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power, sample_weight=sample_weight_test)
 
     print(f"  Tweedie variance power: {power}")
-    print(f"  Best alpha: {grid.best_params_['model__alpha']}")
+    print(f"  Best params: {best_params}")
     print(f"  Train Tweedie D^2 (higher is better): {d2_train:.4f}")
     print(f"  Test  Tweedie D^2 (higher is better): {d2_test:.4f}")
+
+    _print_diagnostics(label="GLM train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
+    _print_diagnostics(label="GLM test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
 
     # Save fitted pipeline
     model_path = out_dir / f"glm_{embedding_method}_{target}.joblib"
@@ -323,9 +561,9 @@ def train_glm_tweedie(
     export_glm_weights(best, numeric_cols, categorical_cols, embedding_method, target, out_dir)
 
     metrics = {
-        "global_bias": compute_global_bias(y_test, y_pred_test),
-        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test),
-        "conditional_mae": compute_conditional_mae(y_test, y_pred_test),
+        "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "conditional_mae": compute_conditional_mae(y_test, y_pred_test, sample_weight=sample_weight_test),
     }
 
     print(f"  [GLM] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [GLM] Global bias: nan")
@@ -422,6 +660,8 @@ def train_xgb_tweedie(
     seed: int,
     out_dir: Path,
     cv_folds: int,
+    sample_weight_train: Optional[pd.Series] = None,
+    sample_weight_test: Optional[pd.Series] = None,
 ) -> Tuple[Pipeline, float, Dict[str, float]]:
     if xgb is None:
         raise ImportError(
@@ -473,30 +713,47 @@ def train_xgb_tweedie(
 
     cv = KFold(n_splits=cv_folds, shuffle=True, random_state=seed)
 
-    grid = GridSearchCV(
-        estimator=pipe,
-        param_grid=param_grid,
-        scoring=lambda est, X, y: -mean_tweedie_deviance(
-            _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
-        ),
-        cv=cv,
-        n_jobs=1,
-        refit=True,
-    )
+    if sample_weight_train is None:
+        grid = GridSearchCV(
+            estimator=pipe,
+            param_grid=param_grid,
+            scoring=lambda est, X, y: -mean_tweedie_deviance(
+                _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
+            ),
+            cv=cv,
+            n_jobs=1,
+            refit=True,
+        )
 
-    grid.fit(X_train, y_train)
-    best: Pipeline = grid.best_estimator_
+        grid.fit(X_train, y_train)
+        best: Pipeline = grid.best_estimator_
+        best_params = grid.best_params_
+    else:
+        best, best_params, best_cv_dev = _grid_search_cv_deviance(
+            base_estimator=pipe,
+            param_grid={k: list(v) for k, v in param_grid.items()},
+            X=X_train,
+            y=y_train,
+            cv=cv,
+            power=power,
+            sample_weight=sample_weight_train,
+            fit_weight_param="model__sample_weight",
+        )
+        print(f"  [XGB] Best CV deviance (weighted): {best_cv_dev:.6f}")
 
     y_pred_train = best.predict(X_train)
     y_pred_test = best.predict(X_test)
 
-    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power)
-    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power)
+    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power, sample_weight=sample_weight_train)
+    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power, sample_weight=sample_weight_test)
 
     print(f"  Tweedie variance power: {power}")
-    print(f"  Best params: {grid.best_params_}")
+    print(f"  Best params: {best_params}")
     print(f"  Train Tweedie D^2 (higher is better): {d2_train:.4f}")
     print(f"  Test  Tweedie D^2 (higher is better): {d2_test:.4f}")
+
+    _print_diagnostics(label="XGB train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
+    _print_diagnostics(label="XGB test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
 
     # Save just the fitted booster in XGBoost's native format
     xgb_path = out_dir / f"xgb_tweedie_{embedding_method}_{target}.json"
@@ -504,9 +761,9 @@ def train_xgb_tweedie(
     print(f"  Saved model to {xgb_path}")
 
     metrics = {
-        "global_bias": compute_global_bias(y_test, y_pred_test),
-        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test),
-        "conditional_mae": compute_conditional_mae(y_test, y_pred_test),
+        "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "conditional_mae": compute_conditional_mae(y_test, y_pred_test, sample_weight=sample_weight_test),
     }
 
     print(f"  [XGB] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [XGB] Global bias: nan")
@@ -527,6 +784,8 @@ def train_rf_tweedie(
     seed: int,
     out_dir: Path,
     cv_folds: int,
+    sample_weight_train: Optional[pd.Series] = None,
+    sample_weight_test: Optional[pd.Series] = None,
 ) -> Tuple[Pipeline, float, Dict[str, float]]:
     """Train an XGBoost random-forest style model with Tweedie objective.
 
@@ -580,39 +839,56 @@ def train_rf_tweedie(
 
     cv = KFold(n_splits=cv_folds, shuffle=True, random_state=seed)
 
-    grid = GridSearchCV(
-        estimator=pipe,
-        param_grid=param_grid,
-        scoring=lambda est, X, y: -mean_tweedie_deviance(
-            _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
-        ),
-        cv=cv,
-        n_jobs=1,
-        refit=True,
-    )
+    if sample_weight_train is None:
+        grid = GridSearchCV(
+            estimator=pipe,
+            param_grid=param_grid,
+            scoring=lambda est, X, y: -mean_tweedie_deviance(
+                _as_numpy(y), np.maximum(_as_numpy(est.predict(X)), 1e-12), power=power
+            ),
+            cv=cv,
+            n_jobs=1,
+            refit=True,
+        )
 
-    grid.fit(X_train, y_train)
-    best: Pipeline = grid.best_estimator_
+        grid.fit(X_train, y_train)
+        best: Pipeline = grid.best_estimator_
+        best_params = grid.best_params_
+    else:
+        best, best_params, best_cv_dev = _grid_search_cv_deviance(
+            base_estimator=pipe,
+            param_grid={k: list(v) for k, v in param_grid.items()},
+            X=X_train,
+            y=y_train,
+            cv=cv,
+            power=power,
+            sample_weight=sample_weight_train,
+            fit_weight_param="model__sample_weight",
+        )
+        print(f"  [RF] Best CV deviance (weighted): {best_cv_dev:.6f}")
 
     y_pred_train = best.predict(X_train)
     y_pred_test = best.predict(X_test)
 
-    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power)
-    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power)
+    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power, sample_weight=sample_weight_train)
+    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power, sample_weight=sample_weight_test)
 
     print(f"  Tweedie variance power: {power}")
-    print(f"  Best params: {grid.best_params_}")
+    print(f"  Best params: {best_params}")
     print(f"  Train Tweedie D^2 (higher is better): {d2_train:.4f}")
     print(f"  Test  Tweedie D^2 (higher is better): {d2_test:.4f}")
+
+    _print_diagnostics(label="RF train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
+    _print_diagnostics(label="RF test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
 
     rf_path = out_dir / f"rf_tweedie_{embedding_method}_{target}.json"
     best.named_steps["model"].save_model(rf_path)
     print(f"  Saved model to {rf_path}")
 
     metrics = {
-        "global_bias": compute_global_bias(y_test, y_pred_test),
-        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test),
-        "conditional_mae": compute_conditional_mae(y_test, y_pred_test),
+        "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "conditional_mae": compute_conditional_mae(y_test, y_pred_test, sample_weight=sample_weight_test),
     }
 
     print(f"  [RF] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [RF] Global bias: nan")
@@ -676,10 +952,8 @@ def main() -> None:
 
     df_train, df_test = load_data(args.data_dir, args.embedding_method)
 
-    X_train, features = get_features(df_train, args.target)
-    X_test, _ = get_features(df_test, args.target)
-    y_train = get_target(df_train, args.target)
-    y_test = get_target(df_test, args.target)
+    X_train, y_train, w_train, features = prepare_xyw(df_train, args.target)
+    X_test, y_test, w_test, _ = prepare_xyw(df_test, args.target)
 
     _validate_non_negative_target(y_train, args.target)
     _validate_non_negative_target(y_test, args.target)
@@ -700,6 +974,8 @@ def main() -> None:
             seed=args.seed,
             out_dir=out_dir,
             cv_folds=args.cv_folds,
+            sample_weight_train=w_train,
+            sample_weight_test=w_test,
         )
         results["GLM"] = {"score": score, "metrics": metrics}
 
@@ -714,6 +990,8 @@ def main() -> None:
             seed=args.seed,
             out_dir=out_dir,
             cv_folds=args.cv_folds,
+            sample_weight_train=w_train,
+            sample_weight_test=w_test,
         )
         results["XGB"] = {"score": score, "metrics": metrics}
 
@@ -728,6 +1006,8 @@ def main() -> None:
             seed=args.seed,
             out_dir=out_dir,
             cv_folds=args.cv_folds,
+            sample_weight_train=w_train,
+            sample_weight_test=w_test,
         )
         results["RF"] = {"score": score, "metrics": metrics}
 
