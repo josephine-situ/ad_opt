@@ -33,6 +33,10 @@ ml = [
     "interpretableai>=2.11.2",
 ]
 
+ml_open = [
+    "xgboost>=2.0.0",
+]
+
 optimization = [
     "gurobipy>=10.0.1",
 ]

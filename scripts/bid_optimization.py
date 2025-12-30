@@ -21,6 +21,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -1256,15 +1257,15 @@ def main():
         '--alg-conv',
         type=str,
         default='lr',# 'ort',#
-        choices=['lr', 'ort', 'rf', 'xgb'],
-        help='Algorithm type for conversion model: lr (linear regression), ort (optimal tree), rf (random forest), xgb (xgboost) (default: lr)'
+        choices=['lr', 'glm', 'ort'],
+        help='Algorithm type for conversion model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--alg-clicks',
         type=str,
         default='ort', # 'lr', # 
-        choices=['lr', 'ort', 'rf', 'xgb'],
-        help='Algorithm type for clicks model: lr (linear regression), ort (optimal tree), rf (random forest), xgb (xgboost) (default: lr)'
+        choices=['lr', 'glm', 'ort'],
+        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--budget',
@@ -1296,6 +1297,7 @@ def main():
         default='models',
         help='Directory containing trained models (default: models)'
     )
+
     
     args = parser.parse_args()
     
@@ -1382,31 +1384,30 @@ def main():
         mapping_df.to_csv(mapping_file, index=False)
         print(f"Saved mapping to {mapping_file}")
 
-        # Load ORT models if requested for specific targets
+        # Embedded mode: supports linear weights (LR/GLM) and ORT (IAI)
         conv_model = None
         clicks_model = None
-        
+
         if args.alg_conv == 'ort':
             if iai is None:
-                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR (default).")
-            
+                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR/GLM weights.")
+
             conversion_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_conversion.json'
             if not conversion_model_path.exists():
                 raise FileNotFoundError(f"ORT conversion model not found: {conversion_model_path}")
             conv_model = iai.read_json(str(conversion_model_path))
             print(f"  Loaded ORT conversion model from {conversion_model_path}")
-        
+
         if args.alg_clicks == 'ort':
             if iai is None:
-                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR (default).")
-            
+                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR/GLM weights.")
+
             clicks_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_clicks.json'
             if not clicks_model_path.exists():
                 raise FileNotFoundError(f"ORT clicks model not found: {clicks_model_path}")
             clicks_model = iai.read_json(str(clicks_model_path))
             print(f"  Loaded ORT clicks model from {clicks_model_path}")
 
-        # Optimize using embedded ML constraints
         model, b, z, y, f_eff, g_eff = optimize_bids_embedded(
             X_ort=X_ort,
             X_lr=X_lr,
@@ -1416,18 +1417,16 @@ def main():
             conv_model=conv_model,
             clicks_model=clicks_model
         )
-        
-        # Extract solution
-        if model.status == 2 or model.status == 9:  # OPTIMAL or TIME_LIMIT
+
+        if model.status == 2 or model.status == 9:
             output_dir = Path('opt_results/bids')
             output_dir.mkdir(exist_ok=True, parents=True)
-            
+
             model_suffix = f"{args.alg_conv}_{args.alg_clicks}"
             output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
-            
+
             bids_df = extract_solution(model, b, z, y, f_eff, g_eff, keyword_df, kw_idx_list, region_list, match_list, X=X, weights_dict=weights_dict)
-            
-            # Save results
+
             bids_df.to_csv(output_file, index=False)
             print(f"\nResults saved to {output_file}")
             print(f"\nTop 10 bids:")

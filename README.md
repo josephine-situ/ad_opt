@@ -78,7 +78,7 @@ git clone https://github.com/josephine-situ/ad_opt.git
 cd ad_opt
 
 # Install all dependencies (core + optional)
-pip install -e ".[bert,ml,optimization]"
+pip install -e ".[bert,ml_open,optimization]"
 ```
 
 #### Option B: Using venv
@@ -98,7 +98,7 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # Install all dependencies
-pip install -e ".[bert,ml,optimization]"
+pip install -e ".[bert,ml_open,optimization]"
 ```
 
 **Dependency Installation Details:**
@@ -110,17 +110,18 @@ pip install -e .
 # Optional packages:
 pip install -e ".[bert]"           # BERT embeddings (sentence-transformers)
 pip install -e ".[ml]"             # IAI model training (requires license)
+pip install -e ".[ml_open]"        # Open-source model training (no license)
 pip install -e ".[optimization]"   # Gurobi optimization (requires license)
 
 # All optional packages (recommended for full pipeline)
-pip install -e ".[bert,ml,optimization]"
+pip install -e ".[bert,ml_open,optimization]"
 
 # Development tools
 pip install -e ".[dev]"            # pytest, black, pylint, mypy
 ```
 
 **Note on Commercial Licenses:**
-- **IAI (InterpretableAI):** Required for model training. Get license from https://www.interpretable.ai/
+- **IAI (InterpretableAI):** Optional (only needed for the legacy IAI-based training workflow). Get license from https://www.interpretable.ai/
 - **Gurobi:** Required for bid optimization. Get license from https://www.gurobi.com/
 
 The script will automatically detect if running on the Engaging cluster (SLURM) and configure IAI appropriately.
@@ -134,10 +135,10 @@ Once setup is complete, run the pipeline end-to-end:
 python scripts/tidy_get_data.py --embedding-method tfidf
 
 # 2. Train prediction models (conversion value)
-python scripts/prediction_modeling.py --target conversion --embedding-method tfidf
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf
 
 # 3. Train prediction models (clicks)
-python scripts/prediction_modeling.py --target clicks --embedding-method tfidf
+python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method tfidf
 
 # 4. Optimize bids
 python scripts/bid_optimization.py \
@@ -153,8 +154,8 @@ python scripts/bid_optimization.py \
 ```bash
 # Replace --embedding-method tfidf with --embedding-method bert
 python scripts/tidy_get_data.py --embedding-method bert
-python scripts/prediction_modeling.py --target conversion --embedding-method bert
-python scripts/prediction_modeling.py --target clicks --embedding-method bert
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method bert
+python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert
 python scripts/bid_optimization.py --embedding-method bert --budget 68096.51
 ```
 
@@ -206,16 +207,32 @@ Train models to predict conversion value or clicks:
 
 ```bash
 # Predict conversion value (with Clicks as a predictor)
-python scripts/prediction_modeling.py --target conversion
+python scripts/prediction_modeling_tweedie.py --target conversion
 
 # Predict clicks
-python scripts/prediction_modeling.py --target clicks
+python scripts/prediction_modeling_tweedie.py --target clicks
 
 # Train only specific models
-python scripts/prediction_modeling.py --target conversion --models lr ort
+python scripts/prediction_modeling_tweedie.py --target conversion --models glm
 
 # Use BERT embeddings
-python scripts/prediction_modeling.py --target conversion --embedding-method bert
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method bert
+
+To also train an open-source XGBoost Tweedie model for comparison:
+
+```bash
+pip install -e ".[ml_open]"
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm xgb
+```
+
+**Legacy (IAI-based) training script**
+
+If you have an IAI license and want to reproduce OCT / IAI RF / IAI XGB results:
+
+```bash
+pip install -e ".[ml]"
+python scripts/prediction_modeling.py --target conversion --embedding-method tfidf
+```
 ```
 
 Trains and compares:

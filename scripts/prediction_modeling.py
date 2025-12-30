@@ -177,7 +177,7 @@ def train_ort(X_train, y_train, X_test, y_test, target='conversion', embedding_m
     """Train Optimal Regression Tree."""
     print(f"\n--- Optimal Regression Tree ---")
     tweedie_power = get_tweedie_power(target)
-    
+
     grid_ort = iai.GridSearch(
         iai.OptimalTreeRegressor(
             random_seed=seed,
@@ -291,7 +291,7 @@ def main():
     parser.add_argument(
         '--target',
         type=str,
-        default='conversion',
+        default='clicks',
         choices=['conversion', 'epc', 'clicks'],
         help='Target variable: conversion (Conv. value), epc (EPC), or clicks (default: conversion)'
     )
@@ -312,7 +312,7 @@ def main():
         '--models',
         type=str,
         nargs='+',
-        default=['ort', 'rf', 'xgb'], # removed 'lr' as using tweedie loss
+        default=['rf', 'ort', 'xgb'], # removed 'lr' as using tweedie loss
         choices=['ort', 'rf', 'xgb'],
         help='Models to train (default: all)'
     )
@@ -346,6 +346,10 @@ def main():
         # Train models
         results = {}
         
+        if 'rf' in args.models:
+            _, score, metrics = train_random_forest(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
+            results['RF'] = {'score': score, 'metrics': metrics}
+        
         if 'lr' in args.models:
             _, score, metrics = train_linear_regression(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
             results['LR'] = {'score': score, 'metrics': metrics}
@@ -353,10 +357,6 @@ def main():
         if 'ort' in args.models:
             _, score, metrics = train_ort(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
             results['ORT'] = {'score': score, 'metrics': metrics}
-        
-        if 'rf' in args.models:
-            _, score, metrics = train_random_forest(X_train, y_train, X_test, y_test, args.target, args.embedding_method)
-            results['RF'] = {'score': score, 'metrics': metrics}
         
         if 'xgb' in args.models:
             _, score, metrics = train_xgboost(X_train, y_train, X_test, y_test, args.target, args.embedding_method)

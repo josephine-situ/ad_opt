@@ -106,3 +106,30 @@ df_bert = pd.read_csv('data/ad_opt_data_bert.csv')
 print(f"TF-IDF shape: {df_tfidf.shape}")
 print(f"BERT shape: {df_bert.shape}")
 ```
+
+---
+
+# Prediction Modeling (No IAI)
+
+To train Tweedie-loss models without requiring an InterpretableAI (IAI) license:
+
+```bash
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf
+python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method tfidf
+```
+
+This script exports linear-model weights to `models/weights_{embedding}_{target}_*.csv`, which are consumed by `scripts/bid_optimization.py`.
+
+Optional: XGBoost Tweedie comparison model
+
+```bash
+pip install -e ".[ml_open]"
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm xgb
+```
+
+Optional: Tweedie-loss "random forest" (XGBoost RF mode)
+
+```bash
+pip install -e ".[ml_open]"
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm rf
+```

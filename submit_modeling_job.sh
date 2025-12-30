@@ -24,18 +24,13 @@ module load miniforge
 echo "Activate environment..."
 conda activate adopt_env
 
-# --- CRITICAL OPTIMIZATION FOR IAI ---
-# This ensures Julia uses all 8 cores we requested above.
-export JULIA_NUM_THREADS=$SLURM_CPUS_PER_TASK
-echo "Running with JULIA_NUM_THREADS=$JULIA_NUM_THREADS"
+# Run the non-IAI Tweedie modeling script. -u prints output as it runs.
+echo "Running prediction_modeling_tweedie.py - clicks prediction"
+python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method tfidf
+python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert
 
-# Run the script (single job, no array). -u prints output as it runs.
-echo "Running prediction_modeling.py - clicks prediction"
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target clicks --embedding-method tfidf
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target clicks --embedding-method bert
-
-echo "Running prediction_modeling.py - conversion value per click prediction"
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target epc --embedding-method tfidf
-LD_LIBRARY_PATH=/orcd/software/community/001/pkg/julia/1.10.4/lib/julia/:"${LD_LIBRARY_PATH}" python -u scripts/prediction_modeling.py --target epc --embedding-method bert
+echo "Running prediction_modeling_tweedie.py - conversion value per click prediction"
+python -u scripts/prediction_modeling_tweedie.py --target epc --embedding-method tfidf
+python -u scripts/prediction_modeling_tweedie.py --target epc --embedding-method bert
 
 echo "End: $(date)"
