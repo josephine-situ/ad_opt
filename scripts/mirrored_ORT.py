@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import socket
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -254,8 +256,35 @@ def build_grid(
     ) from last_err
 
 
+def _print_run_header(args: argparse.Namespace) -> None:
+    print("=" * 70)
+    print("Mirrored ORT-H distillation")
+    print("=" * 70)
+    print(f"Host: {socket.gethostname()}")
+    print(f"PWD: {os.getcwd()}")
+    slurm_job_id = os.environ.get("SLURM_JOB_ID")
+    slurm_array_task_id = os.environ.get("SLURM_ARRAY_TASK_ID")
+    if slurm_job_id:
+        print(f"SLURM_JOB_ID: {slurm_job_id}")
+    if slurm_array_task_id:
+        print(f"SLURM_ARRAY_TASK_ID: {slurm_array_task_id}")
+    print(f"Target: {args.target}")
+    print(f"Embedding method: {args.embedding_method}")
+    print(f"XGB model: {args.xgb_model} (source={args.xgb_source})")
+    print("=" * 70)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train a mirrored ORT-H from a trained XGB model.")
+    parser.add_argument(
+        "--workdir",
+        type=str,
+        default=None,
+        help=(
+            "Optional working directory to chdir into before loading data/models. "
+            "Useful on clusters; if omitted, uses current working directory."
+        ),
+    )
     parser.add_argument(
         "--target",
         type=str,
@@ -333,6 +362,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    if args.workdir:
+        os.chdir(args.workdir)
+
+    _print_run_header(args)
+
     df_train, df_test = load_data(args.data_dir, args.embedding_method)
     X_train, _ = get_features(df_train, target=args.target)
     X_test, _ = get_features(df_test, target=args.target)
@@ -394,4 +428,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"\n✗ Error: {type(e).__name__}: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
