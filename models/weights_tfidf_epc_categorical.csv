@@ -1,0 +1,15 @@
+feature,level,weight
+Match type,Broad match,0.019494913393340307
+Match type,Exact match,-7.400138274369361e-07
+Match type,Phrase match,-0.019494486599729285
+Region,A,0.028607594009861643
+Region,B,0.023919563557997636
+Region,C,-0.12207740067777721
+Region,USA,0.0695499298897013
+day_of_week,Friday,-0.0034542077962924048
+day_of_week,Monday,-0.022620497278150877
+day_of_week,Saturday,-0.0029072340065225562
+day_of_week,Sunday,-0.020065656760009636
+day_of_week,Thursday,0.030230603237246967
+day_of_week,Tuesday,0.009163471281658061
+day_of_week,Wednesday,0.009653208101854067

@@ -25,9 +25,9 @@ echo "Activate environment..."
 conda activate adopt_env
 
 # Run the non-IAI Tweedie modeling script. -u prints output as it runs.
-echo "Running prediction_modeling_tweedie.py - clicks prediction"
-python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method tfidf
-python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert
+# echo "Running prediction_modeling_tweedie.py - clicks prediction"
+# python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method tfidf
+# python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert
 
 echo "Running prediction_modeling_tweedie.py - conversion value per click prediction"
 python -u scripts/prediction_modeling_tweedie.py --target epc --embedding-method tfidf

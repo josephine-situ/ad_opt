@@ -1,0 +1,430 @@
+========== Env & Dir ==========
+Host: node1612
+Start: Tue Dec 30 00:23:48 EST 2025
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running with JULIA_NUM_THREADS=8
+Running prediction_modeling.py - clicks prediction
+[IAI] Cluster mode: Using 8 Julia threads
+[IAI] Configured for Engaging cluster
+[IAI] Successfully imported interpretableai
+======================================================================
+Prediction Modeling for Ad Optimization
+======================================================================
+Target: clicks
+Models: ort, rf, xgb
+Embedding method: tfidf
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Target: clicks
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Optimal Regression Tree ---
+
+✗ Error: RuntimeError: <PyCall.jlwrap (in a Julia function called from Python)
+JULIA: TaskFailedException
+
+    nested task error: AssertionError: index_to_delete > 0
+    Stacktrace:
+     [1] trimworstsplit!(tree::IAITrees.Tree{IAIBase.RegressionTask, IAITrees.Node{IAIBase.RegressionTask, IAIBase.RegressionFit}}, threshold::Float64)
+       @ IAITrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/tree.jl:658
+     [2] trimcp!
+       @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/tree.jl:681 [inlined]
+     [3] run_worker_iteration!(rep::Int64, show_progress::Bool, ls::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, gs::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}, rng_gen::IAIBase.RandomStreams.MRG32k3aGen)
+       @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:102
+     [4] run_task(tid::Int64, f_run::Function, f_setup::Function, job_channel::Channel{Int64}, results_channel::Channel{Any}, progress::IAIBase.Progress, uses_subprogress::Bool, obj::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}})
+       @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:229
+     [5] (::IAIBase.var"#27#28"{Tuple{typeof(OptimalTrees.run_worker_iteration!), typeof(OptimalTrees.task_local_copy), Channel{Int64}, Channel{Any}, IAIBase.Progress, Bool, Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}}, Int64})()
+       @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:192
+
+...and 7 more exceptions.
+
+Stacktrace:
+  [1] sync_end(c::Channel{Any})
+    @ Base ./task.jl:448
+  [2] macro expansion
+    @ ./task.jl:480 [inlined]
+  [3] spawn_tasks(::Int64, ::Int64, ::Function, ::Vararg{Any})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:191
+  [4] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:156 [inlined]
+  [5] macro expansion
+    @ ./task.jl:479 [inlined]
+  [6] run_distributed!(f_consume::Function, obj::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, f_run::Function, f_setup::Function, jobs::Vector{Int64}, procs::Vector{Int64}, n_threads::Int64, progress::IAIBase.Progress, uses_subprogress::Bool, f_checkpoint::OptimalTrees.var"#121#125"{OptimalTrees.OptimalTreeRegressor, Int64})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:144
+  [7] run_distributed(show_progress::Bool, procs::Vector{Int64}, n_threads::Int64, jobs::Vector{Int64}, message::String; iter_func::Function, iter_input::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, iter_setup::Function, iter_uses_subprogress::Bool, consume_func::Function, checkpoint_func::Function)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:102
+  [8] run_distributed(::OptimalTrees.OptimalTreeRegressor, ::Vector{Int64}, ::Vararg{Any}; show_progress::Bool, kwargs::@Kwargs{iter_input::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, iter_setup::typeof(OptimalTrees.task_local_copy), iter_func::typeof(OptimalTrees.run_worker_iteration!), iter_uses_subprogress::Bool, consume_func::OptimalTrees.var"#120#124"{OptimalTrees.OptimalTreeRegressor}, checkpoint_func::OptimalTrees.var"#121#125"{OptimalTrees.OptimalTreeRegressor, Int64}})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:441
+  [9] run_distributed
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:436 [inlined]
+ [10] _fit!(lnr::OptimalTrees.OptimalTreeRegressor, ls::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, gs::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}, is_resuming::Bool)
+    @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:21
+ [11] _fit!(lnr::OptimalTrees.OptimalTreeRegressor; is_resuming::Bool)
+    @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:7
+ [12] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:2 [inlined]
+ [13] #301
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:244 [inlined]
+ [14] acquire_license(f::IAIBase.var"#301#302"{@Kwargs{}, OptimalTrees.OptimalTreeRegressor}; parallel_processes::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:269
+ [15] acquire_license(f::Function, lnr::OptimalTrees.OptimalTreeRegressor)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:589
+ [16] _fit!(lnr::OptimalTrees.OptimalTreeRegressor, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:243
+ [17] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:236 [inlined]
+ [18] grid_fit!(lnr::OptimalTrees.OptimalTreeRegressor, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}, fold::Tuple{Vector{Int64}, Vector{Int64}}, params::Dict{Symbol, Any}, validation_criterion::Symbol; is_resuming::Bool, kwargs::@Kwargs{})
+    @ IAITrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/gridsearch.jl:106
+ [19] grid_fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/gridsearch.jl:80 [inlined]
+ [20] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:727 [inlined]
+ [21] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/progress.jl:312 [inlined]
+ [22] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:697 [inlined]
+ [23] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/progress.jl:312 [inlined]
+ [24] _fit_inner!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}; validation_criterion::String, verbose::Bool, run_gc::Bool, is_resuming::Bool, kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:693
+ [25] _fit!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}; kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:655
+ [26] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:654 [inlined]
+ [27] #270
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:649 [inlined]
+ [28] acquire_license(f::IAIBase.var"#270#271"{IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}}; parallel_processes::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:269
+ [29] acquire_license(f::Function, lnr::OptimalTrees.OptimalTreeRegressor)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:589
+ [30] #acquire_license#243
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:309 [inlined]
+ [31] acquire_license
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:307 [inlined]
+ [32] _fit_common!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:648
+ [33] _fit_common!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:640 [inlined]
+ [34] _fit_cv!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; n_folds::Int64, kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:636
+ [35] _fit_cv!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:615 [inlined]
+ [36] #fit_cv!#344
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:154 [inlined]
+ [37] fit_cv_convert(::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Main /orcd/home/002/jositu/.local/lib/python3.12/site-packages/interpretableai/convert.jl:200
+ [38] invokelatest(::Any, ::Any, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Base ./essentials.jl:894
+ [39] _pyjlwrap_call(f::Function, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:32
+ [40] pyjlwrap_call(self_::Ptr{PyCall.PyObject_struct}, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:44>
+There is a more recent IAI release (v3.2.2) available.
+[IAI] Cluster mode: Using 8 Julia threads
+[IAI] Configured for Engaging cluster
+[IAI] Successfully imported interpretableai
+======================================================================
+Prediction Modeling for Ad Optimization
+======================================================================
+Target: clicks
+Models: ort, rf, xgb
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Target: clicks
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Optimal Regression Tree ---
+
+✗ Error: RuntimeError: <PyCall.jlwrap (in a Julia function called from Python)
+JULIA: TaskFailedException
+
+    nested task error: AssertionError: index_to_delete > 0
+    Stacktrace:
+     [1] trimworstsplit!(tree::IAITrees.Tree{IAIBase.RegressionTask, IAITrees.Node{IAIBase.RegressionTask, IAIBase.RegressionFit}}, threshold::Float64)
+       @ IAITrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/tree.jl:658
+     [2] trimcp!
+       @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/tree.jl:681 [inlined]
+     [3] run_worker_iteration!(rep::Int64, show_progress::Bool, ls::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, gs::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}, rng_gen::IAIBase.RandomStreams.MRG32k3aGen)
+       @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:102
+     [4] run_task(tid::Int64, f_run::Function, f_setup::Function, job_channel::Channel{Int64}, results_channel::Channel{Any}, progress::IAIBase.Progress, uses_subprogress::Bool, obj::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}})
+       @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:229
+     [5] (::IAIBase.var"#27#28"{Tuple{typeof(OptimalTrees.run_worker_iteration!), typeof(OptimalTrees.task_local_copy), Channel{Int64}, Channel{Any}, IAIBase.Progress, Bool, Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}}, Int64})()
+       @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:192
+
+...and 7 more exceptions.
+
+Stacktrace:
+  [1] sync_end(c::Channel{Any})
+    @ Base ./task.jl:448
+  [2] macro expansion
+    @ ./task.jl:480 [inlined]
+  [3] spawn_tasks(::Int64, ::Int64, ::Function, ::Vararg{Any})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:191
+  [4] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:156 [inlined]
+  [5] macro expansion
+    @ ./task.jl:479 [inlined]
+  [6] run_distributed!(f_consume::Function, obj::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, f_run::Function, f_setup::Function, jobs::Vector{Int64}, procs::Vector{Int64}, n_threads::Int64, progress::IAIBase.Progress, uses_subprogress::Bool, f_checkpoint::OptimalTrees.var"#121#125"{OptimalTrees.OptimalTreeRegressor, Int64})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:144
+  [7] run_distributed(show_progress::Bool, procs::Vector{Int64}, n_threads::Int64, jobs::Vector{Int64}, message::String; iter_func::Function, iter_input::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, iter_setup::Function, iter_uses_subprogress::Bool, consume_func::Function, checkpoint_func::Function)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/distributed.jl:102
+  [8] run_distributed(::OptimalTrees.OptimalTreeRegressor, ::Vector{Int64}, ::Vararg{Any}; show_progress::Bool, kwargs::@Kwargs{iter_input::Tuple{OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}}, iter_setup::typeof(OptimalTrees.task_local_copy), iter_func::typeof(OptimalTrees.run_worker_iteration!), iter_uses_subprogress::Bool, consume_func::OptimalTrees.var"#120#124"{OptimalTrees.OptimalTreeRegressor}, checkpoint_func::OptimalTrees.var"#121#125"{OptimalTrees.OptimalTreeRegressor, Int64}})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:441
+  [9] run_distributed
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:436 [inlined]
+ [10] _fit!(lnr::OptimalTrees.OptimalTreeRegressor, ls::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorTweedieConstant, IAIBase.RegressionTarget}, gs::OptimalTrees.LocalSearcher{IAIBase.RegressionTask, OptimalTrees.RegressionEvaluatorMSEConstant, IAIBase.RegressionTarget}, is_resuming::Bool)
+    @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:21
+ [11] _fit!(lnr::OptimalTrees.OptimalTreeRegressor; is_resuming::Bool)
+    @ OptimalTrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:7
+ [12] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/OptimalTrees/Z6MCs/src/localsearch/distributed.jl:2 [inlined]
+ [13] #301
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:244 [inlined]
+ [14] acquire_license(f::IAIBase.var"#301#302"{@Kwargs{}, OptimalTrees.OptimalTreeRegressor}; parallel_processes::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:269
+ [15] acquire_license(f::Function, lnr::OptimalTrees.OptimalTreeRegressor)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:589
+ [16] _fit!(lnr::OptimalTrees.OptimalTreeRegressor, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:243
+ [17] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:236 [inlined]
+ [18] grid_fit!(lnr::OptimalTrees.OptimalTreeRegressor, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}, fold::Tuple{Vector{Int64}, Vector{Int64}}, params::Dict{Symbol, Any}, validation_criterion::Symbol; is_resuming::Bool, kwargs::@Kwargs{})
+    @ IAITrees /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/gridsearch.jl:106
+ [19] grid_fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAITrees/tIX1f/src/gridsearch.jl:80 [inlined]
+ [20] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:727 [inlined]
+ [21] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/progress.jl:312 [inlined]
+ [22] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:697 [inlined]
+ [23] macro expansion
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/utils/progress.jl:312 [inlined]
+ [24] _fit_inner!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}; validation_criterion::String, verbose::Bool, run_gc::Bool, is_resuming::Bool, kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:693
+ [25] _fit!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}; kwargs::@Kwargs{})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:655
+ [26] _fit!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:654 [inlined]
+ [27] #270
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:649 [inlined]
+ [28] acquire_license(f::IAIBase.var"#270#271"{IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}}; parallel_processes::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:269
+ [29] acquire_license(f::Function, lnr::OptimalTrees.OptimalTreeRegressor)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:589
+ [30] #acquire_license#243
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:309 [inlined]
+ [31] acquire_license
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:307 [inlined]
+ [32] _fit_common!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:648
+ [33] _fit_common!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:640 [inlined]
+ [34] _fit_cv!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; n_folds::Int64, kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:636
+ [35] _fit_cv!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:615 [inlined]
+ [36] #fit_cv!#344
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:154 [inlined]
+ [37] fit_cv_convert(::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Main /orcd/home/002/jositu/.local/lib/python3.12/site-packages/interpretableai/convert.jl:200
+ [38] invokelatest(::Any, ::Any, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Base ./essentials.jl:894
+ [39] _pyjlwrap_call(f::Function, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:32
+ [40] pyjlwrap_call(self_::Ptr{PyCall.PyObject_struct}, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:44>
+There is a more recent IAI release (v3.2.2) available.
+Running prediction_modeling.py - conversion value per click prediction
+[IAI] Cluster mode: Using 8 Julia threads
+[IAI] Configured for Engaging cluster
+[IAI] Successfully imported interpretableai
+======================================================================
+Prediction Modeling for Ad Optimization
+======================================================================
+Target: epc
+Models: ort, rf, xgb
+Embedding method: tfidf
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Target: epc
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Optimal Regression Tree ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.1097
+  Test Tweedie score (0-1, higher is better):  0.0390
+Model saved to models/ort_tfidf_epc.json
+  [ORT] Global bias: -32.6354
+  [ORT] Top decile lift: 3.3870
+  [ORT] Conditional MAE: 1648.4692
+
+--- Random Forest ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.2546
+  Test Tweedie score (0-1, higher is better):  0.0859
+Model saved to models/rf_tfidf_epc.json
+  [RF] Global bias: -32.6537
+  [RF] Top decile lift: 4.1434
+  [RF] Conditional MAE: 1648.5283
+
+--- XGBoost ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.8298
+  Test Tweedie score (0-1, higher is better):  -0.4552
+Model saved to models/xgb_tfidf_epc.json
+  [XGB] Global bias: -20.8180
+  [XGB] Top decile lift: 3.2730
+  [XGB] Conditional MAE: 1606.0360
+
+======================================================================
+Model Performance Summary (Test Tweedie Score)
+======================================================================
+  RF    : 0.0859 | bias=-32.6537 | top-decile lift=4.1434 | cMAE=1648.5283
+  ORT   : 0.0390 | bias=-32.6354 | top-decile lift=3.3870 | cMAE=1648.4692
+  XGB   : -0.4552 | bias=-20.8180 | top-decile lift=3.2730 | cMAE=1606.0360
+
+Best model: RF
+======================================================================
+There is a more recent IAI release (v3.2.2) available.
+fold 1; train: 0.202; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>2
+fold 1; train: 0.1799; valid: 0.01422; cp=>0.08034 minbucket=>0.05 max_depth=>2
+fold 1; train: 0.165; valid: 0.008124; cp=>0.0612 minbucket=>0.1 max_depth=>2
+fold 1; train: 0.357; valid: 0.001711; cp=>0.0497 minbucket=>0.02 max_depth=>4
+fold 1; train: 0.297; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>4
+fold 1; train: 0.2443; valid: 0.02899; cp=>0.04204 minbucket=>0.1 max_depth=>4
+fold 1; train: 0.4383; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>6
+fold 1; train: 0.3489; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>6
+fold 1; train: 0.2532; valid: 0.01967; cp=>0.03879 minbucket=>0.1 max_depth=>6
+fold 1; train: 0.4634; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>8
+fold 1; train: 0.3463; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>8
+fold 1; train: 0.2532; valid: 0.01835; cp=>0.04562 minbucket=>0.1 max_depth=>8
+fold 2; train: 0.1946; valid: 0; cp=>0.5531 minbucket=>0.02 max_depth=>2
+fold 2; train: 0.1935; valid: 0.05873; cp=>0.07569 minbucket=>0.05 max_depth=>2
+fold 2; train: 0.1867; valid: 0; cp=>0.5531 minbucket=>0.1 max_depth=>2
+fold 2; train: 0.4048; valid: 0; cp=>0.5531 minbucket=>0.02 max_depth=>4
+fold 2; train: 0.3531; valid: 0; cp=>0.5513 minbucket=>0.05 max_depth=>4
+fold 2; train: 0.2682; valid: 0; cp=>0.5531 minbucket=>0.1 max_depth=>4
+fold 2; train: 0.4701; valid: 0.02378; cp=>0.106 minbucket=>0.02 max_depth=>6
+fold 2; train: 0.3652; valid: 0.02293; cp=>0.104 minbucket=>0.05 max_depth=>6
+fold 2; train: 0.2658; valid: 0; cp=>0.552 minbucket=>0.1 max_depth=>6
+fold 2; train: 0.5152; valid: 0.04757; cp=>0.106 minbucket=>0.02 max_depth=>8
+fold 2; train: 0.3737; valid: 0.02353; cp=>0.104 minbucket=>0.05 max_depth=>8
+fold 2; train: 0.2658; valid: 0; cp=>0.5495 minbucket=>0.1 max_depth=>8
+fold 3; train: 0.1792; valid: 0.04529; cp=>0.07648 minbucket=>0.02 max_depth=>2
+fold 3; train: 0.1777; valid: 0; cp=>0.5352 minbucket=>0.05 max_depth=>2
+fold 3; train: 0.1742; valid: 0.04272; cp=>0.05715 minbucket=>0.1 max_depth=>2
+fold 3; train: 0.3892; valid: 0.009013; cp=>0.07621 minbucket=>0.02 max_depth=>4
+fold 3; train: 0.3371; valid: 0.04985; cp=>0.0467 minbucket=>0.05 max_depth=>4
+fold 3; train: 0.2551; valid: 0.00737; cp=>0.06245 minbucket=>0.1 max_depth=>4
+fold 3; train: 0.4779; valid: 0.03392; cp=>0.04561 minbucket=>0.02 max_depth=>6
+fold 3; train: 0.3526; valid: 0.03776; cp=>0.07845 minbucket=>0.05 max_depth=>6
+fold 3; train: 0.2625; valid: 0.07398; cp=>0.04105 minbucket=>0.1 max_depth=>6
+fold 3; train: 0.4722; valid: 0.01014; cp=>0.04198 minbucket=>0.02 max_depth=>8
+fold 3; train: 0.3526; valid: 0.1056; cp=>0.05279 minbucket=>0.05 max_depth=>8
+fold 3; train: 0.2625; valid: 0.0925; cp=>0.04105 minbucket=>0.1 max_depth=>8
+[IAI] Cluster mode: Using 8 Julia threads
+[IAI] Configured for Engaging cluster
+[IAI] Successfully imported interpretableai
+======================================================================
+Prediction Modeling for Ad Optimization
+======================================================================
+Target: epc
+Models: ort, rf, xgb
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Target: epc
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Optimal Regression Tree ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.0890
+  Test Tweedie score (0-1, higher is better):  0.0271
+Model saved to models/ort_bert_epc.json
+  [ORT] Global bias: -32.6401
+  [ORT] Top decile lift: 3.9951
+  [ORT] Conditional MAE: 1648.6735
+
+--- Random Forest ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.3784
+  Test Tweedie score (0-1, higher is better):  0.0276
+Model saved to models/rf_bert_epc.json
+  [RF] Global bias: -32.6713
+  [RF] Top decile lift: 5.1780
+  [RF] Conditional MAE: 1648.3507
+
+--- XGBoost ---
+  Tweedie variance power: 1.5
+  Train Tweedie score (0-1, higher is better): 0.8327
+  Test Tweedie score (0-1, higher is better):  -2.6434
+Model saved to models/xgb_bert_epc.json
+  [XGB] Global bias: -21.2026
+  [XGB] Top decile lift: 3.6666
+  [XGB] Conditional MAE: 1615.3698
+
+======================================================================
+Model Performance Summary (Test Tweedie Score)
+======================================================================
+  RF    : 0.0276 | bias=-32.6713 | top-decile lift=5.1780 | cMAE=1648.3507
+  ORT   : 0.0271 | bias=-32.6401 | top-decile lift=3.9951 | cMAE=1648.6735
+  XGB   : -2.6434 | bias=-21.2026 | top-decile lift=3.6666 | cMAE=1615.3698
+
+Best model: RF
+======================================================================
+There is a more recent IAI release (v3.2.2) available.
+fold 1; train: 0.202; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>2
+fold 1; train: 0.1898; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>2
+fold 1; train: 0.1601; valid: 0.05417; cp=>0.05538 minbucket=>0.1 max_depth=>2
+fold 1; train: 0.3352; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>4
+fold 1; train: 0.3263; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>4
+fold 1; train: 0.2332; valid: 0; cp=>0.5484 minbucket=>0.1 max_depth=>4
+fold 1; train: 0.4497; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>6
+fold 1; train: 0.3533; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>6
+fold 1; train: 0.2374; valid: 0.002052; cp=>0.07107 minbucket=>0.1 max_depth=>6
+fold 1; train: 0.4522; valid: 0; cp=>0.5648 minbucket=>0.02 max_depth=>8
+fold 1; train: 0.3569; valid: 0; cp=>0.5648 minbucket=>0.05 max_depth=>8
+fold 1; train: 0.2374; valid: 0.001862; cp=>0.07107 minbucket=>0.1 max_depth=>8
+fold 2; train: 0.1873; valid: 0; cp=>0.5333 minbucket=>0.02 max_depth=>2
+fold 2; train: 0.1783; valid: 0.06959; cp=>0.06024 minbucket=>0.05 max_depth=>2
+fold 2; train: 0.1676; valid: 0; cp=>0.5391 minbucket=>0.1 max_depth=>2
+fold 2; train: 0.3936; valid: 0; cp=>0.5351 minbucket=>0.02 max_depth=>4
+fold 2; train: 0.3452; valid: 0; cp=>0.5338 minbucket=>0.05 max_depth=>4
+fold 2; train: 0.2713; valid: 0; cp=>0.5338 minbucket=>0.1 max_depth=>4
+fold 2; train: 0.4825; valid: 0.01189; cp=>0.08919 minbucket=>0.02 max_depth=>6
+fold 2; train: 0.3438; valid: 0.0344; cp=>0.08462 minbucket=>0.05 max_depth=>6
+fold 2; train: 0.2713; valid: 0.01262; cp=>0.059 minbucket=>0.1 max_depth=>6
+fold 2; train: 0.4855; valid: 0.04757; cp=>0.08787 minbucket=>0.02 max_depth=>8
+fold 2; train: 0.3508; valid: 0.0344; cp=>0.08634 minbucket=>0.05 max_depth=>8
+fold 2; train: 0.2713; valid: 0.01262; cp=>0.059 minbucket=>0.1 max_depth=>8
+fold 3; train: 0.1786; valid: 0.04286; cp=>0.06252 minbucket=>0.02 max_depth=>2
+fold 3; train: 0.1727; valid: 0; cp=>0.5352 minbucket=>0.05 max_depth=>2
+fold 3; train: 0.1599; valid: 0.01188; cp=>0.06133 minbucket=>0.1 max_depth=>2
+fold 3; train: 0.3756; valid: 0.00779; cp=>0.05122 minbucket=>0.02 max_depth=>4
+fold 3; train: 0.3199; valid: 0.03584; cp=>0.05032 minbucket=>0.05 max_depth=>4
+fold 3; train: 0.2504; valid: 0.01506; cp=>0.05817 minbucket=>0.1 max_depth=>4
+fold 3; train: 0.4639; valid: 0.01034; cp=>0.04569 minbucket=>0.02 max_depth=>6
+fold 3; train: 0.3561; valid: 0.04161; cp=>0.05416 minbucket=>0.05 max_depth=>6
+fold 3; train: 0.2512; valid: 0.06463; cp=>0.04447 minbucket=>0.1 max_depth=>6
+fold 3; train: 0.4808; valid: 0; cp=>0.5488 minbucket=>0.02 max_depth=>8
+fold 3; train: 0.3716; valid: 0.05545; cp=>0.07845 minbucket=>0.05 max_depth=>8
+fold 3; train: 0.2504; valid: 0.06197; cp=>0.04446 minbucket=>0.1 max_depth=>8
+End: Tue Dec 30 00:32:51 EST 2025

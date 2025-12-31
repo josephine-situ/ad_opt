@@ -1,0 +1,223 @@
+========== Env & Dir ==========
+Host: node1603
+Start: Tue Dec 30 03:26:48 EST 2025
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running prediction_modeling_tweedie.py - clicks prediction
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: clicks
+Models: glm, xgb, rf
+Embedding method: tfidf
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  Tweedie variance power: 1.0
+  Best alpha: 0.0
+  Train Tweedie D^2 (higher is better): 0.5821
+  Test  Tweedie D^2 (higher is better): 0.6020
+  Saved pipeline to models/glm_tfidf_clicks.joblib
+  Exported weights: weights_tfidf_clicks_numeric.csv, weights_tfidf_clicks_constant.csv, weights_tfidf_clicks_categorical.csv
+  [GLM] Global bias: -0.1680
+  [GLM] Top decile lift: 4.4382
+  [GLM] Conditional MAE: 3.1722
+
+--- XGBoost (Tweedie) ---
+  Tweedie variance power: 1.0
+  Best params: {'model__colsample_bytree': 0.7, 'model__learning_rate': 0.03, 'model__max_depth': 7, 'model__n_estimators': 300, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.9324
+  Test  Tweedie D^2 (higher is better): 0.8522
+  Saved model to models/xgb_tweedie_tfidf_clicks.json
+  [XGB] Global bias: 0.0592
+  [XGB] Top decile lift: 5.3106
+  [XGB] Conditional MAE: 1.9108
+
+--- XGBoost RF (Tweedie) ---
+  Tweedie variance power: 1.0
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 7, 'model__n_estimators': 600, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.0589
+  Test  Tweedie D^2 (higher is better): 0.0615
+  Saved model to models/rf_tweedie_tfidf_clicks.json
+  [RF] Global bias: -0.3083
+  [RF] Top decile lift: 5.0106
+  [RF] Conditional MAE: 4.2766
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  XGB   : 0.8522 | bias=0.0592 | top-decile lift=5.3106 | cMAE=1.9108
+  GLM   : 0.6020 | bias=-0.1680 | top-decile lift=4.4382 | cMAE=3.1722
+  RF    : 0.0615 | bias=-0.3083 | top-decile lift=5.0106 | cMAE=4.2766
+
+Best model: XGB
+======================================================================
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: clicks
+Models: glm, xgb, rf
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  Tweedie variance power: 1.0
+  Best alpha: 0.01
+  Train Tweedie D^2 (higher is better): 0.5720
+  Test  Tweedie D^2 (higher is better): 0.5910
+  Saved pipeline to models/glm_bert_clicks.joblib
+  Exported weights: weights_bert_clicks_numeric.csv, weights_bert_clicks_constant.csv, weights_bert_clicks_categorical.csv
+  [GLM] Global bias: -0.1464
+  [GLM] Top decile lift: 4.5122
+  [GLM] Conditional MAE: 3.2021
+
+--- XGBoost (Tweedie) ---
+  Tweedie variance power: 1.0
+  Best params: {'model__colsample_bytree': 0.7, 'model__learning_rate': 0.03, 'model__max_depth': 7, 'model__n_estimators': 300, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.9322
+  Test  Tweedie D^2 (higher is better): 0.8553
+  Saved model to models/xgb_tweedie_bert_clicks.json
+  [XGB] Global bias: 0.0864
+  [XGB] Top decile lift: 5.3218
+  [XGB] Conditional MAE: 1.8893
+
+--- XGBoost RF (Tweedie) ---
+  Tweedie variance power: 1.0
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 7, 'model__n_estimators': 300, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.0589
+  Test  Tweedie D^2 (higher is better): 0.0622
+  Saved model to models/rf_tweedie_bert_clicks.json
+  [RF] Global bias: -0.3084
+  [RF] Top decile lift: 5.0504
+  [RF] Conditional MAE: 4.2754
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  XGB   : 0.8553 | bias=0.0864 | top-decile lift=5.3218 | cMAE=1.8893
+  GLM   : 0.5910 | bias=-0.1464 | top-decile lift=4.5122 | cMAE=3.2021
+  RF    : 0.0622 | bias=-0.3084 | top-decile lift=5.0504 | cMAE=4.2754
+
+Best model: XGB
+======================================================================
+Running prediction_modeling_tweedie.py - conversion value per click prediction
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf
+Embedding method: tfidf
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  Tweedie variance power: 1.5
+  Best alpha: 5.0
+  Train Tweedie D^2 (higher is better): 0.2303
+  Test  Tweedie D^2 (higher is better): 0.0312
+  Saved pipeline to models/glm_tfidf_epc.joblib
+  Exported weights: weights_tfidf_epc_numeric.csv, weights_tfidf_epc_constant.csv, weights_tfidf_epc_categorical.csv
+  [GLM] Global bias: -16.3845
+  [GLM] Top decile lift: 4.2895
+  [GLM] Conditional MAE: 1615.8494
+
+--- XGBoost (Tweedie) ---
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bytree': 0.9, 'model__learning_rate': 0.03, 'model__max_depth': 3, 'model__n_estimators': 300, 'model__subsample': 0.7}
+  Train Tweedie D^2 (higher is better): 0.5985
+  Test  Tweedie D^2 (higher is better): -1.5211
+  Saved model to models/xgb_tweedie_tfidf_epc.json
+  [XGB] Global bias: -22.9062
+  [XGB] Top decile lift: 3.5180
+  [XGB] Conditional MAE: 1606.9392
+
+--- XGBoost RF (Tweedie) ---
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bynode': 0.7, 'model__max_depth': 7, 'model__n_estimators': 300, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.0068
+  Test  Tweedie D^2 (higher is better): -0.0158
+  Saved model to models/rf_tweedie_tfidf_epc.json
+  [RF] Global bias: -9.9298
+  [RF] Top decile lift: 3.1639
+  [RF] Conditional MAE: 1631.6915
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  GLM   : 0.0312 | bias=-16.3845 | top-decile lift=4.2895 | cMAE=1615.8494
+  RF    : -0.0158 | bias=-9.9298 | top-decile lift=3.1639 | cMAE=1631.6915
+  XGB   : -1.5211 | bias=-22.9062 | top-decile lift=3.5180 | cMAE=1606.9392
+
+Best model: GLM
+======================================================================
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  Tweedie variance power: 1.5
+  Best alpha: 2.0
+  Train Tweedie D^2 (higher is better): 0.2590
+  Test  Tweedie D^2 (higher is better): -0.0187
+  Saved pipeline to models/glm_bert_epc.joblib
+  Exported weights: weights_bert_epc_numeric.csv, weights_bert_epc_constant.csv, weights_bert_epc_categorical.csv
+  [GLM] Global bias: -15.6702
+  [GLM] Top decile lift: 4.2062
+  [GLM] Conditional MAE: 1599.0024
+
+--- XGBoost (Tweedie) ---
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bytree': 0.7, 'model__learning_rate': 0.03, 'model__max_depth': 3, 'model__n_estimators': 300, 'model__subsample': 0.7}
+  Train Tweedie D^2 (higher is better): 0.5922
+  Test  Tweedie D^2 (higher is better): -1.5959
+  Saved model to models/xgb_tweedie_bert_epc.json
+  [XGB] Global bias: -22.3564
+  [XGB] Top decile lift: 3.4558
+  [XGB] Conditional MAE: 1614.5523
+
+--- XGBoost RF (Tweedie) ---
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bynode': 0.7, 'model__max_depth': 7, 'model__n_estimators': 600, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.0068
+  Test  Tweedie D^2 (higher is better): -0.0160
+  Saved model to models/rf_tweedie_bert_epc.json
+  [RF] Global bias: -9.9274
+  [RF] Top decile lift: 1.4382
+  [RF] Conditional MAE: 1631.6935
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  RF    : -0.0160 | bias=-9.9274 | top-decile lift=1.4382 | cMAE=1631.6935
+  GLM   : -0.0187 | bias=-15.6702 | top-decile lift=4.2062 | cMAE=1599.0024
+  XGB   : -1.5959 | bias=-22.3564 | top-decile lift=3.4558 | cMAE=1614.5523
+
+Best model: RF
+======================================================================
+End: Tue Dec 30 03:55:11 EST 2025

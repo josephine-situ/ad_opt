@@ -1,0 +1,158 @@
+========== Env & Dir ==========
+Host: node1625
+Start: Tue Dec 30 21:53:54 EST 2025
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running prediction_modeling_tweedie.py - conversion value per click prediction
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf
+Embedding method: tfidf
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  [GLM] Best CV deviance (weighted): 26.102403
+  Tweedie variance power: 1.5
+  Best params: {'model__alpha': 5.0}
+  Train Tweedie D^2 (higher is better): 0.1741
+  Test  Tweedie D^2 (higher is better): 0.1880
+  [GLM train] mean(y)=24.0246 mean(pred)=17.1926 bias=-6.8320 | wmean(y)=21.2320 wmean(pred)=18.5165 wbias=-2.7155
+  [GLM train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [GLM train] quantiles pred: min=4.082 p1=5.656 med=13.56 p99=77.77 max=1454
+  [GLM test] mean(y)=33.6378 mean(pred)=16.6942 bias=-16.9436 | wmean(y)=17.5387 wmean(pred)=16.2860 wbias=-1.2527
+  [GLM test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [GLM test] quantiles pred: min=4.193 p1=5.657 med=13.62 p99=71.48 max=170.1
+  Saved pipeline to models/glm_tfidf_epc.joblib
+  Exported weights: weights_tfidf_epc_numeric.csv, weights_tfidf_epc_constant.csv, weights_tfidf_epc_categorical.csv
+  [GLM] Global bias: -1.2527
+  [GLM] Top decile lift: 4.8544
+  [GLM] Conditional MAE: 210.5858
+
+--- XGBoost (Tweedie) ---
+  [XGB] Best CV deviance (weighted): 38.913867
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bytree': 0.7, 'model__learning_rate': 0.03, 'model__max_depth': 3, 'model__n_estimators': 300, 'model__subsample': 0.7}
+  Train Tweedie D^2 (higher is better): 0.5057
+  Test  Tweedie D^2 (higher is better): 0.0975
+  [XGB train] mean(y)=24.0246 mean(pred)=12.7946 bias=-11.2300 | wmean(y)=21.2320 wmean(pred)=14.5287 wbias=-6.7034
+  [XGB train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [XGB train] quantiles pred: min=0.004053 p1=0.02967 med=3.223 p99=148.4 max=1146
+  [XGB test] mean(y)=33.6378 mean(pred)=11.5537 bias=-22.0841 | wmean(y)=17.5387 wmean(pred)=11.8352 wbias=-5.7035
+  [XGB test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [XGB test] quantiles pred: min=0.006529 p1=0.03154 med=3.209 p99=128.8 max=852.4
+  Saved model to models/xgb_tweedie_tfidf_epc.json
+  [XGB] Global bias: -5.7035
+  [XGB] Top decile lift: 4.3809
+  [XGB] Conditional MAE: 205.7639
+
+--- XGBoost RF (Tweedie) ---
+  [RF] Best CV deviance (weighted): 29.278253
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 5, 'model__n_estimators': 300, 'model__subsample': 0.7}
+  Train Tweedie D^2 (higher is better): 0.0078
+  Test  Tweedie D^2 (higher is better): 0.0580
+  [RF train] mean(y)=24.0246 mean(pred)=21.0291 bias=-2.9955 | wmean(y)=21.2320 wmean(pred)=21.0260 wbias=-0.2060
+  [RF train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [RF train] quantiles pred: min=20.81 p1=20.82 med=20.98 p99=21.5 max=21.55
+  [RF test] mean(y)=33.6378 mean(pred)=21.0282 bias=-12.6096 | wmean(y)=17.5387 wmean(pred)=21.0025 wbias=3.4637
+  [RF test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [RF test] quantiles pred: min=20.81 p1=20.82 med=20.98 p99=21.49 max=21.55
+  Saved model to models/rf_tweedie_tfidf_epc.json
+  [RF] Global bias: 3.4637
+  [RF] Top decile lift: 3.9257
+  [RF] Conditional MAE: 221.3327
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  GLM   : 0.1880 | bias=-1.2527 | top-decile lift=4.8544 | cMAE=210.5858
+  XGB   : 0.0975 | bias=-5.7035 | top-decile lift=4.3809 | cMAE=205.7639
+  RF    : 0.0580 | bias=3.4637 | top-decile lift=3.9257 | cMAE=221.3327
+
+Best model: GLM
+======================================================================
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Tweedie GLM (scikit-learn) ---
+  [GLM] Best CV deviance (weighted): 25.971207
+  Tweedie variance power: 1.5
+  Best params: {'model__alpha': 2.0}
+  Train Tweedie D^2 (higher is better): 0.2029
+  Test  Tweedie D^2 (higher is better): 0.2066
+  [GLM train] mean(y)=24.0246 mean(pred)=19.5150 bias=-4.5096 | wmean(y)=21.2320 wmean(pred)=18.9281 wbias=-2.3039
+  [GLM train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [GLM train] quantiles pred: min=1.794 p1=2.895 med=12.65 p99=102.9 max=1.068e+04
+  [GLM test] mean(y)=33.6378 mean(pred)=17.7815 bias=-15.8562 | wmean(y)=17.5387 wmean(pred)=16.1207 wbias=-1.4180
+  [GLM test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [GLM test] quantiles pred: min=1.635 p1=3.064 med=12.59 p99=91.56 max=453.7
+  Saved pipeline to models/glm_bert_epc.joblib
+  Exported weights: weights_bert_epc_numeric.csv, weights_bert_epc_constant.csv, weights_bert_epc_categorical.csv
+  [GLM] Global bias: -1.4180
+  [GLM] Top decile lift: 4.7463
+  [GLM] Conditional MAE: 209.1090
+
+--- XGBoost (Tweedie) ---
+  [XGB] Best CV deviance (weighted): 38.788634
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bytree': 0.9, 'model__learning_rate': 0.03, 'model__max_depth': 3, 'model__n_estimators': 300, 'model__subsample': 0.7}
+  Train Tweedie D^2 (higher is better): 0.5247
+  Test  Tweedie D^2 (higher is better): 0.0577
+  [XGB train] mean(y)=24.0246 mean(pred)=12.7031 bias=-11.3215 | wmean(y)=21.2320 wmean(pred)=14.3036 wbias=-6.9285
+  [XGB train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [XGB train] quantiles pred: min=0.004275 p1=0.02815 med=3.001 p99=143.2 max=1676
+  [XGB test] mean(y)=33.6378 mean(pred)=11.5691 bias=-22.0687 | wmean(y)=17.5387 wmean(pred)=11.4689 wbias=-6.0698
+  [XGB test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [XGB test] quantiles pred: min=0.005449 p1=0.02846 med=3.071 p99=139.8 max=1023
+  Saved model to models/xgb_tweedie_bert_epc.json
+  [XGB] Global bias: -6.0698
+  [XGB] Top decile lift: 4.4677
+  [XGB] Conditional MAE: 206.3416
+
+--- XGBoost RF (Tweedie) ---
+  [RF] Best CV deviance (weighted): 29.282845
+  Tweedie variance power: 1.5
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 7, 'model__n_estimators': 600, 'model__subsample': 0.9}
+  Train Tweedie D^2 (higher is better): 0.0091
+  Test  Tweedie D^2 (higher is better): 0.0579
+  [RF train] mean(y)=24.0246 mean(pred)=20.9864 bias=-3.0382 | wmean(y)=21.2320 wmean(pred)=20.9968 wbias=-0.2353
+  [RF train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [RF train] quantiles pred: min=20.81 p1=20.81 med=20.94 p99=21.5 max=21.6
+  [RF test] mean(y)=33.6378 mean(pred)=20.9864 bias=-12.6514 | wmean(y)=17.5387 wmean(pred)=20.9730 wbias=3.4343
+  [RF test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [RF test] quantiles pred: min=20.81 p1=20.81 med=20.94 p99=21.48 max=21.59
+  Saved model to models/rf_tweedie_bert_epc.json
+  [RF] Global bias: 3.4343
+  [RF] Top decile lift: 4.1231
+  [RF] Conditional MAE: 221.3534
+
+======================================================================
+Model Performance Summary (Test Tweedie D^2)
+======================================================================
+  GLM   : 0.2066 | bias=-1.4180 | top-decile lift=4.7463 | cMAE=209.1090
+  RF    : 0.0579 | bias=3.4343 | top-decile lift=4.1231 | cMAE=221.3534
+  XGB   : 0.0577 | bias=-6.0698 | top-decile lift=4.4677 | cMAE=206.3416
+
+Best model: GLM
+======================================================================
+End: Tue Dec 30 22:29:03 EST 2025
