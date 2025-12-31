@@ -9,9 +9,9 @@ For the specified month (YYYY-MM), this script:
  - For each calendar day in the month:
      - Builds the feature matrix (using `create_feature_matrix` from `bid_optimization`) for that day
      - Runs `optimize_bids_embedded` with budget = (total_cost_for_month / days_in_month)
-     - Saves all active bids and computes expected daily profit = sum(pred_conv - bid * pred_clicks)
+     - Saves all active bids and computes expected daily profit = sum(pred_clicks * (pred_epc - bid))
  - Sums expected daily profit across the month to get `expected_profit_month`
- - Computes `actual_profit_month = total_conv_value_for_month - total_cost_for_month`
+ - Computes `actual_profit_month = total_revenue_for_month - total_cost_for_month`
  - Prints and saves the difference: `expected_profit_month - actual_profit_month`
 
 Usage:
@@ -44,37 +44,41 @@ def parse_year_month(s: str):
 
 
 def compute_model_predictions(X, weights_dict):
-    """Compute conv_predictions and clicks_predictions arrays for X using weights_dict.
-    Mirrors the logic inside `optimize_bids`.
-    Returns: conv_predictions, clicks_predictions, conv_cpc_weight, clicks_cpc_weight
+    """Compute EPC and clicks predictions arrays for X using weights_dict.
+
+    Returns: epc_predictions, clicks_predictions, epc_cpc_weight, clicks_cpc_weight
     """
     n = len(X)
-    conv_const = weights_dict['conv_const']
-    conv_weights = weights_dict['conv_weights']
+
+    if 'epc_const' not in weights_dict or 'epc_weights' not in weights_dict:
+        raise KeyError("weights_dict must contain 'epc_const' and 'epc_weights'")
+    epc_const = weights_dict['epc_const']
+    epc_weights = weights_dict['epc_weights']
+
     clicks_const = weights_dict['clicks_const']
     clicks_weights = weights_dict['clicks_weights']
 
-    conv_predictions = np.full(n, conv_const, dtype=float)
+    epc_predictions = np.full(n, epc_const, dtype=float)
     clicks_predictions = np.full(n, clicks_const, dtype=float)
 
-    # Apply conversion weights
-    for feature_name, weight in conv_weights.items():
+    # Apply EPC weights
+    for feature_name, weight in epc_weights.items():
         feature_str = str(feature_name).strip()
         if isinstance(weight, dict):
             # categorical
             for level_name, level_weight in weight.items():
                 ohe_name = f"{feature_str}_{level_name}"
                 if ohe_name in X.columns:
-                    conv_predictions += level_weight * X[ohe_name].values
+                    epc_predictions += level_weight * X[ohe_name].values
         else:
             if feature_str in X.columns:
-                conv_predictions += weight * X[feature_str].values
+                epc_predictions += weight * X[feature_str].values
             else:
                 # try substring match
                 matching = [c for c in X.columns if feature_str.lower() in c.lower()]
                 if matching:
                     for c in matching:
-                        conv_predictions += weight * X[c].values
+                        epc_predictions += weight * X[c].values
 
     # Apply clicks weights
     for feature_name, weight in clicks_weights.items():
@@ -93,10 +97,10 @@ def compute_model_predictions(X, weights_dict):
                     for c in matching:
                         clicks_predictions += weight * X[c].values
 
-    conv_cpc_weight = conv_weights.get('Avg. CPC', conv_weights.get('Avg_ CPC', 0.0))
+    epc_cpc_weight = epc_weights.get('Avg. CPC', epc_weights.get('Avg_ CPC', 0.0))
     clicks_cpc_weight = clicks_weights.get('Avg. CPC', clicks_weights.get('Avg_ CPC', 0.0))
 
-    return conv_predictions, clicks_predictions, conv_cpc_weight, clicks_cpc_weight
+    return epc_predictions, clicks_predictions, epc_cpc_weight, clicks_cpc_weight
 
 
 def main():
@@ -127,8 +131,8 @@ def main():
 
     # Compute month totals
     total_cost_month = training_df.loc[month_mask, 'Cost'].sum()
-    total_conv_month = training_df.loc[month_mask, 'Conv. value'].sum()
-    actual_profit_month = total_conv_month - total_cost_month
+    total_revenue_month = training_df.loc[month_mask, 'Conv. value'].sum()
+    actual_profit_month = total_revenue_month - total_cost_month
 
     # Days in month (calendar days)
     days_in_month = calendar.monthrange(year, month)[1]
@@ -136,7 +140,7 @@ def main():
 
     print(f"Month: {year}-{month:02d}")
     print(f"Total cost (month): ${total_cost_month:,.2f}")
-    print(f"Total conversion value (month): ${total_conv_month:,.2f}")
+    print(f"Total revenue (month): ${total_revenue_month:,.2f}")
     print(f"Actual profit (month): ${actual_profit_month:,.2f}")
     print(f"Days in month: {days_in_month}, daily budget = ${daily_budget:,.2f}")
 
@@ -174,11 +178,16 @@ def main():
             continue
 
         # Compute model predictions arrays
-        conv_preds, clicks_preds, conv_cpc_w, clicks_cpc_w = compute_model_predictions(X, weights)
+        epc_preds, clicks_preds, epc_cpc_w, clicks_cpc_w = compute_model_predictions(X, weights)
 
         # Run optimize_bids for today's combos with daily budget
         try:
-            model, b_var, z_var, y_var, f_eff_var, g_eff_var = optimize_bids_embedded(X, weights, budget=daily_budget, max_bid=args.max_bid)
+            model, b_var, f_var, g_var = optimize_bids_embedded(
+                X_lr=X,
+                weights_dict=weights,
+                budget=daily_budget,
+                max_bid=args.max_bid
+            )
         except Exception as e:
             print(f"  optimize_bids error for {target_day}: {e}")
             continue
@@ -190,19 +199,18 @@ def main():
         # Ensure model has solution
         try:
             b_vals = b_var.X
-            z_vals = z_var.X
         except Exception as e:
             print(f"  No solution for {target_day}: {e}")
             continue
 
         # Compute predicted conv and clicks per row using chosen bids
-        pred_conv = conv_preds + conv_cpc_w * b_vals
+        pred_epc = epc_preds + epc_cpc_w * b_vals
         pred_clicks = clicks_preds + clicks_cpc_w * b_vals
 
         # Use all active bids (where bid > 0)
         active_idx = np.where(b_vals > 0)[0]
-        # Compute expected profit for all active bids: sum(pred_conv - bid * pred_clicks)
-        day_expected_profit = float(np.sum(pred_conv[active_idx] - b_vals[active_idx] * pred_clicks[active_idx]))
+        # Compute expected profit for all active bids: sum(pred_clicks * (pred_epc - bid))
+        day_expected_profit = float(np.sum(pred_clicks[active_idx] * (pred_epc[active_idx] - b_vals[active_idx])))
         expected_profit_month += day_expected_profit
 
         # Build and save all active bids for this day
@@ -219,23 +227,27 @@ def main():
                 'region': region_list[i],
                 'match': match_list[i],
                 'bid': float(b_vals[i]),
-                'pred_conv': float(pred_conv[i]),
+                'pred_epc': float(pred_epc[i]),
                 'pred_clicks': float(pred_clicks[i]),
-                'predicted_profit': float(pred_conv[i] - b_vals[i] * pred_clicks[i]),
+                'predicted_spend': float(b_vals[i] * pred_clicks[i]),
+                'predicted_profit': float(pred_clicks[i] * (pred_epc[i] - b_vals[i])),
             })
 
         daily_details.append({
             'day': str(target_day),
             'rows': len(X),
             'budget': daily_budget,
-            'budget_used': float(np.sum(b_vals)),
+            'budget_used': float(np.sum(b_vals[active_idx] * pred_clicks[active_idx])),
             'active_bids_count': len(active_idx),
             'expected_profit': day_expected_profit,
-            'sum_pred_conv': float(np.sum(pred_conv[active_idx])),
+            'sum_pred_epc': float(np.sum(pred_epc[active_idx])),
             'sum_pred_clicks': float(np.sum(pred_clicks[active_idx])),
         })
 
-        print(f"  Rows: {len(X)}, budget used: ${np.sum(b_vals):,.2f}, active bids: {len(active_idx)}, expected profit: ${day_expected_profit:,.2f}")
+        print(
+            f"  Rows: {len(X)}, budget used: ${np.sum(b_vals[active_idx] * pred_clicks[active_idx]):,.2f}, "
+            f"active bids: {len(active_idx)}, expected profit: ${day_expected_profit:,.2f}"
+        )
 
     # After all days
     print("\n===== Monthly Summary =====")
@@ -263,7 +275,7 @@ def main():
     with open(summary_file, 'w') as sf:
         sf.write(f"Month: {year}-{month:02d}\n")
         sf.write(f"Total cost (month): ${total_cost_month:,.2f}\n")
-        sf.write(f"Total conversion value (month): ${total_conv_month:,.2f}\n")
+        sf.write(f"Total revenue (month): ${total_revenue_month:,.2f}\n")
         sf.write(f"Actual profit (month): ${actual_profit_month:,.2f}\n")
         sf.write(f"Expected profit (sum of daily optimized bids): ${expected_profit_month:,.2f}\n")
         sf.write(f"Difference (expected - actual): ${expected_profit_month - actual_profit_month:,.2f}\n")

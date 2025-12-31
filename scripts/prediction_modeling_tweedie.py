@@ -24,7 +24,7 @@ Key outputs
 
 Usage
 -----
-python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method bert
 python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert --models glm xgb
 
 Notes
@@ -962,6 +962,14 @@ def train_xgb_tweedie(
     best.named_steps["model"].save_model(xgb_path)
     print(f"  Saved model to {xgb_path}")
 
+    # Save the fitted preprocessing pipeline too.
+    # The booster JSON does NOT include sklearn preprocessing state, so persisting
+    # this is required to reproduce identical transformations later (e.g., for
+    # distilling into an ORT).
+    preproc_path = out_dir / f"xgb_tweedie_{embedding_method}_{target}_preprocess.joblib"
+    joblib.dump(best.named_steps["preprocess"], preproc_path)
+    print(f"  Saved preprocessor to {preproc_path}")
+
     metrics = {
         "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
         "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test, sample_weight=sample_weight_test),
@@ -1118,9 +1126,9 @@ def main() -> None:
     parser.add_argument(
         "--embedding-method",
         type=str,
-        default="tfidf",
+        default="bert",
         choices=["tfidf", "bert"],
-        help="Embedding method used in data (default: tfidf)",
+        help="Embedding method used in data (default: bert)",
     )
     parser.add_argument(
         "--models",

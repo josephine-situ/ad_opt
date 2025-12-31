@@ -70,9 +70,9 @@ def main():
     parser.add_argument(
         '--embedding-method',
         type=str,
-        default='tfidf',
+        default='bert',
         choices=['tfidf', 'bert'],
-        help='Embedding method: tfidf or bert (default: tfidf)'
+        help='Embedding method: tfidf or bert (default: bert)'
     )
     parser.add_argument(
         '--n-components',

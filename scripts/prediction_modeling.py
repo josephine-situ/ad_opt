@@ -34,7 +34,7 @@ except ImportError:
     sys.exit(1)
 
 
-def load_data(data_dir='data/clean', embedding_method='tfidf'):
+def load_data(data_dir='data/clean', embedding_method='bert'):
     """Load training and test data."""
     print(f"Loading data from {data_dir}...")
     df_train = pd.read_csv(f"{data_dir}/train_{embedding_method}.csv")
@@ -304,9 +304,9 @@ def main():
     parser.add_argument(
         '--embedding-method',
         type=str,
-        default='tfidf',
+        default='bert',
         choices=['tfidf', 'bert'],
-        help='Embedding method used in data (default: tfidf)'
+        help='Embedding method used in data (default: bert)'
     )
     parser.add_argument(
         '--models',

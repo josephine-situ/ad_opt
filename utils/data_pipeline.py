@@ -492,7 +492,7 @@ def merge_with_ads_data(kw_df, gkp_df=None):
     return merged_df
 
 
-def add_embeddings(cleaned_df, embedding_method='tfidf', n_components=50, save_models=False, model_dir='models'):
+def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_models=False, model_dir='models'):
     """
     Add keyword embeddings (TF-IDF or BERT).
     
@@ -613,7 +613,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     return df_train, df_test
 
 
-def save_outputs(df, df_train, df_test, embedding_method='tfidf', output_dir='data/clean'):
+def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='data/clean'):
     """
     Save processed data to CSV files, including unique keyword embeddings.
     
@@ -660,7 +660,7 @@ def save_outputs(df, df_train, df_test, embedding_method='tfidf', output_dir='da
         print(f"  Warning: No embedding columns found for method '{embedding_method}'")
 
 
-def load_embeddings(embeddings_file, embedding_method='tfidf', keywords=None):
+def load_embeddings(embeddings_file, embedding_method='bert', keywords=None):
     """
     Load embeddings from file.
     

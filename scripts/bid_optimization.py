@@ -4,11 +4,11 @@ Bid Optimization with Linear Programming
 Optimizes keyword bids using Gurobi linear programming solver.
 Maximizes profit by setting optimal bids for keywords across regions and match types.
 
-Requires:
-- Gurobi solver and license: https://www.gurobi.com/
-- gurobipy: pip install gurobipy
-- Pre-trained models (lr_{embedding}_conversion.json, lr_{embedding}_clicks.json)
-- Embeddings file will be auto-generated if missing
+    Requires:
+    - Gurobi solver and license: https://www.gurobi.com/
+    - gurobipy: pip install gurobipy
+    - Pre-trained models / weights for EPC + clicks (e.g., weights_{embedding}_epc_*.csv, weights_{embedding}_clicks_*.csv)
+    - Embeddings file will be auto-generated if missing
 
 Usage:
     python bid_optimization.py --embedding-method bert --budget 68096.51 --max-bid 100
@@ -135,53 +135,50 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
         models_dir: directory containing weight CSV files
     
     Returns:
-        dict with keys: 'conv_const', 'conv_weights', 'clicks_const', 'clicks_weights'
+        dict with keys: 'epc_const', 'epc_weights', 'clicks_const', 'clicks_weights'
     """
     print(f"Loading weights for embedding method '{embedding_method}'...")
     
     models_dir = Path(models_dir)
     
     # Check if CSV files exist
-    conv_numeric_file = models_dir / f'weights_{embedding_method}_conversion_numeric.csv'
-    conv_const_file = models_dir / f'weights_{embedding_method}_conversion_constant.csv'
+    epc_numeric_file = models_dir / f'weights_{embedding_method}_epc_numeric.csv'
+    epc_const_file = models_dir / f'weights_{embedding_method}_epc_constant.csv'
     clicks_numeric_file = models_dir / f'weights_{embedding_method}_clicks_numeric.csv'
     clicks_const_file = models_dir / f'weights_{embedding_method}_clicks_constant.csv'
     
     # If CSV files exist, load from them
-    if conv_numeric_file.exists() and conv_const_file.exists() and \
-       clicks_numeric_file.exists() and clicks_const_file.exists():
+    has_epc = epc_numeric_file.exists() and epc_const_file.exists()
+    has_clicks = clicks_numeric_file.exists() and clicks_const_file.exists()
+
+    if has_clicks and has_epc:
         print(f"  Loading from CSV files...")
-        
-        conv_cat_file = models_dir / f'weights_{embedding_method}_conversion_categorical.csv'
+
+        epc_cat_file = models_dir / f'weights_{embedding_method}_epc_categorical.csv'
         clicks_cat_file = models_dir / f'weights_{embedding_method}_clicks_categorical.csv'
-        
-        # Load conversion numeric weights
-        conv_numeric_df = pd.read_csv(conv_numeric_file)
-        conv_weights = dict(zip(conv_numeric_df['feature'], conv_numeric_df['weight']))
-        
-        # Load conversion categorical weights if available
-        if conv_cat_file.exists():
-            conv_cat_df = pd.read_csv(conv_cat_file)
-            for _, row in conv_cat_df.iterrows():
+
+        # Load EPC
+        epc_numeric_df = pd.read_csv(epc_numeric_file)
+        epc_weights = dict(zip(epc_numeric_df['feature'], epc_numeric_df['weight']))
+
+        if epc_cat_file.exists():
+            epc_cat_df = pd.read_csv(epc_cat_file)
+            for _, row in epc_cat_df.iterrows():
                 feature = row['feature']
                 level = row['level']
                 weight = row['weight']
-                if feature not in conv_weights:
-                    conv_weights[feature] = {}
-                if not isinstance(conv_weights[feature], dict):
-                    # If already have numeric, convert to dict
-                    numeric_val = conv_weights[feature]
-                    conv_weights[feature] = {feature: numeric_val}
-                conv_weights[feature][level] = weight
-        
-        # Load conversion constant
-        conv_const = pd.read_csv(conv_const_file)['constant'].iloc[0]
-        
-        # Load clicks numeric weights
+                if feature not in epc_weights:
+                    epc_weights[feature] = {}
+                if not isinstance(epc_weights[feature], dict):
+                    numeric_val = epc_weights[feature]
+                    epc_weights[feature] = {feature: numeric_val}
+                epc_weights[feature][level] = weight
+
+        epc_const = pd.read_csv(epc_const_file)['constant'].iloc[0]
+
+        # Load clicks
         clicks_numeric_df = pd.read_csv(clicks_numeric_file)
         clicks_weights = dict(zip(clicks_numeric_df['feature'], clicks_numeric_df['weight']))
-        
-        # Load clicks categorical weights if available
         if clicks_cat_file.exists():
             clicks_cat_df = pd.read_csv(clicks_cat_file)
             for _, row in clicks_cat_df.iterrows():
@@ -191,20 +188,17 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
                 if feature not in clicks_weights:
                     clicks_weights[feature] = {}
                 if not isinstance(clicks_weights[feature], dict):
-                    # If already have numeric, convert to dict
                     numeric_val = clicks_weights[feature]
                     clicks_weights[feature] = {feature: numeric_val}
                 clicks_weights[feature][level] = weight
-        
-        # Load clicks constant
         clicks_const = pd.read_csv(clicks_const_file)['constant'].iloc[0]
-        
+
         print(f"  Loaded from CSV files ✓")
         return {
-            'conv_const': conv_const,
-            'conv_weights': conv_weights,
+            'epc_const': epc_const,
+            'epc_weights': epc_weights,
             'clicks_const': clicks_const,
-            'clicks_weights': clicks_weights
+            'clicks_weights': clicks_weights,
         }
     
     # If CSV files don't exist, fall back to IAI
@@ -217,101 +211,101 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
             )
         
         # Load models using IAI
-        conversion_model = models_dir / f'lr_{embedding_method}_conversion.json'
+        epc_model_path = models_dir / f'lr_{embedding_method}_epc.json'
         clicks_model = models_dir / f'lr_{embedding_method}_clicks.json'
         
-        if not conversion_model.exists():
-            raise FileNotFoundError(f"Conversion model not found: {conversion_model}")
+        if not epc_model_path.exists():
+            raise FileNotFoundError(f"EPC model not found: {epc_model_path}")
         if not clicks_model.exists():
             raise FileNotFoundError(f"Clicks model not found: {clicks_model}")
-        
-        lnr_conv = iai.read_json(str(conversion_model))
+
+        lnr_epc = iai.read_json(str(epc_model_path))
         lnr_clicks = iai.read_json(str(clicks_model))
         
         # Extract weights and constants using IAI
-        weights_conv_tuple = lnr_conv.get_prediction_weights()
+        weights_epc_tuple = lnr_epc.get_prediction_weights()
         weights_clicks_tuple = lnr_clicks.get_prediction_weights()
         
-        if isinstance(weights_conv_tuple, tuple):
-            conv_weights = weights_conv_tuple[0]
+        if isinstance(weights_epc_tuple, tuple):
+            epc_weights = weights_epc_tuple[0]
         else:
-            conv_weights = weights_conv_tuple
+            epc_weights = weights_epc_tuple
         
         if isinstance(weights_clicks_tuple, tuple):
             clicks_weights = weights_clicks_tuple[0]
         else:
             clicks_weights = weights_clicks_tuple
         
-        conv_const = lnr_conv.get_prediction_constant()
+        epc_const = lnr_epc.get_prediction_constant()
         clicks_const = lnr_clicks.get_prediction_constant()
         
         print(f"  Loaded from IAI models ✓")
         return {
-            'conv_const': conv_const,
-            'conv_weights': conv_weights,
+            'epc_const': epc_const,
+            'epc_weights': epc_weights,
             'clicks_const': clicks_const,
-            'clicks_weights': clicks_weights
+            'clicks_weights': clicks_weights,
         }
 
 
-def load_models(embedding_method='bert', alg_conv='lr', alg_clicks='lr', models_dir='models'):
+def load_models(embedding_method='bert', alg_epc='lr', alg_clicks='lr', models_dir='models'):
     """Load pre-trained prediction models based on embedding method and algorithm type.
     
     Args:
         embedding_method: 'bert' or 'tfidf'
-        alg_conv: algorithm type for conversion model - 'lr' (linear regression), 'ort' (optimal regression tree), 
-                  'rf' (random forest), 'xgb' (xgboost)
-        alg_clicks: algorithm type for clicks model - same options as alg_conv
+        alg_epc: algorithm type for EPC model - 'lr' (linear regression), 'ort' (optimal regression tree),
+                  'mort' (mirrored optimal regression tree with hyperplanes), 'rf' (random forest), 'xgb' (xgboost)
+        alg_clicks: algorithm type for clicks model - same options as alg_epc
         models_dir: directory containing model files
     
     Returns:
-        tuple of (conversion_model, clicks_model)
+        tuple of (epc_model, clicks_model)
     """
     print(f"Loading models for embedding method '{embedding_method}'...")
-    print(f"  Conversion model: {alg_conv}")
+    print(f"  EPC model: {alg_epc}")
     print(f"  Clicks model: {alg_clicks}")
     
-    conversion_model = Path(models_dir) / f'{alg_conv}_{embedding_method}_conversion.json'
+    epc_model = Path(models_dir) / f'{alg_epc}_{embedding_method}_epc.json'
     clicks_model = Path(models_dir) / f'{alg_clicks}_{embedding_method}_clicks.json'
     
-    if not conversion_model.exists():
-        raise FileNotFoundError(f"Conversion model not found: {conversion_model}")
+    if not epc_model.exists():
+        raise FileNotFoundError(f"EPC model not found: {epc_model}")
     if not clicks_model.exists():
         raise FileNotFoundError(f"Clicks model not found: {clicks_model}")
     
-    lnr_conv = iai.read_json(str(conversion_model))
+    lnr_epc = iai.read_json(str(epc_model))
     lnr_clicks = iai.read_json(str(clicks_model))
     
-    print(f"  Loaded conversion model from {conversion_model}")
+    print(f"  Loaded EPC model from {epc_model}")
     print(f"  Loaded clicks model from {clicks_model}")
     
-    return lnr_conv, lnr_clicks
+    return lnr_epc, lnr_clicks
 
 
-def extract_weights(lnr_conv, lnr_clicks, embedding_method='bert', n_embeddings=50):
+def extract_weights(lnr_epc, lnr_clicks, embedding_method='bert', n_embeddings=50):
     """Extract ALL weights from trained models (not just embeddings)."""
     print(f"Extracting model weights...")
     
     # Get weights using IAI's method
-    weights_conv_tuple = lnr_conv.get_prediction_weights()
+    weights_epc_tuple = lnr_epc.get_prediction_weights()
     weights_clicks_tuple = lnr_clicks.get_prediction_weights()
     
     # Handle tuple format (continuous, categorical)
-    if isinstance(weights_conv_tuple, tuple):
-        weights_conv = weights_conv_tuple[0]
+    if isinstance(weights_epc_tuple, tuple):
+        weights_epc = weights_epc_tuple[0]
     else:
-        weights_conv = weights_conv_tuple
+        weights_epc = weights_epc_tuple
     
     if isinstance(weights_clicks_tuple, tuple):
         weights_clicks = weights_clicks_tuple[0]
     else:
         weights_clicks = weights_clicks_tuple
     
-    conv_const = lnr_conv.get_prediction_constant()
+    epc_const = lnr_epc.get_prediction_constant()
     clicks_const = lnr_clicks.get_prediction_constant()
     
-    print(f"\n  Conversion model weights:")
-    for key, val in sorted(weights_conv.items(), key=lambda x: str(x[0])):
+    print(f"\n  EPC model weights:")
+    for key, val in sorted(weights_epc.items(), key=lambda x: str(x[0])):
         print(f"    {key}: {val:.6f}")
     
     print(f"\n  Clicks model weights:")
@@ -319,14 +313,14 @@ def extract_weights(lnr_conv, lnr_clicks, embedding_method='bert', n_embeddings=
         print(f"    {key}: {val:.6f}")
     
     return {
-        'conv_const': conv_const,
-        'conv_weights': weights_conv,
+        'epc_const': epc_const,
+        'epc_weights': weights_epc,
         'clicks_const': clicks_const,
         'clicks_weights': weights_clicks
     }
 
 
-def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, regions=None, match_types=None, training_data_path='data/clean/ad_opt_data_bert.csv', weights_dict=None, alg_conv='lr', alg_clicks='lr'):
+def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, regions=None, match_types=None, training_data_path='data/clean/ad_opt_data_bert.csv', weights_dict=None, alg_epc='lr', alg_clicks='lr'):
     """Create feature matrix/matrices for all keyword-region-match combinations for a specific day.
     
     Merges on exact keyword-match type-region combinations from historical data.
@@ -352,8 +346,8 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
         regions: list of regions (default: ["USA", "Region_A", "Region_B", "Region_C"])
         match_types: list of match types (default: ["broad match", "exact match", "phrase match"])
         training_data_path: path to training data file
-        weights_dict: dict with 'conv_weights' and 'clicks_weights' to filter features. If None, keeps all.
-        alg_conv: algorithm type for conversion model ('lr', 'ort', etc.).
+        weights_dict: dict with 'epc_weights' and 'clicks_weights' to filter features. If None, keeps all.
+        alg_epc: algorithm type for EPC model ('lr', 'ort', etc.).
         alg_clicks: algorithm type for clicks model ('lr', 'ort', etc.).
     
     Returns:
@@ -369,7 +363,7 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
     # Extract model weights if provided
     if weights_dict is None:
         weights_dict = {}
-    conv_weights = weights_dict.get('conv_weights', {})
+    epc_weights = weights_dict.get('epc_weights', {})
     clicks_weights = weights_dict.get('clicks_weights', {})
     
     num_keywords = len(keyword_df)
@@ -471,8 +465,10 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
     result.columns = result.columns.str.replace('.', '_', regex=False)
     
     # Determine if we need both versions (mixed models) or just one
-    use_ort_conv = (alg_conv == 'ort')
-    use_ort_clicks = (alg_clicks == 'ort')
+    # Treat mirrored ORT (mort) the same as ORT for feature handling.
+    ort_algs = {'ort', 'mort'}
+    use_ort_conv = (alg_epc in ort_algs)
+    use_ort_clicks = (alg_clicks in ort_algs)
     use_both = use_ort_conv and use_ort_clicks
     use_both_lr = (not use_ort_conv) and (not use_ort_clicks)
     is_mixed = (use_ort_conv and not use_ort_clicks) or (not use_ort_conv and use_ort_clicks)
@@ -498,7 +494,7 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
         
     else:
         # Mixed models: create both versions
-        print(f"  Creating both versions for mixed models ({alg_conv.upper()} + {alg_clicks.upper()})")
+        print(f"  Creating both versions for mixed models ({alg_epc.upper()} + {alg_clicks.upper()})")
         
         # Version 1: ORT (categorical as strings)
         numeric_cols = result.select_dtypes(include=[np.number]).columns.tolist()
@@ -524,114 +520,6 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
     else:  # use_both_lr
         return X_lr, keyword_idx_list, region_list, match_list
 
-
-def optimize_bids(X, weights_dict, budget=68096.51, max_bid=100, n_active=14229):
-    """Solve bid optimization problem using Gurobi.
-    
-    Uses all numeric features from the trained model.
-    Feature matrix X should already be numeric (one-hot encoded if needed).
-    """
-    print(f"\nSolving bid optimization problem...")
-    print(f"  Budget: ${budget:,.2f}")
-    print(f"  Max bid: ${max_bid:.2f}")
-    print(f"  Max active keywords: {n_active}")
-    
-    n = len(X)
-    
-    # Extract constants and weights
-    conv_const = weights_dict['conv_const']
-    conv_weights = weights_dict['conv_weights']
-    clicks_const = weights_dict['clicks_const']
-    clicks_weights = weights_dict['clicks_weights']
-    
-    # Feature matrix as numpy array
-    X_arr = X.values
-    
-    # Build prediction vectors by applying all model weights
-    conv_predictions = np.full(n, conv_const, dtype=float)
-    clicks_predictions = np.full(n, clicks_const, dtype=float)
-    
-    print(f"\n  Applying conversion model weights...")
-    # Apply feature weights for conversion
-    for feature_name, weight in conv_weights.items():
-        feature_str = str(feature_name).strip()
-        
-        # Try to find the column in X
-        if feature_str in X.columns:
-            col_idx = X.columns.get_loc(feature_str)
-            col_data = X_arr[:, col_idx].astype(float)
-            conv_predictions += weight * col_data
-            print(f"    Applied weight for '{feature_str}': {weight:.4f}")
-        elif feature_str == 'Avg. CPC' or feature_str == 'Avg_ CPC':
-            # CPC is handled separately in objective
-            pass
-        else:
-            # Try to find similar name (handle naming variations)
-            matching_cols = [col for col in X.columns if feature_str.lower() in col.lower()]
-            if matching_cols:
-                print(f"    Note: Feature '{feature_str}' not found exactly, but found similar: {matching_cols}")
-    
-    print(f"  Applying clicks model weights...")
-    for feature_name, weight in clicks_weights.items():
-        feature_str = str(feature_name).strip()
-        
-        if feature_str in X.columns:
-            col_idx = X.columns.get_loc(feature_str)
-            col_data = X_arr[:, col_idx].astype(float)
-            clicks_predictions += weight * col_data
-            print(f"    Applied weight for '{feature_str}': {weight:.4f}")
-        elif feature_str == 'Avg. CPC' or feature_str == 'Avg_ CPC':
-            pass
-        else:
-            matching_cols = [col for col in X.columns if feature_str.lower() in col.lower()]
-            if matching_cols:
-                print(f"    Note: Feature '{feature_str}' not found exactly, but found similar: {matching_cols}")
-    
-    # Get CPC weights if they exist
-    conv_cpc_weight = conv_weights.get('Avg. CPC', conv_weights.get('Avg_ CPC', 0.0))
-    clicks_cpc_weight = clicks_weights.get('Avg. CPC', clicks_weights.get('Avg_ CPC', 0.0))
-    
-    print(f"\n  CPC weights: conv={conv_cpc_weight:.4f}, clicks={clicks_cpc_weight:.4f}")
-    
-    # Create model
-    model = gp.Model('bid_optimization')
-    model.setParam('OutputFlag', 1)  # Show solver output
-    
-    # Decision variables
-    b = model.addMVar(shape=n, lb=0, name='bid')  # bid amounts
-    z = model.addMVar(shape=n, vtype=GRB.BINARY, name='active')  # binary active indicator
-    
-    # Objective: Maximize profit
-    # profit = (conv_predictions + conv_cpc_weight * bid) - (clicks_predictions + clicks_cpc_weight * bid) * bid
-    # profit = conv_predictions + conv_cpc_weight * bid - clicks_predictions * bid - clicks_cpc_weight * bid^2
-    profit = gp.quicksum(
-        conv_predictions[i] + conv_cpc_weight * b[i] - (clicks_predictions[i] + clicks_cpc_weight * b[i]) * b[i]
-        for i in range(n)
-    )
-    
-    model.setObjective(profit, GRB.MAXIMIZE)
-    
-    # Constraints
-    # Budget constraint
-    model.addConstr(gp.quicksum(b) <= budget, name='budget')
-    
-    # Bid linking constraints (b[i] is only positive if z[i] = 1)
-    model.addConstrs((b[i] <= max_bid * z[i] for i in range(n)), name='bid_ub')
-    
-    # Activity constraint
-    model.addConstr(gp.quicksum(z) <= n_active, name='max_active')
-    
-    # Optimize
-    model.optimize()
-    
-    if model.status == GRB.OPTIMAL:
-        print(f"  Status: OPTIMAL")
-        print(f"  Optimal profit: ${model.objVal:,.2f}")
-        return model, b, z
-    else:
-        print(f"  Status: {model.status}")
-        return model, b, z
-
 def embed_lr(model, weights, const, X, b, target):
     """
     Embeds linear regression constraints directly into Gurobi model.
@@ -643,7 +531,7 @@ def embed_lr(model, weights, const, X, b, target):
         const: Constant term from the model
         X: Feature matrix (pandas DataFrame)
         b: Bid decision variables (Gurobi MVar)
-        target: Target name ('conversion' or 'clicks') for variable naming
+        target: Target name ('epc' or 'clicks') for variable naming
     
     Returns:
         tuple of (model, pred_vars) where pred_vars is list of prediction variables
@@ -703,7 +591,7 @@ def embed_ort(model, ort_model, X, b, target, max_bid=50.0, M=None, save_dir=Non
         ort_model: IAI ORT model object (from iai.read_json)
         X: Feature matrix (pandas DataFrame)
         b: Bid decision variables (Gurobi MVar)
-        target: Target name ('conversion' or 'clicks') for variable naming
+        target: Target name ('epc' or 'clicks') for variable naming
         max_bid: Maximum individual bid (used for M calculation) (default: 50.0)
         M: Big-M parameter for indicator constraints. If None, automatically calculated from data.
         save_dir: (Optional) Directory to save the tree visualization HTML. If None, no save.
@@ -1010,51 +898,64 @@ def _get_descendant_leaves(node_idx, ort_model, all_leaves):
     
     return descendants
 
-def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400, max_bid=50.0, conv_model=None, clicks_model=None):
-    """Solve bid optimization problem using Gurobi with embedded ML model constraints.
-    
-    Supports embedding of:
-    - Linear Regression (LR): via weights_dict with constants and weights
-    - Optimal Regression Trees (ORT): via conv_model and clicks_model IAI objects
-    
-    Includes ReLU logic for both Conversion and Clicks to handle negative predictions
-    while preserving the ability for y=0 to force results to 0.
-    
+def optimize_bids_embedded(
+    X_ort=None,
+    X_lr=None,
+    weights_dict=None,
+    budget=400,
+    max_bid=50.0,
+    epc_model=None,
+    clicks_model=None,
+):
+    """Solve bid optimization with embedded ML models (OptiCL-style).
+
+    This implements the simpler formulation:
+
+        max_{b,g,f}  sum_i g_i * (f_i - b_i)
+        s.t.         sum_i g_i * b_i <= B
+                     g_i = Model_clicks(b_i, w_i)
+                     f_i = Model_epc(b_i, w_i)
+                     b_i >= 0, g_i >= 0, f_i >= 0
+
+    Notes:
+    - The budget constraint and objective are bilinear/quadratic; Gurobi is run with NonConvex=2.
+
     Args:
         X_ort: Feature matrix with categorical features as strings (for ORT models). If None, will use X_lr.
-        X_lr: Feature matrix with categorical features one-hot encoded (for LR models). If None, will use X_ort.
-        weights_dict: Dictionary with 'conv_const', 'conv_weights', 'clicks_const', 'clicks_weights'
-        budget: Total budget for bids
-        max_bid: Maximum individual bid
-        conv_model: (Optional) IAI ORT model for conversion. If provided, uses ORT instead of LR
-        clicks_model: (Optional) IAI ORT model for clicks. If provided, uses ORT instead of LR
-    
+        X_lr: Feature matrix with categorical features one-hot encoded (for LR/GLM weights). If None, will use X_ort.
+        weights_dict: Model weights dict with keys: 'epc_const', 'epc_weights', 'clicks_const', 'clicks_weights'.
+        budget: Total budget constraint B.
+        max_bid: Upper bound on each bid b_i.
+        epc_model: Optional IAI ORT model for EPC.
+        clicks_model: Optional IAI ORT model for clicks.
     Returns:
-        tuple of (model, b, z, y, f_eff, g_eff)
+        tuple of (model, b, f, g) where f is EPC and g is clicks.
     """
     
     # --- Parameters ---
     # Big-M parameters must be upper bounds on the maximum possible values
-    M_d = 400     # Max potential clicks (Big-M for g)
-    M_c = 40000   # Max potential conversion value (Big-M for f)
-    
+    M_g = 400     # Max potential clicks (Big-M for g)
+    M_f = 40000   # Max potential EPC (Big-M for f). Kept large for safety.
+
     # Determine which models are being used
-    use_ort_conv = conv_model is not None
+    use_ort_epc = epc_model is not None
     use_ort_clicks = clicks_model is not None
-    
+
     # Select appropriate X for each model
-    X_conv = X_ort if use_ort_conv else X_lr
+    X_epc = X_ort if use_ort_epc else X_lr
     X_clicks = X_ort if use_ort_clicks else X_lr
-    
+
     # Use whichever X is not None for size reference
+    if X_ort is None and X_lr is None:
+        raise ValueError("Must provide at least one of X_ort or X_lr")
     K = len(X_ort) if X_ort is not None else len(X_lr)
-    
+
     model_type_str = ""
-    if use_ort_conv or use_ort_clicks:
-        if use_ort_conv and use_ort_clicks:
+    if use_ort_epc or use_ort_clicks:
+        if use_ort_epc and use_ort_clicks:
             model_type_str = "ORT"
         else:
-            model_type_str = f"{'ORT' if use_ort_conv else 'LR'} (conversion) + {'ORT' if use_ort_clicks else 'LR'} (clicks)"
+            model_type_str = f"{'ORT' if use_ort_epc else 'LR'} (epc) + {'ORT' if use_ort_clicks else 'LR'} (clicks)"
     else:
         model_type_str = "LR"
     
@@ -1068,24 +969,15 @@ def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400,
     model.setParam('TimeLimit', 60)
 
     # --- 0. Decision Variables ---
-    
+
     # b_i: Bid amount
     b = model.addMVar(shape=K, lb=0, ub=max_bid, name='b')
-    
-    # y_i: Bidding Participation (1 if bidding, 0 otherwise)
-    y = model.addMVar(shape=K, vtype=GRB.BINARY, name='y')
-    
-    # z_i: Click Sensor (1 if clicks > 0, 0 otherwise)
-    z = model.addMVar(shape=K, vtype=GRB.BINARY, name='z')
-    
-    # Effective Values (The final results used in Objective)
-    f_eff = model.addMVar(shape=K, lb=0, ub=M_c, name='f_eff')
-    g_eff = model.addMVar(shape=K, lb=0, ub=M_d, name='g_eff')
 
-    # Rectified Prediction Variables (Intermediate variables for ReLU logic)
-    # These will hold max(0, prediction) independent of y
-    f_rect = model.addMVar(shape=K, lb=0, ub=M_c, name='f_rect')
-    g_rect = model.addMVar(shape=K, lb=0, ub=M_d, name='g_rect')
+    # f_i: predicted EPC (non-negative)
+    f = model.addMVar(shape=K, lb=0, ub=M_f, name='f')
+
+    # g_i: predicted clicks (non-negative)
+    g = model.addMVar(shape=K, lb=0, ub=M_g, name='g')
 
     # --- 1. Raw ML Predictions (Embedded) ---
     # Create tupledict to hold prediction variables
@@ -1093,17 +985,22 @@ def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400,
     g_hat_vars = []
     
     # Create trees directory for ORT visualization
-    trees_dir = Path('opt_results/trees') if (use_ort_conv or use_ort_clicks) else None
+    trees_dir = Path('opt_results/trees') if (use_ort_epc or use_ort_clicks) else None
     
-    # Embed conversion model
-    if use_ort_conv:
-        # Use ORT model
-        model, f_hat_vars = embed_ort(model, conv_model, X_conv, b, target='conversion', max_bid=max_bid, save_dir=trees_dir)
+    # Embed EPC model
+    if use_ort_epc:
+        model, f_hat_vars = embed_ort(model, epc_model, X_epc, b, target='epc', max_bid=max_bid, save_dir=trees_dir)
     else:
-        # Use LR model
-        conv_const = weights_dict['conv_const']
-        conv_weights = weights_dict['conv_weights']
-        model, f_hat_vars = embed_lr(model, conv_weights, conv_const, X_conv, b, target='conversion')
+        if weights_dict is None:
+            raise ValueError("weights_dict is required when epc_model is not provided")
+
+        if 'epc_const' not in weights_dict or 'epc_weights' not in weights_dict:
+            raise KeyError("weights_dict must contain 'epc_const' and 'epc_weights'")
+
+        epc_const = weights_dict['epc_const']
+        epc_weights = weights_dict['epc_weights']
+
+        model, f_hat_vars = embed_lr(model, epc_weights, epc_const, X_epc, b, target='epc')
     
     # Embed clicks model
     if use_ort_clicks:
@@ -1118,54 +1015,19 @@ def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400,
     model.update()
     
     # --- Total Budget Constraint ---
-    model.addConstr(gp.quicksum(b) <= budget, name='TotalBudget')
-
-    # --- 2. Bidding Participation ---
-    # If y=0, b=0. If y=1, b >= 0.01
-    model.addConstr(b <= max_bid * y, name='BidMaxBound')
-    model.addConstr(b >= 0.01 * y, name='BidMinBound')
-
-    # --- 3. Effective Value Overrides (The "Gate") ---
-    # If y=0 (inactive), effective results must be 0
-    model.addConstr(f_eff <= M_c * y, name='EffConvBound')
-    model.addConstr(g_eff <= M_d * y, name='EffClickBound')
-
-    # --- 4. MODEL RECOVERY (ReLU Logic) ---
-    
-    # Step A: Calculate Rectified Values [ f_rect = max(0, f_hat) ]
-    # This prevents infeasibility when predictions are negative.
+    # --- 2. Link prediction vars and enforce non-negativity via bounds ---
+    # f and g already have lb=0. These equalities force embedded model outputs to be non-negative.
     for i in range(K):
-        # Conversion ReLU
-        model.addGenConstrMax(f_rect[i], [f_hat_vars[i]], constant=0.0, name=f"ReLU_Conv_{i}")
-        # Clicks ReLU
-        model.addGenConstrMax(g_rect[i], [g_hat_vars[i]], constant=0.0, name=f"ReLU_Click_{i}")
+        model.addConstr(f[i] == f_hat_vars[i], name=f"EPCLink_{i}")
+        model.addConstr(g[i] == g_hat_vars[i], name=f"ClicksLink_{i}")
 
-    # Step B: Link Effective to Rectified
-    # f_eff <= f_rect.
-    # Combined with Section 3, this means: f_eff <= min(f_rect, M*y)
-    model.addConstr(f_eff <= f_rect, name='ConvRecovery')
-    
-    # For clicks (g), we want g_eff >= g_rect when active, but allow 0 when inactive.
-    # The original constraint was: g_i >= g_hat - M(1-y)
-    # The new robust constraint is: g_eff >= g_rect - M_d * (1 - y)
-    #   If y=1: g_eff >= g_rect (since we want to pay at least the predicted cost)
-    #   If y=0: g_eff >= g_rect - BigM (Becomes trivial, allows g_eff=0 via Section 3)
-    model.addConstr(g_eff >= g_rect - M_d * (1 - y), name='ClickRecovery')
-
-    # --- 5. Logical Dependency ---
-    # Click Sensor: If g < 1, force z=0. If g >= 1, allow z=1.
-    model.addConstr(g_eff <= M_d * z, name='ClickSensorBigM')
-    model.addConstr(z <= g_eff, name='ClickSensorActivator')
-    
-    # Conversion Gate: No clicks (z=0) means no conversion (f=0)
-    model.addConstr(f_eff <= M_c * z, name='ConversionGate')
+    # --- Total Budget Constraint ---
+    # sum_i g_i * b_i <= B
+    model.addQConstr(b @ g <= budget, name='TotalBudget')
 
     # --- Objective ---
-    # Maximize Profit = Revenue (f) - Cost (b * g)
-    total_cost = b @ g_eff
-    total_revenue = gp.quicksum(f_eff)
-
-    model.setObjective(total_revenue - total_cost, GRB.MAXIMIZE)
+    # Maximize Net Profit = sum_i g_i * (f_i - b_i)
+    model.setObjective((g @ f) - (b @ g), GRB.MAXIMIZE)
 
     # --- Save Model Formulation ---
     model_dir = Path('opt_results/formulations')
@@ -1174,8 +1036,8 @@ def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400,
     model.update()
     
     # Determine model type string for filename
-    if use_ort_conv or use_ort_clicks:
-        model_type_str = f"{('ort' if use_ort_conv else 'lr')}_{'ort' if use_ort_clicks else 'lr'}"
+    if use_ort_epc or use_ort_clicks:
+        model_type_str = f"{('ort' if use_ort_epc else 'lr')}_{'ort' if use_ort_clicks else 'lr'}"
     else:
         model_type_str = "lr_lr"
     
@@ -1185,22 +1047,20 @@ def optimize_bids_embedded(X_ort=None, X_lr=None, weights_dict=None, budget=400,
     print(f"\n  Model formulation saved to {lp_file}")
     
     # --- Optimize ---
-    model.setParam("NonConvex", 2) # Allow quadratic objective
+    model.setParam("NonConvex", 2)  # Allow bilinear terms in objective/constraints
     model.optimize()
 
-    return model, b, z, y, f_eff, g_eff
+    return model, b, f, g
 
 
-def extract_solution(model, b, z, y, f_eff, g_eff, keyword_df, keyword_idx_list, region_list, match_list, X=None, weights_dict=None):
+def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, match_list, X=None, weights_dict=None):
     """Extract non-zero bids from solution with predictions.
-    
+
     Args:
         model: Gurobi model object (solved)
         b: Bid decision variables
-        z: Click sensor binary variables (1 if clicks > 0)
-        y: Bidding participation binary variables (1 if bidding)
-        f_eff: Effective conversion values (from solver)
-        g_eff: Effective clicks values (from solver)
+        f: Predicted EPC variables (from solver)
+        g: Predicted clicks variables (from solver)
         keyword_df: DataFrame with keywords
         keyword_idx_list: List mapping rows to keyword indices
         region_list: List of regions for each row
@@ -1209,17 +1069,15 @@ def extract_solution(model, b, z, y, f_eff, g_eff, keyword_df, keyword_idx_list,
         weights_dict: Dictionary with model weights (optional)
     """
     b_vals = b.X
-    z_vals = z.X
-    y_vals = y.X
-    f_vals = f_eff.X
-    g_vals = g_eff.X
-    
-    # Find active bids (where y=1)
-    active_idx = np.where(y_vals >= 0.5)[0]
+    f_vals = f.X
+    g_vals = g.X
+
+    # Active rows: bid > 0 (tolerate numerical noise)
+    active_idx = np.where(b_vals > 1e-9)[0]
     
     print(f"\nSolution Summary:")
-    print(f"  Active keywords (y=1): {len(active_idx)}")
-    print(f"  Total spend: ${np.sum(b_vals):,.2f}")
+    print(f"  Active rows (bid>0): {len(active_idx)}")
+    print(f"  Total spend: ${float(np.sum(b_vals * g_vals)):,.2f}")
     print(f"  Predicted profit: ${model.objVal:,.2f}")
     
     # Build result DataFrame with all active bids
@@ -1228,13 +1086,12 @@ def extract_solution(model, b, z, y, f_eff, g_eff, keyword_df, keyword_idx_list,
         'keyword': [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in active_idx],
         'region': [region_list[i] for i in active_idx],
         'match': [match_list[i] for i in active_idx],
-        'active': y_vals[active_idx],
-        'predicted_conv_value': f_vals[active_idx],
+        'predicted_epc': f_vals[active_idx],
         'predicted_clicks': g_vals[active_idx],
     })
-    
-    # Calculate profit: f_eff - b * g_eff
-    bids_df['predicted_profit'] = bids_df['predicted_conv_value'] - bids_df['bid'] * bids_df['predicted_clicks']
+
+    bids_df['predicted_spend'] = bids_df['bid'] * bids_df['predicted_clicks']
+    bids_df['predicted_profit'] = bids_df['predicted_clicks'] * (bids_df['predicted_epc'] - bids_df['bid'])
     
     # Sort by bid (descending)
     bids_df = bids_df.sort_values('bid', ascending=False).reset_index(drop=True)
@@ -1256,16 +1113,16 @@ def main():
     parser.add_argument(
         '--alg-conv',
         type=str,
-        default='lr',# 'ort',#
-        choices=['lr', 'glm', 'ort'],
-        help='Algorithm type for conversion model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI) (default: lr)'
+        default='lr',
+        choices=['lr', 'glm', 'ort', 'mort'],
+        help='Algorithm type for EPC model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--alg-clicks',
         type=str,
         default='ort', # 'lr', # 
-        choices=['lr', 'glm', 'ort'],
-        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI) (default: lr)'
+        choices=['lr', 'glm', 'ort', 'mort'],
+        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--budget',
@@ -1344,7 +1201,7 @@ def main():
             target_day=args.target_day,
             training_data_path=str(training_data_file),
             weights_dict=weights_dict,
-            alg_conv=args.alg_conv,
+            alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks
         )
         
@@ -1385,18 +1242,18 @@ def main():
         print(f"Saved mapping to {mapping_file}")
 
         # Embedded mode: supports linear weights (LR/GLM) and ORT (IAI)
-        conv_model = None
+        epc_model = None
         clicks_model = None
 
         if args.alg_conv == 'ort':
             if iai is None:
                 raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR/GLM weights.")
 
-            conversion_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_conversion.json'
-            if not conversion_model_path.exists():
-                raise FileNotFoundError(f"ORT conversion model not found: {conversion_model_path}")
-            conv_model = iai.read_json(str(conversion_model_path))
-            print(f"  Loaded ORT conversion model from {conversion_model_path}")
+            epc_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_epc.json'
+            if not epc_model_path.exists():
+                raise FileNotFoundError(f"ORT EPC model not found: {epc_model_path}")
+            epc_model = iai.read_json(str(epc_model_path))
+            print(f"  Loaded ORT EPC model from {epc_model_path}")
 
         if args.alg_clicks == 'ort':
             if iai is None:
@@ -1408,13 +1265,13 @@ def main():
             clicks_model = iai.read_json(str(clicks_model_path))
             print(f"  Loaded ORT clicks model from {clicks_model_path}")
 
-        model, b, z, y, f_eff, g_eff = optimize_bids_embedded(
+        model, b, f, g = optimize_bids_embedded(
             X_ort=X_ort,
             X_lr=X_lr,
             weights_dict=weights_dict,
             budget=args.budget,
             max_bid=args.max_bid,
-            conv_model=conv_model,
+            epc_model=epc_model,
             clicks_model=clicks_model
         )
 
@@ -1425,7 +1282,7 @@ def main():
             model_suffix = f"{args.alg_conv}_{args.alg_clicks}"
             output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
 
-            bids_df = extract_solution(model, b, z, y, f_eff, g_eff, keyword_df, kw_idx_list, region_list, match_list, X=X, weights_dict=weights_dict)
+            bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X, weights_dict=weights_dict)
 
             bids_df.to_csv(output_file, index=False)
             print(f"\nResults saved to {output_file}")

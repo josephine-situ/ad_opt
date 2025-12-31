@@ -30,111 +30,86 @@ def extract_and_save_weights(embedding_method='bert', models_dir='models', outpu
     print(f"\n{'='*70}")
     print(f"Extracting weights for embedding method: {embedding_method}")
     print(f"{'='*70}")
-    
+
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
-    
-    # Load conversion model
-    conversion_model_path = Path(models_dir) / f'lr_{embedding_method}_conversion.json'
+
+    epc_model_path = Path(models_dir) / f'lr_{embedding_method}_epc.json'
     clicks_model_path = Path(models_dir) / f'lr_{embedding_method}_clicks.json'
-    
+
     print(f"\nLoading models from {models_dir}...")
-    print(f"  Conversion: {conversion_model_path}")
+    print(f"  EPC: {epc_model_path}")
     print(f"  Clicks: {clicks_model_path}")
-    
-    if not conversion_model_path.exists():
-        raise FileNotFoundError(f"Conversion model not found: {conversion_model_path}")
+
+    if not epc_model_path.exists():
+        raise FileNotFoundError(f"EPC model not found: {epc_model_path}")
     if not clicks_model_path.exists():
         raise FileNotFoundError(f"Clicks model not found: {clicks_model_path}")
-    
-    # Load models using IAI
-    lnr_conv = iai.read_json(str(conversion_model_path))
+
+    lnr_epc = iai.read_json(str(epc_model_path))
     lnr_clicks = iai.read_json(str(clicks_model_path))
-    
-    # Extract weights and constants
-    print(f"\nExtracting conversion model weights and constants...")
-    weights_conv_tuple = lnr_conv.get_prediction_weights()
-    conv_const = lnr_conv.get_prediction_constant()
-    
+
+    print(f"\nExtracting EPC model weights and constants...")
+    weights_epc_tuple = lnr_epc.get_prediction_weights()
+    epc_const = lnr_epc.get_prediction_constant()
+
     print(f"Extracting clicks model weights and constants...")
     weights_clicks_tuple = lnr_clicks.get_prediction_weights()
     clicks_const = lnr_clicks.get_prediction_constant()
-    
+
     # Parse tuple format (continuous, categorical)
-    if isinstance(weights_conv_tuple, tuple):
-        weights_conv_numeric = weights_conv_tuple[0]
-        weights_conv_categorical = weights_conv_tuple[1] if len(weights_conv_tuple) > 1 else {}
+    if isinstance(weights_epc_tuple, tuple):
+        weights_epc_numeric = weights_epc_tuple[0]
+        weights_epc_categorical = weights_epc_tuple[1] if len(weights_epc_tuple) > 1 else {}
     else:
-        weights_conv_numeric = weights_conv_tuple
-        weights_conv_categorical = {}
-    
+        weights_epc_numeric = weights_epc_tuple
+        weights_epc_categorical = {}
+
     if isinstance(weights_clicks_tuple, tuple):
         weights_clicks_numeric = weights_clicks_tuple[0]
         weights_clicks_categorical = weights_clicks_tuple[1] if len(weights_clicks_tuple) > 1 else {}
     else:
         weights_clicks_numeric = weights_clicks_tuple
         weights_clicks_categorical = {}
-    
-    # Save conversion model weights
-    print(f"\nSaving conversion model...")
-    
-    # Save numeric weights
-    conv_numeric_df = pd.DataFrame(
-        list(weights_conv_numeric.items()),
-        columns=['feature', 'weight']
-    )
-    conv_numeric_file = output_dir / f'weights_{embedding_method}_conversion_numeric.csv'
-    conv_numeric_df.to_csv(conv_numeric_file, index=False)
-    print(f"  Saved numeric weights to {conv_numeric_file}")
-    
-    # Save categorical weights
-    if weights_conv_categorical:
-        conv_cat_rows = []
-        for feature, level_dict in weights_conv_categorical.items():
-            for level_name, weight in level_dict.items():
-                conv_cat_rows.append({
-                    'feature': feature,
-                    'level': level_name,
-                    'weight': weight
-                })
-        conv_cat_df = pd.DataFrame(conv_cat_rows)
-        conv_cat_file = output_dir / f'weights_{embedding_method}_conversion_categorical.csv'
-        conv_cat_df.to_csv(conv_cat_file, index=False)
-        print(f"  Saved categorical weights to {conv_cat_file}")
-    
-    # Save constant
-    conv_const_file = output_dir / f'weights_{embedding_method}_conversion_constant.csv'
-    pd.DataFrame({'constant': [conv_const]}).to_csv(conv_const_file, index=False)
-    print(f"  Saved constant to {conv_const_file}")
-    
-    # Save clicks model weights
+
+    # Save EPC numeric weights
+    print(f"\nSaving EPC model...")
+    epc_numeric_df = pd.DataFrame(list(weights_epc_numeric.items()), columns=['feature', 'weight'])
+    epc_numeric_file = output_dir / f'weights_{embedding_method}_epc_numeric.csv'
+    epc_numeric_df.to_csv(epc_numeric_file, index=False)
+    print(f"  Saved numeric weights to {epc_numeric_file}")
+
+    if weights_epc_categorical:
+        epc_cat_rows = []
+        for feature, level_dict in weights_epc_categorical.items():
+            for level, weight in level_dict.items():
+                epc_cat_rows.append({'feature': feature, 'level': level, 'weight': weight})
+        epc_cat_df = pd.DataFrame(epc_cat_rows)
+        epc_cat_file = output_dir / f'weights_{embedding_method}_epc_categorical.csv'
+        epc_cat_df.to_csv(epc_cat_file, index=False)
+        print(f"  Saved categorical weights to {epc_cat_file}")
+
+    epc_const_file = output_dir / f'weights_{embedding_method}_epc_constant.csv'
+    pd.DataFrame({'constant': [epc_const]}).to_csv(epc_const_file, index=False)
+    print(f"  Saved constant to {epc_const_file}")
+
+    # Save clicks numeric weights
     print(f"\nSaving clicks model...")
-    
-    # Save numeric weights
-    clicks_numeric_df = pd.DataFrame(
-        list(weights_clicks_numeric.items()),
-        columns=['feature', 'weight']
-    )
+    clicks_numeric_df = pd.DataFrame(list(weights_clicks_numeric.items()), columns=['feature', 'weight'])
     clicks_numeric_file = output_dir / f'weights_{embedding_method}_clicks_numeric.csv'
     clicks_numeric_df.to_csv(clicks_numeric_file, index=False)
     print(f"  Saved numeric weights to {clicks_numeric_file}")
-    
-    # Save categorical weights
+
     if weights_clicks_categorical:
         clicks_cat_rows = []
         for feature, level_dict in weights_clicks_categorical.items():
-            for level_name, weight in level_dict.items():
-                clicks_cat_rows.append({
-                    'feature': feature,
-                    'level': level_name,
-                    'weight': weight
-                })
+            for level, weight in level_dict.items():
+                clicks_cat_rows.append({'feature': feature, 'level': level, 'weight': weight})
         clicks_cat_df = pd.DataFrame(clicks_cat_rows)
         clicks_cat_file = output_dir / f'weights_{embedding_method}_clicks_categorical.csv'
         clicks_cat_df.to_csv(clicks_cat_file, index=False)
         print(f"  Saved categorical weights to {clicks_cat_file}")
-    
-    # Save constant
+
     clicks_const_file = output_dir / f'weights_{embedding_method}_clicks_constant.csv'
     pd.DataFrame({'constant': [clicks_const]}).to_csv(clicks_const_file, index=False)
     print(f"  Saved constant to {clicks_const_file}")
