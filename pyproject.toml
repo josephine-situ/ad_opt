@@ -29,6 +29,10 @@ bert = [
     "transformers>=4.35.2",
 ]
 
+tabpfn = [
+    "tabpfn-client",
+]
+
 ml = [
     "interpretableai>=2.11.2",
 ]

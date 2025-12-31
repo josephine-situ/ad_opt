@@ -51,7 +51,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sklearn.compose import ColumnTransformer
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import TweedieRegressor
 from sklearn.metrics import mean_tweedie_deviance
@@ -59,7 +59,7 @@ from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import ParameterGrid
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
 try:
     import joblib
@@ -77,6 +77,76 @@ try:
     import scipy.sparse as sp  # type: ignore
 except Exception:
     sp = None
+
+try:
+    # Optional dependency. This is a cloud-based client; data will be sent to PriorLabs servers.
+    import tabpfn_client  # type: ignore
+    from tabpfn_client import TabPFNRegressor as TabPFNClientRegressor  # type: ignore
+except Exception:
+    tabpfn_client = None
+    TabPFNClientRegressor = None
+
+
+def _configure_tabpfn_client_from_env() -> None:
+    """Configure tabpfn-client without interactive prompts.
+
+    `tabpfn_client.init()` triggers an interactive login flow. For scripts/cluster
+    usage we instead rely on an access token provided via environment variable.
+    """
+
+    if tabpfn_client is None:  # pragma: no cover
+        return
+
+    token_env_candidates = (
+        "TABPFN_ACCESS_TOKEN",
+        "TABPFN_CLIENT_ACCESS_TOKEN",
+        "PRIORLABS_ACCESS_TOKEN",
+    )
+
+    token = None
+    for key in token_env_candidates:
+        val = os.environ.get(key)
+        if val:
+            token = val
+            break
+
+    if token is None:
+        raise RuntimeError(
+            "TabPFN client is installed but no access token was found in the environment. "
+            "Set TABPFN_ACCESS_TOKEN (recommended) and rerun. "
+            "If you don't have a token yet, run an interactive login once via Python: "
+            "`python -c \"import tabpfn_client; print(tabpfn_client.get_access_token())\"` "
+            "and then export that token as TABPFN_ACCESS_TOKEN."
+        )
+
+    # Avoid printing the token. This persists credentials in the client's cache.
+    tabpfn_client.set_access_token(token)
+
+
+class NonNegativeRegressor(BaseEstimator, RegressorMixin):
+    """Wrap a regressor to enforce non-negative predictions.
+
+    This is useful because downstream bid logic and Tweedie scoring assume
+    non-negative predictions.
+    """
+
+    def __init__(self, base_estimator, eps: float = 1e-12):
+        self.base_estimator = base_estimator
+        self.eps = eps
+
+    def fit(self, X, y, **fit_params):
+        self.base_estimator.fit(X, y, **fit_params)
+        # Let sklearn know this wrapper is fitted.
+        self.is_fitted_ = True
+        return self
+
+    def predict(self, X):
+        pred = self.base_estimator.predict(X)
+        return np.maximum(np.asarray(pred, dtype=float), float(self.eps))
+
+
+def _to_float32_dense(X):
+    return np.asarray(X, dtype=np.float32)
 
 
 def _default_xgb_n_jobs() -> int:
@@ -456,6 +526,138 @@ def build_preprocessor(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], L
     )
 
     return preprocessor, numeric_cols, categorical_cols
+
+
+def build_preprocessor_tabpfn(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], List[str]]:
+    """Preprocessor tuned for TabPFN.
+
+    TabPFN typically expects a dense numeric matrix. One-hot encoding can
+    explode dimensionality for high-cardinality categoricals (and sparse ->
+    dense can be prohibitively large), so we use ordinal encoding instead.
+    """
+
+    categorical_cols = list(X.select_dtypes(include=["object", "category", "bool"]).columns)
+    numeric_cols = [c for c in X.columns if c not in categorical_cols]
+
+    numeric_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+        ]
+    )
+
+    cat_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            (
+                "ordinal",
+                OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
+            ),
+        ]
+    )
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", numeric_pipe, numeric_cols),
+            ("cat", cat_pipe, categorical_cols),
+        ],
+        remainder="drop",
+        sparse_threshold=0.0,  # always dense
+    )
+
+    return preprocessor, numeric_cols, categorical_cols
+
+
+def train_tabpfn(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    *,
+    target: str,
+    embedding_method: str,
+    seed: int,
+    out_dir: Path,
+    tabpfn_max_train_rows: int,
+    sample_weight_train: Optional[pd.Series] = None,
+    sample_weight_test: Optional[pd.Series] = None,
+) -> Tuple[Pipeline, float, Dict[str, float]]:
+    """Train a TabPFN regressor.
+
+    Notes:
+    - TabPFN does not optimize Tweedie deviance; we still report Tweedie D^2
+      for comparability.
+    - TabPFN does not support sample weights in `fit`; weights are used only
+      for evaluation metrics.
+    """
+
+    if TabPFNClientRegressor is None:
+        raise ImportError(
+            "tabpfn-client is not installed. Install with: pip install tabpfn-client "
+            "(or `pip install -e .[tabpfn]` if using this repo's extras)."
+        )
+
+    _configure_tabpfn_client_from_env()
+
+    print("\n--- TabPFN ---")
+    power = get_tweedie_power(target)
+
+    if sample_weight_train is not None:
+        print("  [TabPFN] Note: sample_weight is ignored during fit; used only for evaluation.")
+
+    if tabpfn_max_train_rows > 0 and len(X_train) > tabpfn_max_train_rows:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(X_train), size=tabpfn_max_train_rows, replace=False)
+        X_fit = X_train.iloc[idx].copy()
+        y_fit = y_train.iloc[idx].copy()
+        print(f"  [TabPFN] Subsampled train rows: {len(X_train)} -> {len(X_fit)}")
+    else:
+        X_fit, y_fit = X_train, y_train
+
+    preprocessor, _, _ = build_preprocessor_tabpfn(X_fit)
+
+    # Cloud estimator; behaves like an sklearn regressor.
+    model = TabPFNClientRegressor()
+    model = NonNegativeRegressor(model)
+
+    pipe = Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            ("cast", FunctionTransformer(_to_float32_dense)),
+            ("model", model),
+        ]
+    )
+
+    pipe.fit(X_fit, y_fit)
+
+    y_pred_train = pipe.predict(X_train)
+    y_pred_test = pipe.predict(X_test)
+
+    d2_train = tweedie_d2_score(y_train, y_pred_train, power=power, sample_weight=sample_weight_train)
+    d2_test = tweedie_d2_score(y_test, y_pred_test, power=power, sample_weight=sample_weight_test)
+
+    print(f"  Tweedie variance power: {power}")
+    print(f"  Train Tweedie D^2 (higher is better): {d2_train:.4f}")
+    print(f"  Test  Tweedie D^2 (higher is better): {d2_test:.4f}")
+
+    _print_diagnostics(label="TabPFN train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
+    _print_diagnostics(label="TabPFN test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
+
+    model_path = out_dir / f"tabpfn_{embedding_method}_{target}.joblib"
+    joblib.dump(pipe, model_path)
+    print(f"  Saved pipeline to {model_path}")
+
+    metrics = {
+        "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "top_decile_lift": compute_top_decile_lift(y_test, y_pred_test, sample_weight=sample_weight_test),
+        "conditional_mae": compute_conditional_mae(y_test, y_pred_test, sample_weight=sample_weight_test),
+    }
+
+    print(f"  [TabPFN] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [TabPFN] Global bias: nan")
+    print(f"  [TabPFN] Top decile lift: {metrics['top_decile_lift']:.4f}" if not np.isnan(metrics["top_decile_lift"]) else "  [TabPFN] Top decile lift: nan")
+    print(f"  [TabPFN] Conditional MAE: {metrics['conditional_mae']:.4f}" if not np.isnan(metrics["conditional_mae"]) else "  [TabPFN] Conditional MAE: nan")
+
+    return pipe, d2_test, metrics
 
 
 def _validate_non_negative_target(y: pd.Series, target: str) -> None:
@@ -925,8 +1127,14 @@ def main() -> None:
         type=str,
         nargs="+",
         default=["glm", "xgb", "rf"],
-        choices=["glm", "xgb", "rf"],
+        choices=["glm", "xgb", "rf", "tabpfn"],
         help="Which models to train (default: glm xgb rf)",
+    )
+    parser.add_argument(
+        "--tabpfn-max-train-rows",
+        type=int,
+        default=10000,
+        help="Max rows to fit TabPFN on (subsamples if larger; default: 10000; set 0 to disable)",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--cv-folds", type=int, default=5, help="CV folds for grid search")
@@ -1010,6 +1218,22 @@ def main() -> None:
             sample_weight_test=w_test,
         )
         results["RF"] = {"score": score, "metrics": metrics}
+
+    if "tabpfn" in args.models:
+        _, score, metrics = train_tabpfn(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            target=args.target,
+            embedding_method=args.embedding_method,
+            seed=args.seed,
+            out_dir=out_dir,
+            tabpfn_max_train_rows=args.tabpfn_max_train_rows,
+            sample_weight_train=w_train,
+            sample_weight_test=w_test,
+        )
+        results["TabPFN"] = {"score": score, "metrics": metrics}
 
     print("\n" + "=" * 70)
     print("Model Performance Summary (Test Tweedie D^2)")
