@@ -886,11 +886,13 @@ def train_xgb_tweedie(
         objective="reg:tweedie",
         tweedie_variance_power=power,
         random_state=seed,
-        n_estimators=600,
-        learning_rate=0.05,
-        max_depth=6,
-        subsample=0.8,
-        colsample_bytree=0.8,
+        # Keep the ensemble intentionally small/shallow so it can be embedded
+        # into a mixed-integer optimization (MIO) model.
+        n_estimators=20,
+        learning_rate=0.3,
+        max_depth=3,
+        subsample=1.0,
+        colsample_bytree=1.0,
         reg_alpha=0.0,
         reg_lambda=1.0,
         tree_method="hist",
@@ -905,12 +907,16 @@ def train_xgb_tweedie(
         ]
     )
 
+    # Keep the grid small: embedding complexity primarily scales with the
+    # number of trees and the tree depth.
     param_grid = {
-        "model__max_depth": [3, 5, 7],
-        "model__n_estimators": [300, 600],
-        "model__learning_rate": [0.03, 0.05, 0.1],
-        "model__subsample": [0.7, 0.9],
-        "model__colsample_bytree": [0.7, 0.9],
+        "model__n_estimators": [5, 10, 20],
+        "model__max_depth": [2, 3, 4],
+        "model__learning_rate": [0.1, 0.3],
+        # Deterministic full-sample trees (helps reproducibility and is simpler
+        # to reason about downstream).
+        "model__subsample": [1.0],
+        "model__colsample_bytree": [1.0],
     }
 
     cv = KFold(n_splits=cv_folds, shuffle=True, random_state=seed)

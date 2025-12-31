@@ -18,6 +18,7 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+import json
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -38,11 +39,56 @@ except ImportError:
     print("Note: Gurobi requires a valid license.")
     sys.exit(1)
 
+# Optional dependency: IAI (only needed for ORT/MORT workflows or when falling back to IAI for weights)
+iai = None
+_iai_import_attempted = False
+
+
+def _get_iai(*, required: bool) -> object:
+    """Lazily import IAI only when needed.
+
+    This keeps non-IAI workflows (LR/GLM/XGB) from importing (or failing on) IAI.
+    """
+
+    global iai, _iai_import_attempted
+    if iai is not None:
+        return iai
+
+    if _iai_import_attempted:
+        if required:
+            raise ImportError(
+                "IAI is required for this operation (ORT/MORT or IAI weight fallback), but it could not be imported."
+            )
+        return None
+
+    _iai_import_attempted = True
+    try:
+        from utils.iai_setup import iai as _iai  # type: ignore
+
+        iai = _iai
+        return iai
+    except Exception as e:
+        if required:
+            raise ImportError(
+                "IAI is required for this operation (ORT/MORT or IAI weight fallback), but it could not be imported."
+            ) from e
+        return None
+
+
 try:
-    from utils.iai_setup import iai
-except ImportError:
-    print("WARNING: Could not set up IAI. Will load weights from CSV files instead.")
-    iai = None
+    import joblib  # type: ignore
+except Exception:
+    joblib = None
+
+try:
+    import xgboost as xgb  # type: ignore
+except Exception:
+    xgb = None
+
+try:
+    import scipy.sparse as sp  # type: ignore
+except Exception:
+    sp = None
 
 
 def load_embeddings_data(keywords, embedding_method='bert', output_dir='data/embeddings'):
@@ -205,11 +251,8 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
     # If CSV files don't exist, fall back to IAI
     else:
         print(f"  CSV files not found, falling back to IAI...")
-        if iai is None:
-            raise FileNotFoundError(
-                f"CSV weight files not found and IAI not available. "
-                f"Please run 'python scratch.py' first to extract weights."
-            )
+
+        iai_local = _get_iai(required=True)
         
         # Load models using IAI
         epc_model_path = models_dir / f'lr_{embedding_method}_epc.json'
@@ -220,8 +263,8 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
         if not clicks_model.exists():
             raise FileNotFoundError(f"Clicks model not found: {clicks_model}")
 
-        lnr_epc = iai.read_json(str(epc_model_path))
-        lnr_clicks = iai.read_json(str(clicks_model))
+        lnr_epc = iai_local.read_json(str(epc_model_path))
+        lnr_clicks = iai_local.read_json(str(clicks_model))
         
         # Extract weights and constants using IAI
         weights_epc_tuple = lnr_epc.get_prediction_weights()
@@ -274,8 +317,9 @@ def load_models(embedding_method='bert', alg_epc='lr', alg_clicks='lr', models_d
     if not clicks_model.exists():
         raise FileNotFoundError(f"Clicks model not found: {clicks_model}")
     
-    lnr_epc = iai.read_json(str(epc_model))
-    lnr_clicks = iai.read_json(str(clicks_model))
+    iai_local = _get_iai(required=True)
+    lnr_epc = iai_local.read_json(str(epc_model))
+    lnr_clicks = iai_local.read_json(str(clicks_model))
     
     print(f"  Loaded EPC model from {epc_model}")
     print(f"  Loaded clicks model from {clicks_model}")
@@ -415,15 +459,29 @@ def create_feature_matrix(
     combo_df['Day'] = filter_day
     print(f"  Created {len(combo_df)} keyword-region-match combinations")
 
+    # --- Merge keyword embeddings onto each row ---
+    # `keyword_df` is expected to contain columns like bert_0..bert_49 (or tfidf_*) plus 'Keyword'.
+    # We join on a normalized keyword key to avoid case/whitespace mismatches.
+    kw_emb = keyword_df.copy()
+    kw_emb['Keyword_join'] = kw_emb['Keyword'].astype(str).str.lower().str.strip()
+    combo_df = combo_df.copy()
+    combo_df['Keyword_join'] = combo_df['Keyword'].astype(str).str.lower().str.strip()
+
+    # Add embeddings (and any other keyword-level columns) to each combination.
+    # Keep the original 'Keyword' from combo_df.
+    combo_df = combo_df.merge(
+        kw_emb.drop(columns=['Keyword'], errors='ignore'),
+        on='Keyword_join',
+        how='left'
+    )
+
     # --- Feature sourcing (GKP-only) ---
     print(f"  Using GKP keyword stats from {gkp_dir} (no historical training merge)")
     gkp_df = get_gkp_data(gkp_dir=gkp_dir)
 
-    # Normalize join keys
+    # Normalize join keys for GKP merge
     gkp_df = gkp_df.copy()
     gkp_df['Keyword_join'] = gkp_df['Keyword'].astype(str).str.lower().str.strip()
-    combo_df = combo_df.copy()
-    combo_df['Keyword_join'] = combo_df['Keyword'].astype(str).str.lower().str.strip()
 
     # Merge keyword stats onto each keyword-region-match row
     result = combo_df.merge(
@@ -531,18 +589,20 @@ def create_feature_matrix(
     # Convert column names: replace dots with underscores to match model feature names
     result.columns = result.columns.str.replace('.', '_', regex=False)
     
-    # Determine if we need both versions (mixed models) or just one
-    # Treat mirrored ORT (mort) the same as ORT for feature handling.
-    ort_algs = {'ort', 'mort'}
-    use_ort_conv = (alg_epc in ort_algs)
-    use_ort_clicks = (alg_clicks in ort_algs)
-    use_both = use_ort_conv and use_ort_clicks
-    use_both_lr = (not use_ort_conv) and (not use_ort_clicks)
-    is_mixed = (use_ort_conv and not use_ort_clicks) or (not use_ort_conv and use_ort_clicks)
+    # Determine if we need both versions (mixed models) or just one.
+    # - ORT/MORT need raw categoricals (strings).
+    # - XGB models in this repo are trained with a saved sklearn ColumnTransformer
+    #   (one-hot inside the preprocessor), so they ALSO need raw categoricals.
+    raw_cat_algs = {'ort', 'mort', 'xgb'}
+    use_raw_epc = (alg_epc in raw_cat_algs)
+    use_raw_clicks = (alg_clicks in raw_cat_algs)
+    use_both_raw = use_raw_epc and use_raw_clicks
+    use_both_lr = (not use_raw_epc) and (not use_raw_clicks)
+    is_mixed = (use_raw_epc and not use_raw_clicks) or (not use_raw_epc and use_raw_clicks)
     
-    if use_both:
-        # Both ORT: keep categorical as strings only
-        print(f"  Keeping categorical features as strings (both models are ORT)")
+    if use_both_raw:
+        # Both need raw categoricals: keep categorical as strings only
+        print(f"  Keeping categorical features as strings (both models need raw categoricals)")
         numeric_cols = result.select_dtypes(include=[np.number]).columns.tolist()
         for col in numeric_cols:
             result[col] = result[col].astype(float)
@@ -550,8 +610,8 @@ def create_feature_matrix(
         X_lr = None
         
     elif use_both_lr:
-        # Both LR: one-hot encode only
-        print(f"  One-hot encoding categorical columns (both models are LR)")
+        # Both are linear-weight models: one-hot encode only
+        print(f"  One-hot encoding categorical columns (both models use linear weights)")
         categorical_cols = result.select_dtypes(include=['object']).columns.tolist()
         if categorical_cols:
             result = pd.get_dummies(result, columns=categorical_cols, drop_first=False)
@@ -582,7 +642,7 @@ def create_feature_matrix(
     # Return appropriate format
     if is_mixed:
         return X_ort, X_lr, keyword_idx_list, region_list, match_list
-    elif use_both:
+    elif use_both_raw:
         return X_ort, keyword_idx_list, region_list, match_list
     else:  # use_both_lr
         return X_lr, keyword_idx_list, region_list, match_list
@@ -710,6 +770,286 @@ def embed_glm(model, weights, const, X, b, target, *, link: str = 'log'):
             raise ValueError(f"Unsupported GLM link: {link}")
 
         pred_vars.append(pred)
+
+    return model, pred_vars
+
+
+def _extract_xgb_base_score(model_path: Path) -> float:
+    """Extract base_score from an XGBoost model JSON saved via save_model()."""
+
+    try:
+        with open(model_path, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+        learner = obj.get("learner", {})
+        lmp = learner.get("learner_model_param", {})
+        bs = lmp.get("base_score")
+        if bs is None:
+            # Some versions nest params differently.
+            bs = learner.get("attributes", {}).get("base_score")
+        if bs is None:
+            return 0.0
+        return float(bs)
+    except Exception:
+        return 0.0
+
+
+def _align_X_for_preprocessor(preprocessor, X: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    """Align X to the fitted preprocessor's expected columns.
+
+    Ensures missing columns exist (filled with NaN) and columns are ordered.
+    Also handles the common 'Avg. CPC' vs 'Avg_ CPC' name mismatch.
+    """
+
+    if hasattr(preprocessor, "feature_names_in_"):
+        expected = list(preprocessor.feature_names_in_)  # type: ignore[attr-defined]
+    else:
+        expected = list(X.columns)
+
+    X_use = X.copy()
+
+    if "Avg. CPC" in expected and "Avg. CPC" not in X_use.columns and "Avg_ CPC" in X_use.columns:
+        X_use = X_use.rename(columns={"Avg_ CPC": "Avg. CPC"})
+    elif "Avg_ CPC" in expected and "Avg_ CPC" not in X_use.columns and "Avg. CPC" in X_use.columns:
+        X_use = X_use.rename(columns={"Avg. CPC": "Avg_ CPC"})
+
+    for col in expected:
+        if col not in X_use.columns:
+            X_use[col] = np.nan
+
+    X_use = X_use[expected]
+    return X_use, expected
+
+
+def _parse_xgb_tree_paths(tree_obj: dict) -> List[Tuple[List[Tuple[int, str, float]], float]]:
+    """Return list of (conditions, leaf_value) for one tree.
+
+    condition tuple: (feature_index, op, threshold) with op in {'lt','ge'}.
+    """
+
+    paths: List[Tuple[List[Tuple[int, str, float]], float]] = []
+
+    def _recurse(node: dict, conds: List[Tuple[int, str, float]]) -> None:
+        if "leaf" in node:
+            paths.append((list(conds), float(node["leaf"])))
+            return
+
+        split = node.get("split")
+        if not (isinstance(split, str) and split.startswith("f")):
+            raise ValueError(f"Unsupported split key: {split}")
+
+        feat_idx = int(split[1:])
+        thr = float(node.get("split_condition"))
+
+        children = node.get("children")
+        if not isinstance(children, list) or len(children) < 2:
+            raise ValueError("Malformed XGBoost tree: missing children")
+
+        child_by_id = {int(ch.get("nodeid")): ch for ch in children if "nodeid" in ch}
+        yes_id = int(node.get("yes"))
+        no_id = int(node.get("no"))
+        yes_child = child_by_id.get(yes_id)
+        no_child = child_by_id.get(no_id)
+        if yes_child is None or no_child is None:
+            raise ValueError("Malformed XGBoost tree: could not map yes/no children")
+
+        # XGBoost convention: yes branch corresponds to feature < threshold.
+        _recurse(yes_child, conds + [(feat_idx, "lt", thr)])
+        _recurse(no_child, conds + [(feat_idx, "ge", thr)])
+
+    _recurse(tree_obj, [])
+    return paths
+
+
+def embed_xgb(
+    model,
+    *,
+    xgb_model_path: Path,
+    preprocessor_path: Path,
+    X: pd.DataFrame,
+    b,
+    target: str,
+    max_bid: float,
+) -> Tuple[object, List[object]]:
+    """Embed an XGBoost regressor (saved JSON) into Gurobi without IAI.
+
+    Assumptions:
+    - The XGB model was trained on `preprocessor.transform(X_raw)`.
+    - `X` is the raw feature DataFrame (categoricals as strings).
+    - The bid decision variable `b[i]` replaces the raw 'Avg. CPC' feature.
+
+    This uses a leaf-indicator (path-based) formulation per tree.
+    """
+
+    if xgb is None:
+        raise ImportError("xgboost is required for embed_xgb. Install with: pip install xgboost")
+    if joblib is None:
+        raise ImportError("joblib is required for embed_xgb. Install with: pip install joblib")
+
+    print(f"  Embedding {target} XGB constraints (path-based formulation)...")
+
+    preprocessor = joblib.load(preprocessor_path)
+    X_use, expected_cols = _align_X_for_preprocessor(preprocessor, X)
+
+    # Identify CPC column name as expected by the preprocessor.
+    cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+    if not cpc_candidates:
+        raise KeyError(
+            "Could not find an Avg. CPC column expected by the saved preprocessor. "
+            f"Expected one of ['Avg. CPC', 'Avg_ CPC'] in: {expected_cols[:20]}..."
+        )
+    cpc_col = cpc_candidates[0]
+
+    # Precompute preprocessed feature constants (CPC set to 0) and CPC coefficient
+    # (difference between CPC=1 and CPC=0). This is robust to scaling pipelines.
+    X0 = X_use.copy()
+    X0[cpc_col] = 0.0
+    X1 = X_use.copy()
+    X1[cpc_col] = 1.0
+
+    Z0 = preprocessor.transform(X0)
+    Z1 = preprocessor.transform(X1)
+    dZ = Z1 - Z0
+
+    if sp is not None and sp.issparse(Z0):
+        Z0 = Z0.tocsr()
+        dZ = dZ.tocsr()
+    else:
+        Z0 = np.asarray(Z0)
+        dZ = np.asarray(dZ)
+
+    booster = xgb.Booster()
+    booster.load_model(str(xgb_model_path))
+    base_score = _extract_xgb_base_score(xgb_model_path)
+
+    tree_dumps = booster.get_dump(dump_format="json")
+    trees = [json.loads(s) for s in tree_dumps]
+
+    # Parse all leaf paths and collect used feature indices.
+    tree_paths: List[List[Tuple[List[Tuple[int, str, float]], float]]] = []
+    used_features: set[int] = set()
+    cpc_split_thresholds: List[float] = []
+
+    for t in trees:
+        paths = _parse_xgb_tree_paths(t)
+        tree_paths.append(paths)
+        for conds, _leaf in paths:
+            for feat_idx, _op, thr in conds:
+                used_features.add(int(feat_idx))
+                cpc_split_thresholds.append(float(thr))
+
+    if not used_features:
+        raise ValueError("XGB model appears to have no split features")
+
+    # Determine which preprocessed feature index corresponds to CPC.
+    if sp is not None and sp.issparse(dZ):
+        nonzero_cols = set(map(int, dZ.nonzero()[1]))
+    else:
+        nonzero_cols = set(int(j) for j in range(dZ.shape[1]) if np.any(dZ[:, j] != 0))
+
+    cpc_feature_candidates = sorted(list(nonzero_cols.intersection(used_features)))
+    if len(cpc_feature_candidates) > 1:
+        raise ValueError(
+            f"Multiple variable-dependent preprocessed columns detected for CPC: {cpc_feature_candidates}. "
+            "This embedding assumes only the CPC column varies with b."
+        )
+    cpc_feature_idx = cpc_feature_candidates[0] if cpc_feature_candidates else None
+
+    cpc_coeff = 0.0
+    if cpc_feature_idx is not None:
+        if sp is not None and sp.issparse(dZ):
+            # coefficient per row should be constant; take first row.
+            cpc_coeff = float(dZ[0, cpc_feature_idx])
+        else:
+            cpc_coeff = float(dZ[0, cpc_feature_idx])
+
+    # Materialize constants only for used features.
+    used_features_list = sorted(list(used_features))
+    const_by_feat: Dict[int, np.ndarray] = {}
+    if sp is not None and sp.issparse(Z0):
+        for j in used_features_list:
+            const_by_feat[j] = np.asarray(Z0.getcol(j).toarray()).ravel()
+    else:
+        for j in used_features_list:
+            const_by_feat[j] = np.asarray(Z0[:, j]).ravel()
+
+    # Big-M for CPC splits (only needed if CPC is used in the trees).
+    M_cpc = 0.0
+    if cpc_feature_idx is not None:
+        expr0 = 0.0
+        expr1 = cpc_coeff * float(max_bid)
+        expr_min = float(min(expr0, expr1))
+        expr_max = float(max(expr0, expr1))
+        for paths in tree_paths:
+            for conds, _leaf in paths:
+                for feat_idx, _op, thr in conds:
+                    if int(feat_idx) != int(cpc_feature_idx):
+                        continue
+                    M_cpc = max(M_cpc, expr_max - float(thr), float(thr) - expr_min)
+        M_cpc = float(M_cpc + 1e-6)
+
+    K = len(X_use)
+    pred_vars: List[object] = []
+
+    # Build constraints row-by-row.
+    for i in range(K):
+        pred = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_{i}")
+        pred_vars.append(pred)
+
+        tree_outputs = []
+
+        for t_idx, paths in enumerate(tree_paths):
+            leaf_inds = []
+            leaf_vals = []
+
+            for leaf_idx, (conds, leaf_val) in enumerate(paths):
+                z = model.addVar(vtype=GRB.BINARY, name=f"{target}_xgb_t{t_idx}_l{leaf_idx}_i{i}")
+                leaf_inds.append(z)
+                leaf_vals.append(float(leaf_val))
+
+                # Enforce split conditions along the path.
+                infeasible = False
+                for feat_idx, op, thr in conds:
+                    feat_idx = int(feat_idx)
+                    thr = float(thr)
+
+                    if cpc_feature_idx is None or feat_idx != int(cpc_feature_idx):
+                        # Constant feature. If the split is violated, this leaf is impossible.
+                        v = float(const_by_feat[feat_idx][i])
+                        if op == "lt":
+                            if not (v < thr):
+                                infeasible = True
+                                break
+                        elif op == "ge":
+                            if not (v >= thr):
+                                infeasible = True
+                                break
+                        else:
+                            raise ValueError(f"Unknown op: {op}")
+                    else:
+                        # CPC-dependent feature.
+                        expr = (cpc_coeff * b[i])
+                        if op == "lt":
+                            model.addConstr(expr <= thr + M_cpc * (1 - z), name=f"{target}_xgb_lt_t{t_idx}_l{leaf_idx}_i{i}_f{feat_idx}")
+                        elif op == "ge":
+                            model.addConstr(expr >= thr + 1e-6 - M_cpc * (1 - z), name=f"{target}_xgb_ge_t{t_idx}_l{leaf_idx}_i{i}_f{feat_idx}")
+                        else:
+                            raise ValueError(f"Unknown op: {op}")
+
+                if infeasible:
+                    model.addConstr(z == 0, name=f"{target}_xgb_infeasible_t{t_idx}_l{leaf_idx}_i{i}")
+
+            # Exactly one leaf active per tree.
+            model.addConstr(gp.quicksum(leaf_inds) == 1, name=f"{target}_xgb_oneleaf_t{t_idx}_i{i}")
+
+            tree_out = model.addVar(lb=-GRB.INFINITY, name=f"{target}_xgb_tree_{t_idx}_i{i}")
+            model.addConstr(
+                tree_out == gp.quicksum(leaf_vals[k] * leaf_inds[k] for k in range(len(leaf_inds))),
+                name=f"{target}_xgb_treeout_t{t_idx}_i{i}",
+            )
+            tree_outputs.append(tree_out)
+
+        # Prediction is base_score + sum(tree outputs)
+        model.addConstr(pred == float(base_score) + gp.quicksum(tree_outputs), name=f"{target}_xgb_predlink_{i}")
 
     return model, pred_vars
 
@@ -1039,6 +1379,8 @@ def optimize_bids_embedded(
     max_bid=50.0,
     epc_model=None,
     clicks_model=None,
+    epc_xgb_paths: Optional[Tuple[Path, Path]] = None,
+    clicks_xgb_paths: Optional[Tuple[Path, Path]] = None,
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
 ):
@@ -1072,13 +1414,16 @@ def optimize_bids_embedded(
     M_g = 400     # Max potential clicks (Big-M for g)
     M_f = 40000   # Max potential EPC (Big-M for f). Kept large for safety.
 
-    # Determine which models are being used
-    use_ort_epc = epc_model is not None
-    use_ort_clicks = clicks_model is not None
+    raw_cat_algs = {'ort', 'mort', 'xgb'}
+
+    use_ort_epc = (alg_epc in {'ort', 'mort'})
+    use_ort_clicks = (alg_clicks in {'ort', 'mort'})
+    use_xgb_epc = (alg_epc == 'xgb')
+    use_xgb_clicks = (alg_clicks == 'xgb')
 
     # Select appropriate X for each model
-    X_epc = X_ort if use_ort_epc else X_lr
-    X_clicks = X_ort if use_ort_clicks else X_lr
+    X_epc = X_ort if (alg_epc in raw_cat_algs) else X_lr
+    X_clicks = X_ort if (alg_clicks in raw_cat_algs) else X_lr
 
     # Use whichever X is not None for size reference
     if X_ort is None and X_lr is None:
@@ -1086,13 +1431,13 @@ def optimize_bids_embedded(
     K = len(X_ort) if X_ort is not None else len(X_lr)
 
     model_type_str = ""
-    if use_ort_epc or use_ort_clicks:
-        if use_ort_epc and use_ort_clicks:
-            model_type_str = "ORT"
+    if use_ort_epc or use_ort_clicks or use_xgb_epc or use_xgb_clicks:
+        if (use_ort_epc and use_ort_clicks) or (use_xgb_epc and use_xgb_clicks):
+            model_type_str = "TREE"
         else:
-            model_type_str = f"{'ORT' if use_ort_epc else 'LR'} (epc) + {'ORT' if use_ort_clicks else 'LR'} (clicks)"
+            model_type_str = f"{alg_epc.upper()} (epc) + {alg_clicks.upper()} (clicks)"
     else:
-        model_type_str = "LR"
+        model_type_str = "LINEAR"
     
     print(f"\nSolving bid optimization with embedded {model_type_str} constraints...")
     print(f"  Budget: ${budget:,.2f}")
@@ -1125,6 +1470,19 @@ def optimize_bids_embedded(
     # Embed EPC model
     if use_ort_epc:
         model, f_hat_vars = embed_ort(model, epc_model, X_epc, b, target='epc', max_bid=max_bid, save_dir=trees_dir)
+    elif use_xgb_epc:
+        if epc_xgb_paths is None:
+            raise ValueError("epc_xgb_paths is required when alg_epc == 'xgb'")
+        xgb_path, preproc_path = epc_xgb_paths
+        model, f_hat_vars = embed_xgb(
+            model,
+            xgb_model_path=xgb_path,
+            preprocessor_path=preproc_path,
+            X=X_epc,
+            b=b,
+            target='epc',
+            max_bid=max_bid,
+        )
     else:
         if weights_dict is None:
             raise ValueError("weights_dict is required when epc_model is not provided")
@@ -1144,6 +1502,19 @@ def optimize_bids_embedded(
     if use_ort_clicks:
         # Use ORT model
         model, g_hat_vars = embed_ort(model, clicks_model, X_clicks, b, target='clicks', max_bid=max_bid, save_dir=trees_dir)
+    elif use_xgb_clicks:
+        if clicks_xgb_paths is None:
+            raise ValueError("clicks_xgb_paths is required when alg_clicks == 'xgb'")
+        xgb_path, preproc_path = clicks_xgb_paths
+        model, g_hat_vars = embed_xgb(
+            model,
+            xgb_model_path=xgb_path,
+            preprocessor_path=preproc_path,
+            X=X_clicks,
+            b=b,
+            target='clicks',
+            max_bid=max_bid,
+        )
     else:
         # Use LR model
         clicks_const = weights_dict['clicks_const']
@@ -1177,10 +1548,7 @@ def optimize_bids_embedded(
     model.update()
     
     # Determine model type string for filename
-    if use_ort_epc or use_ort_clicks:
-        model_type_str = f"{('ort' if use_ort_epc else 'lr')}_{'ort' if use_ort_clicks else 'lr'}"
-    else:
-        model_type_str = "lr_lr"
+    model_type_str = f"{alg_epc}_{alg_clicks}"
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     lp_file = model_dir / f'bid_optimization_{model_type_str}_{timestamp}.lp'
@@ -1254,16 +1622,16 @@ def main():
     parser.add_argument(
         '--alg-conv',
         type=str,
-        default='lr',
-        choices=['lr', 'glm', 'ort', 'mort'],
-        help='Algorithm type for EPC model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
+        default='xgb',
+        choices=['lr', 'glm', 'xgb', 'ort', 'mort'],
+        help='Algorithm type for EPC model: lr (linear weights), glm (Tweedie GLM weights), xgb (XGBoost Tweedie; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--alg-clicks',
         type=str,
-        default='ort', # 'lr', # 
-        choices=['lr', 'glm', 'ort', 'mort'],
-        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
+        default='xgb', # 'lr', # 
+        choices=['lr', 'glm', 'xgb', 'ort', 'mort'],
+        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), xgb (XGBoost Tweedie; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--budget',
@@ -1349,13 +1717,14 @@ def main():
         )
         
         # Unpack results based on model types
-        is_mixed = (args.alg_conv == 'ort' and args.alg_clicks != 'ort') or (args.alg_conv != 'ort' and args.alg_clicks == 'ort')
+        raw_cat_algs = {'ort', 'mort', 'xgb'}
+        is_mixed = ((args.alg_conv in raw_cat_algs) and (args.alg_clicks not in raw_cat_algs)) or ((args.alg_conv not in raw_cat_algs) and (args.alg_clicks in raw_cat_algs))
         if is_mixed:
             X_ort, X_lr, kw_idx_list, region_list, match_list = feature_matrix_result
         else:
             X_result, kw_idx_list, region_list, match_list = feature_matrix_result
-            X_ort = X_result if args.alg_conv == 'ort' and args.alg_clicks == 'ort' else None
-            X_lr = X_result if args.alg_conv != 'ort' and args.alg_clicks != 'ort' else None
+            X_ort = X_result if (args.alg_conv in raw_cat_algs) and (args.alg_clicks in raw_cat_algs) else None
+            X_lr = X_result if (args.alg_conv not in raw_cat_algs) and (args.alg_clicks not in raw_cat_algs) else None
         
         X = X_ort if X_ort is not None else X_lr
         print(f"Feature matrix has {X.shape[1]} total features")
@@ -1384,29 +1753,49 @@ def main():
         mapping_df.to_csv(mapping_file, index=False)
         print(f"Saved mapping to {mapping_file}")
 
-        # Embedded mode: supports linear weights (LR/GLM) and ORT (IAI)
+        # Embedded mode: supports linear weights (LR/GLM), ORT/MORT (IAI), and XGB (no IAI)
         epc_model = None
         clicks_model = None
+        epc_xgb_paths = None
+        clicks_xgb_paths = None
 
-        if args.alg_conv == 'ort':
-            if iai is None:
-                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR/GLM weights.")
+        if args.alg_conv in {'ort', 'mort'}:
+            iai_local = _get_iai(required=True)
 
-            epc_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_epc.json'
+            epc_model_path = Path(args.models_dir) / f'{args.alg_conv}_{args.embedding_method}_epc.json'
             if not epc_model_path.exists():
-                raise FileNotFoundError(f"ORT EPC model not found: {epc_model_path}")
-            epc_model = iai.read_json(str(epc_model_path))
-            print(f"  Loaded ORT EPC model from {epc_model_path}")
+                raise FileNotFoundError(f"{args.alg_conv.upper()} EPC model not found: {epc_model_path}")
+            epc_model = iai_local.read_json(str(epc_model_path))
+            print(f"  Loaded {args.alg_conv.upper()} EPC model from {epc_model_path}")
 
-        if args.alg_clicks == 'ort':
-            if iai is None:
-                raise RuntimeError("IAI is required for ORT models. Please install IAI or use LR/GLM weights.")
+        if args.alg_conv == 'xgb':
+            epc_xgb_model_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_epc.json'
+            epc_xgb_preproc_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_epc_preprocess.joblib'
+            if not epc_xgb_model_path.exists():
+                raise FileNotFoundError(f"XGB EPC model not found: {epc_xgb_model_path}")
+            if not epc_xgb_preproc_path.exists():
+                raise FileNotFoundError(f"XGB EPC preprocessor not found: {epc_xgb_preproc_path}")
+            epc_xgb_paths = (epc_xgb_model_path, epc_xgb_preproc_path)
+            print(f"  Using XGB EPC model from {epc_xgb_model_path}")
 
-            clicks_model_path = Path(args.models_dir) / f'ort_{args.embedding_method}_clicks.json'
+        if args.alg_clicks in {'ort', 'mort'}:
+            iai_local = _get_iai(required=True)
+
+            clicks_model_path = Path(args.models_dir) / f'{args.alg_clicks}_{args.embedding_method}_clicks.json'
             if not clicks_model_path.exists():
-                raise FileNotFoundError(f"ORT clicks model not found: {clicks_model_path}")
-            clicks_model = iai.read_json(str(clicks_model_path))
-            print(f"  Loaded ORT clicks model from {clicks_model_path}")
+                raise FileNotFoundError(f"{args.alg_clicks.upper()} clicks model not found: {clicks_model_path}")
+            clicks_model = iai_local.read_json(str(clicks_model_path))
+            print(f"  Loaded {args.alg_clicks.upper()} clicks model from {clicks_model_path}")
+
+        if args.alg_clicks == 'xgb':
+            clicks_xgb_model_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_clicks.json'
+            clicks_xgb_preproc_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_clicks_preprocess.joblib'
+            if not clicks_xgb_model_path.exists():
+                raise FileNotFoundError(f"XGB clicks model not found: {clicks_xgb_model_path}")
+            if not clicks_xgb_preproc_path.exists():
+                raise FileNotFoundError(f"XGB clicks preprocessor not found: {clicks_xgb_preproc_path}")
+            clicks_xgb_paths = (clicks_xgb_model_path, clicks_xgb_preproc_path)
+            print(f"  Using XGB clicks model from {clicks_xgb_model_path}")
 
         model, b, f, g = optimize_bids_embedded(
             X_ort=X_ort,
@@ -1416,6 +1805,8 @@ def main():
             max_bid=args.max_bid,
             epc_model=epc_model,
             clicks_model=clicks_model,
+            epc_xgb_paths=epc_xgb_paths,
+            clicks_xgb_paths=clicks_xgb_paths,
             alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks
         )

@@ -41,6 +41,15 @@ def setup_iai():
         print("[IAI] Configured for Engaging cluster")
     else:
         # Local machine configuration (Windows)
+        # Set Julia threads for parallelization (use all available cores)
+        threads = os.getenv('JULIA_NUM_THREADS')
+        if not threads:
+            # Default to all available CPU cores
+            import multiprocessing
+            threads = multiprocessing.cpu_count()
+            os.environ['JULIA_NUM_THREADS'] = str(threads)
+        print(f"[IAI] Local mode: Using {threads} Julia threads")
+        
         os.environ['IAI_SYSTEM_IMAGE'] = "C:\\Users\\jsitu\\IAI\\sys.dll"
         print("[IAI] Configured for local Windows machine")
     

@@ -334,7 +334,7 @@ def main() -> None:
         "--max-depth-grid",
         type=int,
         nargs="+",
-        default=[10, 12],
+        default=[8, 10],
         help="Grid for ORT max_depth.",
     )
     parser.add_argument(
