@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils import load_embeddings
+from utils.data_pipeline import get_gkp_data, impute_missing_data
 
 # Check for required libraries
 try:
@@ -58,17 +59,17 @@ def load_embeddings_data(keywords, embedding_method='bert', output_dir='data/emb
     return embedding_df
 
 
-def create_feature_matrix_with_embeddings(keywords, embedding_method='bert', n_components=50, models_dir='models'):
-    """Generate embeddings for keywords using saved embedding pipeline.
-    
-    Loads the saved vectorizer/transformer, SVD, and normalizer from models_dir
+def generate_keyword_embeddings_df(keywords, embedding_method='bert', n_components=50, pipeline_dir='data/clean'):
+    """Generate embeddings for keywords using a saved embedding pipeline.
+
+    Loads the saved vectorizer/transformer, SVD, and normalizer from pipeline_dir
     and applies them to the provided keywords to create embeddings.
     
     Args:
         keywords: list or Series of keyword strings
         embedding_method: 'bert' or 'tfidf'
         n_components: number of SVD components used (should match training)
-        models_dir: directory containing saved pipeline pickle files
+        pipeline_dir: directory containing saved pipeline pickle files (default: data/clean)
     
     Returns:
         DataFrame with columns ['{method}_0' ... '{method}_N', 'Keyword']
@@ -82,11 +83,11 @@ def create_feature_matrix_with_embeddings(keywords, embedding_method='bert', n_c
     print(f"Generating {embedding_method.upper()} embeddings for {len(keywords)} keywords...")
     
     # Load the saved pipeline
-    pipeline_file = Path(models_dir) / f'{embedding_method}_pipeline_{n_components}d.pkl'
+    pipeline_file = Path(pipeline_dir) / f'{embedding_method}_pipeline_{n_components}d.pkl'
     if not pipeline_file.exists():
         raise FileNotFoundError(
             f"Embedding pipeline not found: {pipeline_file}. "
-            f"Please ensure tidy_get_data.py has been run with add_embeddings(save_models=True)."
+            f"Please ensure the data pipeline has been run with embedding pipeline persistence enabled."
         )
     
     with open(pipeline_file, 'rb') as f:
@@ -320,11 +321,26 @@ def extract_weights(lnr_epc, lnr_clicks, embedding_method='bert', n_embeddings=5
     }
 
 
-def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, regions=None, match_types=None, training_data_path='data/clean/ad_opt_data_bert.csv', weights_dict=None, alg_epc='lr', alg_clicks='lr'):
+def create_feature_matrix(
+    keyword_df,
+    embedding_method='bert',
+    target_day=None,
+    regions=None,
+    match_types=None,
+    weights_dict=None,
+    alg_epc='lr',
+    alg_clicks='lr',
+    gkp_dir: str = 'data/gkp',
+):
     """Create feature matrix/matrices for all keyword-region-match combinations for a specific day.
     
-    Merges on exact keyword-match type-region combinations from historical data.
-    If target_day is None, uses the latest date in data and adjusts date features for today.
+    This version is intentionally *independent* of historical ads training data.
+    It builds features using:
+    - Keyword embeddings from keyword_df
+    - Region + match type
+    - Google Keyword Planner (GKP) stats from data/gkp (competition, top-of-page bids, monthly searches)
+    - Derived search time-series stats: last_month_searches, three_month_avg, six_month_avg, mom_change, search_trend
+    - Date features for the requested target day (or today)
     
     For mixed models (ORT + LR), returns two versions:
     - X_ort: categorical features as strings (for ORT model access)
@@ -345,10 +361,10 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
         target_day: str, date in format 'YYYY-MM-DD' (e.g., '2024-11-04'). If None, uses latest date.
         regions: list of regions (default: ["USA", "Region_A", "Region_B", "Region_C"])
         match_types: list of match types (default: ["broad match", "exact match", "phrase match"])
-        training_data_path: path to training data file
         weights_dict: dict with 'epc_weights' and 'clicks_weights' to filter features. If None, keeps all.
         alg_epc: algorithm type for EPC model ('lr', 'ort', etc.).
         alg_clicks: algorithm type for clicks model ('lr', 'ort', etc.).
+        gkp_dir: directory containing GKP exports (default: data/gkp)
     
     Returns:
         For ORT-only: (X_ort, keyword_idx_list, region_list, match_list)
@@ -374,21 +390,15 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
     print(f"  Keywords: {num_keywords}, Regions: {len(regions)}, Matches: {len(match_types)}")
     print(f"  Total combinations: {n_combos}")
     
-    # Load training data
-    print(f"  Loading training data from {training_data_path}...")
-    training_data = pd.read_csv(training_data_path)
-    training_data['Day'] = pd.to_datetime(training_data['Day'])
-    
-    # Determine which date to use
+    # Determine which date to use for temporal features
     if target_day is not None:
         if isinstance(target_day, str):
             target_day = pd.to_datetime(target_day)
         filter_day = target_day
-        print(f"  Using target day: {target_day.date()}")
+        print(f"  Using target day for temporal features: {filter_day.date()}")
     else:
-        # Use latest date in data
-        filter_day = training_data['Day'].max()
-        print(f"  Using latest date in data: {filter_day.date()}")
+        filter_day = pd.to_datetime(datetime.today())
+        print(f"  Using today for temporal features: {filter_day.date()}")
     
     # Build all combinations we need
     combinations = []
@@ -404,44 +414,101 @@ def create_feature_matrix(keyword_df, embedding_method='bert', target_day=None, 
     combo_df = pd.DataFrame(combinations)
     combo_df['Day'] = filter_day
     print(f"  Created {len(combo_df)} keyword-region-match combinations")
-    
-    # Use merge_asof to match on (Keyword, Match type, Region) with nearest date
-    print(f"  Merging on exact (Keyword, Match type, Region) with nearest date...")
-    
-    # Merge using asof on date, exact match on categorical columns
-    result = pd.merge_asof(
-        combo_df.sort_values('Day'),
-        training_data.sort_values('Day'),
-        on='Day',
-        by=['Keyword', 'Match type', 'Region'],
-        direction='nearest'
+
+    # --- Feature sourcing (GKP-only) ---
+    print(f"  Using GKP keyword stats from {gkp_dir} (no historical training merge)")
+    gkp_df = get_gkp_data(gkp_dir=gkp_dir)
+
+    # Normalize join keys
+    gkp_df = gkp_df.copy()
+    gkp_df['Keyword_join'] = gkp_df['Keyword'].astype(str).str.lower().str.strip()
+    combo_df = combo_df.copy()
+    combo_df['Keyword_join'] = combo_df['Keyword'].astype(str).str.lower().str.strip()
+
+    # Merge keyword stats onto each keyword-region-match row
+    result = combo_df.merge(
+        gkp_df.drop(columns=['Keyword'], errors='ignore'),
+        left_on='Keyword_join',
+        right_on='Keyword_join',
+        how='left'
     )
+
+    # Compute time-series stats from searches_YYYY_MM columns
+    search_cols = sorted([c for c in result.columns if c.startswith('searches_')])
+    if search_cols:
+        def _ts_stats_from_row(row):
+            values = [row[c] for c in search_cols]
+            clean_vals = []
+            for v in values:
+                try:
+                    clean_vals.append(float(v))
+                except Exception:
+                    clean_vals.append(np.nan)
+
+            last_val = clean_vals[-1] if clean_vals else np.nan
+
+            three = [v for v in clean_vals[-3:] if not np.isnan(v)]
+            six = [v for v in clean_vals[-6:] if not np.isnan(v)]
+
+            three_avg = (sum(three) / len(three)) if three else np.nan
+            six_avg = (sum(six) / len(six)) if six else np.nan
+
+            mom = np.nan
+            if len(clean_vals) >= 2 and not np.isnan(clean_vals[-1]) and not np.isnan(clean_vals[-2]):
+                prev_val = clean_vals[-2]
+                curr_val = clean_vals[-1]
+                if prev_val > 0:
+                    mom = ((curr_val - prev_val) / prev_val) * 100.0
+                else:
+                    mom = 100.0 if curr_val > 0 else 0.0
+
+            trend = np.nan
+            if len(six) >= 2:
+                x = np.arange(len(six), dtype=float)
+                y = np.array(six, dtype=float)
+                trend = np.polyfit(x, y, 1)[0]
+
+            return pd.Series(
+                {
+                    'last_month_searches': last_val,
+                    'three_month_avg': three_avg,
+                    'six_month_avg': six_avg,
+                    'mom_change': mom,
+                    'search_trend': trend,
+                }
+            )
+
+        ts_stats = result.apply(_ts_stats_from_row, axis=1)
+        for col in ts_stats.columns:
+            result[col] = ts_stats[col]
+
+    # Drop raw monthly columns to keep feature matrix consistent
+    if search_cols:
+        result = result.drop(columns=search_cols, errors='ignore')
+
+    # Provide Avg. CPC proxy if missing (optimizer replaces it with bid variable anyway)
+    if 'Avg. CPC' not in result.columns:
+        low = result.get('Top of page bid (low range)')
+        high = result.get('Top of page bid (high range)')
+        if low is not None and high is not None:
+            result['Avg. CPC'] = (pd.to_numeric(low, errors='coerce') + pd.to_numeric(high, errors='coerce')) / 2.0
+        else:
+            result['Avg. CPC'] = 0.0
+
+    # Impute missing values (uses repo's current imputation strategy)
+    result = impute_missing_data(result)
+
+    # Drop helper join key but keep Keyword/Region/Match type/Day
+    result = result.drop(columns=['Keyword_join'], errors='ignore')
     
-    # Drop combinations not found in training data (will have NaN in feature columns)
-    initial_rows = len(combo_df)
-    result = result.dropna(subset=['Avg. CPC'])
-    final_rows = len(result)
-    dropped_rows = initial_rows - final_rows
-    
-    print(f"  Matched {final_rows} combinations with features (nearest date), {dropped_rows} combinations not found in data and dropped")
-    
-    # If target_day != latest date in data, we need to adjust date features
-    if target_day is None:
-        from utils.date_features import calculate_date_features
-        
-        target_date = pd.to_datetime(datetime.today())
-        date_features = calculate_date_features(target_date, regions=regions)
-        
-        print(f"  Adjusting date features to today ({target_date.date()})...")
-        result['day_of_week'] = date_features['day_of_week']
-        result['is_weekend'] = date_features['is_weekend']
-        result['month'] = date_features['month']
-        result['is_public_holiday'] = date_features['is_public_holiday']
-        result['days_to_next_course_start'] = date_features['days_to_next_course_start']
-        
-        print(f"  Adjusted temporal features for {target_date.date()}")
-    else:
-        print(f"  Using date features from {filter_day.date()}")
+    # Date features always come from the requested target day (or today)
+    from utils.date_features import calculate_date_features
+    date_features = calculate_date_features(filter_day, regions=regions)
+    result['day_of_week'] = date_features['day_of_week']
+    result['is_weekend'] = date_features['is_weekend']
+    result['month'] = date_features['month']
+    result['is_public_holiday'] = date_features['is_public_holiday']
+    result['days_to_next_course_start'] = date_features['days_to_next_course_start']
     
     # Extract the order information for rows that actually made it into the feature matrix
     # (BEFORE dropping Day/Keyword columns so we still have access to them)
@@ -578,6 +645,72 @@ def embed_lr(model, weights, const, X, b, target):
         # Add constraint: pred_var == expr
         model.addConstr(pred_var == expr, name=f'{target}_constr_{i}')
     
+    return model, pred_vars
+
+
+def embed_glm(model, weights, const, X, b, target, *, link: str = 'log'):
+    """Embed a (Tweedie) GLM into Gurobi.
+
+    This repo's GLM models are trained via sklearn's TweedieRegressor, which
+    uses a log link by default for most positive-mean Tweedie families.
+
+    For link='log', we embed:
+        eta_i = const + sum_j w_j * x_{ij} + w_cpc * b_i
+        pred_i = exp(eta_i)
+
+    Args:
+        model: Gurobi model
+        weights: weights dict in the same format as embed_lr
+        const: intercept
+        X: feature matrix (DataFrame)
+        b: bid decision variables (MVar)
+        target: 'epc' or 'clicks'
+        link: 'log' or 'identity'
+    """
+
+    K = len(X)
+    pred_vars = []
+
+    print(f"  Embedding {target} GLM constraints (link={link})...")
+
+    for i in range(K):
+        # Linear predictor eta
+        eta = model.addVar(lb=-GRB.INFINITY, name=f'{target}_eta_{i}')
+
+        expr = const
+
+        for feature, weight in weights.items():
+            if feature in ['Avg. CPC', 'Avg_ CPC']:
+                expr += weight * b[i]
+                continue
+
+            if isinstance(weight, dict):
+                for level_name, level_weight in weight.items():
+                    ohe_col_name = f"{feature}_{level_name}"
+                    if ohe_col_name not in X.columns:
+                        raise ValueError(
+                            f"Error: One-hot encoded column '{ohe_col_name}' is missing from X dataframe for {target} GLM."
+                        )
+                    expr += level_weight * X.iloc[i][ohe_col_name]
+            else:
+                if feature not in X.columns:
+                    raise ValueError(f"Error: Feature '{feature}' is missing from X dataframe for {target} GLM.")
+                expr += weight * X.iloc[i][feature]
+
+        model.addConstr(eta == expr, name=f'{target}_glm_eta_{i}')
+
+        if link == 'identity':
+            pred = model.addVar(lb=-GRB.INFINITY, name=f'{target}_pred_{i}')
+            model.addConstr(pred == eta, name=f'{target}_glm_identity_{i}')
+        elif link == 'log':
+            pred = model.addVar(lb=0.0, name=f'{target}_pred_{i}')
+            # y = exp(x) general constraint
+            model.addGenConstrExp(eta, pred, name=f'{target}_glm_exp_{i}')
+        else:
+            raise ValueError(f"Unsupported GLM link: {link}")
+
+        pred_vars.append(pred)
+
     return model, pred_vars
 
 def embed_ort(model, ort_model, X, b, target, max_bid=50.0, M=None, save_dir=None):
@@ -906,6 +1039,8 @@ def optimize_bids_embedded(
     max_bid=50.0,
     epc_model=None,
     clicks_model=None,
+    alg_epc: str = 'lr',
+    alg_clicks: str = 'lr',
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1000,7 +1135,10 @@ def optimize_bids_embedded(
         epc_const = weights_dict['epc_const']
         epc_weights = weights_dict['epc_weights']
 
-        model, f_hat_vars = embed_lr(model, epc_weights, epc_const, X_epc, b, target='epc')
+        if alg_epc == 'glm':
+            model, f_hat_vars = embed_glm(model, epc_weights, epc_const, X_epc, b, target='epc', link='log')
+        else:
+            model, f_hat_vars = embed_lr(model, epc_weights, epc_const, X_epc, b, target='epc')
     
     # Embed clicks model
     if use_ort_clicks:
@@ -1010,7 +1148,10 @@ def optimize_bids_embedded(
         # Use LR model
         clicks_const = weights_dict['clicks_const']
         clicks_weights = weights_dict['clicks_weights']
-        model, g_hat_vars = embed_lr(model, clicks_weights, clicks_const, X_clicks, b, target='clicks')
+        if alg_clicks == 'glm':
+            model, g_hat_vars = embed_glm(model, clicks_weights, clicks_const, X_clicks, b, target='clicks', link='log')
+        else:
+            model, g_hat_vars = embed_lr(model, clicks_weights, clicks_const, X_clicks, b, target='clicks')
     
     model.update()
     
@@ -1146,7 +1287,7 @@ def main():
         '--data-dir',
         type=str,
         default='data/clean',
-        help='Directory containing embeddings and models (default: data/clean)'
+        help='Directory containing cleaned data artifacts and embedding pipelines (default: data/clean)'
     )
     parser.add_argument(
         '--models-dir',
@@ -1173,18 +1314,21 @@ def main():
             print(f"Loaded {len(new_keywords)} new keywords from {classified_keywords_file}")
             keywords_to_embed = new_keywords
         else:
-            # Fall back to loading from training data
-            training_data_file = Path(args.data_dir) / f'ad_opt_data_{args.embedding_method}.csv'
-            training_df = pd.read_csv(str(training_data_file))
-            keywords_to_embed = training_df['Keyword'].unique().tolist()
-            print(f"Loaded {len(keywords_to_embed)} unique keywords from training data")
+            # Fall back to loading from latest GKP export
+            gkp_df = get_gkp_data(gkp_dir='data/gkp')
+            if gkp_df.empty:
+                raise FileNotFoundError(
+                    "No keywords_classified.csv found and no GKP 'Saved Keywords Stats' file found in data/gkp."
+                )
+            keywords_to_embed = gkp_df['Keyword'].dropna().astype(str).tolist()
+            print(f"Loaded {len(keywords_to_embed)} keywords from latest GKP export")
         
         # Generate embeddings using saved pipeline
-        keyword_df = create_feature_matrix_with_embeddings(
+        keyword_df = generate_keyword_embeddings_df(
             keywords_to_embed,
             embedding_method=args.embedding_method,
             n_components=50,
-            models_dir=args.models_dir
+            pipeline_dir=args.data_dir,
         )
         
         # Load weights from CSV files (no IAI required)
@@ -1193,16 +1337,15 @@ def main():
             models_dir=args.models_dir
         )
         
-        # Create feature matrix (includes all features and keyword values for target day)
-        training_data_file = Path(args.data_dir) / f'ad_opt_data_{args.embedding_method}.csv'
+        # Create feature matrix (GKP-only; no historical training data)
         feature_matrix_result = create_feature_matrix(
-            keyword_df, 
+            keyword_df,
             embedding_method=args.embedding_method,
             target_day=args.target_day,
-            training_data_path=str(training_data_file),
             weights_dict=weights_dict,
             alg_epc=args.alg_conv,
-            alg_clicks=args.alg_clicks
+            alg_clicks=args.alg_clicks,
+            gkp_dir='data/gkp',
         )
         
         # Unpack results based on model types
@@ -1272,7 +1415,9 @@ def main():
             budget=args.budget,
             max_bid=args.max_bid,
             epc_model=epc_model,
-            clicks_model=clicks_model
+            clicks_model=clicks_model,
+            alg_epc=args.alg_conv,
+            alg_clicks=args.alg_clicks
         )
 
         if model.status == 2 or model.status == 9:

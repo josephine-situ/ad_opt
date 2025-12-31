@@ -31,12 +31,14 @@ conda activate adopt_env
 
 echo "Running mirrored_ORT.py - clicks distillation"
 python -u scripts/mirrored_ORT.py \
+  --split-type axis \
   --target clicks \
   --embedding-method tfidf \
   --xgb-model models/xgb_tweedie_tfidf_clicks.json \
   --xgb-source xgboost_booster
 
 python -u scripts/mirrored_ORT.py \
+  --split-type axis \
   --target clicks \
   --embedding-method bert \
   --xgb-model models/xgb_tweedie_bert_clicks.json \
@@ -44,12 +46,14 @@ python -u scripts/mirrored_ORT.py \
 
 echo "Running mirrored_ORT.py - epc distillation"
 python -u scripts/mirrored_ORT.py \
+  --split-type axis \
   --target epc \
   --embedding-method tfidf \
   --xgb-model models/xgb_tweedie_tfidf_epc.json \
   --xgb-source xgboost_booster
 
 python -u scripts/mirrored_ORT.py \
+  --split-type axis \
   --target epc \
   --embedding-method bert \
   --xgb-model models/xgb_tweedie_bert_epc.json \

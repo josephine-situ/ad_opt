@@ -60,26 +60,17 @@ def _load_xgb_predictor(
     Supported sources:
     - 'iai': JSON created by `iai_learner.write_json(...)` and loaded via `iai.read_json`.
     - 'xgboost_booster': JSON created by `xgboost.XGBRegressor.save_model(...)`.
-    - 'auto': try 'iai' first; if it fails, fall back to 'xgboost_booster'.
 
     For the xgboost booster case, we reconstruct the preprocessing pipeline using the
     same `build_preprocessor` and casting function used during training in
     scripts/prediction_modeling_tweedie.py.
     """
 
-    if xgb_source not in {"auto", "iai", "xgboost_booster"}:
-        raise ValueError("--xgb-source must be one of: auto, iai, xgboost_booster")
+    if xgb_source not in {"iai", "xgboost_booster"}:
+        raise ValueError("--xgb-source must be one of: iai, xgboost_booster")
 
-    if xgb_source in {"auto", "iai"}:
-        try:
-            return iai.read_json(str(xgb_path))
-        except Exception as e:
-            if xgb_source == "iai":
-                raise RuntimeError(
-                    "Failed to load XGB model via `iai.read_json`. "
-                    "If this model was saved by xgboost/sklearn (prediction_modeling_tweedie.py), "
-                    "rerun with `--xgb-source xgboost_booster`."
-                ) from e
+    if xgb_source == "iai":
+        return iai.read_json(str(xgb_path))
 
     # Fallback / explicit: XGBoost native booster JSON
     try:
@@ -106,22 +97,23 @@ def _load_xgb_predictor(
             "Could not import scripts.prediction_modeling_tweedie (needed to rebuild preprocessing for booster JSONs)."
         ) from e
 
-    # Prefer using a persisted, fitted preprocessor if available.
-    # This ensures exact category -> column mapping and scaling matching training.
+    # Require the persisted, fitted preprocessor from prediction_modeling_tweedie.py.
+    # This avoids silent mismatches in one-hot encoding / scaling.
     preproc_path = xgb_path.with_name(xgb_path.stem + "_preprocess.joblib")
     try:
         import joblib  # type: ignore
-    except Exception:
-        joblib = None
+    except Exception as e:
+        raise ImportError(
+            "joblib is required to load the saved preprocessing pipeline. Install with: pip install joblib"
+        ) from e
 
-    if joblib is not None and preproc_path.exists():
-        preprocessor = joblib.load(preproc_path)
-    else:
-        preprocessor, _, _ = pmt.build_preprocessor(X_train_raw)
-        # The booster JSON saved by `XGBRegressor.save_model` does NOT include the fitted
-        # sklearn preprocessing pipeline. If we don't have a persisted preprocessor,
-        # we fit one on the distillation training matrix.
-        preprocessor.fit(X_train_raw)
+    if not preproc_path.exists():
+        raise FileNotFoundError(
+            f"Missing fitted preprocessor for booster model: {preproc_path}. "
+            "Re-train with scripts/prediction_modeling_tweedie.py so it writes the *_preprocess.joblib file."
+        )
+
+    preprocessor = joblib.load(preproc_path)
 
     model = xgb.XGBRegressor()
     model.load_model(xgb_path)
@@ -182,21 +174,22 @@ def mse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean((y_true - y_pred) ** 2))
 
 
-def _candidate_hyperplane_configs(sparsity: str) -> List[Any]:
-    """Return candidate python shapes for `hyperplane_config`.
-
-    IAI's Python bindings have historically accepted different container types
-    depending on version. We try a few common representations.
-
-    Per docs, a single config with `sparsity=:all` enables ORT-H.
+def _make_ort_regressor(*, seed: int, ls_ignore_errors: bool) -> Any:
+    """Create an IAI OptimalTreeRegressor, optionally setting ls_ignore_errors.
     """
-    config_dict = {"sparsity": sparsity}
-    return [
-        config_dict,
-        [config_dict],
-        (config_dict,),
-        (("sparsity", sparsity),),
-    ]
+
+    kwargs: Dict[str, Any] = {
+        "random_seed": seed,
+        "criterion": "mse",
+        "normalize_y": False,
+        "show_progress": False,
+    }
+
+    if not ls_ignore_errors:
+        return iai.OptimalTreeRegressor(**kwargs)
+
+    # If the user's IAI binding doesn't support this flag, fail loudly.
+    return iai.OptimalTreeRegressor(**kwargs, ls_ignore_errors=True)
 
 
 def build_grid(
@@ -205,15 +198,20 @@ def build_grid(
     minbucket_grid: List[float],
     hyperplane_sparsity: str,
     n_folds: int,
+    split_type: str,
+    ls_ignore_errors: bool,
 ) -> Any:
-    """Build an IAI GridSearch for ORT-H (hyperplane splits)."""
+    """Build an IAI GridSearch.
 
-    base = iai.OptimalTreeRegressor(
-        random_seed=seed,
-        criterion="mse",
-        normalize_y=False,
-        show_progress=False,
-    )
+    split_type:
+    - 'hyperplane': ORT-H (hyperplane splits), via `hyperplane_config`.
+    - 'axis': standard ORT (axis-aligned splits), no `hyperplane_config`.
+    """
+
+    if split_type not in {"hyperplane", "axis"}:
+        raise ValueError("split_type must be one of: hyperplane, axis")
+
+    base = _make_ort_regressor(seed=seed, ls_ignore_errors=ls_ignore_errors)
 
     # Prefer putting hyperplane_config into the grid params so it is explicit.
     # But since bindings differ, we fall back to setting it on the learner.
@@ -222,38 +220,19 @@ def build_grid(
         "minbucket": minbucket_grid,
     }
 
-    hyperplane_configs = _candidate_hyperplane_configs(hyperplane_sparsity)
+    if split_type == "axis":
+        return iai.GridSearch(base, **grid_params)
 
-    for hp_cfg in hyperplane_configs:
-        try:
-            grid = iai.GridSearch(base, **grid_params, hyperplane_config=[hp_cfg])
-            # quick check: if GridSearch accepted, return it
-            return grid
-        except TypeError:
-            continue
-        except Exception:
-            continue
-
-    # Fall back: set hyperplane_config on the base learner.
-    last_err: Optional[BaseException] = None
-    for hp_cfg in hyperplane_configs:
-        try:
-            base_hp = iai.OptimalTreeRegressor(
-                random_seed=seed,
-                criterion="mse",
-                normalize_y=False,
-                show_progress=False,
-                hyperplane_config=hp_cfg,
-            )
-            grid = iai.GridSearch(base_hp, **grid_params)
-            return grid
-        except Exception as e:
-            last_err = e
-
-    raise RuntimeError(
-        "Could not configure `hyperplane_config` for ORT-H on this IAI version. "
-        "Try updating IAI or adjust the hyperplane_config representation."
-    ) from last_err
+    # Hyperplane splits (ORT-H). Use a single, explicit config representation.
+    # If this binding doesn't accept it, we error with a clear suggestion.
+    hp_cfg = {"sparsity": hyperplane_sparsity}
+    try:
+        return iai.GridSearch(base, **grid_params, hyperplane_config=[hp_cfg])
+    except TypeError as e:
+        raise RuntimeError(
+            "This IAI version does not accept the expected `hyperplane_config` format. "
+            "Rerun with `--split-type axis` to disable hyperplane splits, or update IAI."
+        ) from e
 
 
 def _print_run_header(args: argparse.Namespace) -> None:
@@ -317,9 +296,9 @@ def main() -> None:
     parser.add_argument(
         "--xgb-source",
         type=str,
-        default="auto",
-        choices=["auto", "iai", "xgboost_booster"],
-        help="How to load --xgb-model (default: auto).",
+        default="xgboost_booster",
+        choices=["iai", "xgboost_booster"],
+        help="How to load --xgb-model (default: xgboost_booster).",
     )
     parser.add_argument(
         "--seed",
@@ -334,17 +313,35 @@ def main() -> None:
         help="Cross-validation folds for grid search.",
     )
     parser.add_argument(
+        "--split-type",
+        type=str,
+        default="axis",
+        choices=["hyperplane", "axis"],
+        help=(
+            "Split type for the distilled ORT. 'hyperplane' enables ORT-H (can be numerically unstable), "
+            "'axis' trains a standard axis-aligned ORT. (default: axis)"
+        ),
+    )
+    parser.add_argument(
+        "--ls-ignore-errors",
+        action="store_true",
+        help=(
+            "If supported by your IAI version, sets `ls_ignore_errors=true` on the learner to ignore "
+            "numeric-instability errors in hyperplane splits."
+        ),
+    )
+    parser.add_argument(
         "--max-depth-grid",
         type=int,
         nargs="+",
-        default=[2, 4, 6, 8],
+        default=[10, 12],
         help="Grid for ORT max_depth.",
     )
     parser.add_argument(
         "--minbucket-grid",
         type=float,
         nargs="+",
-        default=[0.01, 0.02, 0.05],
+        default=[0.001, 0.002, 0.005],
         help="Grid for ORT minbucket.",
     )
     parser.add_argument(
@@ -384,13 +381,18 @@ def main() -> None:
     y_train_hat = np.asarray(xgb_predictor.predict(X_train), dtype=float)
     y_test_hat = np.asarray(xgb_predictor.predict(X_test), dtype=float)
 
-    print("Training mirrored ORT-H (hyperplane splits enabled) via grid search...")
+    if args.split_type == "hyperplane":
+        print("Training mirrored ORT-H (hyperplane splits enabled) via grid search...")
+    else:
+        print("Training mirrored ORT (axis-aligned splits) via grid search...")
     grid = build_grid(
         seed=args.seed,
         max_depth_grid=args.max_depth_grid,
         minbucket_grid=args.minbucket_grid,
         hyperplane_sparsity=args.hyperplane_sparsity,
         n_folds=args.n_folds,
+        split_type=args.split_type,
+        ls_ignore_errors=bool(args.ls_ignore_errors),
     )
 
     grid.fit_cv(X_train, y_train_hat, validation_criterion="mse", n_folds=args.n_folds, verbose=True)
