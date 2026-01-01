@@ -27,6 +27,10 @@ def get_bert_embedding(text_list, model, tokenizer, device):
     # Ensure it's a list, not a Series
     if not isinstance(text_list, list):
         text_list = text_list.tolist()
+    
+    # Ensure tokenizer has pad_token set (required for padding=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
         
     # Tokenize: Add special tokens ([CLS], [SEP]), pad/truncate to max length
     encoded_input = tokenizer(

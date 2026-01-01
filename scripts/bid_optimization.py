@@ -155,7 +155,13 @@ def generate_keyword_embeddings_df(keywords, embedding_method='bert', n_componen
         embeddings = vectorizer.transform(keywords)  # sparse matrix
         embeddings = svd.transform(embeddings)  # dense array
     else:  # bert
-        # BERT pipeline
+        # BERT pipeline (SentenceTransformer)
+        # Fix potential pad_token issue with unpickled tokenizers
+        if hasattr(vectorizer, 'tokenizer'):
+            tokenizer = vectorizer.tokenizer
+            if hasattr(tokenizer, 'pad_token') and tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+        
         embeddings = vectorizer.encode(keywords)  # array of shape (n, 384)
         embeddings = svd.transform(embeddings)  # reduce to n_components
     
