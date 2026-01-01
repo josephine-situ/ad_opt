@@ -1520,22 +1520,19 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     f_vals = f.X
     g_vals = g.X
 
-    # Active rows: bid > 0 (tolerate numerical noise)
-    active_idx = np.where(b_vals > 1e-9)[0]
-    
     print(f"\nSolution Summary:")
-    print(f"  Active rows (bid>0): {len(active_idx)}")
+    print(f"  Total keywords: {len(b_vals)}")
     print(f"  Total spend: ${float(np.sum(b_vals * g_vals)):,.2f}")
     print(f"  Predicted profit: ${model.objVal:,.2f}")
     
-    # Build result DataFrame with all active bids
+    # Build result DataFrame with all bids
     bids_df = pd.DataFrame({
-        'keyword': [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in active_idx],
-        'region': [region_list[i] for i in active_idx],
-        'match': [match_list[i] for i in active_idx],
-        'bid': b_vals[active_idx],
-        'predicted_clicks': g_vals[active_idx],
-        'predicted_epc': f_vals[active_idx],
+        'keyword': [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in range(len(b_vals))],
+        'region': region_list,
+        'match': match_list,
+        'bid': b_vals,
+        'predicted_clicks': g_vals,
+        'predicted_epc': f_vals,
     })
 
     # Calculate derived columns
