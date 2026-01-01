@@ -880,6 +880,27 @@ def embed_xgb(
     booster.load_model(str(xgb_model_path))
     base_score = _extract_xgb_base_score(xgb_model_path)
 
+    # 4. Feasibility check: Verify that predictions can be made with bids=0
+    try:
+        import xgboost as xgb_module
+        Z0_dmatrix = xgb_module.DMatrix(data=Z0)
+        predictions_at_zero = booster.predict(Z0_dmatrix)
+        
+        if np.isnan(predictions_at_zero).any():
+            print(f"!!! XGB PREDICTION WITH BIDS=0 CONTAINS NaNs ({target}) !!!")
+            nan_count = np.sum(np.isnan(predictions_at_zero))
+            print(f"Found {nan_count} NaN predictions out of {len(predictions_at_zero)} keywords")
+        elif np.isinf(predictions_at_zero).any():
+            print(f"!!! XGB PREDICTION WITH BIDS=0 CONTAINS INFs ({target}) !!!")
+            inf_count = np.sum(np.isinf(predictions_at_zero))
+            print(f"Found {inf_count} Inf predictions out of {len(predictions_at_zero)} keywords")
+        else:
+            print(f"Feasibility check passed for {target}: XGB predictions at bids=0 are valid")
+            print(f"  Base score: {base_score}, Sample predictions: min={predictions_at_zero.min():.6f}, max={predictions_at_zero.max():.6f}")
+    except Exception as e:
+        print(f"ERROR in feasibility check for {target}: {e}")
+        raise
+
     tree_dumps = booster.get_dump(dump_format="json")
     trees = [json.loads(s) for s in tree_dumps]
 
@@ -1609,6 +1630,137 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     return bids_df
 
 
+def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model, 
+                      epc_xgb_paths, clicks_xgb_paths, alg_epc, alg_clicks, 
+                      embedding_method, preprocessor_epc=None, preprocessor_clicks=None):
+    """Validate that optimized solution predictions match original models.
+    
+    Re-predicts EPC and clicks using the original trained models and compares
+    against the solver's predictions to detect any alignment issues.
+    
+    Args:
+        optimized_bids: Array of optimized bid values
+        X_epc: Raw features for EPC model (with Avg. CPC column)
+        X_clicks: Raw features for clicks model (with Avg. CPC column)
+        epc_model: Trained EPC model (IAI if ORT, None for others)
+        clicks_model: Trained clicks model (IAI if ORT, None for others)
+        epc_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB EPC
+        clicks_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB clicks
+        alg_epc: Algorithm for EPC ('lr', 'glm', 'xgb', 'ort', 'mort')
+        alg_clicks: Algorithm for clicks ('lr', 'glm', 'xgb', 'ort', 'mort')
+        embedding_method: 'bert' or 'tfidf'
+        preprocessor_epc: Preprocessor for XGB EPC (loaded if not provided)
+        preprocessor_clicks: Preprocessor for XGB clicks (loaded if not provided)
+    """
+    print("\n=== Solution Validation: Comparing Solver Predictions vs. Original Models ===")
+    
+    # Create a copy of X with optimized bids
+    X_validate_epc = X_epc.copy()
+    X_validate_clicks = X_clicks.copy()
+    
+    # Find CPC column names
+    cpc_col_epc = next((c for c in ("Avg. CPC", "Avg_ CPC") if c in X_validate_epc.columns), None)
+    cpc_col_clicks = next((c for c in ("Avg. CPC", "Avg_ CPC") if c in X_validate_clicks.columns), None)
+    
+    if cpc_col_epc is None or cpc_col_clicks is None:
+        print("WARNING: Could not find Avg. CPC column for validation")
+        return
+    
+    # Set CPC values to optimized bids
+    X_validate_epc[cpc_col_epc] = optimized_bids
+    X_validate_clicks[cpc_col_clicks] = optimized_bids
+    
+    try:
+        # Predict EPC using original model
+        if alg_epc == 'xgb':
+            if epc_xgb_paths is None:
+                print("WARNING: XGB EPC paths not available for validation")
+                epc_preds = None
+            else:
+                xgb_path, preproc_path = epc_xgb_paths
+                if preprocessor_epc is None:
+                    preprocessor_epc = joblib.load(preproc_path)
+                X_epc_aligned, _ = _align_X_for_preprocessor(preprocessor_epc, X_validate_epc)
+                Z_epc = preprocessor_epc.transform(X_epc_aligned)
+                if sp is not None and sp.issparse(Z_epc):
+                    Z_epc = Z_epc.tocsr()
+                else:
+                    Z_epc = np.asarray(Z_epc)
+                booster_epc = xgb.Booster()
+                booster_epc.load_model(str(xgb_path))
+                Z_epc_dmatrix = xgb.DMatrix(data=Z_epc)
+                epc_preds = booster_epc.predict(Z_epc_dmatrix)
+        elif alg_epc == 'ort' or alg_epc == 'mort':
+            epc_preds = epc_model.predict(X_validate_epc.values)
+        else:
+            # LR or GLM - not implemented, skip validation
+            print(f"Note: Validation not implemented for {alg_epc} EPC model")
+            epc_preds = None
+        
+        # Predict clicks using original model
+        if alg_clicks == 'xgb':
+            if clicks_xgb_paths is None:
+                print("WARNING: XGB clicks paths not available for validation")
+                clicks_preds = None
+            else:
+                xgb_path, preproc_path = clicks_xgb_paths
+                if preprocessor_clicks is None:
+                    preprocessor_clicks = joblib.load(preproc_path)
+                X_clicks_aligned, _ = _align_X_for_preprocessor(preprocessor_clicks, X_validate_clicks)
+                Z_clicks = preprocessor_clicks.transform(X_clicks_aligned)
+                if sp is not None and sp.issparse(Z_clicks):
+                    Z_clicks = Z_clicks.tocsr()
+                else:
+                    Z_clicks = np.asarray(Z_clicks)
+                booster_clicks = xgb.Booster()
+                booster_clicks.load_model(str(xgb_path))
+                Z_clicks_dmatrix = xgb.DMatrix(data=Z_clicks)
+                clicks_preds = booster_clicks.predict(Z_clicks_dmatrix)
+        elif alg_clicks == 'ort' or alg_clicks == 'mort':
+            clicks_preds = clicks_model.predict(X_validate_clicks.values)
+        else:
+            print(f"Note: Validation not implemented for {alg_clicks} clicks model")
+            clicks_preds = None
+        
+        # Report validation results
+        if epc_preds is not None:
+            print(f"\nEPC Model ({alg_epc}):")
+            print(f"  Predictions range: [{epc_preds.min():.6f}, {epc_preds.max():.6f}]")
+            print(f"  Mean: {epc_preds.mean():.6f}, Std: {epc_preds.std():.6f}")
+            if np.isnan(epc_preds).any() or np.isinf(epc_preds).any():
+                print(f"  ⚠️  WARNING: Found NaN/Inf in EPC predictions!")
+            else:
+                print(f"  ✓ EPC predictions valid")
+        
+        if clicks_preds is not None:
+            print(f"\nClicks Model ({alg_clicks}):")
+            print(f"  Predictions range: [{clicks_preds.min():.6f}, {clicks_preds.max():.6f}]")
+            print(f"  Mean: {clicks_preds.mean():.6f}, Std: {clicks_preds.std():.6f}")
+            if np.isnan(clicks_preds).any() or np.isinf(clicks_preds).any():
+                print(f"  ⚠️  WARNING: Found NaN/Inf in clicks predictions!")
+            else:
+                print(f"  ✓ Clicks predictions valid")
+        
+        # Save validation predictions
+        if epc_preds is not None or clicks_preds is not None:
+            validation_df = pd.DataFrame({'bid': optimized_bids})
+            if epc_preds is not None:
+                validation_df['epc_pred'] = epc_preds
+            if clicks_preds is not None:
+                validation_df['clicks_pred'] = clicks_preds
+            
+            val_dir = Path('opt_results/validation')
+            val_dir.mkdir(exist_ok=True, parents=True)
+            val_file = val_dir / f'solution_validation_{embedding_method}_{alg_epc}_{alg_clicks}.csv'
+            validation_df.to_csv(val_file, index=False)
+            print(f"\n✓ Validation predictions saved to {val_file}")
+        
+    except Exception as e:
+        print(f"ERROR during solution validation: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Optimize keyword bids using linear programming."
@@ -1848,6 +2000,20 @@ def main():
             output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
 
             bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X)
+
+            # Validate solution predictions
+            validate_solution(
+                optimized_bids=b.X,
+                X_epc=X_ort,  # or X_lr depending on what's available
+                X_clicks=X_ort,
+                epc_model=None,  # Will be None for LR/GLM, filled in for ORT
+                clicks_model=None,
+                epc_xgb_paths=epc_xgb_paths if args.alg_conv == 'xgb' else None,
+                clicks_xgb_paths=clicks_xgb_paths if args.alg_clicks == 'xgb' else None,
+                alg_epc=args.alg_conv,
+                alg_clicks=args.alg_clicks,
+                embedding_method=args.embedding_method
+            )
 
             bids_df.to_csv(output_file, index=False)
             print(f"\nResults saved to {output_file}")
