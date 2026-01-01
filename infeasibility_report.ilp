@@ -1,0 +1,99 @@
+\ Model bid_optimization_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0x16f6d1060793d72c
+Maximize
+ 
+Subject To
+ epc_xgb_oneleaf_t0_i10679: epc_xgb_t0_l0_i10679 + epc_xgb_t0_l1_i10679
+   + epc_xgb_t0_l2_i10679 + epc_xgb_t0_l3_i10679 = 1
+ epc_xgb_treeout_t0_i10679: 0.405329078 epc_xgb_t0_l0_i10679
+   - 0.124483414 epc_xgb_t0_l1_i10679 - 0.238214627 epc_xgb_t0_l2_i10679
+   + 0.157027319 epc_xgb_t0_l3_i10679 + epc_xgb_tree_0_i10679 = 0
+ epc_xgb_infeasible_t1_l3_i10679: epc_xgb_t1_l3_i10679 = 0
+ epc_xgb_oneleaf_t1_i10679: epc_xgb_t1_l0_i10679 + epc_xgb_t1_l1_i10679
+   + epc_xgb_t1_l2_i10679 + epc_xgb_t1_l3_i10679 = 1
+ epc_xgb_treeout_t1_i10679: 0.537572443 epc_xgb_t1_l0_i10679
+   + 0.108953677 epc_xgb_t1_l1_i10679 + 0.244803086 epc_xgb_t1_l2_i10679
+   - 0.262654871 epc_xgb_t1_l3_i10679 + epc_xgb_tree_1_i10679 = 0
+ epc_xgb_infeasible_t2_l0_i10679: epc_xgb_t2_l0_i10679 = 0
+ epc_xgb_infeasible_t2_l1_i10679: epc_xgb_t2_l1_i10679 = 0
+ epc_xgb_infeasible_t2_l3_i10679: epc_xgb_t2_l3_i10679 = 0
+ epc_xgb_oneleaf_t2_i10679: epc_xgb_t2_l0_i10679 + epc_xgb_t2_l1_i10679
+   + epc_xgb_t2_l2_i10679 + epc_xgb_t2_l3_i10679 = 1
+ epc_xgb_treeout_t2_i10679: 0.0396579504 epc_xgb_t2_l0_i10679
+   - 0.199925676 epc_xgb_t2_l1_i10679 + 0.599960029 epc_xgb_t2_l2_i10679
+   + 0.139863595 epc_xgb_t2_l3_i10679 + epc_xgb_tree_2_i10679 = 0
+ epc_xgb_infeasible_t3_l1_i10679: epc_xgb_t3_l1_i10679 = 0
+ epc_xgb_infeasible_t3_l3_i10679: epc_xgb_t3_l3_i10679 = 0
+ epc_xgb_treeout_t3_i10679: - 1.8799540699999999e-04 epc_xgb_t3_l0_i10679
+   - 0.39068529 epc_xgb_t3_l1_i10679
+   + 0.5999459620000001 epc_xgb_t3_l2_i10679
+   + 0.099601917 epc_xgb_t3_l3_i10679 + epc_xgb_tree_3_i10679 = 0
+ epc_xgb_infeasible_t4_l3_i10679: epc_xgb_t4_l3_i10679 = 0
+ epc_xgb_treeout_t4_i10679: 0.497540176 epc_xgb_t4_l0_i10679
+   + 0.0641060919 epc_xgb_t4_l1_i10679 - 0.126637831 epc_xgb_t4_l2_i10679
+   + 0.137335777 epc_xgb_t4_l3_i10679 + epc_xgb_tree_4_i10679 = 0
+ epc_xgb_infeasible_t5_l1_i10679: epc_xgb_t5_l1_i10679 = 0
+ epc_xgb_infeasible_t5_l3_i10679: epc_xgb_t5_l3_i10679 = 0
+ epc_xgb_oneleaf_t5_i10679: epc_xgb_t5_l0_i10679 + epc_xgb_t5_l1_i10679
+   + epc_xgb_t5_l2_i10679 + epc_xgb_t5_l3_i10679 = 1
+ epc_xgb_treeout_t5_i10679: 0.105872519 epc_xgb_t5_l0_i10679
+   - 0.161003202 epc_xgb_t5_l1_i10679 - 0.440784305 epc_xgb_t5_l2_i10679
+   - 0.0532067902 epc_xgb_t5_l3_i10679 + epc_xgb_tree_5_i10679 = 0
+ epc_xgb_infeasible_t6_l2_i10679: epc_xgb_t6_l2_i10679 = 0
+ epc_xgb_oneleaf_t6_i10679: epc_xgb_t6_l0_i10679 + epc_xgb_t6_l1_i10679
+   + epc_xgb_t6_l2_i10679 + epc_xgb_t6_l3_i10679 = 1
+ epc_xgb_treeout_t6_i10679: 0.59988457 epc_xgb_t6_l0_i10679
+   - 0.0947759748 epc_xgb_t6_l1_i10679 - 0.353149027 epc_xgb_t6_l2_i10679
+   + 0.00579489255 epc_xgb_t6_l3_i10679 + epc_xgb_tree_6_i10679 = 0
+ epc_xgb_infeasible_t7_l2_i10679: epc_xgb_t7_l2_i10679 = 0
+ epc_xgb_oneleaf_t7_i10679: epc_xgb_t7_l0_i10679 + epc_xgb_t7_l1_i10679
+   + epc_xgb_t7_l2_i10679 + epc_xgb_t7_l3_i10679 = 1
+ epc_xgb_treeout_t7_i10679: - 0.0437567532 epc_xgb_t7_l0_i10679
+   + 0.5148229600000001 epc_xgb_t7_l1_i10679
+   - 0.435685098 epc_xgb_t7_l2_i10679 + 0.32282275 epc_xgb_t7_l3_i10679
+   + epc_xgb_tree_7_i10679 = 0
+ epc_xgb_treeout_t8_i10679: 0.599810421 epc_xgb_t8_l0_i10679
+   + 0.495450944 epc_xgb_t8_l1_i10679 - 0.0215449259 epc_xgb_t8_l2_i10679
+   + epc_xgb_tree_8_i10679 = 0
+ epc_xgb_infeasible_t9_l0_i10679: epc_xgb_t9_l0_i10679 = 0
+ epc_xgb_infeasible_t9_l2_i10679: epc_xgb_t9_l2_i10679 = 0
+ epc_xgb_infeasible_t9_l3_i10679: epc_xgb_t9_l3_i10679 = 0
+ epc_xgb_oneleaf_t9_i10679: epc_xgb_t9_l0_i10679 + epc_xgb_t9_l1_i10679
+   + epc_xgb_t9_l2_i10679 + epc_xgb_t9_l3_i10679 = 1
+ epc_xgb_treeout_t9_i10679: 0.0463882349 epc_xgb_t9_l0_i10679
+   + 0.272047997 epc_xgb_t9_l1_i10679 - 0.0982135832 epc_xgb_t9_l2_i10679
+   + 0.14120616 epc_xgb_t9_l3_i10679 + epc_xgb_tree_9_i10679 = 0
+ epc_xgb_predlink_10679: epc_pred_10679 - epc_xgb_tree_0_i10679
+   - epc_xgb_tree_1_i10679 - epc_xgb_tree_2_i10679 - epc_xgb_tree_3_i10679
+   - epc_xgb_tree_4_i10679 - epc_xgb_tree_5_i10679 - epc_xgb_tree_6_i10679
+   - epc_xgb_tree_7_i10679 - epc_xgb_tree_8_i10679 - epc_xgb_tree_9_i10679
+   = 0
+ EPCLink_10679: f[10679] - epc_pred_10679 = 0
+Bounds
+ epc_pred_10679 free
+ epc_xgb_tree_0_i10679 free
+ epc_xgb_tree_1_i10679 free
+ epc_xgb_tree_2_i10679 free
+ epc_xgb_tree_3_i10679 free
+ epc_xgb_tree_4_i10679 free
+ epc_xgb_tree_5_i10679 free
+ epc_xgb_tree_6_i10679 free
+ epc_xgb_tree_7_i10679 free
+ epc_xgb_tree_8_i10679 free
+ epc_xgb_tree_9_i10679 free
+Binaries
+ epc_xgb_t0_l0_i10679 epc_xgb_t0_l1_i10679 epc_xgb_t0_l2_i10679
+ epc_xgb_t0_l3_i10679 epc_xgb_t1_l0_i10679 epc_xgb_t1_l1_i10679
+ epc_xgb_t1_l2_i10679 epc_xgb_t1_l3_i10679 epc_xgb_t2_l0_i10679
+ epc_xgb_t2_l1_i10679 epc_xgb_t2_l2_i10679 epc_xgb_t2_l3_i10679
+ epc_xgb_t3_l0_i10679 epc_xgb_t3_l1_i10679 epc_xgb_t3_l2_i10679
+ epc_xgb_t3_l3_i10679 epc_xgb_t4_l0_i10679 epc_xgb_t4_l1_i10679
+ epc_xgb_t4_l2_i10679 epc_xgb_t4_l3_i10679 epc_xgb_t5_l0_i10679
+ epc_xgb_t5_l1_i10679 epc_xgb_t5_l2_i10679 epc_xgb_t5_l3_i10679
+ epc_xgb_t6_l0_i10679 epc_xgb_t6_l1_i10679 epc_xgb_t6_l2_i10679
+ epc_xgb_t6_l3_i10679 epc_xgb_t7_l0_i10679 epc_xgb_t7_l1_i10679
+ epc_xgb_t7_l2_i10679 epc_xgb_t7_l3_i10679 epc_xgb_t8_l0_i10679
+ epc_xgb_t8_l1_i10679 epc_xgb_t8_l2_i10679 epc_xgb_t9_l0_i10679
+ epc_xgb_t9_l1_i10679 epc_xgb_t9_l2_i10679 epc_xgb_t9_l3_i10679
+End

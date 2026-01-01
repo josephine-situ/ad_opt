@@ -1831,6 +1831,22 @@ def main():
             print(f"\nResults saved to {output_file}")
             print(f"\nTop 10 bids:")
             print(bids_df.head(10).to_string(index=False))
+        elif model.status == GRB.INFEASIBLE:
+            print(f"Optimization failed with status {model.status} (Infeasible).")
+            print("Computing IIS to locate the conflict...")
+            
+            # Compute the Irreducible Inconsistent Subsystem
+            model.computeIIS()
+            
+            # Write the report to a file you can open in a text editor
+            output_file = "infeasibility_report.ilp"
+            model.write(output_file)
+            print(f"Infeasibility report written to {output_file}")
+            
+            # Optional: Print the specific constraints causing the issue to the console
+            for c in model.getConstrs():
+                if c.IISConstr:
+                    print(f"Constraint in IIS: {c.ConstrName}")
         else:
             print(f"Optimization failed with status {model.status}")
             sys.exit(1)
