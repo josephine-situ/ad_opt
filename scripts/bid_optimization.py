@@ -903,7 +903,20 @@ def embed_xgb(
 
     print(f"  Embedding {target} XGB constraints (path-based formulation)...")
 
-    preprocessor = joblib.load(preprocessor_path)
+    try:
+        preprocessor = joblib.load(preprocessor_path)
+    except (AttributeError, ImportError) as e:
+        # Pickle compatibility issue with different scikit-learn versions
+        raise RuntimeError(
+            f"Failed to load preprocessor from {preprocessor_path}.\n"
+            f"This is likely due to scikit-learn version mismatch.\n"
+            f"Error: {e}\n"
+            f"\nSolution: Regenerate the preprocessor by running:\n"
+            f"  python scripts/prediction_modeling_tweedie.py --target {target} --embedding-method bert\n"
+            f"  python scripts/prediction_modeling_tweedie.py --target {target} --embedding-method tfidf\n"
+            f"on the engaging cluster to create fresh preprocessors with the current sklearn version."
+        ) from e
+    
     X_use, expected_cols = _align_X_for_preprocessor(preprocessor, X)
 
     # Identify CPC column name as expected by the preprocessor.
