@@ -91,20 +91,6 @@ except Exception:
     sp = None
 
 
-def load_embeddings_data(keywords, embedding_method='bert', output_dir='data/embeddings'):
-    """Load embeddings from file."""
-    embeddings_file = Path(output_dir) / f'unique_keyword_embeddings_{embedding_method}.csv'
-    
-    # Use the utility function to load embeddings
-    embedding_df = load_embeddings(
-        embeddings_file,
-        embedding_method=embedding_method,
-        keywords=keywords
-    )
-    
-    return embedding_df
-
-
 def generate_keyword_embeddings_df(keywords, embedding_method='bert', n_components=50, pipeline_dir='data/clean'):
     """Generate embeddings for keywords using a saved embedding pipeline.
 
@@ -308,86 +294,12 @@ def load_weights_from_csv(embedding_method='bert', models_dir='models'):
         }
 
 
-def load_models(embedding_method='bert', alg_epc='lr', alg_clicks='lr', models_dir='models'):
-    """Load pre-trained prediction models based on embedding method and algorithm type.
-    
-    Args:
-        embedding_method: 'bert' or 'tfidf'
-        alg_epc: algorithm type for EPC model - 'lr' (linear regression), 'ort' (optimal regression tree),
-                  'mort' (mirrored optimal regression tree with hyperplanes), 'rf' (random forest), 'xgb' (xgboost)
-        alg_clicks: algorithm type for clicks model - same options as alg_epc
-        models_dir: directory containing model files
-    
-    Returns:
-        tuple of (epc_model, clicks_model)
-    """
-    print(f"Loading models for embedding method '{embedding_method}'...")
-    print(f"  EPC model: {alg_epc}")
-    print(f"  Clicks model: {alg_clicks}")
-    
-    epc_model = Path(models_dir) / f'{alg_epc}_{embedding_method}_epc.json'
-    clicks_model = Path(models_dir) / f'{alg_clicks}_{embedding_method}_clicks.json'
-    
-    if not epc_model.exists():
-        raise FileNotFoundError(f"EPC model not found: {epc_model}")
-    if not clicks_model.exists():
-        raise FileNotFoundError(f"Clicks model not found: {clicks_model}")
-    
-    iai_local = _get_iai(required=True)
-    lnr_epc = iai_local.read_json(str(epc_model))
-    lnr_clicks = iai_local.read_json(str(clicks_model))
-    
-    print(f"  Loaded EPC model from {epc_model}")
-    print(f"  Loaded clicks model from {clicks_model}")
-    
-    return lnr_epc, lnr_clicks
-
-
-def extract_weights(lnr_epc, lnr_clicks, embedding_method='bert', n_embeddings=50):
-    """Extract ALL weights from trained models (not just embeddings)."""
-    print(f"Extracting model weights...")
-    
-    # Get weights using IAI's method
-    weights_epc_tuple = lnr_epc.get_prediction_weights()
-    weights_clicks_tuple = lnr_clicks.get_prediction_weights()
-    
-    # Handle tuple format (continuous, categorical)
-    if isinstance(weights_epc_tuple, tuple):
-        weights_epc = weights_epc_tuple[0]
-    else:
-        weights_epc = weights_epc_tuple
-    
-    if isinstance(weights_clicks_tuple, tuple):
-        weights_clicks = weights_clicks_tuple[0]
-    else:
-        weights_clicks = weights_clicks_tuple
-    
-    epc_const = lnr_epc.get_prediction_constant()
-    clicks_const = lnr_clicks.get_prediction_constant()
-    
-    print(f"\n  EPC model weights:")
-    for key, val in sorted(weights_epc.items(), key=lambda x: str(x[0])):
-        print(f"    {key}: {val:.6f}")
-    
-    print(f"\n  Clicks model weights:")
-    for key, val in sorted(weights_clicks.items(), key=lambda x: str(x[0])):
-        print(f"    {key}: {val:.6f}")
-    
-    return {
-        'epc_const': epc_const,
-        'epc_weights': weights_epc,
-        'clicks_const': clicks_const,
-        'clicks_weights': weights_clicks
-    }
-
-
 def create_feature_matrix(
     keyword_df,
     embedding_method='bert',
     target_day=None,
     regions=None,
     match_types=None,
-    weights_dict=None,
     alg_epc='lr',
     alg_clicks='lr',
     gkp_dir: str = 'data/gkp',
@@ -421,7 +333,6 @@ def create_feature_matrix(
         target_day: str, date in format 'YYYY-MM-DD' (e.g., '2024-11-04'). If None, uses latest date.
         regions: list of regions (default: ["USA", "Region_A", "Region_B", "Region_C"])
         match_types: list of match types (default: ["broad match", "exact match", "phrase match"])
-        weights_dict: dict with 'epc_weights' and 'clicks_weights' to filter features. If None, keeps all.
         alg_epc: algorithm type for EPC model ('lr', 'ort', etc.).
         alg_clicks: algorithm type for clicks model ('lr', 'ort', etc.).
         gkp_dir: directory containing GKP exports (default: data/gkp)
@@ -435,12 +346,6 @@ def create_feature_matrix(
         regions = ["USA", "A", "B", "C"]
     if match_types is None:
         match_types = ["Broad match", "Exact match", "Phrase match"]
-    
-    # Extract model weights if provided
-    if weights_dict is None:
-        weights_dict = {}
-    epc_weights = weights_dict.get('epc_weights', {})
-    clicks_weights = weights_dict.get('clicks_weights', {})
     
     num_keywords = len(keyword_df)
     n_combos = num_keywords * len(regions) * len(match_types)
@@ -1556,15 +1461,8 @@ def optimize_bids_embedded(
     model.update()
     
     # --- Total Budget Constraint ---
-    # --- 2. Link prediction vars and enforce non-negativity via bounds ---
-    # f and g already have lb=0. These equalities force embedded model outputs to be non-negative.
-    for i in range(K):
-        model.addConstr(f[i] == f_hat_vars[i], name=f"EPCLink_{i}")
-        model.addConstr(g[i] == g_hat_vars[i], name=f"ClicksLink_{i}")
-
-    # --- Total Budget Constraint ---
     # sum_i g_i * b_i <= B
-    model.addQConstr(b @ g <= budget, name='TotalBudget')
+    model.addQConstr(gp.quicksum(b[i] * g[i] for i in range(K)) <= budget, name='TotalBudget')
 
     # --- Objective ---
     # Maximize Net Profit = sum_i g_i * (f_i - b_i)
@@ -1591,7 +1489,7 @@ def optimize_bids_embedded(
     return model, b, f, g
 
 
-def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, match_list, X=None, weights_dict=None):
+def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, match_list, X=None):
     """Extract non-zero bids from solution with predictions.
 
     Args:
@@ -1728,18 +1626,20 @@ def main():
             pipeline_dir=args.data_dir,
         )
         
-        # Load weights from CSV files (no IAI required)
-        weights_dict = load_weights_from_csv(
-            embedding_method=args.embedding_method,
-            models_dir=args.models_dir
-        )
+        # Only load weights for non-XGB models (LR/GLM use weights_dict)
+        if args.alg_conv != 'xgb' or args.alg_clicks != 'xgb':
+            weights_dict = load_weights_from_csv(
+                embedding_method=args.embedding_method,
+                models_dir=args.models_dir
+            )
+        else:
+            weights_dict = None
         
         # Create feature matrix (GKP-only; no historical training data)
         feature_matrix_result = create_feature_matrix(
             keyword_df,
             embedding_method=args.embedding_method,
             target_day=args.target_day,
-            weights_dict=weights_dict,
             alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks,
             gkp_dir='data/gkp',
@@ -1847,7 +1747,7 @@ def main():
             model_suffix = f"{args.alg_conv}_{args.alg_clicks}"
             output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
 
-            bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X, weights_dict=weights_dict)
+            bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X)
 
             bids_df.to_csv(output_file, index=False)
             print(f"\nResults saved to {output_file}")
