@@ -1460,9 +1460,20 @@ def optimize_bids_embedded(
     
     model.update()
     
+    # --- 2. Link prediction vars and enforce non-negativity via bounds ---
+    # f and g already have lb=0. These equalities force embedded model outputs to be non-negative.
+    for i in range(K):
+        model.addConstr(f[i] == f_hat_vars[i], name=f"EPCLink_{i}")
+        model.addConstr(g[i] == g_hat_vars[i], name=f"ClicksLink_{i}")
+
     # --- Total Budget Constraint ---
-    # sum_i g_i * b_i <= B
-    model.addQConstr(gp.quicksum(b[i] * g[i] for i in range(K)) <= budget, name='TotalBudget')
+    # Create auxiliary spend variables: spend[i] = b[i] * g[i]
+    spend = model.addMVar(shape=K, lb=0, ub=max_bid*M_g, name='spend')
+    for i in range(K):
+        model.addConstr(spend[i] == b[i] * g[i], name=f'Spend_{i}')
+    
+    # sum_i spend_i <= B
+    model.addConstr(gp.quicksum(spend) <= budget, name='TotalBudget')
 
     # --- Objective ---
     # Maximize Net Profit = sum_i g_i * (f_i - b_i)
@@ -1502,7 +1513,6 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
         region_list: List of regions for each row
         match_list: List of match types for each row
         X: Feature matrix (optional)
-        weights_dict: Dictionary with model weights (optional)
     """
     b_vals = b.X
     f_vals = f.X
@@ -1518,19 +1528,59 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     
     # Build result DataFrame with all active bids
     bids_df = pd.DataFrame({
-        'bid': b_vals[active_idx],
         'keyword': [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in active_idx],
         'region': [region_list[i] for i in active_idx],
         'match': [match_list[i] for i in active_idx],
-        'predicted_epc': f_vals[active_idx],
+        'bid': b_vals[active_idx],
         'predicted_clicks': g_vals[active_idx],
+        'predicted_epc': f_vals[active_idx],
     })
 
-    bids_df['predicted_spend'] = bids_df['bid'] * bids_df['predicted_clicks']
-    bids_df['predicted_profit'] = bids_df['predicted_clicks'] * (bids_df['predicted_epc'] - bids_df['bid'])
+    # Calculate derived columns
+    bids_df['conv_value'] = bids_df['predicted_clicks'] * bids_df['predicted_epc']
+    bids_df['cost'] = bids_df['bid'] * bids_df['predicted_clicks']
+    bids_df['profit'] = bids_df['conv_value'] - bids_df['cost']
     
-    # Sort by bid (descending)
-    bids_df = bids_df.sort_values('bid', ascending=False).reset_index(drop=True)
+    # Load historical CPC data for existing keywords
+    ad_opt_data_file = Path('data/clean/ad_opt_data_bert.csv')
+    ad_opt_df = pd.read_csv(str(ad_opt_data_file))
+    
+    # Group by keyword/region/match type and calculate stats
+    hist_stats = ad_opt_df.groupby(['Keyword', 'Region', 'Match type'])['Avg. CPC'].agg(
+        hist_min_cpc='min',
+        hist_avg_cpc='mean',
+        hist_max_cpc='max'
+    ).reset_index()
+    
+    # Merge historical stats
+    bids_df = bids_df.merge(
+        hist_stats,
+        left_on=['keyword', 'region', 'match'],
+        right_on=['Keyword', 'Region', 'Match type'],
+        how='left'
+    )
+    
+    # Drop source columns from hist_stats
+    bids_df = bids_df.drop(columns=['Keyword', 'Region', 'Match type'], errors='ignore')
+    
+    # Sort by bid (desc), then keyword, region, match
+    sort_cols = ['bid', 'keyword', 'region', 'match']
+    sort_asc = [False, True, True, True]
+    bids_df = bids_df.sort_values(by=sort_cols, ascending=sort_asc).reset_index(drop=True)
+    
+    # Reorder columns: keyword, region, match, bid, clicks, epc, conv_value, cost, profit, then any historical columns
+    base_cols = ['keyword', 'region', 'match', 'bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit']
+    hist_cols = [c for c in bids_df.columns if c.startswith('hist_')]
+    final_cols = base_cols + hist_cols
+    # Only keep columns that exist
+    final_cols = [c for c in final_cols if c in bids_df.columns]
+    bids_df = bids_df[final_cols]
+    
+    # Format numeric columns to 2 decimal places
+    numeric_cols = ['bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit'] + hist_cols
+    for col in numeric_cols:
+        if col in bids_df.columns:
+            bids_df[col] = bids_df[col].apply(lambda x: f'{x:.2f}' if pd.notna(x) else x)
     
     return bids_df
 
@@ -1590,6 +1640,12 @@ def main():
         default='models',
         help='Directory containing trained models (default: models)'
     )
+    parser.add_argument(
+        '--trial',
+        type=int,
+        default=None,
+        help='Trial mode: limit to N keywords for quick testing (default: None, use all)'
+    )
 
     
     args = parser.parse_args()
@@ -1598,6 +1654,8 @@ def main():
     print("Bid Optimization with Linear Programming")
     print("=" * 70)
     print(f"Embedding method: {args.embedding_method}")
+    if args.trial is not None:
+        print(f"⚠️  TRIAL MODE: Limited to {args.trial} keywords")
     print("=" * 70)
     
     try:
@@ -1617,6 +1675,24 @@ def main():
                 )
             keywords_to_embed = gkp_df['Keyword'].dropna().astype(str).tolist()
             print(f"Loaded {len(keywords_to_embed)} keywords from latest GKP export")
+        
+        # Apply trial mode if requested
+        if args.trial is not None:
+            # Mix new keywords with existing ones (identified by Origin column)
+            classified_df = pd.read_csv(str(classified_keywords_file))
+            new_keywords_df = classified_df[classified_df['Origin'] == 'new']
+            existing_keywords_df = classified_df[classified_df['Origin'] == 'existing']
+            
+            new_kws = new_keywords_df['Keyword'].dropna().astype(str).tolist()
+            existing_kws = existing_keywords_df['Keyword'].dropna().astype(str).tolist()
+            
+            # Take half from new, half from existing (or adjust if not enough of one type)
+            new_count = min(args.trial // 2, len(new_kws))
+            existing_count = min(args.trial - new_count, len(existing_kws))
+            
+            trial_keywords = new_kws[:new_count] + existing_kws[:existing_count]
+            keywords_to_embed = trial_keywords[:args.trial]
+            print(f"⚠️  Trial mode: using {new_count} new + {existing_count} existing keywords = {len(keywords_to_embed)} total")
         
         # Generate embeddings using saved pipeline
         keyword_df = generate_keyword_embeddings_df(
