@@ -840,9 +840,34 @@ def embed_xgb(
     X1 = X_use.copy()
     X1[cpc_col] = 1.0
 
-    Z0 = preprocessor.transform(X0)
-    Z1 = preprocessor.transform(X1)
-    dZ = Z1 - Z0
+    # 3. Transform and check for NaNs
+    try:
+        Z0 = preprocessor.transform(X0)
+        Z1 = preprocessor.transform(X1)
+        
+        # Check for NaNs in the output
+        if np.isnan(Z0).any():
+            print("!!! PREPROCESSOR PRODUCED NaNs IN Z0 !!!")
+            nan_indices = np.where(np.isnan(Z0))[1] if np.ndim(Z0) > 1 else np.where(np.isnan(Z0))[0]
+            print(f"NaNs found in transformed feature indices: {nan_indices}")
+        if np.isnan(Z1).any():
+            print("!!! PREPROCESSOR PRODUCED NaNs IN Z1 !!!")
+            nan_indices = np.where(np.isnan(Z1))[1] if np.ndim(Z1) > 1 else np.where(np.isnan(Z1))[0]
+            print(f"NaNs found in transformed feature indices: {nan_indices}")
+        
+        dZ = Z1 - Z0
+        
+        if np.isnan(dZ).any():
+            print("!!! dZ CONTAINS NaNs !!!")
+            nan_indices = np.where(np.isnan(dZ))[1] if np.ndim(dZ) > 1 else np.where(np.isnan(dZ))[0]
+            print(f"NaNs found in dZ indices: {nan_indices}")
+        
+        if not np.isnan(Z0).any() and not np.isnan(Z1).any() and not np.isnan(dZ).any():
+            print("Preprocessing successful. No NaNs detected.")
+            
+    except Exception as e:
+        print(f"Preprocessing crashed: {e}")
+        raise
 
     if sp is not None and sp.issparse(Z0):
         Z0 = Z0.tocsr()
