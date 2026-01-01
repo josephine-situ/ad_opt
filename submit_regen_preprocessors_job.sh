@@ -26,7 +26,7 @@ conda activate adopt_env
 
 # Regenerate only XGB preprocessors with current sklearn version (for speed)
 echo "Regenerating XGB preprocessors with current sklearn version..."
-python -u scripts/prediction_modeling_tweedie.py --target epc --embedding-method bert --model-type xgb
-python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert --model-type xgb
+python -u scripts/prediction_modeling_tweedie.py --target epc --embedding-method bert --models xgb
+python -u scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert --models xgb
 
 echo "End: $(date)"
