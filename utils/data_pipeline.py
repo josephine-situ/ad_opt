@@ -544,6 +544,8 @@ def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_mo
         if save_models:
             model_path = Path(model_dir) / f'bert_pipeline_{n_components}d.pkl'
             model_path.parent.mkdir(parents=True, exist_ok=True)
+            # Store model name in the pipeline dict for consistent reloading
+            bert_models['model_name'] = 'all-MiniLM-L6-v2'
             with open(model_path, 'wb') as f:
                 pickle.dump(bert_models, f)
             print(f"  Saved BERT pipeline to {model_path}")

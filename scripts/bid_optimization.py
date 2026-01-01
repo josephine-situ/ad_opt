@@ -156,14 +156,24 @@ def generate_keyword_embeddings_df(keywords, embedding_method='bert', n_componen
         embeddings = svd.transform(embeddings)  # dense array
     else:  # bert
         # BERT pipeline (SentenceTransformer)
-        # Fix potential pad_token issue with unpickled tokenizers
-        if hasattr(vectorizer, 'tokenizer'):
-            tokenizer = vectorizer.tokenizer
-            if hasattr(tokenizer, 'pad_token') and tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
+        # Reload from fresh to avoid pickle/tokenizer issues while maintaining consistency
+        from sentence_transformers import SentenceTransformer
         
-        embeddings = vectorizer.encode(keywords)  # array of shape (n, 384)
-        embeddings = svd.transform(embeddings)  # reduce to n_components
+        # Get the model name from the stored pipeline (ensures consistency with training)
+        model_name = pipeline.get('model_name', 'all-MiniLM-L6-v2')
+        
+        try:
+            # Reload the model fresh to ensure tokenizer is properly initialized
+            # (pickled tokenizers can have state issues across environments)
+            transformer = SentenceTransformer(model_name)
+            embeddings = transformer.encode(keywords, convert_to_numpy=True)
+            print(f"  Using SentenceTransformer model: {model_name}")
+        except Exception as e:
+            # Fallback: try to use the pickled vectorizer if reload fails
+            print(f"  Warning: Could not reload SentenceTransformer, using pickled version: {e}")
+            embeddings = vectorizer.encode(keywords)  # array of shape (n, 384)
+        
+        embeddings = svd.transform(embeddings)  # reduce to n_components (fitted on training data)
     
     # Apply L2 normalization
     embeddings = normalizer.transform(embeddings)
