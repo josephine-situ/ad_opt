@@ -942,6 +942,7 @@ def embed_xgb(
 
                 # Enforce split conditions along the path.
                 infeasible = False
+                split_counter = 0
                 for feat_idx, op, thr in conds:
                     feat_idx = int(feat_idx)
                     thr = float(thr)
@@ -963,11 +964,12 @@ def embed_xgb(
                         # CPC-dependent feature.
                         expr = (cpc_coeff * b[i])
                         if op == "lt":
-                            model.addConstr(expr <= thr + M_cpc * (1 - z), name=f"{target}_xgb_lt_t{t_idx}_l{leaf_idx}_i{i}_f{feat_idx}")
+                            model.addConstr(expr <= thr + M_cpc * (1 - z), name=f"{target}_xgb_lt_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}")
                         elif op == "ge":
-                            model.addConstr(expr >= thr + 1e-6 - M_cpc * (1 - z), name=f"{target}_xgb_ge_t{t_idx}_l{leaf_idx}_i{i}_f{feat_idx}")
+                            model.addConstr(expr >= thr + 1e-6 - M_cpc * (1 - z), name=f"{target}_xgb_ge_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}")
                         else:
                             raise ValueError(f"Unknown op: {op}")
+                    split_counter += 1
 
                 if infeasible:
                     model.addConstr(z == 0, name=f"{target}_xgb_infeasible_t{t_idx}_l{leaf_idx}_i{i}")
