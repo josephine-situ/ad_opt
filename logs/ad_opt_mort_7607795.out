@@ -1,0 +1,73 @@
+========== Env & Dir ==========
+Host: node1605
+Start: Wed Dec 31 00:14:52 EST 2025
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running mirrored_ORT.py - clicks distillation
+[IAI] Cluster mode: Using 8 Julia threads
+[IAI] Configured for Engaging cluster
+[IAI] Successfully imported interpretableai
+======================================================================
+Mirrored ORT-H distillation
+======================================================================
+Host: node1605
+PWD: /orcd/home/002/jositu/ad_opt
+SLURM_JOB_ID: 7607795
+Target: clicks
+Embedding method: tfidf
+XGB model: models/xgb_tweedie_tfidf_clicks.json (source=xgboost_booster)
+======================================================================
+Loading XGB model: models/xgb_tweedie_tfidf_clicks.json (source=xgboost_booster)
+Training mirrored ORT-H (hyperplane splits enabled) via grid search...
+
+✗ Error: RuntimeError: <PyCall.jlwrap (in a Julia function called from Python)
+JULIA: IAILicensing.IAILicenseError("IAI license not registered to this machine. The machine ID of this machine is:\ne0390f59db49c64493bc45cc23a845f8aeb7d4ce2ad236d1d173974e4fc14cfa")
+Stacktrace:
+  [1] validate_static_license_fields(details::IAILicensing.IAILicenseDetails{:node})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:121
+  [2] IAILicensing.IAILicenseDetails{:node}(message::String)
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:43
+  [3] IAILicensing.IAILicenseDetails(message::String; kwargs::@Kwargs{})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:156
+  [4] IAILicenseDetails
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:152 [inlined]
+  [5] #IAILicenseDetails#19
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:150 [inlined]
+  [6] IAILicenseDetails
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:144 [inlined]
+  [7] acquire_license_single()
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:281
+  [8] acquire_license_single_if_needed
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:293 [inlined]
+  [9] acquire_license_all_procs(procs::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:299
+ [10] acquire_license(f::IAIBase.var"#270#271"{IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}}; parallel_processes::Vector{Int64})
+    @ IAILicensing /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAILicensing/OFb67/src/licensing.jl:266
+ [11] acquire_license(f::Function, lnr::OptimalTrees.OptimalTreeRegressor)
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/learner.jl:589
+ [12] #acquire_license#243
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:309 [inlined]
+ [13] acquire_license
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:307 [inlined]
+ [14] _fit_common!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:648
+ [15] _fit_common!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:640 [inlined]
+ [16] _fit_cv!(grid::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, data::IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}; n_folds::Int64, kwargs::@Kwargs{validation_criterion::String, verbose::Bool})
+    @ IAIBase /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:636
+ [17] _fit_cv!
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/gridsearch.jl:615 [inlined]
+ [18] #fit_cv!#344
+    @ /home/iai/builds/InterpretableAI/SystemImage/SysImgBuilder/.julia/packages/IAIBase/seQeG/src/api.jl:154 [inlined]
+ [19] fit_cv_convert(::IAIBase.GridSearch{OptimalTrees.OptimalTreeRegressor, IAITrees.TreeGridResult, IAIBase.Data{IAIBase.RegressionTask, IAIBase.RegressionTarget}}, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Main /orcd/home/002/jositu/.local/lib/python3.12/site-packages/interpretableai/convert.jl:200
+ [20] invokelatest(::Any, ::Any, ::Vararg{Any}; kwargs::@Kwargs{validation_criterion::String, n_folds::Int64, verbose::Bool})
+    @ Base ./essentials.jl:894
+ [21] _pyjlwrap_call(f::Function, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:32
+ [22] pyjlwrap_call(self_::Ptr{PyCall.PyObject_struct}, args_::Ptr{PyCall.PyObject_struct}, kw_::Ptr{PyCall.PyObject_struct})
+    @ PyCall ~/.julia/packages/PyCall/1gn3u/src/callback.jl:44>
+There is a more recent IAI release (v3.2.2) available.

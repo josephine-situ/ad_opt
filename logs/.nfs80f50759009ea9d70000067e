@@ -1,0 +1,39 @@
+/orcd/software/core/001/pkg/miniforge/25.11.0-0/lib/python3.12/site-packages/sklearn/base.py:442: InconsistentVersionWarning: Trying to unpickle estimator TruncatedSVD from version 1.2.2 when using version 1.7.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+/orcd/software/core/001/pkg/miniforge/25.11.0-0/lib/python3.12/site-packages/sklearn/base.py:442: InconsistentVersionWarning: Trying to unpickle estimator Normalizer from version 1.2.2 when using version 1.7.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+Traceback (most recent call last):
+  File "/orcd/home/002/jositu/ad_opt/scripts/bid_optimization.py", line 1701, in main
+    keyword_df = generate_keyword_embeddings_df(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orcd/home/002/jositu/ad_opt/scripts/bid_optimization.py", line 165, in generate_keyword_embeddings_df
+    embeddings = vectorizer.encode(keywords)  # array of shape (n, 384)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orcd/software/core/001/pkg/miniforge/25.11.0-0/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/sentence_transformers/SentenceTransformer.py", line 1062, in encode
+    features = self.tokenize(sentences_batch, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/sentence_transformers/SentenceTransformer.py", line 1621, in tokenize
+    return self[0].tokenize(texts, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/sentence_transformers/models/Transformer.py", line 320, in tokenize
+    self.tokenizer(
+  File "/home/jositu/.local/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 3073, in __call__
+    encodings = self._call_one(text=text, text_pair=text_pair, **all_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 3161, in _call_one
+    return self.batch_encode_plus(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 3353, in batch_encode_plus
+    padding_strategy, truncation_strategy, max_length, kwargs = self._get_padding_truncation_strategies(
+                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 2968, in _get_padding_truncation_strategies
+    if padding_strategy != PaddingStrategy.DO_NOT_PAD and (self.pad_token is None or self.pad_token_id < 0):
+                                                           ^^^^^^^^^^^^^^
+  File "/home/jositu/.local/lib/python3.12/site-packages/transformers/tokenization_utils_base.py", line 1128, in __getattr__
+    raise AttributeError(f"{self.__class__.__name__} has no attribute {key}")
+AttributeError: BertTokenizerFast has no attribute pad_token. Did you mean: '_pad_token'?

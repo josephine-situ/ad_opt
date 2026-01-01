@@ -1,0 +1,78 @@
+========== Env & Dir ==========
+Host: node1622
+Start: Wed Dec 31 21:46:55 EST 2025
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running bid_optimization.py with XGB Tweedie models
+======================================================================
+Bid Optimization with Linear Programming
+======================================================================
+Embedding method: bert
+======================================================================
+Loaded 1162 new keywords from data/gkp/keywords_classified.csv
+Generating BERT embeddings for 1162 keywords...
+  Using SentenceTransformer model: all-MiniLM-L6-v2
+  Generated embeddings with shape (1162, 50)
+Creating feature matrix...
+  Target day: None
+  Keywords: 1162, Regions: 4, Matches: 3
+  Total combinations: 13944
+  Using today for temporal features: 2025-12-31
+  Created 13944 keyword-region-match combinations
+  Using GKP keyword stats from data/gkp (no historical training merge)
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2025-12-25 at 16_34_09.csv
+  Loaded 1158 rows from Saved Keywords Stats 2025-12-25 at 16_34_09.csv
+  After cleaning: 1156 rows with unique keywords
+[Step 5.5] Imputing missing data...
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  Competition                             53.27% categorical (Missing)     (n=7428)
+  Competition (indexed value)             53.27% numeric (0)               (n=7428)
+  Top of page bid (low range)             70.05% numeric (0)               (n=9768)
+  Top of page bid (high range)            70.05% numeric (0)               (n=9768)
+  last_month_searches                     39.16% numeric (0)               (n=5460)
+  three_month_avg                         39.16% numeric (0)               (n=5460)
+  six_month_avg                           39.16% numeric (0)               (n=5460)
+  mom_change                              39.16% numeric (0)               (n=5460)
+  search_trend                            39.16% numeric (0)               (n=5460)
+  Avg. CPC                                70.05% numeric (0)               (n=9768)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 71460 missing values (7.88% of total data)
+  Keeping categorical features as strings (both models need raw categoricals)
+  Final feature matrix shape: (13944, 67)
+  Columns: ['Region', 'Match type', 'bert_0', 'bert_1', 'bert_2', 'bert_3', 'bert_4', 'bert_5', 'bert_6', 'bert_7', 'bert_8', 'bert_9', 'bert_10', 'bert_11', 'bert_12']...
+Feature matrix has 67 total features
+Saved X_ort to opt_results/feature_matrices/X_ort_bert_xgb_xgb.csv
+Saved mapping to opt_results/feature_matrices/mapping_bert_xgb_xgb.csv
+  Using XGB EPC model from models/xgb_tweedie_bert_epc.json
+  Using XGB clicks model from models/xgb_tweedie_bert_clicks.json
+
+Solving bid optimization with embedded TREE constraints...
+  Budget: $400.00
+  Keywords: 13944
+Restricted license - for non-production use only - expires 2027-11-29
+Set parameter OutputFlag to value 1
+Set parameter TimeLimit to value 60
+  Embedding epc XGB constraints (path-based formulation)...
+  Embedding clicks XGB constraints (path-based formulation)...
+Warning: linear constraint 8 and linear constraint 9 have the same name "epc_xgb_lt_t1_l0_i0_f12"
+
+  Model formulation saved to opt_results/formulations/bid_optimization_xgb_xgb_20251231_215209.lp
+Set parameter NonConvex to value 2
+Gurobi Optimizer version 13.0.0 build v13.0.0rc1 (linux64 - "Rocky Linux 8.10 (Green Obsidian)")
+
+CPU model: AMD EPYC 9654 96-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 192 physical cores, 384 logical processors, using up to 32 threads
+
+Non-default parameters:
+TimeLimit  60
+NonConvex  2
+
+
+✗ Error: GurobiError: Model too large for size-limited license; visit https://gurobi.com/unrestricted for more information
+End: Wed Dec 31 21:52:27 EST 2025
