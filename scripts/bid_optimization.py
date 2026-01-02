@@ -1834,6 +1834,17 @@ def optimize_bids_embedded(
     spend = model.addMVar(shape=K, lb=0, ub=max_bid*M_g, name='spend')
     for i in range(K):
         model.addConstr(spend[i] == b[i] * g[i], name=f'Spend_{i}')
+
+    # If we are providing a MIP start, also start the spend vars consistently.
+    # This helps Gurobi accept the start for nonconvex quadratic equalities.
+    if warm_start:
+        for i in range(K):
+            try:
+                b0 = float(b[i].Start)
+                g0 = float(g[i].Start)
+                spend[i].Start = b0 * g0
+            except Exception:
+                pass
     
     # sum_i spend_i <= B
     model.addConstr(gp.quicksum(spend) <= budget, name='TotalBudget')
