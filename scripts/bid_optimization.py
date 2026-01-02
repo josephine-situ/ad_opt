@@ -919,6 +919,7 @@ def embed_xgb(
     b,
     target: str,
     max_bid: float,
+    zero_at_bid0: bool = False,
 ) -> Tuple[object, List[object]]:
     """Embed an XGBoost regressor into Gurobi (Corrected Formulation).
 
@@ -1020,8 +1021,23 @@ def embed_xgb(
     K = len(X_use)
     pred_vars = []
 
+    # Optional: force prediction to be 0 when bid=0 by shifting by the baseline
+    # model prediction at bid=0 for each row. This ensures "no bid => 0 clicks".
+    baseline_pred0 = None
+    if zero_at_bid0:
+        try:
+            dm0 = xgb.DMatrix(data=Z0)
+            baseline_pred0 = np.asarray(booster.predict(dm0)).ravel()
+        except Exception as e:
+            raise RuntimeError(f"Failed to compute XGB baseline prediction at bid=0: {e}")
+
     for i in range(K):
-        pred = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_{i}")
+        # Raw XGB prediction (base_score + sum tree outputs)
+        pred_raw = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_raw_{i}")
+
+        # Final prediction variable exposed to the optimization.
+        # If zero_at_bid0=True, this is shifted so pred(b=0)=0.
+        pred = model.addVar(lb=0.0, name=f"{target}_pred_{i}")
         pred_vars.append(pred)
 
         tree_outputs = []
@@ -1106,9 +1122,20 @@ def embed_xgb(
 
         # Final Prediction Link
         model.addConstr(
-            pred == float(base_score) + gp.quicksum(tree_outputs),
+            pred_raw == float(base_score) + gp.quicksum(tree_outputs),
             name=f"{target}_final_link_{i}"
         )
+
+        if zero_at_bid0:
+            model.addConstr(
+                pred == pred_raw - float(baseline_pred0[i]),
+                name=f"{target}_zero_at_bid0_{i}"
+            )
+        else:
+            model.addConstr(
+                pred == pred_raw,
+                name=f"{target}_identity_{i}"
+            )
 
     return model, pred_vars
 
@@ -1619,6 +1646,7 @@ def optimize_bids_embedded(
             b=b,
             target='clicks',
             max_bid=max_bid,
+            zero_at_bid0=True,
         )
     else:
         # Use LR model
@@ -1905,7 +1933,21 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
                 booster_clicks = xgb.Booster()
                 booster_clicks.load_model(str(xgb_path))
                 Z_clicks_dmatrix = xgb.DMatrix(data=Z_clicks)
-                clicks_preds = booster_clicks.predict(Z_clicks_dmatrix)
+                clicks_preds_raw = np.asarray(booster_clicks.predict(Z_clicks_dmatrix)).ravel()
+
+                # Match the optimizer embedding: clicks XGB is shifted so pred(b=0)=0.
+                # Compute baseline at bid=0 and subtract.
+                X0 = X_clicks_aligned.copy()
+                cpc0 = next((c for c in ("Avg. CPC", "Avg_ CPC") if c in X0.columns), None)
+                if cpc0 is not None:
+                    X0[cpc0] = 0.0
+                Z0 = preprocessor_clicks.transform(X0)
+                if sp is not None and sp.issparse(Z0):
+                    Z0 = Z0.tocsr()
+                else:
+                    Z0 = np.asarray(Z0)
+                clicks0 = np.asarray(booster_clicks.predict(xgb.DMatrix(data=Z0))).ravel()
+                clicks_preds = clicks_preds_raw - clicks0
         elif alg_clicks == 'ort' or alg_clicks == 'mort':
             clicks_preds = clicks_model.predict(X_validate_clicks.values)
         elif alg_clicks == 'glm':
