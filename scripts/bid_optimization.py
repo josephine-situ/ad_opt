@@ -705,6 +705,7 @@ def embed_affine_in_bid(
     b,
     target: str,
     link: str = "identity",
+    warm_start_bid: Optional[float] = None,
 ) -> Tuple[object, List[object]]:
     """Embed predictions of the form y_i = base_i + slope_i * b_i (or exp for log link).
 
@@ -716,17 +717,34 @@ def embed_affine_in_bid(
     if len(slope) != K:
         raise ValueError(f"base length ({K}) != slope length ({len(slope)})")
 
+    ws_bid: Optional[float] = None
+    if warm_start_bid is not None:
+        try:
+            ws_bid = float(warm_start_bid)
+        except Exception:
+            ws_bid = None
+
     pred_vars: List[object] = []
     for i in range(K):
         eta = float(base[i]) + float(slope[i]) * b[i]
         if link == "identity":
             pred = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_{i}")
             model.addConstr(pred == eta, name=f"{target}_affine_{i}")
+            if ws_bid is not None:
+                pred.Start = float(base[i]) + float(slope[i]) * ws_bid
         elif link == "log":
             pred = model.addVar(lb=0.0, name=f"{target}_pred_{i}")
             eta_var = model.addVar(lb=-GRB.INFINITY, name=f"{target}_eta_{i}")
             model.addConstr(eta_var == eta, name=f"{target}_affine_eta_{i}")
             model.addGenConstrExp(eta_var, pred, name=f"{target}_affine_exp_{i}")
+            if ws_bid is not None:
+                eta_start = float(base[i]) + float(slope[i]) * ws_bid
+                eta_var.Start = eta_start
+                # Guard against overflow in exp; if it blows up, leave pred.Start unset.
+                try:
+                    pred.Start = float(np.exp(eta_start))
+                except Exception:
+                    pass
         else:
             raise ValueError(f"Unsupported link: {link}")
 
@@ -1703,6 +1721,7 @@ def optimize_bids_embedded(
                 b=b,
                 target='epc',
                 link='identity',
+                warm_start_bid=(warm_start_bid if warm_start else None),
             )
         else:
             if weights_dict is None:
@@ -1783,6 +1802,7 @@ def optimize_bids_embedded(
                 b=b,
                 target='clicks',
                 link='identity',
+                warm_start_bid=(warm_start_bid if warm_start else None),
             )
         else:
             model, g_hat_vars = embed_lr(model, clicks_weights, clicks_const, X_clicks, b, target='clicks')
