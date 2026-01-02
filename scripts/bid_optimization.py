@@ -1508,7 +1508,7 @@ def optimize_bids_embedded(
     # Create model
     model = gp.Model('bid_optimization')
     model.setParam('OutputFlag', 1) 
-    model.setParam('TimeLimit', 60)
+    model.setParam('TimeLimit', 600)
 
     # --- 0. Decision Variables ---
 
@@ -2358,7 +2358,7 @@ def main():
     parser.add_argument(
         '--trial',
         type=int,
-        default=10,
+        default=None,
         help='Trial mode: limit to N keywords for quick testing (default: None, use all)'
     )
 
