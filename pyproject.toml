@@ -16,7 +16,7 @@ license = {text = "MIT"}
 dependencies = [
     "pandas>=1.5.3",
     "numpy>=1.24.3",
-    "scikit-learn>=1.2.2",
+    "scikit-learn==1.6.1",
     "scipy>=1.10.1",
     "openpyxl>=3.0.10",
     "holidays>=0.83",
@@ -38,7 +38,7 @@ ml = [
 ]
 
 ml_open = [
-    "xgboost>=2.0.0",
+    "xgboost==2.1.4",
 ]
 
 optimization = [

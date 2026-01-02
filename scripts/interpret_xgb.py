@@ -46,7 +46,7 @@ print("\n2b. Loading preprocessor...")
 import joblib
 
 try:
-    preprocessor = joblib.load(model_dir / f'xgb_tweedie_{embedding_choice}_epc_preprocess.joblib')
+    preprocessor = joblib.load(model_dir / f'xgb_mse_{embedding_choice}_epc_preprocess.joblib')
     print(f"  Loaded preprocessor for {embedding_choice}")
     
     # Get feature names from the preprocessor
@@ -66,18 +66,18 @@ except Exception as e:
 # ============================================================================
 # Load XGBoost models
 # ============================================================================
-print("\n3. Loading XGBoost Tweedie models...")
+print("\n3. Loading XGBoost mse models...")
 
 model_dir = Path(__file__).parent.parent / 'models'
 
-# Load Tweedie models (EPC and clicks) using native XGBoost
+# Load mse models (EPC and clicks) using native XGBoost
 try:
     import xgboost as xgb
     
-    model_epc = xgb.Booster(model_file=str(model_dir / f'xgb_tweedie_{embedding_choice}_epc.json'))
-    model_clicks = xgb.Booster(model_file=str(model_dir / f'xgb_tweedie_{embedding_choice}_clicks.json'))
-    print(f"  Loaded EPC model: xgb_tweedie_{embedding_choice}_epc.json")
-    print(f"  Loaded clicks model: xgb_tweedie_{embedding_choice}_clicks.json")
+    model_epc = xgb.Booster(model_file=str(model_dir / f'xgb_mse_{embedding_choice}_epc.json'))
+    model_clicks = xgb.Booster(model_file=str(model_dir / f'xgb_mse_{embedding_choice}_clicks.json'))
+    print(f"  Loaded EPC model: xgb_mse_{embedding_choice}_epc.json")
+    print(f"  Loaded clicks model: xgb_mse_{embedding_choice}_clicks.json")
     
 except Exception as e:
     print(f"  Error loading XGBoost models: {e}")

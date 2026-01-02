@@ -1,78 +1,78 @@
 Feature,Mean_Abs_SHAP
-cat__Match type_Broad match,0.47013655
-cat__Match type_Exact match,0.11398678
-num__bert_29,0.09295963
-num__bert_49,0.07840738
-cat__Region_A,0.070491746
-num__bert_37,0.058617607
-num__Avg. CPC,0.056262884
-num__bert_0,0.046976246
-num__days_to_next_course_start,0.046686333
-cat__Region_USA,0.046165813
-cat__Region_C,0.045811895
-num__bert_4,0.030310508
-num__bert_18,0.024134548
-num__bert_39,0.021026593
-num__bert_43,0.019243
-num__bert_45,0.018786736
-num__bert_25,0.01796008
-num__bert_32,0.017272806
-num__last_month_searches,0.017224416
-num__search_trend,0.017142588
-num__month,0.01646827
-num__bert_14,0.016412139
-num__bert_19,0.016161317
-num__bert_41,0.012105713
-cat__Region_B,0.011750014
-num__bert_5,0.011521888
-num__bert_46,0.011412698
-num__three_month_avg,0.01135085
-num__bert_20,0.011203959
-num__bert_44,0.010441236
-num__Top of page bid (low range),0.009475444
-num__bert_17,0.009389975
-num__six_month_avg,0.0087430645
-num__bert_26,0.008599961
-num__mom_change,0.008190376
-num__bert_35,0.007959361
-num__bert_38,0.0074007516
-num__bert_16,0.007166919
-num__bert_42,0.0069535105
-num__bert_3,0.0065391045
-num__bert_47,0.0064405305
-num__bert_34,0.006223764
-cat__day_of_week_Friday,0.0062156585
-num__bert_6,0.005725514
-num__Top of page bid (high range),0.005578909
-num__bert_2,0.0053294157
-num__bert_1,0.0052183573
-num__bert_33,0.0051470385
-num__bert_27,0.0047151125
-num__bert_48,0.004103109
-num__bert_24,0.0038596354
-num__Competition (indexed value),0.0035824608
-num__bert_13,0.0032778727
-num__is_weekend,0.002867787
-num__bert_21,0.0021331965
-num__bert_11,0.0012716594
-num__bert_9,0.0011974019
-cat__Match type_Phrase match,0.000103943676
-cat__day_of_week_Tuesday,0.0
-cat__day_of_week_Thursday,0.0
-cat__day_of_week_Sunday,0.0
-cat__day_of_week_Saturday,0.0
-cat__day_of_week_Monday,0.0
-num__is_public_holiday,0.0
-num__bert_7,0.0
-num__bert_8,0.0
-num__bert_40,0.0
+cat__Match type_Broad match,1.4430722
+num__bert_39,0.88670856
+num__Avg. CPC,0.68205094
+cat__Region_C,0.4052015
+num__days_to_next_course_start,0.36450186
+num__bert_29,0.35151133
+num__bert_42,0.3320349
+cat__Match type_Exact match,0.32461885
+num__bert_37,0.2973545
+num__bert_35,0.26139164
+cat__Region_A,0.24258612
+num__bert_25,0.22526053
+num__last_month_searches,0.22112049
+cat__Region_USA,0.17293988
+num__bert_0,0.16845514
+num__bert_7,0.124126054
+num__bert_4,0.11758885
+num__bert_16,0.10976531
+num__bert_32,0.07659965
+num__three_month_avg,0.07490442
+num__six_month_avg,0.07330977
+num__bert_49,0.06952415
+num__bert_21,0.06583267
+num__bert_41,0.057868276
+num__bert_5,0.05724988
+num__bert_18,0.053286802
+num__bert_47,0.050662067
+num__bert_24,0.04903159
+num__bert_3,0.044625975
+num__bert_48,0.044270676
+num__bert_46,0.04357668
+num__bert_20,0.04251169
+num__bert_6,0.04158851
+num__bert_31,0.04078385
+num__bert_40,0.03999397
+num__bert_43,0.039899036
+num__month,0.039134726
+num__bert_33,0.03610681
+cat__Region_B,0.03505854
+num__search_trend,0.029088011
+cat__day_of_week_Friday,0.0254048
+cat__day_of_week_Saturday,0.021227028
+num__Top of page bid (high range),0.020048164
+num__bert_15,0.019475568
+num__bert_2,0.019372389
+num__bert_9,0.018809874
+num__bert_27,0.016451832
+num__bert_38,0.013435229
+num__Competition (indexed value),0.01168927
+num__bert_44,0.009463545
+num__bert_26,0.008473595
+cat__day_of_week_Tuesday,0.0066761095
+num__is_weekend,0.0065157656
+num__bert_34,0.006202119
+num__bert_45,0.004716101
+cat__day_of_week_Monday,0.0040228125
+cat__day_of_week_Sunday,0.0036235233
+num__bert_12,0.0034854617
+num__mom_change,0.0033712068
+cat__day_of_week_Wednesday,0.0022988792
+cat__day_of_week_Thursday,0.0018556152
 num__bert_10,0.0
+num__is_public_holiday,0.0
+num__Top of page bid (low range),0.0
+num__bert_1,0.0
+num__bert_8,0.0
 num__bert_36,0.0
-num__bert_12,0.0
-num__bert_15,0.0
+num__bert_11,0.0
+num__bert_13,0.0
+num__bert_14,0.0
+num__bert_17,0.0
+num__bert_19,0.0
 num__bert_22,0.0
 num__bert_23,0.0
 num__bert_28,0.0
 num__bert_30,0.0
-num__bert_31,0.0
-cat__day_of_week_Wednesday,0.0
+cat__Match type_Phrase match,0.0

@@ -1,78 +1,78 @@
 Feature,Mean_Abs_SHAP
-num__Avg. CPC,0.5616962
-num__days_to_next_course_start,0.24585919
-num__bert_2,0.15778907
-num__month,0.11464119
-num__bert_24,0.08949962
-num__bert_3,0.07876598
-cat__Region_C,0.07869451
-num__bert_10,0.07745276
-num__bert_11,0.06663693
-num__bert_46,0.05035221
-num__bert_26,0.046634566
-num__bert_9,0.042480793
-num__bert_41,0.02829985
-num__bert_5,0.027897403
-num__bert_29,0.025842294
+num__Avg. CPC,3.3724558
+num__bert_4,1.4558189
+num__days_to_next_course_start,0.7175966
+num__bert_13,0.6244904
+num__is_weekend,0.0
+num__bert_38,0.0
 num__bert_43,0.0
 num__bert_42,0.0
-num__bert_44,0.0
-num__bert_38,0.0
+num__bert_41,0.0
 num__bert_40,0.0
 num__bert_39,0.0
 num__bert_37,0.0
+num__bert_45,0.0
 num__bert_36,0.0
 num__bert_35,0.0
 num__bert_34,0.0
-num__bert_45,0.0
-num__is_weekend,0.0
+num__bert_33,0.0
+num__bert_32,0.0
+num__bert_31,0.0
+num__bert_30,0.0
+num__bert_44,0.0
 num__bert_47,0.0
-cat__Region_USA,0.0
+num__bert_46,0.0
+num__bert_28,0.0
 cat__day_of_week_Tuesday,0.0
 cat__day_of_week_Thursday,0.0
 cat__day_of_week_Sunday,0.0
 cat__day_of_week_Saturday,0.0
 cat__day_of_week_Monday,0.0
 cat__day_of_week_Friday,0.0
+cat__Region_USA,0.0
+cat__Region_C,0.0
 cat__Region_B,0.0
-num__bert_32,0.0
 cat__Region_A,0.0
 cat__Match type_Phrase match,0.0
 cat__Match type_Exact match,0.0
 cat__Match type_Broad match,0.0
 num__bert_49,0.0
 num__bert_48,0.0
-num__bert_33,0.0
+num__bert_29,0.0
 num__bert_25,0.0
-num__bert_31,0.0
-num__bert_30,0.0
-num__is_public_holiday,0.0
-num__last_month_searches,0.0
-num__three_month_avg,0.0
-num__six_month_avg,0.0
-num__mom_change,0.0
-num__search_trend,0.0
-num__Competition (indexed value),0.0
-num__Top of page bid (low range),0.0
-num__Top of page bid (high range),0.0
-num__bert_0,0.0
-num__bert_1,0.0
-num__bert_4,0.0
+num__bert_27,0.0
+num__bert_26,0.0
 num__bert_6,0.0
+num__bert_5,0.0
+num__bert_3,0.0
+num__bert_2,0.0
+num__bert_1,0.0
+num__bert_0,0.0
+num__Top of page bid (high range),0.0
+num__Top of page bid (low range),0.0
+num__Competition (indexed value),0.0
+num__search_trend,0.0
+num__mom_change,0.0
+num__six_month_avg,0.0
+num__three_month_avg,0.0
+num__last_month_searches,0.0
+num__is_public_holiday,0.0
 num__bert_7,0.0
 num__bert_8,0.0
-num__bert_12,0.0
-num__bert_13,0.0
-num__bert_14,0.0
-num__bert_15,0.0
-num__bert_16,0.0
-num__bert_17,0.0
-num__bert_18,0.0
+num__bert_9,0.0
 num__bert_19,0.0
-num__bert_20,0.0
-num__bert_21,0.0
-num__bert_22,0.0
+num__month,0.0
+num__bert_24,0.0
 num__bert_23,0.0
-num__bert_27,0.0
-num__bert_28,0.0
+num__bert_22,0.0
+num__bert_21,0.0
+num__bert_20,0.0
+num__bert_18,0.0
+num__bert_10,0.0
+num__bert_17,0.0
+num__bert_16,0.0
+num__bert_15,0.0
+num__bert_14,0.0
+num__bert_12,0.0
+num__bert_11,0.0
 cat__day_of_week_Wednesday,0.0

@@ -1950,8 +1950,8 @@ def main():
             print(f"  Loaded {args.alg_conv.upper()} EPC model from {epc_model_path}")
 
         if args.alg_conv == 'xgb':
-            epc_xgb_model_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_epc.json'
-            epc_xgb_preproc_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_epc_preprocess.joblib'
+            epc_xgb_model_path = Path(args.models_dir) / f'xgb_mse_{args.embedding_method}_epc.json'
+            epc_xgb_preproc_path = Path(args.models_dir) / f'xgb_mse_{args.embedding_method}_epc_preprocess.joblib'
             if not epc_xgb_model_path.exists():
                 raise FileNotFoundError(f"XGB EPC model not found: {epc_xgb_model_path}")
             if not epc_xgb_preproc_path.exists():
@@ -1969,8 +1969,8 @@ def main():
             print(f"  Loaded {args.alg_clicks.upper()} clicks model from {clicks_model_path}")
 
         if args.alg_clicks == 'xgb':
-            clicks_xgb_model_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_clicks.json'
-            clicks_xgb_preproc_path = Path(args.models_dir) / f'xgb_tweedie_{args.embedding_method}_clicks_preprocess.joblib'
+            clicks_xgb_model_path = Path(args.models_dir) / f'xgb_mse_{args.embedding_method}_clicks.json'
+            clicks_xgb_preproc_path = Path(args.models_dir) / f'xgb_mse_{args.embedding_method}_clicks_preprocess.joblib'
             if not clicks_xgb_model_path.exists():
                 raise FileNotFoundError(f"XGB clicks model not found: {clicks_xgb_model_path}")
             if not clicks_xgb_preproc_path.exists():

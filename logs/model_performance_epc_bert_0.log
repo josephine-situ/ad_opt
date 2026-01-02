@@ -1,0 +1,102 @@
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf, tabpfn
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 12063 rows, Test: 4022 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (12063, 66), Test shape: (4022, 66)
+
+--- Linear Regression (MSE) ---
+  [GLM] Best CV MSE (weighted): 52250.273672
+  Best params: {'model__alpha': 5.0}
+  Train MSE (lower is better): 51038.3466
+  Test  MSE (lower is better): 69663.5882
+  [GLM train] mean(y)=24.0246 mean(pred)=21.7550 bias=-2.2696 | wmean(y)=21.2320 wmean(pred)=21.2320 wbias=-0.0000
+  [GLM train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [GLM train] quantiles pred: min=-121.2 p1=-49.99 med=16.92 p99=152.4 max=520.1
+  [GLM test] mean(y)=33.6378 mean(pred)=21.5390 bias=-12.0988 | wmean(y)=17.5387 wmean(pred)=17.9269 wbias=0.3882
+  [GLM test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [GLM test] quantiles pred: min=-84.98 p1=-45.47 med=16.97 p99=151.6 max=458.5
+  Saved pipeline to models\glm_bert_epc.joblib
+  Exported weights: weights_bert_epc_numeric.csv, weights_bert_epc_constant.csv, weights_bert_epc_categorical.csv
+  [GLM] Global bias: 0.3882
+  [GLM] Top decile lift: 5.3677
+  [GLM] Conditional MAE: 209.3008
+  [GLM] R^2: 0.0164
+
+--- XGBoost (MSE) ---
+  [XGB] Best CV MSE (weighted): 52686.526516
+  Best params: {'model__colsample_bytree': 1.0, 'model__learning_rate': 0.1, 'model__max_depth': 2, 'model__n_estimators': 5, 'model__subsample': 1.0}
+  Train MSE (lower is better): 50510.9582
+  Test  MSE (lower is better): 70415.4573
+  [XGB train] mean(y)=24.0246 mean(pred)=21.1520 bias=-2.8726 | wmean(y)=21.2320 wmean(pred)=21.2012 wbias=-0.0308
+  [XGB train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [XGB train] quantiles pred: min=17.56 p1=17.56 med=17.56 p99=40.89 max=1842
+  [XGB test] mean(y)=33.6378 mean(pred)=20.7178 bias=-12.9200 | wmean(y)=17.5387 wmean(pred)=20.4235 wbias=2.8848
+  [XGB test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [XGB test] quantiles pred: min=17.56 p1=17.56 med=17.56 p99=40.89 max=185.7
+  Saved model to models\xgb_mse_bert_epc.json
+  Saved preprocessor to models\xgb_mse_bert_epc_preprocess.joblib
+  [XGB] Global bias: 2.8848
+  [XGB] Top decile lift: 3.5523
+  [XGB] Conditional MAE: 216.1403
+  [XGB] R^2: 0.0058
+
+--- XGBoost RF (MSE) ---
+  [RF] Best CV MSE (weighted): 52790.671256
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 2, 'model__n_estimators': 10, 'model__subsample': 0.9}
+  Train MSE (lower is better): 52122.0695
+  Test  MSE (lower is better): 70827.9106
+  [RF train] mean(y)=24.0246 mean(pred)=21.2162 bias=-2.8085 | wmean(y)=21.2320 wmean(pred)=21.2283 wbias=-0.0037
+  [RF train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [RF train] quantiles pred: min=21.16 p1=21.16 med=21.16 p99=21.76 max=64.48
+  [RF test] mean(y)=33.6378 mean(pred)=21.2073 bias=-12.4305 | wmean(y)=17.5387 wmean(pred)=21.2125 wbias=3.6738
+  [RF test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [RF test] quantiles pred: min=21.16 p1=21.16 med=21.16 p99=21.76 max=24.33
+  Saved model to models\rf_mse_bert_epc.json
+  [RF] Global bias: 3.6738
+  [RF] Top decile lift: 5.0024
+  [RF] Conditional MAE: 221.3272
+  [RF] R^2: -0.0000
+
+--- TabPFN ---
+  [TabPFN] Note: sample_weight is ignored during fit; used only for evaluation.
+  [TabPFN] Subsampled train rows: 12063 -> 10000
+  Train MSE (lower is better): 50579.5102
+  Test  MSE (lower is better): 70022.0110
+  [TabPFN train] mean(y)=24.0246 mean(pred)=13.9330 bias=-10.0917 | wmean(y)=21.2320 wmean(pred)=15.8233 wbias=-5.4088
+  [TabPFN train] quantiles y: min=0 p1=0 med=0 p99=268.6 max=1.628e+04
+  [TabPFN train] quantiles pred: min=0.134 p1=0.223 med=0.7216 p99=123.6 max=391.4
+  [TabPFN test] mean(y)=33.6378 mean(pred)=14.3911 bias=-19.2467 | wmean(y)=17.5387 wmean(pred)=14.1187 wbias=-3.4200
+  [TabPFN test] quantiles y: min=0 p1=0 med=0 p99=226.7 max=1.192e+04
+  [TabPFN test] quantiles pred: min=0.1201 p1=0.2254 med=0.7424 p99=125 max=239.2
+  Saved pipeline to models\tabpfn_bert_epc.joblib
+  [TabPFN] Global bias: -3.4200
+  [TabPFN] Top decile lift: 4.9758
+  [TabPFN] Conditional MAE: 209.5927
+  [TabPFN] R^2: 0.0113
+
+======================================================================
+Model Performance Summary (Test MSE - lower is better)
+======================================================================
+
+Target Statistics (for context):
+  Mean: 33.6378
+  Std Dev: 465.3306
+  Variance (baseline MSE): 216532.5301
+  Median: 0.0000
+  Min: 0.0000
+  Max: 11916.0000
+
+  GLM   : MSE=69663.5882 | R^2=0.0164 | bias=0.3882 | top-decile lift=5.3677 | cMAE=209.3008
+  TabPFN: MSE=70022.0110 | R^2=0.0113 | bias=-3.4200 | top-decile lift=4.9758 | cMAE=209.5927
+  XGB   : MSE=70415.4573 | R^2=0.0058 | bias=2.8848 | top-decile lift=3.5523 | cMAE=216.1403
+  RF    : MSE=70827.9106 | R^2=-0.0000 | bias=3.6738 | top-decile lift=5.0024 | cMAE=221.3272
+
+Best model: GLM
+======================================================================
