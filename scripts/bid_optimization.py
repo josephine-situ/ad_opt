@@ -1844,6 +1844,17 @@ def optimize_bids_embedded(
         model.update()
         model.write(str(formulation_lp_path))
         print(f"\n  Cached base formulation saved to {formulation_lp_path}")
+
+        # Persist warm-start values for reuse-formulation mode.
+        # Note: .lp does NOT store Start values; .mst does.
+        if warm_start:
+            mst_path = formulation_lp_path.with_suffix('.mst')
+            try:
+                model.write(str(mst_path))
+                print(f"  Cached MIP start saved to {mst_path}")
+            except Exception as e:
+                print(f"  Warning: failed to write MIP start to {mst_path}: {e}")
+
         # Restore objective for this run
         if explore_lambda != 0.0:
             model.setObjective(profit_expr + explore_expr, GRB.MAXIMIZE)
@@ -2134,7 +2145,12 @@ def _write_formulation_metadata(
         json.dump(meta, f, indent=2)
 
 
-def _solve_from_cached_formulation(*, formulation_lp: Path, explore_lambda: float) -> Tuple[object, pd.DataFrame, dict]:
+def _solve_from_cached_formulation(
+    *,
+    formulation_lp: Path,
+    explore_lambda: float,
+    warm_start: bool = True,
+) -> Tuple[object, pd.DataFrame, dict]:
     """Load a cached base formulation (.lp + .json), add exploration term, solve, return bids_df."""
 
     formulation_lp = Path(formulation_lp)
@@ -2163,6 +2179,17 @@ def _solve_from_cached_formulation(*, formulation_lp: Path, explore_lambda: floa
     model.setParam('OutputFlag', 1)
     model.setParam('TimeLimit', 600)
     model.setParam('NonConvex', 2)
+
+    # Warm start (MIP start): .lp does NOT store variable Start values.
+    # If a sibling .mst exists (written when building the cache), load it.
+    mst_path = formulation_lp.with_suffix('.mst')
+    if warm_start and mst_path.exists():
+        try:
+            print(f"Loading MIP start from {mst_path}")
+            model.read(str(mst_path))
+            model.update()
+        except Exception as e:
+            print(f"Warning: failed to load MIP start from {mst_path}: {e}")
 
     # Base objective is already profit-only; add exploration term if needed.
     explore_lambda = float(explore_lambda or 0.0)
@@ -2995,7 +3022,7 @@ def main():
     parser.add_argument(
         '--formulation-lp',
         type=str,
-        default="opt_results/formulations/cached_glm_xgb.json",
+        default="opt_results/formulations/cached_glm_xgb.lp",
         help='Optional path to write/read a cached base formulation (.lp). Metadata is written/read as the same path with .json.'
     )
 
@@ -3031,6 +3058,7 @@ def main():
             model, bids_df, meta = _solve_from_cached_formulation(
                 formulation_lp=Path(args.formulation_lp),
                 explore_lambda=float(args.explore_lambda),
+                warm_start=(args.warm_start == 'on'),
             )
 
             if model.status == 2 or model.status == 9:

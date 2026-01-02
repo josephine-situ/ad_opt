@@ -29,7 +29,12 @@ conda activate adopt_env
 # Recommended parallel usage:
 #   1) Build the cached formulation once:
 #      python -u scripts/bid_optimization.py --embedding-method bert --alg-conv glm --alg-clicks xgb \
-#        --formulation-lp opt_results/formulations/cached_glm_xgb.lp --write-formulation-only
+#        --formulation-lp opt_results/formulations/cached_glm_xgb.lp --write-formulation-only \
+#        --warm-start on --warm-start-bid 0.0
+#
+#      This writes BOTH:
+#        - cached_glm_xgb.lp  (formulation)
+#        - cached_glm_xgb.mst (MIP start / warm start)
 #
 #   2) Submit as a job array (one lambda per task):
 #      sbatch --array=0-3 submit_bid_optimization_lambda.sh
