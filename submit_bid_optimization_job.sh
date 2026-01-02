@@ -24,8 +24,11 @@ module load miniforge
 echo "Activate environment..."
 conda activate adopt_env
 
+# Exploration term weight (objective bonus): + lambda * sum_{new keywords} bid
+EXPLORE_LAMBDA=${EXPLORE_LAMBDA:-0.0}
+
 # Run bid optimization with XGB Tweedie models for both EPC and clicks
 echo "Running bid_optimization.py with XGB Tweedie models"
-python -u scripts/bid_optimization.py --embedding-method bert --alg-conv xgb --alg-clicks xgb
+python -u scripts/bid_optimization.py --embedding-method bert --alg-conv glm --alg-clicks xgb --explore-lambda "$EXPLORE_LAMBDA"
 
 echo "End: $(date)"

@@ -1463,6 +1463,8 @@ def optimize_bids_embedded(
     weights_dict=None,
     budget=400,
     max_bid=50.0,
+    explore_lambda: float = 0.0,
+    is_new_mask: Optional[np.ndarray] = None,
     epc_model=None,
     clicks_model=None,
     epc_xgb_paths: Optional[Tuple[Path, Path]] = None,
@@ -1472,6 +1474,8 @@ def optimize_bids_embedded(
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
     embedding_method: str = 'bert',
+    formulation_lp_path: Optional[Path] = None,
+    write_formulation_only: bool = False,
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1534,6 +1538,7 @@ def optimize_bids_embedded(
 
     # Create model
     model = gp.Model('bid_optimization')
+    model.setParam('MIPFocus', 1) # Find feasible solution
     model.setParam('OutputFlag', 1) 
     model.setParam('TimeLimit', 600)
 
@@ -1719,22 +1724,49 @@ def optimize_bids_embedded(
 
     # --- Objective ---
     # Maximize Net Profit = sum_i g_i * (f_i - b_i)
-    model.setObjective((g @ f) - (b @ g), GRB.MAXIMIZE)
+    profit_expr = (g @ f) - (b @ g)
+    model.setObjective(profit_expr, GRB.MAXIMIZE)
+
+    # Optional exploration term: + lambda * sum_{new keywords} b_i
+    explore_lambda = float(explore_lambda or 0.0)
+    if explore_lambda != 0.0:
+        if is_new_mask is None:
+            raise ValueError("is_new_mask must be provided when explore_lambda != 0")
+        if len(is_new_mask) != K:
+            raise ValueError(f"is_new_mask length ({len(is_new_mask)}) != K ({K})")
+        explore_expr = explore_lambda * gp.quicksum(b[i] for i in range(K) if bool(is_new_mask[i]))
+        model.setObjective(profit_expr + explore_expr, GRB.MAXIMIZE)
 
     # --- Save Model Formulation ---
-    model_dir = Path('opt_results/formulations')
-    model_dir.mkdir(exist_ok=True, parents=True)
+    # If a cache path is provided, write a *base* formulation (profit-only objective)
+    # to that path so it can be reused across different lambdas without re-embedding.
+    if formulation_lp_path is not None:
+        formulation_lp_path = Path(formulation_lp_path)
+        formulation_lp_path.parent.mkdir(exist_ok=True, parents=True)
+        # Ensure we write the base objective (profit only), even if explore_lambda!=0
+        model.setObjective(profit_expr, GRB.MAXIMIZE)
+        model.update()
+        model.write(str(formulation_lp_path))
+        print(f"\n  Cached base formulation saved to {formulation_lp_path}")
+        # Restore objective for this run
+        if explore_lambda != 0.0:
+            model.setObjective(profit_expr + explore_expr, GRB.MAXIMIZE)
+        else:
+            model.setObjective(profit_expr, GRB.MAXIMIZE)
+    else:
+        model_dir = Path('opt_results/formulations')
+        model_dir.mkdir(exist_ok=True, parents=True)
+        model.update()
+        model_type_str = f"{alg_epc}_{alg_clicks}"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        lp_file = model_dir / f'bid_optimization_{model_type_str}_{timestamp}.lp'
+        model.write(str(lp_file))
+        print(f"\n  Model formulation saved to {lp_file}")
     
-    model.update()
-    
-    # Determine model type string for filename
-    model_type_str = f"{alg_epc}_{alg_clicks}"
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    lp_file = model_dir / f'bid_optimization_{model_type_str}_{timestamp}.lp'
-    model.write(str(lp_file))
-    print(f"\n  Model formulation saved to {lp_file}")
-    
+    if write_formulation_only:
+        # Caller requested only the formulation be written.
+        return model, b, f, g
+
     # --- Optimize ---
     model.setParam("NonConvex", 2)  # Allow bilinear terms in objective/constraints
     model.optimize()
@@ -1742,7 +1774,21 @@ def optimize_bids_embedded(
     return model, b, f, g
 
 
-def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, match_list, X=None):
+def extract_solution(
+    model,
+    b,
+    f,
+    g,
+    keyword_df,
+    keyword_idx_list,
+    region_list,
+    match_list,
+    X=None,
+    *,
+    explore_lambda: float = 0.0,
+    is_new_mask: Optional[np.ndarray] = None,
+    keyword_names: Optional[List[str]] = None,
+):
     """Extract non-zero bids from solution with predictions.
 
     Args:
@@ -1760,20 +1806,43 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     f_vals = f.X
     g_vals = g.X
 
+    # Objective decomposition
+    profit_val = float(np.sum(g_vals * (f_vals - b_vals)))
+    explore_lambda = float(explore_lambda or 0.0)
+    explore_val = 0.0
+    if explore_lambda != 0.0 and is_new_mask is not None:
+        explore_val = float(explore_lambda * np.sum(b_vals[np.asarray(is_new_mask, dtype=bool)]))
+
     print(f"\nSolution Summary:")
     print(f"  Total keywords: {len(b_vals)}")
     print(f"  Total spend: ${float(np.sum(b_vals * g_vals)):,.2f}")
-    print(f"  Predicted profit: ${model.objVal:,.2f}")
+    if explore_lambda != 0.0:
+        print(f"  Predicted profit (core): ${profit_val:,.2f}")
+        print(f"  Exploration bonus: ${explore_val:,.2f}  (lambda={explore_lambda:g})")
+        print(f"  Objective (profit+bonus): ${float(model.objVal):,.2f}")
+    else:
+        print(f"  Predicted profit: ${float(model.objVal):,.2f}")
     
     # Build result DataFrame with all bids
+    if keyword_names is None:
+        keyword_names = [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in range(len(b_vals))]
+
     bids_df = pd.DataFrame({
-        'keyword': [keyword_df.iloc[keyword_idx_list[i]]['Keyword'] for i in range(len(b_vals))],
+        'keyword': keyword_names,
         'region': region_list,
         'match': match_list,
         'bid': b_vals,
         'predicted_clicks': g_vals,
         'predicted_epc': f_vals,
     })
+
+    # Mark new keywords (if provided)
+    if is_new_mask is not None:
+        bids_df['is_new_keyword'] = np.asarray(is_new_mask, dtype=bool)
+    else:
+        bids_df['is_new_keyword'] = False
+
+    bids_df['exploration_bonus'] = (explore_lambda * bids_df['bid'] * bids_df['is_new_keyword'].astype(float))
 
     # Calculate derived columns
     bids_df['conv_value'] = bids_df['predicted_clicks'] * bids_df['predicted_epc']
@@ -1808,7 +1877,19 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     bids_df = bids_df.sort_values(by=sort_cols, ascending=sort_asc).reset_index(drop=True)
     
     # Reorder columns: keyword, region, match, bid, clicks, epc, conv_value, cost, profit, then any historical columns
-    base_cols = ['keyword', 'region', 'match', 'bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit']
+    base_cols = [
+        'keyword',
+        'region',
+        'match',
+        'is_new_keyword',
+        'bid',
+        'predicted_clicks',
+        'predicted_epc',
+        'conv_value',
+        'cost',
+        'profit',
+        'exploration_bonus',
+    ]
     hist_cols = [c for c in bids_df.columns if c.startswith('hist_')]
     final_cols = base_cols + hist_cols
     # Only keep columns that exist
@@ -1816,12 +1897,196 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     bids_df = bids_df[final_cols]
     
     # Format numeric columns to 2 decimal places
-    numeric_cols = ['bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit'] + hist_cols
+    numeric_cols = ['bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit', 'exploration_bonus'] + hist_cols
     for col in numeric_cols:
         if col in bids_df.columns:
             bids_df[col] = bids_df[col].apply(lambda x: f'{x:.2f}' if pd.notna(x) else x)
     
     return bids_df
+
+
+def _extract_solution_from_cached_model(
+    *,
+    model,
+    K: int,
+    mapping_df: pd.DataFrame,
+    is_new_mask: np.ndarray,
+    explore_lambda: float,
+) -> pd.DataFrame:
+    """Build the same output table as extract_solution(), but from a loaded .lp model."""
+
+    def _vals(prefix: str) -> np.ndarray:
+        vs = [model.getVarByName(f"{prefix}[{i}]") for i in range(K)]
+        if any(v is None for v in vs):
+            raise KeyError(f"Could not find some variables for prefix '{prefix}'")
+        return np.asarray([float(v.X) for v in vs], dtype=float)
+
+    b_vals = _vals('b')
+    f_vals = _vals('f')
+    g_vals = _vals('g')
+
+    keyword_names = mapping_df['keyword'].astype(str).tolist()
+    region_list = mapping_df['region'].astype(str).tolist()
+    match_list = mapping_df['match'].astype(str).tolist()
+
+    # Objective decomposition
+    profit_val = float(np.sum(g_vals * (f_vals - b_vals)))
+    explore_lambda = float(explore_lambda or 0.0)
+    explore_val = 0.0
+    if explore_lambda != 0.0:
+        explore_val = float(explore_lambda * np.sum(b_vals[np.asarray(is_new_mask, dtype=bool)]))
+
+    print(f"\nSolution Summary:")
+    print(f"  Total keywords: {len(b_vals)}")
+    print(f"  Total spend: ${float(np.sum(b_vals * g_vals)):,.2f}")
+    if explore_lambda != 0.0:
+        print(f"  Predicted profit (core): ${profit_val:,.2f}")
+        print(f"  Exploration bonus: ${explore_val:,.2f}  (lambda={explore_lambda:g})")
+        print(f"  Objective (profit+bonus): ${float(model.objVal):,.2f}")
+    else:
+        print(f"  Predicted profit: ${float(model.objVal):,.2f}")
+
+    bids_df = pd.DataFrame(
+        {
+            'keyword': keyword_names,
+            'region': region_list,
+            'match': match_list,
+            'bid': b_vals,
+            'predicted_clicks': g_vals,
+            'predicted_epc': f_vals,
+        }
+    )
+
+    bids_df['is_new_keyword'] = np.asarray(is_new_mask, dtype=bool)
+    bids_df['exploration_bonus'] = (explore_lambda * bids_df['bid'] * bids_df['is_new_keyword'].astype(float))
+
+    bids_df['conv_value'] = bids_df['predicted_clicks'] * bids_df['predicted_epc']
+    bids_df['cost'] = bids_df['bid'] * bids_df['predicted_clicks']
+    bids_df['profit'] = bids_df['conv_value'] - bids_df['cost']
+
+    # Load historical CPC data for existing keywords
+    ad_opt_data_file = Path('data/clean/ad_opt_data_bert.csv')
+    if ad_opt_data_file.exists():
+        ad_opt_df = pd.read_csv(str(ad_opt_data_file))
+
+        hist_stats = (
+            ad_opt_df.groupby(['Keyword', 'Region', 'Match type'])['Avg. CPC']
+            .agg(hist_min_cpc='min', hist_avg_cpc='mean', hist_max_cpc='max')
+            .reset_index()
+        )
+
+        bids_df = bids_df.merge(
+            hist_stats,
+            left_on=['keyword', 'region', 'match'],
+            right_on=['Keyword', 'Region', 'Match type'],
+            how='left',
+        ).drop(columns=['Keyword', 'Region', 'Match type'], errors='ignore')
+
+    # Sort by spend/cost (desc), then bid, then keyword dims
+    sort_cols = ['cost', 'bid', 'keyword', 'region', 'match']
+    sort_asc = [False, False, True, True, True]
+    bids_df = bids_df.sort_values(by=sort_cols, ascending=sort_asc).reset_index(drop=True)
+
+    base_cols = [
+        'keyword',
+        'region',
+        'match',
+        'is_new_keyword',
+        'bid',
+        'predicted_clicks',
+        'predicted_epc',
+        'conv_value',
+        'cost',
+        'profit',
+        'exploration_bonus',
+    ]
+    hist_cols = [c for c in bids_df.columns if c.startswith('hist_')]
+    final_cols = [c for c in (base_cols + hist_cols) if c in bids_df.columns]
+    bids_df = bids_df[final_cols]
+
+    numeric_cols = ['bid', 'predicted_clicks', 'predicted_epc', 'conv_value', 'cost', 'profit', 'exploration_bonus'] + hist_cols
+    for col in numeric_cols:
+        if col in bids_df.columns:
+            bids_df[col] = bids_df[col].apply(lambda x: f'{x:.2f}' if pd.notna(x) else x)
+
+    return bids_df
+
+
+def _write_formulation_metadata(
+    *,
+    meta_path: Path,
+    mapping_file: Path,
+    is_new_mask: np.ndarray,
+    embedding_method: str,
+    alg_conv: str,
+    alg_clicks: str,
+    budget: float,
+    max_bid: float,
+) -> None:
+    meta = {
+        'K': int(len(is_new_mask)),
+        'new_row_indices': [int(i) for i, v in enumerate(is_new_mask) if bool(v)],
+        'mapping_file': str(mapping_file).replace('\\\\', '/'),
+        'embedding_method': embedding_method,
+        'alg_conv': alg_conv,
+        'alg_clicks': alg_clicks,
+        'budget': float(budget),
+        'max_bid': float(max_bid),
+    }
+    meta_path.parent.mkdir(exist_ok=True, parents=True)
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(meta, f, indent=2)
+
+
+def _solve_from_cached_formulation(*, formulation_lp: Path, explore_lambda: float) -> Tuple[object, pd.DataFrame, dict]:
+    """Load a cached base formulation (.lp + .json), add exploration term, solve, return bids_df."""
+
+    formulation_lp = Path(formulation_lp)
+    meta_path = formulation_lp.with_suffix('.json')
+    if not formulation_lp.exists():
+        raise FileNotFoundError(f"Formulation not found: {formulation_lp}")
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Formulation metadata not found: {meta_path}")
+
+    with open(meta_path, 'r', encoding='utf-8') as f:
+        meta = json.load(f)
+
+    K = int(meta['K'])
+    mapping_file = Path(str(meta['mapping_file']))
+    if not mapping_file.exists():
+        raise FileNotFoundError(f"Mapping file referenced by metadata not found: {mapping_file}")
+    mapping_df = pd.read_csv(mapping_file)
+
+    is_new_mask = np.zeros(K, dtype=bool)
+    for i in meta.get('new_row_indices', []):
+        if 0 <= int(i) < K:
+            is_new_mask[int(i)] = True
+
+    # Load model
+    model = gp.read(str(formulation_lp))
+    model.setParam('OutputFlag', 1)
+    model.setParam('TimeLimit', 600)
+    model.setParam('NonConvex', 2)
+
+    # Base objective is already profit-only; add exploration term if needed.
+    explore_lambda = float(explore_lambda or 0.0)
+    if explore_lambda != 0.0:
+        obj = model.getObjective()
+        explore_expr = explore_lambda * gp.quicksum(
+            model.getVarByName(f"b[{i}]") for i in range(K) if bool(is_new_mask[i])
+        )
+        model.setObjective(obj + explore_expr, GRB.MAXIMIZE)
+
+    model.optimize()
+
+    bids_df = _extract_solution_from_cached_model(
+        model=model,
+        K=K,
+        mapping_df=mapping_df,
+        is_new_mask=is_new_mask,
+        explore_lambda=explore_lambda,
+    )
+    return model, bids_df, meta
 
 
 def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_epc, X_clicks, epc_model, clicks_model, 
@@ -2113,6 +2378,23 @@ def _predict_glm_at_bid0(*, X_raw: pd.DataFrame, glm_preproc_path: Path, glm_mod
     return np.asarray(preds).ravel()
 
 
+def _predict_glm_at_bid(*, X_raw: pd.DataFrame, bid: float, glm_preproc_path: Path, glm_model_path: Path) -> np.ndarray:
+    """Predict GLM outputs at a fixed bid using saved preprocessor + model coefficients."""
+
+    preprocessor = joblib.load(glm_preproc_path)
+    intercept, coeffs, _ = _extract_glm_coefficients(glm_model_path, glm_preproc_path)
+
+    X_aligned, expected_cols = _align_X_for_preprocessor(preprocessor, X_raw)
+    cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+    if cpc_candidates:
+        X_aligned = X_aligned.copy()
+        X_aligned[cpc_candidates[0]] = float(bid)
+
+    Z = preprocessor.transform(X_aligned)
+    preds = intercept + (Z @ coeffs)
+    return np.asarray(preds).ravel()
+
+
 def _predict_xgb_at_bid0(*, X_raw: pd.DataFrame, xgb_model_path: Path, preproc_path: Path) -> np.ndarray:
     """Predict XGB outputs at bid=0 using saved preprocessor + booster."""
 
@@ -2135,6 +2417,28 @@ def _predict_xgb_at_bid0(*, X_raw: pd.DataFrame, xgb_model_path: Path, preproc_p
     return np.asarray(booster.predict(dm)).ravel()
 
 
+def _predict_xgb_at_bid(*, X_raw: pd.DataFrame, bid: float, xgb_model_path: Path, preproc_path: Path) -> np.ndarray:
+    """Predict XGB outputs at a fixed bid using saved preprocessor + booster."""
+
+    preprocessor = joblib.load(preproc_path)
+    X_aligned, expected_cols = _align_X_for_preprocessor(preprocessor, X_raw)
+    cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+    if cpc_candidates:
+        X_aligned = X_aligned.copy()
+        X_aligned[cpc_candidates[0]] = float(bid)
+
+    Z = preprocessor.transform(X_aligned)
+    if sp is not None and sp.issparse(Z):
+        Z = Z.tocsr()
+    else:
+        Z = np.asarray(Z)
+
+    booster = xgb.Booster()
+    booster.load_model(str(xgb_model_path))
+    dm = xgb.DMatrix(data=Z)
+    return np.asarray(booster.predict(dm)).ravel()
+
+
 def _predict_iai_tree_at_bid0(*, X_raw: pd.DataFrame, ort_model) -> np.ndarray:
     """Predict ORT/MORT outputs at bid=0 by setting CPC feature to zero."""
 
@@ -2143,6 +2447,142 @@ def _predict_iai_tree_at_bid0(*, X_raw: pd.DataFrame, ort_model) -> np.ndarray:
     if cpc_cols:
         X0[cpc_cols[0]] = 0.0
     return np.asarray(ort_model.predict(X0.values)).ravel()
+
+
+def _predict_iai_tree_at_bid(*, X_raw: pd.DataFrame, bid: float, ort_model) -> np.ndarray:
+    """Predict ORT/MORT outputs at a fixed bid by setting CPC feature."""
+
+    Xb = X_raw.copy()
+    cpc_cols = [c for c in ("Avg. CPC", "Avg_ CPC") if c in Xb.columns]
+    if cpc_cols:
+        Xb[cpc_cols[0]] = float(bid)
+    return np.asarray(ort_model.predict(Xb.values)).ravel()
+
+
+def _predict_linear_weights_at_bid(*, X: pd.DataFrame, const: float, weights: dict, bid: float) -> np.ndarray:
+    """Predict using linear-weight dict format at a fixed bid.
+
+    Assumes X is already in the same feature space as the weights (one-hot already
+    applied if needed). The CPC feature is treated as the decision variable b.
+    """
+
+    preds = _predict_linear_weights_at_bid0(X=X, const=const, weights=weights)
+    bid_val = float(bid)
+    # Add CPC weight contribution if present.
+    for cpc_key in ("Avg. CPC", "Avg_ CPC"):
+        if cpc_key in weights:
+            try:
+                preds = preds + float(weights[cpc_key]) * bid_val
+            except Exception:
+                pass
+            break
+    return preds
+
+def filter_keywords_nonmonotone_at_small_bid(
+    *,
+    X_ort: Optional[pd.DataFrame],
+    X_lr: Optional[pd.DataFrame],
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    keyword_df: pd.DataFrame,
+    alg_clicks: str,
+    embedding_method: str,
+    weights_dict: Optional[dict],
+    clicks_model,
+    clicks_xgb_paths: Optional[Tuple[Path, Path]],
+    clicks_glm_preproc_path: Optional[Path],
+    bid_eps: float = 0.01,
+    tol: float = 1e-9,
+) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], List[int], List[str], List[str]]:
+    """Drop rows whose predicted clicks decreases from bid=0 to bid=bid_eps.
+
+    This is a fast pre-embedding sanity check primarily to prevent infeasibility
+    when using shifted clicks (e.g., clicks(b) - clicks(0)) with clicks >= 0.
+
+    Behavior:
+    - Computes clicks0 and clicks_eps for each row (keyword/region/match).
+    - Drops only the violating rows where clicks_eps < clicks0 - tol.
+    """
+
+    if bid_eps <= 0:
+        raise ValueError("bid_eps must be > 0")
+
+    raw_cat_algs = {"ort", "mort", "xgb", "glm"}
+    X_clicks = X_ort if (alg_clicks in raw_cat_algs) else X_lr
+    if X_clicks is None:
+        raise ValueError("Could not determine X for clicks monotonicity filter (X_ort/X_lr missing)")
+    if len(X_clicks) != len(kw_idx_list):
+        raise ValueError("Row count mismatch between X and mapping lists")
+
+    # --- Predict clicks at bid=0 and bid=eps ---
+    if alg_clicks in {"ort", "mort"}:
+        if clicks_model is None:
+            raise ValueError("clicks_model required for ORT/MORT clicks monotonicity filter")
+        clicks0 = _predict_iai_tree_at_bid0(X_raw=X_clicks, ort_model=clicks_model)
+        clickse = _predict_iai_tree_at_bid(X_raw=X_clicks, bid=float(bid_eps), ort_model=clicks_model)
+    elif alg_clicks == "xgb":
+        if clicks_xgb_paths is None:
+            raise ValueError("clicks_xgb_paths required for XGB clicks monotonicity filter")
+        xgb_path, preproc_path = clicks_xgb_paths
+        clicks0 = _predict_xgb_at_bid0(X_raw=X_clicks, xgb_model_path=xgb_path, preproc_path=preproc_path)
+        clickse = _predict_xgb_at_bid(X_raw=X_clicks, bid=float(bid_eps), xgb_model_path=xgb_path, preproc_path=preproc_path)
+    elif alg_clicks == "glm":
+        if clicks_glm_preproc_path is None:
+            raise ValueError("clicks_glm_preproc_path required for GLM clicks monotonicity filter")
+        glm_path = Path("models") / f"glm_{embedding_method}_clicks.joblib"
+        clicks0 = _predict_glm_at_bid0(X_raw=X_clicks, glm_preproc_path=Path(clicks_glm_preproc_path), glm_model_path=glm_path)
+        clickse = _predict_glm_at_bid(
+            X_raw=X_clicks,
+            bid=float(bid_eps),
+            glm_preproc_path=Path(clicks_glm_preproc_path),
+            glm_model_path=glm_path,
+        )
+    else:
+        if weights_dict is None:
+            raise ValueError("weights_dict required for LR clicks monotonicity filter")
+        clicks0 = _predict_linear_weights_at_bid0(
+            X=X_clicks,
+            const=float(weights_dict["clicks_const"]),
+            weights=weights_dict["clicks_weights"],
+        )
+        clickse = _predict_linear_weights_at_bid(
+            X=X_clicks,
+            const=float(weights_dict["clicks_const"]),
+            weights=weights_dict["clicks_weights"],
+            bid=float(bid_eps),
+        )
+
+    # Row-level violations
+    row_bad = (clickse < (clicks0 - float(tol)))
+    if not np.any(row_bad):
+        print(f"\nMonotonicity check: all keywords ok at bid_eps={bid_eps:g} (no drops)")
+        return X_ort, X_lr, kw_idx_list, region_list, match_list
+
+    keep_mask = ~np.asarray(row_bad, dtype=bool)
+
+    keep = int(keep_mask.sum())
+    drop = int(len(keep_mask) - keep)
+    print(
+        f"\nMonotonicity check (clicks): dropping {drop}/{len(keep_mask)} rows "
+        f"because clicks({bid_eps:g}) < clicks(0)"
+    )
+
+    if keep == 0:
+        raise RuntimeError("All rows were removed by the monotonicity check")
+
+    def _filt_df(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if df is None:
+            return None
+        return df.loc[keep_mask].reset_index(drop=True)
+
+    return (
+        _filt_df(X_ort),
+        _filt_df(X_lr),
+        [kw_idx_list[i] for i in range(len(keep_mask)) if bool(keep_mask[i])],
+        [region_list[i] for i in range(len(keep_mask)) if bool(keep_mask[i])],
+        [match_list[i] for i in range(len(keep_mask)) if bool(keep_mask[i])],
+    )
 
 
 def filter_rows_feasible_at_bid0(
@@ -2419,6 +2859,47 @@ def main():
         help='Training CSV used to compute trust-box min/max (default: data/clean/ad_opt_data_bert.csv)'
     )
 
+    parser.add_argument(
+        '--explore-lambda',
+        type=float,
+        default=0.0,
+        help='Exploration weight lambda for objective bonus: + lambda * sum_{new keywords} bid (default: 0.0)'
+    )
+
+    parser.add_argument(
+        '--monotone-filter',
+        type=str,
+        default='on',
+        choices=['on', 'off'],
+        help='Pre-embedding check: drop keywords where clicks(bid_eps) < clicks(0) (default: on)'
+    )
+
+    parser.add_argument(
+        '--monotone-bid-eps',
+        type=float,
+        default=0.01,
+        help='Bid epsilon used for monotonicity check (default: 0.01)'
+    )
+
+    parser.add_argument(
+        '--formulation-lp',
+        type=str,
+        default=None,
+        help='Optional path to write/read a cached base formulation (.lp). Metadata is written/read as the same path with .json.'
+    )
+
+    parser.add_argument(
+        '--reuse-formulation',
+        action='store_true',
+        help='If set, load --formulation-lp and solve by only adjusting the objective for --explore-lambda (no re-embedding).'
+    )
+
+    parser.add_argument(
+        '--write-formulation-only',
+        action='store_true',
+        help='If set, build and write the base formulation to --formulation-lp, then exit without solving.'
+    )
+
     
     args = parser.parse_args()
     
@@ -2431,13 +2912,61 @@ def main():
     print("=" * 70)
     
     try:
+        # Fast path: reuse an existing formulation cache
+        if args.reuse_formulation:
+            if args.formulation_lp is None:
+                raise ValueError("--formulation-lp is required when --reuse-formulation is set")
+
+            model, bids_df, meta = _solve_from_cached_formulation(
+                formulation_lp=Path(args.formulation_lp),
+                explore_lambda=float(args.explore_lambda),
+            )
+
+            if model.status == 2 or model.status == 9:
+                output_dir = Path('opt_results/bids')
+                output_dir.mkdir(exist_ok=True, parents=True)
+
+                model_suffix = f"{meta.get('alg_conv')}_{meta.get('alg_clicks')}"
+                embedding_method = str(meta.get('embedding_method', 'bert'))
+                if float(args.explore_lambda or 0.0) != 0.0:
+                    lam_str = str(args.explore_lambda).replace('.', 'p').replace('-', 'm')
+                    output_file = output_dir / f'optimized_bids_{embedding_method}_{model_suffix}_lambda{lam_str}.csv'
+                else:
+                    output_file = output_dir / f'optimized_bids_{embedding_method}_{model_suffix}.csv'
+
+                bids_df.to_csv(output_file, index=False)
+                print(f"\nResults saved to {output_file}")
+                print(f"\nTop 10 bids:")
+                print(bids_df.head(10).to_string(index=False))
+                return
+            elif model.status == GRB.INFEASIBLE:
+                print(f"Optimization failed with status {model.status} (Infeasible).")
+                print("Computing IIS to locate the conflict...")
+                model.computeIIS()
+                output_file = "infeasibility_report.ilp"
+                model.write(output_file)
+                print(f"Infeasibility report written to {output_file}")
+                return
+            else:
+                raise RuntimeError(f"Optimization failed with status {model.status}")
         # Load new keywords from classified keywords file
         classified_keywords_file = Path('data/gkp') / 'keywords_classified.csv'
         if classified_keywords_file.exists():
             classified_df = pd.read_csv(str(classified_keywords_file))
-            new_keywords = classified_df['Keyword'].tolist()
-            print(f"Loaded {len(new_keywords)} new keywords from {classified_keywords_file}")
-            keywords_to_embed = new_keywords
+            keywords_all = classified_df['Keyword'].dropna().astype(str).tolist()
+            if 'Origin' in classified_df.columns:
+                new_keyword_set = set(
+                    classified_df.loc[classified_df['Origin'].astype(str).str.lower() == 'new', 'Keyword']
+                    .dropna()
+                    .astype(str)
+                    .tolist()
+                )
+            else:
+                new_keyword_set = set(keywords_all)
+
+            print(f"Loaded {len(keywords_all)} keywords from {classified_keywords_file}")
+            print(f"  Marked {len(new_keyword_set)} as new (for exploration term)")
+            keywords_to_embed = keywords_all
         else:
             # Fall back to loading from latest GKP export
             gkp_df = get_gkp_data(gkp_dir='data/gkp')
@@ -2447,6 +2976,8 @@ def main():
                 )
             keywords_to_embed = gkp_df['Keyword'].dropna().astype(str).tolist()
             print(f"Loaded {len(keywords_to_embed)} keywords from latest GKP export")
+            # Without an Origin label, treat the provided set as "new".
+            new_keyword_set = set(keywords_to_embed)
         
         # Apply trial mode if requested
         if args.trial is not None:
@@ -2505,30 +3036,6 @@ def main():
         
         X = X_ort if X_ort is not None else X_lr
         print(f"Feature matrix has {X.shape[1]} total features")
-        
-        # Save feature matrices
-        data_dir = Path('opt_results/feature_matrices')
-        data_dir.mkdir(exist_ok=True, parents=True)
-        
-        if X_ort is not None:
-            ort_file = data_dir / f'X_ort_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
-            X_ort.to_csv(ort_file, index=False)
-            print(f"Saved X_ort to {ort_file}")
-        
-        if X_lr is not None:
-            lr_file = data_dir / f'X_lr_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
-            X_lr.to_csv(lr_file, index=False)
-            print(f"Saved X_lr to {lr_file}")
-        
-        # Also save the mapping information (keyword indices, regions, match types)
-        mapping_file = data_dir / f'mapping_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
-        mapping_df = pd.DataFrame({
-            'keyword_idx': kw_idx_list,
-            'region': region_list,
-            'match_type': match_list
-        })
-        mapping_df.to_csv(mapping_file, index=False)
-        print(f"Saved mapping to {mapping_file}")
 
         # Embedded mode: supports linear weights (LR/GLM), ORT/MORT (IAI), and XGB (no IAI)
         epc_model = None
@@ -2637,12 +3144,86 @@ def main():
                 mode='drop',
             )
 
+        # --- Monotonicity sanity check (clicks): ensure clicks doesn't decrease from bid=0 to bid=eps ---
+        # This is most important for XGB-clicks with zero-at-bid0 shifting.
+        if args.monotone_filter == 'on':
+            bid_eps = float(args.monotone_bid_eps)
+            # Keep eps within the current effective max bid.
+            if bid_eps > effective_max_bid:
+                bid_eps = float(effective_max_bid)
+            if bid_eps > 0:
+                X_ort, X_lr, kw_idx_list, region_list, match_list = filter_keywords_nonmonotone_at_small_bid(
+                    X_ort=X_ort,
+                    X_lr=X_lr,
+                    kw_idx_list=kw_idx_list,
+                    region_list=region_list,
+                    match_list=match_list,
+                    keyword_df=keyword_df,
+                    alg_clicks=args.alg_clicks,
+                    embedding_method=args.embedding_method,
+                    weights_dict=weights_dict,
+                    clicks_model=clicks_model,
+                    clicks_xgb_paths=clicks_xgb_paths,
+                    clicks_glm_preproc_path=clicks_glm_preproc_path,
+                    bid_eps=bid_eps,
+                )
+
+        # --- New keyword mask (for exploration term + reporting) ---
+        # Mask is per (keyword, region, match) row.
+        is_new_mask = np.asarray(
+            [
+                str(keyword_df.iloc[kw_idx_list[i]]['Keyword']) in new_keyword_set
+                for i in range(len(kw_idx_list))
+            ],
+            dtype=bool,
+        )
+
+        # Save feature matrices + mapping AFTER all filters so they match the solved formulation.
+        data_dir = Path('opt_results/feature_matrices')
+        data_dir.mkdir(exist_ok=True, parents=True)
+
+        if X_ort is not None:
+            ort_file = data_dir / f'X_ort_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
+            X_ort.to_csv(ort_file, index=False)
+            print(f"Saved X_ort to {ort_file}")
+
+        if X_lr is not None:
+            lr_file = data_dir / f'X_lr_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
+            X_lr.to_csv(lr_file, index=False)
+            print(f"Saved X_lr to {lr_file}")
+
+        mapping_file = data_dir / f'mapping_{args.embedding_method}_{args.alg_conv}_{args.alg_clicks}.csv'
+        mapping_df = pd.DataFrame({
+            'keyword': [str(keyword_df.iloc[kw_idx_list[i]]['Keyword']) for i in range(len(kw_idx_list))],
+            'region': region_list,
+            'match': match_list,
+            'is_new_keyword': is_new_mask.astype(bool),
+        })
+        mapping_df.to_csv(mapping_file, index=False)
+        print(f"Saved mapping to {mapping_file}")
+
+        # If caching is requested, also write metadata alongside the formulation.
+        formulation_lp_path = Path(args.formulation_lp) if args.formulation_lp else None
+        if formulation_lp_path is not None:
+            _write_formulation_metadata(
+                meta_path=formulation_lp_path.with_suffix('.json'),
+                mapping_file=mapping_file,
+                is_new_mask=is_new_mask,
+                embedding_method=args.embedding_method,
+                alg_conv=args.alg_conv,
+                alg_clicks=args.alg_clicks,
+                budget=float(args.budget),
+                max_bid=float(effective_max_bid),
+            )
+
         model, b, f, g = optimize_bids_embedded(
             X_ort=X_ort,
             X_lr=X_lr,
             weights_dict=weights_dict,
             budget=args.budget,
             max_bid=effective_max_bid,
+            explore_lambda=float(args.explore_lambda),
+            is_new_mask=is_new_mask,
             epc_model=epc_model,
             clicks_model=clicks_model,
             epc_xgb_paths=epc_xgb_paths,
@@ -2652,16 +3233,38 @@ def main():
             alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks,
             embedding_method=args.embedding_method,
+            formulation_lp_path=formulation_lp_path,
+            write_formulation_only=bool(args.write_formulation_only),
         )
+
+        if args.write_formulation_only:
+            print("\n✓ Wrote formulation cache; exiting due to --write-formulation-only")
+            return
 
         if model.status == 2 or model.status == 9:
             output_dir = Path('opt_results/bids')
             output_dir.mkdir(exist_ok=True, parents=True)
 
             model_suffix = f"{args.alg_conv}_{args.alg_clicks}"
-            output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
+            if float(args.explore_lambda or 0.0) != 0.0:
+                lam_str = str(args.explore_lambda).replace('.', 'p').replace('-', 'm')
+                output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}_lambda{lam_str}.csv'
+            else:
+                output_file = output_dir / f'optimized_bids_{args.embedding_method}_{model_suffix}.csv'
 
-            bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X)
+            bids_df = extract_solution(
+                model,
+                b,
+                f,
+                g,
+                keyword_df,
+                kw_idx_list,
+                region_list,
+                match_list,
+                X=X,
+                explore_lambda=float(args.explore_lambda),
+                is_new_mask=is_new_mask,
+            )
 
             # Validate solution predictions
             raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
