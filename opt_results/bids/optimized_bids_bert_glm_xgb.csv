@@ -1,0 +1,38 @@
+keyword,region,match,bid,predicted_clicks,predicted_epc,conv_value,cost,profit,hist_min_cpc,hist_avg_cpc,hist_max_cpc
+advanced generative ai course,USA,Broad match,23.78,6.37,168.96,1076.49,151.53,924.96,,,
+ai certification courses,C,Broad match,2.97,5.65,33.24,187.96,16.79,171.16,,,
+ai certification courses,USA,Broad match,2.97,4.66,29.53,137.61,13.84,123.77,,,
+ai certification courses,B,Broad match,2.97,4.54,50.63,229.91,13.49,216.42,,,
+ai certification courses,USA,Phrase match,5.43,2.25,36.48,82.06,12.22,69.85,1.85,7.80,25.30
+ai certification courses,A,Broad match,2.97,3.98,47.17,187.53,11.81,175.72,,,
+ai certification classes,B,Broad match,2.97,3.93,25.59,100.55,11.67,88.88,,,
+ai certification courses,B,Phrase match,5.43,2.13,57.58,122.64,11.57,111.08,0.52,1.29,2.72
+ai certification courses,C,Phrase match,5.43,2.13,40.19,85.60,11.57,74.03,0.21,0.87,1.44
+ai certification mit,USA,Phrase match,5.43,2.05,32.15,66.06,11.16,54.90,1.20,11.48,29.63
+adobe generative ai course,USA,Broad match,2.97,3.68,61.08,224.49,10.92,213.58,,,
+ai certification classes,A,Broad match,2.97,3.61,22.13,79.98,10.74,69.25,,,
+adobe generative ai course,B,Broad match,2.97,3.56,82.18,292.22,10.56,281.66,,,
+adobe generative ai course,USA,Phrase match,5.43,1.71,68.03,116.51,9.30,107.21,,,
+adobe generative ai course,C,Broad match,2.97,3.02,64.79,195.35,8.96,186.40,,,
+adobe generative ai course,B,Phrase match,5.43,1.59,89.13,141.99,8.65,133.34,,,
+ai certification courses,A,Phrase match,5.43,1.56,54.12,84.69,8.50,76.19,0.44,3.28,10.42
+adobe generative ai course,USA,Exact match,5.43,1.54,56.48,86.97,8.36,78.61,,,
+ai certification classes,B,Phrase match,5.43,1.52,32.54,49.61,8.28,41.33,,,
+ai certification courses,B,Exact match,5.43,1.49,46.03,68.48,8.08,60.40,0.15,0.83,1.33
+adobe generative ai course,A,Broad match,2.97,2.53,78.72,199.46,7.53,191.93,,,
+advanced generative ai course,C,Broad match,0.40,12.13,40.45,490.56,4.85,485.71,,,
+ai certificate programs,B,Broad match,0.42,10.48,17.55,184.05,4.40,179.65,,,
+ai certificate programs,A,Broad match,0.42,9.49,14.09,133.71,3.99,129.73,,,
+advanced generative ai course,B,Broad match,0.42,6.25,57.96,362.33,2.63,359.70,,,
+ai certification mit,C,Broad match,0.40,6.08,14.38,87.44,2.43,85.01,,,
+advanced generative ai course,A,Broad match,0.42,5.75,54.49,313.21,2.41,310.80,,,
+ai certification cost,B,Broad match,0.42,4.58,7.47,34.22,1.92,32.30,,,
+ai certification mit,USA,Broad match,0.42,3.86,10.78,41.56,1.62,39.94,,,
+ai certificate programs,B,Phrase match,0.40,4.01,10.48,42.06,1.60,40.45,,,
+ai certification mit,B,Broad match,0.42,3.74,31.88,119.11,1.57,117.54,,,
+ai certification cost,A,Broad match,0.42,3.39,4.01,13.61,1.43,12.19,,,
+ai certification mit,A,Broad match,0.42,3.23,28.42,91.85,1.36,90.49,,,
+ai certificate programs,A,Phrase match,0.40,3.02,7.02,21.18,1.21,19.97,,,
+ai certification mit,C,Phrase match,0.40,2.94,7.42,21.78,1.17,20.61,,,
+advanced generative ai course,C,Phrase match,0.40,2.41,33.49,80.86,0.97,79.89,,,
+advanced generative ai course,C,Exact match,0.40,2.37,21.95,52.02,0.95,51.07,,,

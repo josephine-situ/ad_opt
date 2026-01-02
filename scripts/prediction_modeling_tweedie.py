@@ -709,6 +709,12 @@ def train_glm_mse(
     joblib.dump(best, model_path)
     print(f"  Saved pipeline to {model_path}")
 
+    # Save the fitted preprocessing pipeline for use in bid_optimization
+    # This is required to reproduce identical transformations when embedding the GLM
+    preproc_path = out_dir / f"glm_{embedding_method}_{target}_preprocess.joblib"
+    joblib.dump(best.named_steps["preprocess"], preproc_path)
+    print(f"  Saved preprocessor to {preproc_path}")
+
     # Export weights in existing CSV format
     export_glm_weights(best, numeric_cols, categorical_cols, embedding_method, target, out_dir)
 
@@ -1082,7 +1088,7 @@ def main() -> None:
         "--models",
         type=str,
         nargs="+",
-        default=["glm", "xgb", "rf", "tabpfn"],
+        default=["glm"],
         choices=["glm", "xgb", "rf", "tabpfn"],
         help="Which models to train (default: glm xgb rf tabpfn)",
     )

@@ -513,8 +513,10 @@ def create_feature_matrix(
     # Determine if we need both versions (mixed models) or just one.
     # - ORT/MORT need raw categoricals (strings).
     # - XGB models in this repo are trained with a saved sklearn ColumnTransformer
-    #   (one-hot inside the preprocessor), so they ALSO need raw categoricals.
-    raw_cat_algs = {'ort', 'mort', 'xgb'}
+    #   (one-hot inside the preprocessor), so they need raw categoricals as input.
+    # - GLM models also use a saved sklearn ColumnTransformer preprocessor,
+    #   so they also need raw categoricals as input.
+    raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
     use_raw_epc = (alg_epc in raw_cat_algs)
     use_raw_clicks = (alg_clicks in raw_cat_algs)
     use_both_raw = use_raw_epc and use_raw_clicks
@@ -695,6 +697,72 @@ def embed_glm(model, weights, const, X, b, target, *, link: str = 'log'):
     return model, pred_vars
 
 
+def embed_affine_in_bid(
+    model,
+    *,
+    base: np.ndarray,
+    slope: np.ndarray,
+    b,
+    target: str,
+    link: str = "identity",
+) -> Tuple[object, List[object]]:
+    """Embed predictions of the form y_i = base_i + slope_i * b_i (or exp for log link).
+
+    This is used when a trained sklearn model is linear in the *preprocessed* feature
+    space and the preprocessing makes the bid feature appear as an affine function of b.
+    """
+
+    K = int(len(base))
+    if len(slope) != K:
+        raise ValueError(f"base length ({K}) != slope length ({len(slope)})")
+
+    pred_vars: List[object] = []
+    for i in range(K):
+        eta = float(base[i]) + float(slope[i]) * b[i]
+        if link == "identity":
+            pred = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_{i}")
+            model.addConstr(pred == eta, name=f"{target}_affine_{i}")
+        elif link == "log":
+            pred = model.addVar(lb=0.0, name=f"{target}_pred_{i}")
+            eta_var = model.addVar(lb=-GRB.INFINITY, name=f"{target}_eta_{i}")
+            model.addConstr(eta_var == eta, name=f"{target}_affine_eta_{i}")
+            model.addGenConstrExp(eta_var, pred, name=f"{target}_affine_exp_{i}")
+        else:
+            raise ValueError(f"Unsupported link: {link}")
+
+        pred_vars.append(pred)
+
+    return model, pred_vars
+
+
+def _extract_glm_coefficients(glm_model_path: Path, preprocessor_path: Path) -> Tuple[float, np.ndarray, List[str]]:
+    """Extract intercept and coefficients from a trained GLM model.
+    
+    Args:
+        glm_model_path: Path to saved GLM model (.joblib)
+        preprocessor_path: Path to saved preprocessor (.joblib)
+    
+    Returns:
+        Tuple of (intercept, coefficients_array, feature_names)
+    """
+    if joblib is None:
+        raise ImportError("joblib is required to load GLM models")
+    
+    # Load the GLM model and preprocessor
+    glm_pipeline = joblib.load(glm_model_path)
+    preprocessor = joblib.load(preprocessor_path)
+    
+    # Extract from pipeline
+    glm_model = glm_pipeline.named_steps['model']
+    
+    intercept = float(glm_model.intercept_)
+    coefficients = glm_model.coef_.ravel()
+    feature_names = list(preprocessor.get_feature_names_out())
+    # Strip the "num__" and "cat__" prefixes
+    feature_names = [name.split('__', 1)[1] if '__' in name else name for name in feature_names]
+    
+    return intercept, coefficients, feature_names
+
 def _extract_xgb_base_score(model_path: Path) -> float:
     """Extract base_score from an XGBoost model JSON saved via save_model()."""
 
@@ -721,24 +789,85 @@ def _align_X_for_preprocessor(preprocessor, X: pd.DataFrame) -> Tuple[pd.DataFra
     Also handles the common 'Avg. CPC' vs 'Avg_ CPC' name mismatch.
     """
 
+    def _expected_from_column_transformer(ct) -> Optional[List[str]]:
+        """Best-effort: infer expected input columns from a fitted ColumnTransformer.
+
+        Works for ColumnTransformers that were fit on DataFrames (column specs as names).
+        If the ColumnTransformer was fit on numpy arrays (column specs as indices/slices),
+        we cannot reliably reconstruct names here.
+        """
+
+        transformers = getattr(ct, "transformers_", None)
+        if not transformers:
+            return None
+
+        expected_cols: List[str] = []
+        used: set = set()
+
+        for _name, _trans, colspec in transformers:
+            if colspec is None or colspec == "drop":
+                continue
+
+            # Most common: list/tuple/np.ndarray of column names
+            if isinstance(colspec, (list, tuple, np.ndarray, pd.Index)):
+                if len(colspec) == 0:
+                    continue
+                first = colspec[0]
+                if isinstance(first, str):
+                    for c in list(colspec):
+                        if c not in used:
+                            expected_cols.append(c)
+                            used.add(c)
+                    continue
+
+            # Anything else (slice, int indices, boolean masks, callables) -> give up.
+            return None
+
+        if getattr(ct, "remainder", "drop") == "passthrough":
+            for c in X.columns:
+                if c not in used:
+                    expected_cols.append(c)
+                    used.add(c)
+
+        return expected_cols or None
+
+    # 1) Preferred: sklearn exposes exact training-time input columns.
+    expected: Optional[List[str]] = None
     if hasattr(preprocessor, "feature_names_in_"):
         expected = list(preprocessor.feature_names_in_)  # type: ignore[attr-defined]
     else:
-        expected = list(X.columns)
+        expected = _expected_from_column_transformer(preprocessor)
 
     X_use = X.copy()
 
-    if "Avg. CPC" in expected and "Avg. CPC" not in X_use.columns and "Avg_ CPC" in X_use.columns:
-        X_use = X_use.rename(columns={"Avg_ CPC": "Avg. CPC"})
-    elif "Avg_ CPC" in expected and "Avg_ CPC" not in X_use.columns and "Avg. CPC" in X_use.columns:
-        X_use = X_use.rename(columns={"Avg. CPC": "Avg_ CPC"})
+    # 2) If we inferred expected by name, align by name.
+    if expected is not None:
+        if "Avg. CPC" in expected and "Avg. CPC" not in X_use.columns and "Avg_ CPC" in X_use.columns:
+            X_use = X_use.rename(columns={"Avg_ CPC": "Avg. CPC"})
+        elif "Avg_ CPC" in expected and "Avg_ CPC" not in X_use.columns and "Avg. CPC" in X_use.columns:
+            X_use = X_use.rename(columns={"Avg. CPC": "Avg_ CPC"})
 
-    for col in expected:
-        if col not in X_use.columns:
-            X_use[col] = np.nan
+        for col in expected:
+            if col not in X_use.columns:
+                X_use[col] = np.nan
 
-    X_use = X_use[expected]
-    return X_use, expected
+        X_use = X_use[expected]
+        return X_use, expected
+
+    # 3) Fallback: align by expected feature count (positional). This happens when the
+    # preprocessor was fit on numpy arrays (no column names preserved).
+    if hasattr(preprocessor, "n_features_in_"):
+        n_in = int(getattr(preprocessor, "n_features_in_"))
+        if X_use.shape[1] < n_in:
+            # Pad with NaN columns to satisfy expected width.
+            for j in range(n_in - X_use.shape[1]):
+                X_use[f"__pad_{j}__"] = np.nan
+        if X_use.shape[1] != n_in:
+            X_use = X_use.iloc[:, :n_in]
+        return X_use, list(X_use.columns)
+
+    # 4) Last resort: do nothing.
+    return X_use, list(X_use.columns)
 
 
 def _parse_xgb_tree_paths(tree_obj: dict) -> List[Tuple[List[Tuple[int, str, float]], float]]:
@@ -791,84 +920,51 @@ def embed_xgb(
     target: str,
     max_bid: float,
 ) -> Tuple[object, List[object]]:
-    """Embed an XGBoost regressor (saved JSON) into Gurobi without IAI.
+    """Embed an XGBoost regressor into Gurobi (Corrected Formulation).
 
     Assumptions:
     - The XGB model was trained on `preprocessor.transform(X_raw)`.
-    - `X` is the raw feature DataFrame (categoricals as strings).
-    - The bid decision variable `b[i]` replaces the raw 'Avg. CPC' feature.
-
-    This uses a leaf-indicator (path-based) formulation per tree.
+    - `X` is the raw feature DataFrame.
+    - The bid decision variable `b[i]` modifies the 'Avg. CPC' feature.
     """
 
-    if xgb is None:
-        raise ImportError("xgboost is required for embed_xgb. Install with: pip install xgboost")
-    if joblib is None:
-        raise ImportError("joblib is required for embed_xgb. Install with: pip install joblib")
+    if xgb is None or joblib is None:
+        raise ImportError("xgboost and joblib are required. Pip install them first.")
 
     print(f"  Embedding {target} XGB constraints (path-based formulation)...")
 
+    # 1. Load Preprocessor
     try:
         preprocessor = joblib.load(preprocessor_path)
-    except (AttributeError, ImportError) as e:
-        # Pickle compatibility issue with different scikit-learn versions
-        raise RuntimeError(
-            f"Failed to load preprocessor from {preprocessor_path}.\n"
-            f"This is likely due to scikit-learn version mismatch.\n"
-            f"Error: {e}\n"
-            f"\nSolution: Regenerate the preprocessor by running:\n"
-            f"  python scripts/prediction_modeling_tweedie.py --target {target} --embedding-method bert\n"
-            f"  python scripts/prediction_modeling_tweedie.py --target {target} --embedding-method tfidf\n"
-            f"on the engaging cluster to create fresh preprocessors with the current sklearn version."
-        ) from e
-    
+    except Exception as e:
+        raise RuntimeError(f"Failed to load preprocessor: {e}")
+
+    # 2. Align Data
+    # Note: Ensure _align_X_for_preprocessor is available in your scope
     X_use, expected_cols = _align_X_for_preprocessor(preprocessor, X)
 
-    # Identify CPC column name as expected by the preprocessor.
+    # 3. Identify CPC Column
     cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
     if not cpc_candidates:
-        raise KeyError(
-            "Could not find an Avg. CPC column expected by the saved preprocessor. "
-            f"Expected one of ['Avg. CPC', 'Avg_ CPC'] in: {expected_cols[:20]}..."
-        )
+        raise KeyError(f"Could not find Avg. CPC in expected columns: {expected_cols[:5]}...")
     cpc_col = cpc_candidates[0]
 
-    # Precompute preprocessed feature constants (CPC set to 0) and CPC coefficient
-    # (difference between CPC=1 and CPC=0). This is robust to scaling pipelines.
+    # 4. Precompute Transformations
+    # We calculate Z0 (value at bid=0) and the slope (dZ).
     X0 = X_use.copy()
     X0[cpc_col] = 0.0
     X1 = X_use.copy()
     X1[cpc_col] = 1.0
 
-    # 3. Transform and check for NaNs
     try:
         Z0 = preprocessor.transform(X0)
         Z1 = preprocessor.transform(X1)
-        
-        # Check for NaNs in the output
-        if np.isnan(Z0).any():
-            print("!!! PREPROCESSOR PRODUCED NaNs IN Z0 !!!")
-            nan_indices = np.where(np.isnan(Z0))[1] if np.ndim(Z0) > 1 else np.where(np.isnan(Z0))[0]
-            print(f"NaNs found in transformed feature indices: {nan_indices}")
-        if np.isnan(Z1).any():
-            print("!!! PREPROCESSOR PRODUCED NaNs IN Z1 !!!")
-            nan_indices = np.where(np.isnan(Z1))[1] if np.ndim(Z1) > 1 else np.where(np.isnan(Z1))[0]
-            print(f"NaNs found in transformed feature indices: {nan_indices}")
-        
-        dZ = Z1 - Z0
-        
-        if np.isnan(dZ).any():
-            print("!!! dZ CONTAINS NaNs !!!")
-            nan_indices = np.where(np.isnan(dZ))[1] if np.ndim(dZ) > 1 else np.where(np.isnan(dZ))[0]
-            print(f"NaNs found in dZ indices: {nan_indices}")
-        
-        if not np.isnan(Z0).any() and not np.isnan(Z1).any() and not np.isnan(dZ).any():
-            print("Preprocessing successful. No NaNs detected.")
-            
+        dZ = Z1 - Z0  # The slope per unit of bid
     except Exception as e:
         print(f"Preprocessing crashed: {e}")
         raise
 
+    # Handle Sparse/Dense conversion
     if sp is not None and sp.issparse(Z0):
         Z0 = Z0.tocsr()
         dZ = dZ.tocsr()
@@ -876,101 +972,54 @@ def embed_xgb(
         Z0 = np.asarray(Z0)
         dZ = np.asarray(dZ)
 
+    # 5. Load XGBoost Model
     booster = xgb.Booster()
     booster.load_model(str(xgb_model_path))
+    
+    # Note: Ensure _extract_xgb_base_score is available in your scope
     base_score = _extract_xgb_base_score(xgb_model_path)
 
-    # 4. Feasibility check: Verify that predictions can be made with bids=0
-    try:
-        import xgboost as xgb_module
-        Z0_dmatrix = xgb_module.DMatrix(data=Z0)
-        predictions_at_zero = booster.predict(Z0_dmatrix)
-        
-        if np.isnan(predictions_at_zero).any():
-            print(f"!!! XGB PREDICTION WITH BIDS=0 CONTAINS NaNs ({target}) !!!")
-            nan_count = np.sum(np.isnan(predictions_at_zero))
-            print(f"Found {nan_count} NaN predictions out of {len(predictions_at_zero)} keywords")
-        elif np.isinf(predictions_at_zero).any():
-            print(f"!!! XGB PREDICTION WITH BIDS=0 CONTAINS INFs ({target}) !!!")
-            inf_count = np.sum(np.isinf(predictions_at_zero))
-            print(f"Found {inf_count} Inf predictions out of {len(predictions_at_zero)} keywords")
-        else:
-            print(f"Feasibility check passed for {target}: XGB predictions at bids=0 are valid")
-            print(f"  Base score: {base_score}, Sample predictions: min={predictions_at_zero.min():.6f}, max={predictions_at_zero.max():.6f}")
-    except Exception as e:
-        print(f"ERROR in feasibility check for {target}: {e}")
-        raise
-
+    # 6. Parse Trees
     tree_dumps = booster.get_dump(dump_format="json")
     trees = [json.loads(s) for s in tree_dumps]
 
-    # Parse all leaf paths and collect used feature indices.
-    tree_paths: List[List[Tuple[List[Tuple[int, str, float]], float]]] = []
-    used_features: set[int] = set()
-    cpc_split_thresholds: List[float] = []
+    # Note: Ensure _parse_xgb_tree_paths is available in your scope
+    tree_paths = []
+    used_features = set()
 
     for t in trees:
         paths = _parse_xgb_tree_paths(t)
         tree_paths.append(paths)
-        for conds, _leaf in paths:
-            for feat_idx, _op, thr in conds:
+        for conds, _ in paths:
+            for feat_idx, _, _ in conds:
                 used_features.add(int(feat_idx))
-                cpc_split_thresholds.append(float(thr))
 
     if not used_features:
         raise ValueError("XGB model appears to have no split features")
 
-    # Determine which preprocessed feature index corresponds to CPC.
-    if sp is not None and sp.issparse(dZ):
-        nonzero_cols = set(map(int, dZ.nonzero()[1]))
-    else:
-        nonzero_cols = set(int(j) for j in range(dZ.shape[1]) if np.any(dZ[:, j] != 0))
+    # 7. Identify the CPC Feature Index in Transformed Space
+    # Bid can affect multiple transformed columns (e.g., scaling + passthrough).
+    # We embed each split feature as an affine function of b: v_i(b) = base_i + slope_i * b.
+    tol = 1e-9
 
-    cpc_feature_candidates = sorted(list(nonzero_cols.intersection(used_features)))
-    if len(cpc_feature_candidates) > 1:
-        raise ValueError(
-            f"Multiple variable-dependent preprocessed columns detected for CPC: {cpc_feature_candidates}. "
-            "This embedding assumes only the CPC column varies with b."
-        )
-    cpc_feature_idx = cpc_feature_candidates[0] if cpc_feature_candidates else None
-
-    cpc_coeff = 0.0
-    if cpc_feature_idx is not None:
-        if sp is not None and sp.issparse(dZ):
-            # coefficient per row should be constant; take first row.
-            cpc_coeff = float(dZ[0, cpc_feature_idx])
-        else:
-            cpc_coeff = float(dZ[0, cpc_feature_idx])
-
-    # Materialize constants only for used features.
+    # 8. Materialize base (Z0) and slope (dZ) for used features
     used_features_list = sorted(list(used_features))
-    const_by_feat: Dict[int, np.ndarray] = {}
+    base_by_feat: Dict[int, np.ndarray] = {}
+    slope_by_feat: Dict[int, np.ndarray] = {}
+    
     if sp is not None and sp.issparse(Z0):
         for j in used_features_list:
-            const_by_feat[j] = np.asarray(Z0.getcol(j).toarray()).ravel()
+            base_by_feat[j] = np.asarray(Z0.getcol(j).toarray()).ravel()
+            slope_by_feat[j] = np.asarray(dZ.getcol(j).toarray()).ravel()
     else:
         for j in used_features_list:
-            const_by_feat[j] = np.asarray(Z0[:, j]).ravel()
+            base_by_feat[j] = np.asarray(Z0[:, j]).ravel()
+            slope_by_feat[j] = np.asarray(dZ[:, j]).ravel()
 
-    # Big-M for CPC splits (only needed if CPC is used in the trees).
-    M_cpc = 0.0
-    if cpc_feature_idx is not None:
-        expr0 = 0.0
-        expr1 = cpc_coeff * float(max_bid)
-        expr_min = float(min(expr0, expr1))
-        expr_max = float(max(expr0, expr1))
-        for paths in tree_paths:
-            for conds, _leaf in paths:
-                for feat_idx, _op, thr in conds:
-                    if int(feat_idx) != int(cpc_feature_idx):
-                        continue
-                    M_cpc = max(M_cpc, expr_max - float(thr), float(thr) - expr_min)
-        M_cpc = float(M_cpc + 1e-6)
-
+    # 9. Build Gurobi Constraints
     K = len(X_use)
-    pred_vars: List[object] = []
+    pred_vars = []
 
-    # Build constraints row-by-row.
     for i in range(K):
         pred = model.addVar(lb=-GRB.INFINITY, name=f"{target}_pred_{i}")
         pred_vars.append(pred)
@@ -982,56 +1031,84 @@ def embed_xgb(
             leaf_vals = []
 
             for leaf_idx, (conds, leaf_val) in enumerate(paths):
-                z = model.addVar(vtype=GRB.BINARY, name=f"{target}_xgb_t{t_idx}_l{leaf_idx}_i{i}")
+                # Decision variable for "Is this leaf active?"
+                z = model.addVar(vtype=GRB.BINARY, name=f"{target}_t{t_idx}_l{leaf_idx}_i{i}")
                 leaf_inds.append(z)
                 leaf_vals.append(float(leaf_val))
 
-                # Enforce split conditions along the path.
                 infeasible = False
                 split_counter = 0
+                
                 for feat_idx, op, thr in conds:
                     feat_idx = int(feat_idx)
                     thr = float(thr)
 
-                    if cpc_feature_idx is None or feat_idx != int(cpc_feature_idx):
-                        # Constant feature. If the split is violated, this leaf is impossible.
-                        v = float(const_by_feat[feat_idx][i])
+                    base_val = float(base_by_feat[feat_idx][i])
+                    slope_val = float(slope_by_feat[feat_idx][i])
+
+                    # Treat as constant if bid has (near) zero effect on this transformed feature.
+                    if abs(slope_val) <= tol:
+                        v = base_val
+                        if np.isnan(v):
+                            infeasible = True
+                            break
                         if op == "lt":
+                            # Exact XGBoost semantics: go left iff v < thr
                             if not (v < thr):
                                 infeasible = True
                                 break
                         elif op == "ge":
+                            # Exact XGBoost semantics: go right iff v >= thr
                             if not (v >= thr):
                                 infeasible = True
                                 break
                         else:
                             raise ValueError(f"Unknown op: {op}")
                     else:
-                        # CPC-dependent feature.
-                        expr = (cpc_coeff * b[i])
+                        # Variable feature: v(b) = base + slope*b
+                        v0 = base_val
+                        v1 = base_val + slope_val * float(max_bid)
+                        val_min = min(v0, v1)
+                        val_max = max(v0, v1)
+
+                        local_M = max(abs(val_max - thr), abs(val_min - thr)) + 10.0
+                        expr = base_val + (slope_val * b[i])
+
                         if op == "lt":
-                            model.addConstr(expr <= thr + M_cpc * (1 - z), name=f"{target}_xgb_lt_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}")
+                            model.addConstr(
+                                expr <= thr - 1e-6 + local_M * (1 - z),
+                                name=f"{target}_lt_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}"
+                            )
                         elif op == "ge":
-                            model.addConstr(expr >= thr + 1e-6 - M_cpc * (1 - z), name=f"{target}_xgb_ge_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}")
+                            model.addConstr(
+                                expr >= thr - local_M * (1 - z),
+                                name=f"{target}_ge_t{t_idx}_l{leaf_idx}_i{i}_s{split_counter}"
+                            )
                         else:
                             raise ValueError(f"Unknown op: {op}")
+                    
                     split_counter += 1
 
                 if infeasible:
-                    model.addConstr(z == 0, name=f"{target}_xgb_infeasible_t{t_idx}_l{leaf_idx}_i{i}")
+                    # If constant features make this path impossible, force z=0
+                    model.addConstr(z == 0, name=f"{target}_infeasible_t{t_idx}_l{leaf_idx}_i{i}")
 
-            # Exactly one leaf active per tree.
-            model.addConstr(gp.quicksum(leaf_inds) == 1, name=f"{target}_xgb_oneleaf_t{t_idx}_i{i}")
+            # One leaf per tree
+            model.addConstr(gp.quicksum(leaf_inds) == 1, name=f"{target}_oneleaf_t{t_idx}_i{i}")
 
-            tree_out = model.addVar(lb=-GRB.INFINITY, name=f"{target}_xgb_tree_{t_idx}_i{i}")
+            # Accumulate output
+            tree_out = model.addVar(lb=-GRB.INFINITY, name=f"{target}_out_t{t_idx}_i{i}")
             model.addConstr(
                 tree_out == gp.quicksum(leaf_vals[k] * leaf_inds[k] for k in range(len(leaf_inds))),
-                name=f"{target}_xgb_treeout_t{t_idx}_i{i}",
+                name=f"{target}_sum_t{t_idx}_i{i}"
             )
             tree_outputs.append(tree_out)
 
-        # Prediction is base_score + sum(tree outputs)
-        model.addConstr(pred == float(base_score) + gp.quicksum(tree_outputs), name=f"{target}_xgb_predlink_{i}")
+        # Final Prediction Link
+        model.addConstr(
+            pred == float(base_score) + gp.quicksum(tree_outputs),
+            name=f"{target}_final_link_{i}"
+        )
 
     return model, pred_vars
 
@@ -1363,8 +1440,11 @@ def optimize_bids_embedded(
     clicks_model=None,
     epc_xgb_paths: Optional[Tuple[Path, Path]] = None,
     clicks_xgb_paths: Optional[Tuple[Path, Path]] = None,
+    epc_glm_preproc_path: Optional[Path] = None,
+    clicks_glm_preproc_path: Optional[Path] = None,
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
+    embedding_method: str = 'bert',
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1396,7 +1476,7 @@ def optimize_bids_embedded(
     M_g = 400     # Max potential clicks (Big-M for g)
     M_f = 40000   # Max potential EPC (Big-M for f). Kept large for safety.
 
-    raw_cat_algs = {'ort', 'mort', 'xgb'}
+    raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
 
     use_ort_epc = (alg_epc in {'ort', 'mort'})
     use_ort_clicks = (alg_clicks in {'ort', 'mort'})
@@ -1466,18 +1546,61 @@ def optimize_bids_embedded(
             max_bid=max_bid,
         )
     else:
-        if weights_dict is None:
-            raise ValueError("weights_dict is required when epc_model is not provided")
-
-        if 'epc_const' not in weights_dict or 'epc_weights' not in weights_dict:
-            raise KeyError("weights_dict must contain 'epc_const' and 'epc_weights'")
-
-        epc_const = weights_dict['epc_const']
-        epc_weights = weights_dict['epc_weights']
-
         if alg_epc == 'glm':
-            model, f_hat_vars = embed_glm(model, epc_weights, epc_const, X_epc, b, target='epc', link='log')
+            if epc_glm_preproc_path is None:
+                raise ValueError("epc_glm_preproc_path is required when alg_epc == 'glm'")
+            try:
+                preprocessor_epc = joblib.load(epc_glm_preproc_path)
+            except (AttributeError, ImportError) as e:
+                raise RuntimeError(
+                    f"Failed to load GLM preprocessor from {epc_glm_preproc_path}.\n"
+                    f"Error: {e}"
+                ) from e
+            
+            # Extract coefficients from actual GLM model
+            epc_glm_model_path = Path('models') / f'glm_{embedding_method}_epc.joblib'
+            epc_intercept, epc_coeffs, _ = _extract_glm_coefficients(epc_glm_model_path, epc_glm_preproc_path)
+
+            # Embed the GLM exactly in terms of the bid variable by precomputing
+            # Z0 (bid=0) and dZ (per unit bid) in the preprocessed feature space.
+            X_epc_aligned, expected_cols = _align_X_for_preprocessor(preprocessor_epc, X_epc)
+            cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+            if not cpc_candidates:
+                raise KeyError(f"Could not find Avg. CPC in expected columns for GLM EPC: {expected_cols[:5]}...")
+            cpc_col = cpc_candidates[0]
+
+            X0 = X_epc_aligned.copy()
+            X0[cpc_col] = 0.0
+            X1 = X_epc_aligned.copy()
+            X1[cpc_col] = 1.0
+
+            Z0 = preprocessor_epc.transform(X0)
+            Z1 = preprocessor_epc.transform(X1)
+            dZ = Z1 - Z0
+
+            base = epc_intercept + (Z0 @ epc_coeffs)
+            slope = dZ @ epc_coeffs
+            base = np.asarray(base).ravel()
+            slope = np.asarray(slope).ravel()
+
+            model, f_hat_vars = embed_affine_in_bid(
+                model,
+                base=base,
+                slope=slope,
+                b=b,
+                target='epc',
+                link='identity',
+            )
         else:
+            if weights_dict is None:
+                raise ValueError("weights_dict is required when epc_model is not provided")
+
+            if 'epc_const' not in weights_dict or 'epc_weights' not in weights_dict:
+                raise KeyError("weights_dict must contain 'epc_const' and 'epc_weights'")
+
+            epc_const = weights_dict['epc_const']
+            epc_weights = weights_dict['epc_weights']
+
             model, f_hat_vars = embed_lr(model, epc_weights, epc_const, X_epc, b, target='epc')
     
     # Embed clicks model
@@ -1502,7 +1625,50 @@ def optimize_bids_embedded(
         clicks_const = weights_dict['clicks_const']
         clicks_weights = weights_dict['clicks_weights']
         if alg_clicks == 'glm':
-            model, g_hat_vars = embed_glm(model, clicks_weights, clicks_const, X_clicks, b, target='clicks', link='log')
+            if clicks_glm_preproc_path is None:
+                raise ValueError("clicks_glm_preproc_path is required when alg_clicks == 'glm'")
+            try:
+                preprocessor_clicks = joblib.load(clicks_glm_preproc_path)
+            except (AttributeError, ImportError) as e:
+                raise RuntimeError(
+                    f"Failed to load GLM preprocessor from {clicks_glm_preproc_path}.\n"
+                    f"Error: {e}"
+                ) from e
+            
+            # Extract coefficients from actual GLM model
+            clicks_glm_model_path = Path('models') / f'glm_{embedding_method}_clicks.joblib'
+            clicks_intercept, clicks_coeffs, _ = _extract_glm_coefficients(clicks_glm_model_path, clicks_glm_preproc_path)
+
+            X_clicks_aligned, expected_cols = _align_X_for_preprocessor(preprocessor_clicks, X_clicks)
+            cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+            if not cpc_candidates:
+                raise KeyError(
+                    f"Could not find Avg. CPC in expected columns for GLM clicks: {expected_cols[:5]}..."
+                )
+            cpc_col = cpc_candidates[0]
+
+            X0 = X_clicks_aligned.copy()
+            X0[cpc_col] = 0.0
+            X1 = X_clicks_aligned.copy()
+            X1[cpc_col] = 1.0
+
+            Z0 = preprocessor_clicks.transform(X0)
+            Z1 = preprocessor_clicks.transform(X1)
+            dZ = Z1 - Z0
+
+            base = clicks_intercept + (Z0 @ clicks_coeffs)
+            slope = dZ @ clicks_coeffs
+            base = np.asarray(base).ravel()
+            slope = np.asarray(slope).ravel()
+
+            model, g_hat_vars = embed_affine_in_bid(
+                model,
+                base=base,
+                slope=slope,
+                b=b,
+                target='clicks',
+                link='identity',
+            )
         else:
             model, g_hat_vars = embed_lr(model, clicks_weights, clicks_const, X_clicks, b, target='clicks')
     
@@ -1609,8 +1775,8 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     bids_df = bids_df.drop(columns=['Keyword', 'Region', 'Match type'], errors='ignore')
     
     # Sort by bid (desc), then keyword, region, match
-    sort_cols = ['bid', 'keyword', 'region', 'match']
-    sort_asc = [False, True, True, True]
+    sort_cols = ['cost','bid', 'keyword', 'region', 'match']
+    sort_asc = [False, False, True, True, True]
     bids_df = bids_df.sort_values(by=sort_cols, ascending=sort_asc).reset_index(drop=True)
     
     # Reorder columns: keyword, region, match, bid, clicks, epc, conv_value, cost, profit, then any historical columns
@@ -1630,9 +1796,10 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     return bids_df
 
 
-def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model, 
-                      epc_xgb_paths, clicks_xgb_paths, alg_epc, alg_clicks, 
-                      embedding_method, preprocessor_epc=None, preprocessor_clicks=None):
+def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_epc, X_clicks, epc_model, clicks_model, 
+                      epc_xgb_paths, clicks_xgb_paths, epc_glm_preproc_path=None, clicks_glm_preproc_path=None,
+                      alg_epc='lr', alg_clicks='lr', embedding_method='bert',
+                      preprocessor_epc=None, preprocessor_clicks=None):
     """Validate that optimized solution predictions match original models.
     
     Re-predicts EPC and clicks using the original trained models and compares
@@ -1640,12 +1807,16 @@ def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model,
     
     Args:
         optimized_bids: Array of optimized bid values
+        solver_epc_preds: EPC predictions from the solver/embedding
+        solver_clicks_preds: Clicks predictions from the solver/embedding
         X_epc: Raw features for EPC model (with Avg. CPC column)
         X_clicks: Raw features for clicks model (with Avg. CPC column)
         epc_model: Trained EPC model (IAI if ORT, None for others)
         clicks_model: Trained clicks model (IAI if ORT, None for others)
         epc_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB EPC
         clicks_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB clicks
+        epc_glm_preproc_path: Path to GLM EPC preprocessor
+        clicks_glm_preproc_path: Path to GLM clicks preprocessor
         alg_epc: Algorithm for EPC ('lr', 'glm', 'xgb', 'ort', 'mort')
         alg_clicks: Algorithm for clicks ('lr', 'glm', 'xgb', 'ort', 'mort')
         embedding_method: 'bert' or 'tfidf'
@@ -1692,8 +1863,27 @@ def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model,
                 epc_preds = booster_epc.predict(Z_epc_dmatrix)
         elif alg_epc == 'ort' or alg_epc == 'mort':
             epc_preds = epc_model.predict(X_validate_epc.values)
+        elif alg_epc == 'glm':
+            # GLM EPC validation
+            if epc_glm_preproc_path is None:
+                print("WARNING: EPC GLM preprocessor path not available for validation")
+                epc_preds = None
+            else:
+                try:
+                    preprocessor_glm_epc = joblib.load(epc_glm_preproc_path)
+                    glm_epc_model_path = Path('models') / f'glm_{embedding_method}_epc.joblib'
+                    epc_intercept, epc_coeffs, _ = _extract_glm_coefficients(glm_epc_model_path, Path(epc_glm_preproc_path))
+
+                    X_epc_aligned, _ = _align_X_for_preprocessor(preprocessor_glm_epc, X_validate_epc)
+                    Z_epc = preprocessor_glm_epc.transform(X_epc_aligned)
+                    # Works for both dense and sparse matrices
+                    epc_preds = epc_intercept + (Z_epc @ epc_coeffs)
+                    epc_preds = np.asarray(epc_preds).ravel()
+                except Exception as e:
+                    print(f"Note: GLM EPC validation failed: {e}")
+                    epc_preds = None
         else:
-            # LR or GLM - not implemented, skip validation
+            # LR or other - not implemented, skip validation
             print(f"Note: Validation not implemented for {alg_epc} EPC model")
             epc_preds = None
         
@@ -1718,6 +1908,26 @@ def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model,
                 clicks_preds = booster_clicks.predict(Z_clicks_dmatrix)
         elif alg_clicks == 'ort' or alg_clicks == 'mort':
             clicks_preds = clicks_model.predict(X_validate_clicks.values)
+        elif alg_clicks == 'glm':
+            # GLM clicks validation
+            if clicks_glm_preproc_path is None:
+                print("WARNING: Clicks GLM preprocessor path not available for validation")
+                clicks_preds = None
+            else:
+                try:
+                    preprocessor_glm_clicks = joblib.load(clicks_glm_preproc_path)
+                    glm_clicks_model_path = Path('models') / f'glm_{embedding_method}_clicks.joblib'
+                    clicks_intercept, clicks_coeffs, _ = _extract_glm_coefficients(
+                        glm_clicks_model_path, Path(clicks_glm_preproc_path)
+                    )
+
+                    X_clicks_aligned, _ = _align_X_for_preprocessor(preprocessor_glm_clicks, X_validate_clicks)
+                    Z_clicks = preprocessor_glm_clicks.transform(X_clicks_aligned)
+                    clicks_preds = clicks_intercept + (Z_clicks @ clicks_coeffs)
+                    clicks_preds = np.asarray(clicks_preds).ravel()
+                except Exception as e:
+                    print(f"Note: GLM clicks validation failed: {e}")
+                    clicks_preds = None
         else:
             print(f"Note: Validation not implemented for {alg_clicks} clicks model")
             clicks_preds = None
@@ -1725,29 +1935,79 @@ def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model,
         # Report validation results
         if epc_preds is not None:
             print(f"\nEPC Model ({alg_epc}):")
-            print(f"  Predictions range: [{epc_preds.min():.6f}, {epc_preds.max():.6f}]")
+            print(f"  Model predictions range: [{epc_preds.min():.6f}, {epc_preds.max():.6f}]")
             print(f"  Mean: {epc_preds.mean():.6f}, Std: {epc_preds.std():.6f}")
             if np.isnan(epc_preds).any() or np.isinf(epc_preds).any():
-                print(f"  ⚠️  WARNING: Found NaN/Inf in EPC predictions!")
+                print(f"  ⚠️  WARNING: Found NaN/Inf in EPC model predictions!")
             else:
-                print(f"  ✓ EPC predictions valid")
+                print(f"  ✓ EPC model predictions valid")
+            
+            # Compare with solver predictions
+            print(f"  Solver predictions range: [{solver_epc_preds.min():.6f}, {solver_epc_preds.max():.6f}]")
+            print(f"  Mean: {solver_epc_preds.mean():.6f}, Std: {solver_epc_preds.std():.6f}")
+            
+            # Calculate differences
+            epc_diff = epc_preds - solver_epc_preds
+            epc_mae = np.abs(epc_diff).mean()
+            epc_rmse = np.sqrt((epc_diff ** 2).mean())
+            print(f"  Difference (model - solver):")
+            print(f"    MAE: {epc_mae:.6f}, RMSE: {epc_rmse:.6f}")
+
+            if solver_epc_preds.min() >= -1e-9 and epc_preds.min() < -1e-9:
+                epc_clipped = np.maximum(epc_preds, 0.0)
+                epc_diff_clip = epc_clipped - solver_epc_preds
+                epc_mae_clip = np.abs(epc_diff_clip).mean()
+                epc_rmse_clip = np.sqrt((epc_diff_clip ** 2).mean())
+                print(f"  (Also vs clipped model preds, since optimization enforces f>=0)")
+                print(f"    MAE: {epc_mae_clip:.6f}, RMSE: {epc_rmse_clip:.6f}")
+
+            if epc_mae > 0.1 * epc_preds.std():
+                print(f"  ⚠️  WARNING: Large difference between model and solver predictions!")
+            else:
+                print(f"  ✓ EPC predictions align well")
         
         if clicks_preds is not None:
             print(f"\nClicks Model ({alg_clicks}):")
-            print(f"  Predictions range: [{clicks_preds.min():.6f}, {clicks_preds.max():.6f}]")
+            print(f"  Model predictions range: [{clicks_preds.min():.6f}, {clicks_preds.max():.6f}]")
             print(f"  Mean: {clicks_preds.mean():.6f}, Std: {clicks_preds.std():.6f}")
             if np.isnan(clicks_preds).any() or np.isinf(clicks_preds).any():
-                print(f"  ⚠️  WARNING: Found NaN/Inf in clicks predictions!")
+                print(f"  ⚠️  WARNING: Found NaN/Inf in clicks model predictions!")
             else:
-                print(f"  ✓ Clicks predictions valid")
+                print(f"  ✓ Clicks model predictions valid")
+            
+            # Compare with solver predictions
+            print(f"  Solver predictions range: [{solver_clicks_preds.min():.6f}, {solver_clicks_preds.max():.6f}]")
+            print(f"  Mean: {solver_clicks_preds.mean():.6f}, Std: {solver_clicks_preds.std():.6f}")
+            
+            # Calculate differences
+            clicks_diff = clicks_preds - solver_clicks_preds
+            clicks_mae = np.abs(clicks_diff).mean()
+            clicks_rmse = np.sqrt((clicks_diff ** 2).mean())
+            print(f"  Difference (model - solver):")
+            print(f"    MAE: {clicks_mae:.6f}, RMSE: {clicks_rmse:.6f}")
+
+            if solver_clicks_preds.min() >= -1e-9 and clicks_preds.min() < -1e-9:
+                clicks_clipped = np.maximum(clicks_preds, 0.0)
+                clicks_diff_clip = clicks_clipped - solver_clicks_preds
+                clicks_mae_clip = np.abs(clicks_diff_clip).mean()
+                clicks_rmse_clip = np.sqrt((clicks_diff_clip ** 2).mean())
+                print(f"  (Also vs clipped model preds, since optimization enforces g>=0)")
+                print(f"    MAE: {clicks_mae_clip:.6f}, RMSE: {clicks_rmse_clip:.6f}")
+
+            if clicks_mae > 0.1 * clicks_preds.std():
+                print(f"  ⚠️  WARNING: Large difference between model and solver predictions!")
+            else:
+                print(f"  ✓ Clicks predictions align well")
         
         # Save validation predictions
         if epc_preds is not None or clicks_preds is not None:
             validation_df = pd.DataFrame({'bid': optimized_bids})
             if epc_preds is not None:
-                validation_df['epc_pred'] = epc_preds
+                validation_df['epc_model_pred'] = epc_preds
+                validation_df['epc_solver_pred'] = solver_epc_preds
             if clicks_preds is not None:
-                validation_df['clicks_pred'] = clicks_preds
+                validation_df['clicks_model_pred'] = clicks_preds
+                validation_df['clicks_solver_pred'] = solver_clicks_preds
             
             val_dir = Path('opt_results/validation')
             val_dir.mkdir(exist_ok=True, parents=True)
@@ -1759,6 +2019,285 @@ def validate_solution(optimized_bids, X_epc, X_clicks, epc_model, clicks_model,
         print(f"ERROR during solution validation: {e}")
         import traceback
         traceback.print_exc()
+
+
+def _predict_linear_weights_at_bid0(*, X: pd.DataFrame, const: float, weights: dict) -> np.ndarray:
+    """Predict using the repo's exported linear-weight dict format at bid=0.
+
+    Assumes X is already in the same feature space as the weights (i.e. one-hot
+    already applied if needed). The bid feature ('Avg. CPC'/'Avg_ CPC') is treated
+    as 0 here.
+    """
+
+    preds = np.full(shape=(len(X),), fill_value=float(const), dtype=float)
+
+    # Find CPC column in X, but treat bid as zero regardless of X value.
+    cpc_cols = [c for c in ("Avg. CPC", "Avg_ CPC") if c in X.columns]
+    cpc_col = cpc_cols[0] if cpc_cols else None
+
+    for feature, weight in weights.items():
+        if feature in ["Avg. CPC", "Avg_ CPC"]:
+            # bid=0 => contributes nothing
+            continue
+
+        if isinstance(weight, dict):
+            for level_name, level_weight in weight.items():
+                ohe_col_name = f"{feature}_{level_name}"
+                if ohe_col_name in X.columns:
+                    preds += float(level_weight) * X[ohe_col_name].to_numpy(dtype=float)
+        else:
+            if feature == cpc_col:
+                continue
+            if feature in X.columns:
+                preds += float(weight) * X[feature].to_numpy(dtype=float)
+
+    return preds
+
+
+def _predict_glm_at_bid0(*, X_raw: pd.DataFrame, glm_preproc_path: Path, glm_model_path: Path) -> np.ndarray:
+    """Predict GLM outputs at bid=0 using saved preprocessor + model coefficients."""
+
+    preprocessor = joblib.load(glm_preproc_path)
+    intercept, coeffs, _ = _extract_glm_coefficients(glm_model_path, glm_preproc_path)
+
+    X_aligned, expected_cols = _align_X_for_preprocessor(preprocessor, X_raw)
+    cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+    if cpc_candidates:
+        X_aligned = X_aligned.copy()
+        X_aligned[cpc_candidates[0]] = 0.0
+
+    Z = preprocessor.transform(X_aligned)
+    preds = intercept + (Z @ coeffs)
+    return np.asarray(preds).ravel()
+
+
+def _predict_xgb_at_bid0(*, X_raw: pd.DataFrame, xgb_model_path: Path, preproc_path: Path) -> np.ndarray:
+    """Predict XGB outputs at bid=0 using saved preprocessor + booster."""
+
+    preprocessor = joblib.load(preproc_path)
+    X_aligned, expected_cols = _align_X_for_preprocessor(preprocessor, X_raw)
+    cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
+    if cpc_candidates:
+        X_aligned = X_aligned.copy()
+        X_aligned[cpc_candidates[0]] = 0.0
+
+    Z = preprocessor.transform(X_aligned)
+    if sp is not None and sp.issparse(Z):
+        Z = Z.tocsr()
+    else:
+        Z = np.asarray(Z)
+
+    booster = xgb.Booster()
+    booster.load_model(str(xgb_model_path))
+    dm = xgb.DMatrix(data=Z)
+    return np.asarray(booster.predict(dm)).ravel()
+
+
+def _predict_iai_tree_at_bid0(*, X_raw: pd.DataFrame, ort_model) -> np.ndarray:
+    """Predict ORT/MORT outputs at bid=0 by setting CPC feature to zero."""
+
+    X0 = X_raw.copy()
+    cpc_cols = [c for c in ("Avg. CPC", "Avg_ CPC") if c in X0.columns]
+    if cpc_cols:
+        X0[cpc_cols[0]] = 0.0
+    return np.asarray(ort_model.predict(X0.values)).ravel()
+
+
+def filter_rows_feasible_at_bid0(
+    *,
+    X_ort: Optional[pd.DataFrame],
+    X_lr: Optional[pd.DataFrame],
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    alg_epc: str,
+    alg_clicks: str,
+    embedding_method: str,
+    weights_dict: Optional[dict],
+    epc_model,
+    clicks_model,
+    epc_xgb_paths: Optional[Tuple[Path, Path]],
+    clicks_xgb_paths: Optional[Tuple[Path, Path]],
+    epc_glm_preproc_path: Optional[Path],
+    clicks_glm_preproc_path: Optional[Path],
+    tol: float = 1e-9,
+) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], List[int], List[str], List[str]]:
+    """Drop rows where either EPC or clicks at bid=0 is negative.
+
+    This guarantees the optimization has a feasible solution with b=0.
+    """
+
+    raw_cat_algs = {"ort", "mort", "xgb", "glm"}
+
+    X_epc = X_ort if (alg_epc in raw_cat_algs) else X_lr
+    X_clicks = X_ort if (alg_clicks in raw_cat_algs) else X_lr
+
+    if X_epc is None or X_clicks is None:
+        raise ValueError("Could not determine X for EPC/clicks filtering (X_ort/X_lr missing)")
+
+    if len(X_epc) != len(kw_idx_list) or len(X_clicks) != len(kw_idx_list):
+        raise ValueError("Row count mismatch between X and mapping lists")
+
+    # --- Predict EPC at bid=0 ---
+    if alg_epc in {"ort", "mort"}:
+        if epc_model is None:
+            raise ValueError("epc_model required to filter ORT/MORT EPC")
+        epc0 = _predict_iai_tree_at_bid0(X_raw=X_epc, ort_model=epc_model)
+    elif alg_epc == "xgb":
+        if epc_xgb_paths is None:
+            raise ValueError("epc_xgb_paths required to filter XGB EPC")
+        xgb_path, preproc_path = epc_xgb_paths
+        epc0 = _predict_xgb_at_bid0(X_raw=X_epc, xgb_model_path=xgb_path, preproc_path=preproc_path)
+    elif alg_epc == "glm":
+        if epc_glm_preproc_path is None:
+            raise ValueError("epc_glm_preproc_path required to filter GLM EPC")
+        glm_path = Path("models") / f"glm_{embedding_method}_epc.joblib"
+        epc0 = _predict_glm_at_bid0(X_raw=X_epc, glm_preproc_path=Path(epc_glm_preproc_path), glm_model_path=glm_path)
+    else:
+        if weights_dict is None:
+            raise ValueError("weights_dict required to filter LR EPC")
+        epc0 = _predict_linear_weights_at_bid0(
+            X=X_epc,
+            const=float(weights_dict["epc_const"]),
+            weights=weights_dict["epc_weights"],
+        )
+
+    # --- Predict clicks at bid=0 ---
+    if alg_clicks in {"ort", "mort"}:
+        if clicks_model is None:
+            raise ValueError("clicks_model required to filter ORT/MORT clicks")
+        clicks0 = _predict_iai_tree_at_bid0(X_raw=X_clicks, ort_model=clicks_model)
+    elif alg_clicks == "xgb":
+        if clicks_xgb_paths is None:
+            raise ValueError("clicks_xgb_paths required to filter XGB clicks")
+        xgb_path, preproc_path = clicks_xgb_paths
+        clicks0 = _predict_xgb_at_bid0(X_raw=X_clicks, xgb_model_path=xgb_path, preproc_path=preproc_path)
+    elif alg_clicks == "glm":
+        if clicks_glm_preproc_path is None:
+            raise ValueError("clicks_glm_preproc_path required to filter GLM clicks")
+        glm_path = Path("models") / f"glm_{embedding_method}_clicks.joblib"
+        clicks0 = _predict_glm_at_bid0(
+            X_raw=X_clicks,
+            glm_preproc_path=Path(clicks_glm_preproc_path),
+            glm_model_path=glm_path,
+        )
+    else:
+        if weights_dict is None:
+            raise ValueError("weights_dict required to filter LR clicks")
+        clicks0 = _predict_linear_weights_at_bid0(
+            X=X_clicks,
+            const=float(weights_dict["clicks_const"]),
+            weights=weights_dict["clicks_weights"],
+        )
+
+    mask = (epc0 >= -tol) & (clicks0 >= -tol)
+    keep = int(mask.sum())
+    drop = int(len(mask) - keep)
+    print(f"\nBid=0 feasibility filter: keeping {keep}/{len(mask)} rows (dropping {drop} with EPC<0 or clicks<0 at bid=0)")
+
+    if keep == 0:
+        raise RuntimeError("All rows were filtered out as infeasible at bid=0 (no feasible combos remain)")
+
+    def _filt_df(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if df is None:
+            return None
+        return df.loc[mask].reset_index(drop=True)
+
+    X_ort_f = _filt_df(X_ort)
+    X_lr_f = _filt_df(X_lr)
+    kw_idx_f = [kw_idx_list[i] for i in range(len(mask)) if bool(mask[i])]
+    region_f = [region_list[i] for i in range(len(mask)) if bool(mask[i])]
+    match_f = [match_list[i] for i in range(len(mask)) if bool(mask[i])]
+
+    return X_ort_f, X_lr_f, kw_idx_f, region_f, match_f
+
+
+def _compute_training_numeric_ranges(training_csv: Path) -> Dict[str, Tuple[float, float]]:
+    """Compute per-column (min,max) ranges from the training dataset.
+
+    Uses numeric columns only. Column names are normalized to match the optimizer's
+    feature naming ('.' -> '_').
+    """
+
+    df = pd.read_csv(str(training_csv))
+    df.columns = df.columns.str.replace('.', '_', regex=False)
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    ranges: Dict[str, Tuple[float, float]] = {}
+    for c in num_cols:
+        s = pd.to_numeric(df[c], errors='coerce')
+        lo = float(np.nanmin(s.to_numpy(dtype=float)))
+        hi = float(np.nanmax(s.to_numpy(dtype=float)))
+        if np.isfinite(lo) and np.isfinite(hi):
+            ranges[c] = (lo, hi)
+    return ranges
+
+
+def apply_trust_box_filter(
+    *,
+    X_ort: Optional[pd.DataFrame],
+    X_lr: Optional[pd.DataFrame],
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    training_ranges: Dict[str, Tuple[float, float]],
+    mode: str = "drop",
+    exclude_cols: Optional[set] = None,
+) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], List[int], List[str], List[str]]:
+    """Enforce "trust box" feature ranges based on training min/max.
+
+    mode:
+      - 'drop': drop any rows where any in-scope numeric feature is outside [min,max]
+
+    Note: We exclude the bid feature ('Avg. CPC') here because bid is a decision variable.
+    Bid range is handled separately by capping max_bid.
+    """
+
+    if exclude_cols is None:
+        exclude_cols = {"Avg_ CPC", "Avg. CPC"}
+
+    X_check = X_ort if X_ort is not None else X_lr
+    if X_check is None:
+        raise ValueError("Trust-box filter requires at least one of X_ort or X_lr")
+    if len(X_check) != len(kw_idx_list):
+        raise ValueError("Row count mismatch between X and mapping lists")
+
+    if mode != "drop":
+        raise ValueError(f"Unsupported trust-box mode: {mode} (supported: drop)")
+
+    numeric_cols = X_check.select_dtypes(include=[np.number]).columns.tolist()
+    in_scope = [c for c in numeric_cols if c in training_ranges and c not in exclude_cols]
+
+    if not in_scope:
+        print("\nTrust-box: no overlapping numeric columns found; skipping range filter")
+        return X_ort, X_lr, kw_idx_list, region_list, match_list
+
+    mask = np.ones(len(X_check), dtype=bool)
+    for c in in_scope:
+        lo, hi = training_ranges[c]
+        v = pd.to_numeric(X_check[c], errors='coerce').to_numpy(dtype=float)
+        # NaN counts as out-of-distribution.
+        ok = np.isfinite(v) & (v >= lo) & (v <= hi)
+        mask &= ok
+
+    keep = int(mask.sum())
+    drop = int(len(mask) - keep)
+    print(f"\nTrust-box (drop): keeping {keep}/{len(mask)} rows (dropping {drop} out-of-range)")
+
+    if keep == 0:
+        raise RuntimeError("All rows were dropped by the trust-box range filter")
+
+    def _filt_df(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if df is None:
+            return None
+        return df.loc[mask].reset_index(drop=True)
+
+    X_ort_f = _filt_df(X_ort)
+    X_lr_f = _filt_df(X_lr)
+    kw_idx_f = [kw_idx_list[i] for i in range(len(mask)) if bool(mask[i])]
+    region_f = [region_list[i] for i in range(len(mask)) if bool(mask[i])]
+    match_f = [match_list[i] for i in range(len(mask)) if bool(mask[i])]
+
+    return X_ort_f, X_lr_f, kw_idx_f, region_f, match_f
 
 
 def main():
@@ -1775,7 +2314,7 @@ def main():
     parser.add_argument(
         '--alg-conv',
         type=str,
-        default='xgb',
+        default='glm',
         choices=['lr', 'glm', 'xgb', 'ort', 'mort'],
         help='Algorithm type for EPC model: lr (linear weights), glm (Tweedie GLM weights), xgb (XGBoost Tweedie; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
@@ -1819,8 +2358,23 @@ def main():
     parser.add_argument(
         '--trial',
         type=int,
-        default=None,
+        default=10,
         help='Trial mode: limit to N keywords for quick testing (default: None, use all)'
+    )
+
+    parser.add_argument(
+        '--trust-box',
+        type=str,
+        default='drop',
+        choices=['drop', 'off'],
+        help="Enforce training min/max ranges on numeric features: 'drop' removes out-of-range rows; 'off' disables (default: drop)"
+    )
+
+    parser.add_argument(
+        '--trust-box-training',
+        type=str,
+        default='data/clean/ad_opt_data_bert.csv',
+        help='Training CSV used to compute trust-box min/max (default: data/clean/ad_opt_data_bert.csv)'
     )
 
     
@@ -1898,7 +2452,7 @@ def main():
         )
         
         # Unpack results based on model types
-        raw_cat_algs = {'ort', 'mort', 'xgb'}
+        raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
         is_mixed = ((args.alg_conv in raw_cat_algs) and (args.alg_clicks not in raw_cat_algs)) or ((args.alg_conv not in raw_cat_algs) and (args.alg_clicks in raw_cat_algs))
         if is_mixed:
             X_ort, X_lr, kw_idx_list, region_list, match_list = feature_matrix_result
@@ -1978,18 +2532,84 @@ def main():
             clicks_xgb_paths = (clicks_xgb_model_path, clicks_xgb_preproc_path)
             print(f"  Using XGB clicks model from {clicks_xgb_model_path}")
 
+        # Load GLM preprocessors if needed
+        epc_glm_preproc_path = None
+        clicks_glm_preproc_path = None
+        
+        if args.alg_conv == 'glm':
+            epc_glm_preproc_path = Path(args.models_dir) / f'glm_{args.embedding_method}_epc_preprocess.joblib'
+            if not epc_glm_preproc_path.exists():
+                raise FileNotFoundError(f"GLM EPC preprocessor not found: {epc_glm_preproc_path}")
+            print(f"  Using GLM EPC preprocessor from {epc_glm_preproc_path}")
+        
+        if args.alg_clicks == 'glm':
+            clicks_glm_preproc_path = Path(args.models_dir) / f'glm_{args.embedding_method}_clicks_preprocess.joblib'
+            if not clicks_glm_preproc_path.exists():
+                raise FileNotFoundError(f"GLM clicks preprocessor not found: {clicks_glm_preproc_path}")
+            print(f"  Using GLM clicks preprocessor from {clicks_glm_preproc_path}")
+
+        # --- Feasibility guard: ensure b=0 is feasible ---
+        # Drop any keyword/region/match combos where either EPC or clicks is negative at bid=0.
+        # This prevents infeasibility caused by f,g having lb=0 while model outputs can be negative.
+        X_ort, X_lr, kw_idx_list, region_list, match_list = filter_rows_feasible_at_bid0(
+            X_ort=X_ort,
+            X_lr=X_lr,
+            kw_idx_list=kw_idx_list,
+            region_list=region_list,
+            match_list=match_list,
+            alg_epc=args.alg_conv,
+            alg_clicks=args.alg_clicks,
+            embedding_method=args.embedding_method,
+            weights_dict=weights_dict,
+            epc_model=epc_model,
+            clicks_model=clicks_model,
+            epc_xgb_paths=epc_xgb_paths,
+            clicks_xgb_paths=clicks_xgb_paths,
+            epc_glm_preproc_path=epc_glm_preproc_path,
+            clicks_glm_preproc_path=clicks_glm_preproc_path,
+        )
+
+        # --- Trust box: enforce feature ranges from training data ---
+        effective_max_bid = float(args.max_bid)
+        if args.trust_box != 'off':
+            training_csv = Path(args.trust_box_training)
+            if not training_csv.exists():
+                raise FileNotFoundError(f"Trust-box training CSV not found: {training_csv}")
+            training_ranges = _compute_training_numeric_ranges(training_csv)
+
+            # Cap bid to be within the training CPC range (upper bound only, to preserve b=0 feasibility).
+            cpc_key = 'Avg_ CPC' if 'Avg_ CPC' in training_ranges else ('Avg. CPC' if 'Avg. CPC' in training_ranges else None)
+            if cpc_key is not None:
+                train_cpc_max = float(training_ranges[cpc_key][1])
+                if np.isfinite(train_cpc_max):
+                    effective_max_bid = min(effective_max_bid, train_cpc_max)
+                    print(f"Trust-box: capping max bid to {effective_max_bid:.4f} based on training '{cpc_key}' max")
+
+            X_ort, X_lr, kw_idx_list, region_list, match_list = apply_trust_box_filter(
+                X_ort=X_ort,
+                X_lr=X_lr,
+                kw_idx_list=kw_idx_list,
+                region_list=region_list,
+                match_list=match_list,
+                training_ranges=training_ranges,
+                mode='drop',
+            )
+
         model, b, f, g = optimize_bids_embedded(
             X_ort=X_ort,
             X_lr=X_lr,
             weights_dict=weights_dict,
             budget=args.budget,
-            max_bid=args.max_bid,
+            max_bid=effective_max_bid,
             epc_model=epc_model,
             clicks_model=clicks_model,
             epc_xgb_paths=epc_xgb_paths,
             clicks_xgb_paths=clicks_xgb_paths,
+            epc_glm_preproc_path=epc_glm_preproc_path,
+            clicks_glm_preproc_path=clicks_glm_preproc_path,
             alg_epc=args.alg_conv,
-            alg_clicks=args.alg_clicks
+            alg_clicks=args.alg_clicks,
+            embedding_method=args.embedding_method,
         )
 
         if model.status == 2 or model.status == 9:
@@ -2002,14 +2622,22 @@ def main():
             bids_df = extract_solution(model, b, f, g, keyword_df, kw_idx_list, region_list, match_list, X=X)
 
             # Validate solution predictions
+            raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
+            X_for_epc = X_ort if args.alg_conv in raw_cat_algs else X_lr
+            X_for_clicks = X_ort if args.alg_clicks in raw_cat_algs else X_lr
+
             validate_solution(
                 optimized_bids=b.X,
-                X_epc=X_ort,  # or X_lr depending on what's available
-                X_clicks=X_ort,
-                epc_model=None,  # Will be None for LR/GLM, filled in for ORT
-                clicks_model=None,
+                solver_epc_preds=f.X,
+                solver_clicks_preds=g.X,
+                X_epc=X_for_epc,
+                X_clicks=X_for_clicks,
+                epc_model=epc_model,
+                clicks_model=clicks_model,
                 epc_xgb_paths=epc_xgb_paths if args.alg_conv == 'xgb' else None,
                 clicks_xgb_paths=clicks_xgb_paths if args.alg_clicks == 'xgb' else None,
+                epc_glm_preproc_path=epc_glm_preproc_path if args.alg_conv == 'glm' else None,
+                clicks_glm_preproc_path=clicks_glm_preproc_path if args.alg_clicks == 'glm' else None,
                 alg_epc=args.alg_conv,
                 alg_clicks=args.alg_clicks,
                 embedding_method=args.embedding_method
