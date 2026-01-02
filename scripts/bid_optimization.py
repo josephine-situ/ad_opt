@@ -920,6 +920,7 @@ def embed_xgb(
     target: str,
     max_bid: float,
     zero_at_bid0: bool = False,
+    warm_start_bid: Optional[float] = None,
 ) -> Tuple[object, List[object]]:
     """Embed an XGBoost regressor into Gurobi (Corrected Formulation).
 
@@ -1021,6 +1022,59 @@ def embed_xgb(
     K = len(X_use)
     pred_vars = []
 
+    warm_bid = None
+    if warm_start_bid is not None:
+        warm_bid = float(warm_start_bid)
+        # Clamp to bounds to avoid invalid starts.
+        warm_bid = max(0.0, min(float(max_bid), warm_bid))
+
+    def _path_satisfied_at_bid(*, conds, row_i: int, bid_val: float) -> bool:
+        """Check whether a path's conditions hold at a fixed bid value.
+
+        Matches the *embedded constraints* semantics (not just XGBoost semantics):
+        - for variable features, 'lt' uses <= thr-1e-6
+        - for constant features, uses exact lt/ge
+        """
+
+        for feat_idx, op, thr in conds:
+            feat_idx = int(feat_idx)
+            thr = float(thr)
+            base_val = float(base_by_feat[feat_idx][row_i])
+            slope_val = float(slope_by_feat[feat_idx][row_i])
+            if np.isnan(base_val) or np.isnan(slope_val):
+                return False
+
+            if abs(slope_val) <= tol:
+                v = base_val
+                if op == 'lt':
+                    if not (v < thr):
+                        return False
+                elif op == 'ge':
+                    if not (v >= thr):
+                        return False
+                else:
+                    return False
+            else:
+                v = base_val + slope_val * float(bid_val)
+                if op == 'lt':
+                    # Must satisfy the embedded constraint at z=1
+                    if not (v <= thr - 1e-6 + 1e-12):
+                        return False
+                elif op == 'ge':
+                    if not (v >= thr - 1e-12):
+                        return False
+                else:
+                    return False
+
+        return True
+
+    def _choose_leaf_idx(*, paths, row_i: int, bid_val: float) -> int:
+        for leaf_idx, (conds, _leaf_val) in enumerate(paths):
+            if _path_satisfied_at_bid(conds=conds, row_i=row_i, bid_val=bid_val):
+                return int(leaf_idx)
+        # Fallback: pick 0 (Gurobi may repair start); but this should be rare.
+        return 0
+
     # Optional: force prediction to be 0 when bid=0 by shifting by the baseline
     # model prediction at bid=0 for each row. This ensures "no bid => 0 clicks".
     baseline_pred0 = None
@@ -1041,14 +1095,21 @@ def embed_xgb(
         pred_vars.append(pred)
 
         tree_outputs = []
+        start_tree_vals = []
 
         for t_idx, paths in enumerate(tree_paths):
             leaf_inds = []
             leaf_vals = []
 
+            chosen_leaf_idx = None
+            if warm_bid is not None:
+                chosen_leaf_idx = _choose_leaf_idx(paths=paths, row_i=i, bid_val=warm_bid)
+
             for leaf_idx, (conds, leaf_val) in enumerate(paths):
                 # Decision variable for "Is this leaf active?"
                 z = model.addVar(vtype=GRB.BINARY, name=f"{target}_t{t_idx}_l{leaf_idx}_i{i}")
+                if chosen_leaf_idx is not None:
+                    z.Start = 1.0 if int(leaf_idx) == int(chosen_leaf_idx) else 0.0
                 leaf_inds.append(z)
                 leaf_vals.append(float(leaf_val))
 
@@ -1114,11 +1175,15 @@ def embed_xgb(
 
             # Accumulate output
             tree_out = model.addVar(lb=-GRB.INFINITY, name=f"{target}_out_t{t_idx}_i{i}")
+            if chosen_leaf_idx is not None:
+                tree_out.Start = float(leaf_vals[int(chosen_leaf_idx)])
             model.addConstr(
                 tree_out == gp.quicksum(leaf_vals[k] * leaf_inds[k] for k in range(len(leaf_inds))),
                 name=f"{target}_sum_t{t_idx}_i{i}"
             )
             tree_outputs.append(tree_out)
+            if chosen_leaf_idx is not None:
+                start_tree_vals.append(float(leaf_vals[int(chosen_leaf_idx)]))
 
         # Final Prediction Link
         model.addConstr(
@@ -1126,16 +1191,23 @@ def embed_xgb(
             name=f"{target}_final_link_{i}"
         )
 
+        if warm_bid is not None and start_tree_vals:
+            pred_raw.Start = float(base_score) + float(np.sum(start_tree_vals))
+
         if zero_at_bid0:
             model.addConstr(
                 pred == pred_raw - float(baseline_pred0[i]),
                 name=f"{target}_zero_at_bid0_{i}"
             )
+            if warm_bid is not None and start_tree_vals:
+                pred.Start = (float(base_score) + float(np.sum(start_tree_vals))) - float(baseline_pred0[i])
         else:
             model.addConstr(
                 pred == pred_raw,
                 name=f"{target}_identity_{i}"
             )
+            if warm_bid is not None and start_tree_vals:
+                pred.Start = float(base_score) + float(np.sum(start_tree_vals))
 
     return model, pred_vars
 
@@ -1476,6 +1548,8 @@ def optimize_bids_embedded(
     embedding_method: str = 'bert',
     formulation_lp_path: Optional[Path] = None,
     write_formulation_only: bool = False,
+    warm_start: bool = True,
+    warm_start_bid: float = 0.0,
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1548,6 +1622,11 @@ def optimize_bids_embedded(
     # b_i: Bid amount
     b = model.addMVar(shape=K, lb=0, ub=max_bid, name='b')
 
+    if warm_start:
+        ws_bid = max(0.0, min(float(max_bid), float(warm_start_bid)))
+        for i in range(K):
+            b[i].Start = ws_bid
+
     # f_i: predicted EPC (non-negative)
     f = model.addMVar(shape=K, lb=0, ub=M_f, name='f')
 
@@ -1577,6 +1656,7 @@ def optimize_bids_embedded(
             b=b,
             target='epc',
             max_bid=max_bid,
+            warm_start_bid=(warm_start_bid if warm_start else None),
         )
     else:
         if alg_epc == 'glm':
@@ -1653,6 +1733,7 @@ def optimize_bids_embedded(
             target='clicks',
             max_bid=max_bid,
             zero_at_bid0=True,
+            warm_start_bid=(warm_start_bid if warm_start else None),
         )
     else:
         # Use LR model
@@ -1707,6 +1788,20 @@ def optimize_bids_embedded(
             model, g_hat_vars = embed_lr(model, clicks_weights, clicks_const, X_clicks, b, target='clicks')
     
     model.update()
+
+    # If we warm-started embedded prediction variables, carry starts onto f/g for consistency.
+    if warm_start:
+        for i in range(K):
+            try:
+                if i < len(f_hat_vars) and hasattr(f_hat_vars[i], 'Start'):
+                    f[i].Start = float(f_hat_vars[i].Start)
+            except Exception:
+                pass
+            try:
+                if i < len(g_hat_vars) and hasattr(g_hat_vars[i], 'Start'):
+                    g[i].Start = float(g_hat_vars[i].Start)
+            except Exception:
+                pass
     
     # --- 2. Link prediction vars and enforce non-negativity via bounds ---
     # f and g already have lb=0. These equalities force embedded model outputs to be non-negative.
@@ -2883,9 +2978,24 @@ def main():
     )
 
     parser.add_argument(
+        '--warm-start',
+        type=str,
+        default='on',
+        choices=['on', 'off'],
+        help='Provide a feasible MIP start (default: on)'
+    )
+
+    parser.add_argument(
+        '--warm-start-bid',
+        type=float,
+        default=0.0,
+        help='Bid value used for warm start (default: 0.0)'
+    )
+
+    parser.add_argument(
         '--formulation-lp',
         type=str,
-        default=None,
+        default="opt_results/formulations/cached_glm_xgb.json",
         help='Optional path to write/read a cached base formulation (.lp). Metadata is written/read as the same path with .json.'
     )
 
@@ -3236,6 +3346,8 @@ def main():
             embedding_method=args.embedding_method,
             formulation_lp_path=formulation_lp_path,
             write_formulation_only=bool(args.write_formulation_only),
+            warm_start=(args.warm_start == 'on'),
+            warm_start_bid=float(args.warm_start_bid),
         )
 
         if args.write_formulation_only:
