@@ -1539,6 +1539,7 @@ def optimize_bids_embedded(
     # Create model
     model = gp.Model('bid_optimization')
     model.setParam('MIPFocus', 1) # Find feasible solution
+    model.setParam('Heuristics', 0.2) # More heuristics
     model.setParam('OutputFlag', 1) 
     model.setParam('TimeLimit', 600)
 
