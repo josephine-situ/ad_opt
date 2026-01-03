@@ -1508,7 +1508,7 @@ def optimize_bids_embedded(
     # Create model
     model = gp.Model('bid_optimization')
     model.setParam('OutputFlag', 1) 
-    model.setParam('TimeLimit', 600)
+    model.setParam('TimeLimit', 300)
 
     # --- 0. Decision Variables ---
 
