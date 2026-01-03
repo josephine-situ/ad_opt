@@ -22,7 +22,9 @@ import json
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
+from scipy.stats import chi2
+from sklearn.covariance import EmpiricalCovariance
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -1445,6 +1447,8 @@ def optimize_bids_embedded(
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
     embedding_method: str = 'bert',
+    bid_lower_bounds: Optional[np.ndarray] = None,
+    bid_upper_bounds: Optional[np.ndarray] = None,
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1683,6 +1687,19 @@ def optimize_bids_embedded(
     # If z=0 -> b=0. If z=1 -> 0.01 <= b <= max_bid
     model.addConstr(b <= max_bid * z, name="Bid_UpperBound")
     model.addConstr(b >= 0.01 * z, name="Bid_LowerBound")
+
+    # Optional: tighter per-row bid bounds derived from historical ranges.
+    if bid_lower_bounds is not None or bid_upper_bounds is not None:
+        if bid_lower_bounds is None or bid_upper_bounds is None:
+            raise ValueError("bid_lower_bounds and bid_upper_bounds must both be provided")
+        if len(bid_lower_bounds) != K or len(bid_upper_bounds) != K:
+            raise ValueError("bid_lower_bounds/bid_upper_bounds length must match number of rows")
+
+        for i in range(K):
+            lb_i = float(bid_lower_bounds[i])
+            ub_i = float(bid_upper_bounds[i])
+            model.addConstr(b[i] <= ub_i * z[i], name=f"Bid_UpperBound_Hist_{i}")
+            model.addConstr(b[i] >= lb_i * z[i], name=f"Bid_LowerBound_Hist_{i}")
 
     # Step B: Link Predictions (f, g) using Indicator Constraints
     for i in range(K):
@@ -2225,6 +2242,71 @@ def filter_rows_feasible_at_bid0(
 
     return X_ort_f, X_lr_f, kw_idx_f, region_f, match_f
 
+def _compute_training_stats_and_bounds(
+    csv_path: Path,
+    exclude_cols: Optional[Set[str]] = None,
+    allowed_cols: Optional[Set[str]] = None,
+) -> Tuple[dict, float]:
+    """Computes Mean/Covariance for Mahalanobis filter and finds Max CPC."""
+    if exclude_cols is None:
+        # Exclude bid itself and common *outcome/target* columns from historical ads data.
+        # The trust ellipsoid should be based on predictor features only.
+        exclude_cols = {
+            "Avg_ CPC",
+            "Avg. CPC",
+            "Clicks",
+            "Cost",
+            "EPC",
+            "Conv_ value",
+        }
+        
+    print(f"Loading training data from {csv_path} for Trust Ellipsoid...")
+    df = pd.read_csv(csv_path)
+    # Keep feature naming consistent with the optimizer feature matrix.
+    # (create_feature_matrix replaces '.' -> '_')
+    df.columns = df.columns.str.replace('.', '_', regex=False)
+    
+    # 1. Find Max CPC for capping the optimizer (Safety Rail)
+    cpc_col = next((c for c in ["Avg_ CPC", "Avg. CPC"] if c in df.columns), None)
+    max_cpc = float('inf')
+    if cpc_col:
+        # robust max (ignoring infs)
+        valid_cpcs = pd.to_numeric(df[cpc_col], errors='coerce')
+        valid_cpcs = valid_cpcs[np.isfinite(valid_cpcs)]
+        if not valid_cpcs.empty:
+            max_cpc = valid_cpcs.max()
+    
+    # 2. Prepare Numeric Data for Covariance
+    # Convert everything to numeric where possible; non-numeric becomes NaN.
+    # This makes the covariance stats robust to currency/object columns.
+    df_num = df.apply(lambda s: pd.to_numeric(s, errors='coerce'))
+    numeric_cols = [c for c in df_num.columns if df_num[c].notna().any()]
+    # Drop columns we don't want in the distance calculation (like the bid itself)
+    cols_to_use = [c for c in numeric_cols if c not in exclude_cols]
+
+    # If the optimizer feature matrix doesn't have a training column, we cannot include it
+    # (otherwise the Mahalanobis calc will KeyError on X_check[stat_cols]).
+    if allowed_cols is not None:
+        cols_to_use = [c for c in cols_to_use if c in allowed_cols]
+
+    # Drop rows with NaNs/Infs to ensure clean covariance calculation
+    data = df_num[cols_to_use].replace([np.inf, -np.inf], np.nan).dropna()
+    
+    if data.empty:
+        raise ValueError("Training data has no valid numeric rows for covariance calculation.")
+
+    # 3. Fit Covariance
+    # Support_fraction=1.0 uses all data (Empirical). 
+    # If your training data has many outliers, consider MinCovDet() instead.
+    cov_estimator = EmpiricalCovariance().fit(data)
+    
+    stats = {
+        'mean': cov_estimator.location_,
+        'inv_cov': cov_estimator.precision_,
+        'columns': cols_to_use
+    }
+    
+    return stats, max_cpc
 
 def _compute_training_numeric_ranges(training_csv: Path) -> Dict[str, Tuple[float, float]]:
     """Compute per-column (min,max) ranges from the training dataset.
@@ -2245,6 +2327,125 @@ def _compute_training_numeric_ranges(training_csv: Path) -> Dict[str, Tuple[floa
             ranges[c] = (lo, hi)
     return ranges
 
+def calculate_training_stats(X_train: pd.DataFrame, exclude_cols={"Avg. CPC"}) -> dict:
+    # 1. Select numeric features
+    Xn = X_train.copy()
+    Xn.columns = Xn.columns.str.replace('.', '_', regex=False)
+    # Convert to numeric where possible
+    Xn = Xn.apply(lambda s: pd.to_numeric(s, errors='coerce'))
+    numeric_cols = [c for c in Xn.columns if Xn[c].notna().any()]
+    cols_to_use = [c for c in numeric_cols if c not in exclude_cols]
+
+    data = Xn[cols_to_use].replace([np.inf, -np.inf], np.nan).dropna()
+    
+    # 2. Fit Covariance (Robust to outliers is better, e.g., MinCovDet, but Empirical is faster)
+    emp_cov = EmpiricalCovariance().fit(data)
+    
+    return {
+        'mean': emp_cov.location_,
+        'inv_cov': emp_cov.precision_, # Precision is the inverse covariance
+        'columns': cols_to_use
+    }
+
+def apply_trust_ellipsoid_filter(
+    *,
+    X_ort: Optional[pd.DataFrame],
+    X_lr: Optional[pd.DataFrame],
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    training_stats: Dict[str, np.ndarray],
+    p_value_threshold: float = 0.99,
+    exclude_cols: Optional[Set[str]] = None,
+) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], List[int], List[str], List[str]]:
+    """Enforce a "Trust Ellipsoid" (Mahalanobis Distance) filter.
+    
+    This is tighter than a min/max box. It filters out points that are statistically 
+    far from the training distribution center, accounting for feature correlations.
+
+    Args:
+        training_stats: Dict containing calculated artifacts from training data:
+            - 'mean': numpy array of shape (n_features,)
+            - 'inv_cov': numpy array of shape (n_features, n_features) (Inverse Covariance)
+            - 'columns': list of column names used to calculate these stats
+        p_value_threshold: Cutoff for the Chi-Square distribution (e.g., 0.99 keeps 99% of normal data).
+    """
+
+    if exclude_cols is None:
+        exclude_cols = {"Avg_ CPC", "Avg. CPC", "Clicks", "EPC", "Conv_ Value", "Cost"}
+
+    X_check = X_ort if X_ort is not None else X_lr
+    if X_check is None:
+        raise ValueError("Trust filter requires at least one of X_ort or X_lr")
+        
+    # 1. Identify valid numeric columns that align with training stats
+    stat_cols = training_stats.get('columns')
+    if stat_cols is None:
+        raise ValueError("training_stats must contain a 'columns' key listing the feature order.")
+        
+    # Filter down to only the columns we want to check (removing IDs, decision vars, etc)
+    # We must ensure the order matches the covariance matrix exactly.
+    # Keep naming consistent with the optimizer matrix.
+    X_check = X_check.copy()
+    X_check.columns = X_check.columns.str.replace('.', '_', regex=False)
+
+    try:
+        X_numeric = X_check[stat_cols].apply(pd.to_numeric, errors='coerce')
+    except KeyError:
+        missing = set(stat_cols) - set(X_check.columns)
+        print(f"Warning: Missing columns for Mahalanobis calculation: {missing}")
+        return X_ort, X_lr, kw_idx_list, region_list, match_list
+
+    # 2. Prepare Math Artifacts
+    mu = training_stats['mean']       # Shape: (D,)
+    inv_cov = training_stats['inv_cov'] # Shape: (D, D)
+    
+    # 3. Calculate Mahalanobis Distance for every row
+    # D^2 = (x - mu)^T * Sigma^-1 * (x - mu)
+    # We implement a vectorized version for speed:
+    
+    Xv = X_numeric.replace([np.inf, -np.inf], np.nan).to_numpy(dtype=float)
+    finite_rows = np.isfinite(Xv).all(axis=1)
+
+    # Treat any non-finite row as out-of-distribution (drop it).
+    mahal_dist_sq = np.full(shape=(Xv.shape[0],), fill_value=np.inf, dtype=float)
+    if finite_rows.any():
+        diff = Xv[finite_rows] - mu
+        # (N, D) dot (D, D) -> (N, D)
+        left_term = np.dot(diff, inv_cov)
+        # Row-wise dot product: sum( (N, D) * (N, D), axis=1 ) -> (N,)
+        mahal_dist_sq[finite_rows] = np.sum(left_term * diff, axis=1)
+
+    # 4. Determine Threshold (Chi-Squared cut-off)
+    # Degrees of freedom = number of features used in distance calc
+    df = len(stat_cols)
+    # The critical value such that p_value_threshold % of data falls inside
+    critical_value = chi2.ppf(p_value_threshold, df)
+
+    # 5. Create Mask
+    # Keep if distance^2 <= critical_value
+    mask = mahal_dist_sq <= critical_value
+
+    keep = int(mask.sum())
+    drop = int(len(mask) - keep)
+    print(f"\nTrust-Ellipsoid: keeping {keep}/{len(mask)} rows (dropping {drop} extrapolations)")
+    print(f"  (Threshold Chi2: {critical_value:.2f}, Max Obs Dist: {mahal_dist_sq.max():.2f})")
+
+    if keep == 0:
+        raise RuntimeError("All rows were dropped by the trust filter!")
+
+    # 6. Apply Filter
+    def _filt_df(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if df is None: return None
+        return df.loc[mask].reset_index(drop=True)
+
+    X_ort_f = _filt_df(X_ort)
+    X_lr_f = _filt_df(X_lr)
+    kw_idx_f = [kw_idx_list[i] for i in range(len(mask)) if bool(mask[i])]
+    region_f = [region_list[i] for i in range(len(mask)) if bool(mask[i])]
+    match_f = [match_list[i] for i in range(len(mask)) if bool(mask[i])]
+
+    return X_ort_f, X_lr_f, kw_idx_f, region_f, match_f
 
 def apply_trust_box_filter(
     *,
@@ -2312,6 +2513,181 @@ def apply_trust_box_filter(
     match_f = [match_list[i] for i in range(len(mask)) if bool(mask[i])]
 
     return X_ort_f, X_lr_f, kw_idx_f, region_f, match_f
+
+
+def _compute_clicks_bid_bounds_from_history(
+    *,
+    training_csv: Path,
+    keyword_df: pd.DataFrame,
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    embedding_method: str,
+    max_bid_cap: float,
+    min_active_bid: float = 0.01,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute per-row bid (lb, ub) from historical Avg CPC, with nearest fallback.
+
+    - If exact (keyword, match, region) exists: use its historical min/max.
+    - Else: use nearest available (keyword, match, region) where nearest is by
+      cosine similarity in embedding space, preferring:
+        1) same region+match
+        2) same region
+        3) any
+    """
+
+    K = len(kw_idx_list)
+    lbs = np.full(K, float(min_active_bid), dtype=float)
+    ubs = np.full(K, float(max_bid_cap), dtype=float)
+
+    if not training_csv.exists():
+        print(f"Warning: historical training CSV not found: {training_csv}; skipping historical bid bounds")
+        return lbs, ubs
+
+    hist = pd.read_csv(training_csv)
+    hist.columns = hist.columns.str.replace('.', '_', regex=False)
+
+    required_cols = {"Keyword", "Region", "Match type"}
+    if not required_cols.issubset(set(hist.columns)):
+        print(
+            f"Warning: training CSV missing required columns {required_cols - set(hist.columns)}; skipping historical bid bounds"
+        )
+        return lbs, ubs
+
+    cpc_col = next((c for c in ("Avg_ CPC", "Avg. CPC") if c in hist.columns), None)
+    if cpc_col is None:
+        print("Warning: training CSV has no Avg CPC column; skipping historical bid bounds")
+        return lbs, ubs
+
+    hist = hist.copy()
+    hist["Keyword_join"] = hist["Keyword"].astype(str).str.lower().str.strip()
+    hist["Region_join"] = hist["Region"].astype(str).str.lower().str.strip()
+    hist["Match_join"] = hist["Match type"].astype(str).str.lower().str.strip()
+    hist["Bid"] = pd.to_numeric(hist[cpc_col], errors="coerce")
+    hist = hist[np.isfinite(hist["Bid"])].copy()
+
+    # Positive-only to avoid lb=0 due to placeholders/missing.
+    hist = hist[hist["Bid"] > 0].copy()
+    if hist.empty:
+        print("Warning: training CSV has no positive Avg CPC values; skipping historical bid bounds")
+        return lbs, ubs
+
+    bounds_df = (
+        hist.groupby(["Keyword_join", "Region_join", "Match_join"], as_index=False)["Bid"]
+        .agg(hist_min="min", hist_max="max")
+        .reset_index(drop=True)
+    )
+
+    exact_map = {
+        (r.Keyword_join, r.Region_join, r.Match_join): (float(r.hist_min), float(r.hist_max))
+        for r in bounds_df.itertuples(index=False)
+    }
+
+    # Embeddings source for nearest-neighbor fallback
+    emb_source = keyword_df
+
+    emb_cols = [c for c in emb_source.columns if c.startswith(f"{embedding_method}_")]
+    if not emb_cols:
+        # Exact-only fallback
+        for i in range(K):
+            kw = str(keyword_df.iloc[kw_idx_list[i]]["Keyword"]).lower().strip()
+            reg = str(region_list[i]).lower().strip()
+            mt = str(match_list[i]).lower().strip()
+            exact = exact_map.get((kw, reg, mt))
+            if exact is None:
+                continue
+            lo, hi = exact
+            lbs[i] = max(float(min_active_bid), lo)
+            ubs[i] = min(float(max_bid_cap), hi)
+        ubs = np.maximum(ubs, lbs)
+        return lbs, ubs
+
+    emb_source = emb_source.copy()
+    emb_source["Keyword_join"] = emb_source["Keyword"].astype(str).str.lower().str.strip()
+
+    emb_lookup = {
+        r.Keyword_join: np.asarray([getattr(r, c) for c in emb_cols], dtype=float)
+        for r in emb_source[["Keyword_join"] + emb_cols].itertuples(index=False)
+        if np.isfinite(np.asarray([getattr(r, c) for c in emb_cols], dtype=float)).all()
+    }
+
+    # Candidate rows w/ vectors
+    cand_rows = []
+    cand_vecs = []
+    for r in bounds_df.itertuples(index=False):
+        v = emb_lookup.get(r.Keyword_join)
+        if v is None:
+            continue
+        cand_rows.append(r)
+        cand_vecs.append(v)
+
+    if not cand_rows:
+        # Exact-only
+        for i in range(K):
+            kw = str(keyword_df.iloc[kw_idx_list[i]]["Keyword"]).lower().strip()
+            reg = str(region_list[i]).lower().strip()
+            mt = str(match_list[i]).lower().strip()
+            exact = exact_map.get((kw, reg, mt))
+            if exact is None:
+                continue
+            lo, hi = exact
+            lbs[i] = max(float(min_active_bid), lo)
+            ubs[i] = min(float(max_bid_cap), hi)
+        ubs = np.maximum(ubs, lbs)
+        return lbs, ubs
+
+    cand_df = pd.DataFrame(
+        {
+            "Keyword_join": [r.Keyword_join for r in cand_rows],
+            "Region_join": [r.Region_join for r in cand_rows],
+            "Match_join": [r.Match_join for r in cand_rows],
+            "hist_min": [float(r.hist_min) for r in cand_rows],
+            "hist_max": [float(r.hist_max) for r in cand_rows],
+        }
+    )
+    V = np.vstack(cand_vecs)
+    Vn = V / (np.linalg.norm(V, axis=1, keepdims=True) + 1e-12)
+    reg_arr = cand_df["Region_join"].to_numpy(dtype=str)
+    mt_arr = cand_df["Match_join"].to_numpy(dtype=str)
+
+    for i in range(K):
+        kw = str(keyword_df.iloc[kw_idx_list[i]]["Keyword"]).lower().strip()
+        reg = str(region_list[i]).lower().strip()
+        mt = str(match_list[i]).lower().strip()
+
+        exact = exact_map.get((kw, reg, mt))
+        if exact is not None:
+            lo, hi = exact
+            lbs[i] = max(float(min_active_bid), lo)
+            ubs[i] = min(float(max_bid_cap), hi)
+            continue
+
+        x = emb_lookup.get(kw)
+        if x is None:
+            continue
+        x = np.asarray(x, dtype=float)
+        x = x / (np.linalg.norm(x) + 1e-12)
+
+        tier1 = (reg_arr == reg) & (mt_arr == mt)
+        tier2 = (reg_arr == reg)
+        if tier1.any():
+            idxs = np.where(tier1)[0]
+        elif tier2.any():
+            idxs = np.where(tier2)[0]
+        else:
+            idxs = np.arange(len(cand_df))
+
+        sims = Vn[idxs] @ x
+        best = int(idxs[int(np.argmax(sims))])
+        lo = float(cand_df.loc[best, "hist_min"])
+        hi = float(cand_df.loc[best, "hist_max"])
+        lbs[i] = max(float(min_active_bid), lo)
+        ubs[i] = min(float(max_bid_cap), hi)
+
+    lbs = np.clip(lbs, 0.0, float(max_bid_cap))
+    ubs = np.clip(ubs, 0.0, float(max_bid_cap))
+    ubs = np.maximum(ubs, lbs)
+    return lbs, ubs
 
 
 def main():
@@ -2583,31 +2959,60 @@ def main():
             clicks_glm_preproc_path=clicks_glm_preproc_path,
         )
 
-        # --- Trust box: enforce feature ranges from training data ---
+        # --- Trust box: enforce Trust Ellipsoid (Mahalanobis) ---
         effective_max_bid = float(args.max_bid)
+        
         if args.trust_box != 'off':
             training_csv = Path(args.trust_box_training)
             if not training_csv.exists():
                 raise FileNotFoundError(f"Trust-box training CSV not found: {training_csv}")
-            training_ranges = _compute_training_numeric_ranges(training_csv)
+            
+            # [CHANGED] Compute stats (Mean/Cov) instead of just ranges.
+            # Restrict to columns that actually exist in the current optimizer feature matrix.
+            X_for_stats = X_ort if X_ort is not None else X_lr
+            allowed_cols = None
+            if X_for_stats is not None:
+                allowed_cols = set(X_for_stats.select_dtypes(include=[np.number]).columns.tolist())
+            training_stats, train_cpc_max = _compute_training_stats_and_bounds(
+                training_csv,
+                allowed_cols=allowed_cols,
+            )
 
-            # Cap bid to be within the training CPC range (upper bound only, to preserve b=0 feasibility).
-            cpc_key = 'Avg_ CPC' if 'Avg_ CPC' in training_ranges else ('Avg. CPC' if 'Avg. CPC' in training_ranges else None)
-            if cpc_key is not None:
-                train_cpc_max = float(training_ranges[cpc_key][1])
-                if np.isfinite(train_cpc_max):
-                    effective_max_bid = min(effective_max_bid, train_cpc_max)
-                    print(f"Trust-box: capping max bid to {effective_max_bid:.4f} based on training '{cpc_key}' max")
+            # [UNCHANGED] Cap bid to be within the training CPC range 
+            # We still do this to prevent the solver from exploring bid spaces 
+            # completely unseen in training (e.g. bidding $100 when max train CPC was $5).
+            if np.isfinite(train_cpc_max):
+                original_max = effective_max_bid
+                effective_max_bid = min(effective_max_bid, train_cpc_max)
+                if effective_max_bid < original_max:
+                    print(f"Trust-box: capping max bid from {original_max} to {effective_max_bid:.4f} based on training max CPC")
 
-            X_ort, X_lr, kw_idx_list, region_list, match_list = apply_trust_box_filter(
+            # [CHANGED] Apply the Ellipsoid Filter
+            # This filters the *rows* (keywords) that have feature combinations 
+            # statistically unlikely based on the training data.
+            X_ort, X_lr, kw_idx_list, region_list, match_list = apply_trust_ellipsoid_filter(
                 X_ort=X_ort,
                 X_lr=X_lr,
                 kw_idx_list=kw_idx_list,
                 region_list=region_list,
                 match_list=match_list,
-                training_ranges=training_ranges,
-                mode='drop',
+                training_stats=training_stats,
+                p_value_threshold=0.99, # Configurable: 0.99 = keep 99% of "normal" data
             )
+
+        # --- Historical bid bounds for clicks model ---
+        # Enforce bids within historical min/max for (keyword, match, region) when available;
+        # otherwise use nearest available combo as a safety rail against extrapolation.
+        bid_lbs, bid_ubs = _compute_clicks_bid_bounds_from_history(
+            training_csv=Path(args.trust_box_training),
+            keyword_df=keyword_df,
+            kw_idx_list=kw_idx_list,
+            region_list=region_list,
+            match_list=match_list,
+            embedding_method=args.embedding_method,
+            max_bid_cap=effective_max_bid,
+            min_active_bid=0.01,
+        )
 
         model, b, f, g = optimize_bids_embedded(
             X_ort=X_ort,
@@ -2624,6 +3029,8 @@ def main():
             alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks,
             embedding_method=args.embedding_method,
+            bid_lower_bounds=bid_lbs,
+            bid_upper_bounds=bid_ubs,
         )
 
         if model.status == 2 or model.status == 9:
