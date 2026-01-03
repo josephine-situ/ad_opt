@@ -1512,6 +1512,9 @@ def optimize_bids_embedded(
 
     # --- 0. Decision Variables ---
 
+    # z_i: Binary "Active" switch. 1 if bidding, 0 if turned off.
+    z = model.addMVar(shape=K, vtype=GRB.BINARY, name='z')
+
     # b_i: Bid amount
     b = model.addMVar(shape=K, lb=0, ub=max_bid, name='b')
 
@@ -1674,11 +1677,22 @@ def optimize_bids_embedded(
     
     model.update()
     
-    # --- 2. Link prediction vars and enforce non-negativity via bounds ---
-    # f and g already have lb=0. These equalities force embedded model outputs to be non-negative.
+    # --- 2. Link prediction vars with Semi-Continuous Logic ---
+    
+    # Step A: Enforce Bid Limits based on Z
+    # If z=0 -> b=0. If z=1 -> 0.01 <= b <= max_bid
+    model.addConstr(b <= max_bid * z, name="Bid_UpperBound")
+    model.addConstr(b >= 0.01 * z, name="Bid_LowerBound")
+
+    # Step B: Link Predictions (f, g) using Indicator Constraints
     for i in range(K):
-        model.addConstr(f[i] == f_hat_vars[i], name=f"EPCLink_{i}")
-        model.addConstr(g[i] == g_hat_vars[i], name=f"ClicksLink_{i}")
+        # Case z=0: Force final outputs (EPC/Clicks) to 0
+        model.addGenConstrIndicator(z[i], 0, f[i] == 0, name=f"ForceZeroEPC_{i}")
+        model.addGenConstrIndicator(z[i], 0, g[i] == 0, name=f"ForceZeroClicks_{i}")
+
+        # Case z=1: Final outputs match the Embedded Model Variables
+        model.addGenConstrIndicator(z[i], 1, f[i] == f_hat_vars[i], name=f"ActiveEPC_{i}")
+        model.addGenConstrIndicator(z[i], 1, g[i] == g_hat_vars[i], name=f"ActiveClicks_{i}")
 
     # --- Total Budget Constraint ---
     # Create auxiliary spend variables: spend[i] = b[i] * g[i]
@@ -1775,7 +1789,7 @@ def extract_solution(model, b, f, g, keyword_df, keyword_idx_list, region_list, 
     bids_df = bids_df.drop(columns=['Keyword', 'Region', 'Match type'], errors='ignore')
     
     # Sort by bid (desc), then keyword, region, match
-    sort_cols = ['cost','bid', 'keyword', 'region', 'match']
+    sort_cols = ['profit', 'bid', 'keyword', 'region', 'match']
     sort_asc = [False, False, True, True, True]
     bids_df = bids_df.sort_values(by=sort_cols, ascending=sort_asc).reset_index(drop=True)
     
