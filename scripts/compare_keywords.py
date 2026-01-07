@@ -4,8 +4,9 @@ Compare Semrush Keywords with Existing Keywords
 
 This script:
 1. Loads new keywords from gkp/semrush_new_kws.csv
-2. Loads existing keywords from the data pipeline
-3. Compares and marks keywords as 'new' or 'existing'
+2. Loads existing broad-match search terms from gkp/broad_match_search_terms.csv
+3. Loads existing keywords from the data pipeline
+4. Compares and marks keywords as 'new', 'existing searches', or 'existing'
 4. Removes duplicates (prioritizes 'existing' if both)
 5. Outputs results to gkp folder
 6. Prints summary statistics
@@ -19,12 +20,48 @@ import argparse
 import sys
 import re
 from pathlib import Path
+from typing import Optional
 import pandas as pd
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils import load_and_combine_keyword_data, format_keyword_data
+from utils import load_and_combine_keyword_data, format_keyword_data, setup_tee_logging
+
+
+MAX_KEYWORD_LEN = 80
+MAX_KEYWORD_WORDS = 10
+
+
+def _word_count(s: str) -> int:
+    # Count whitespace-separated tokens, ignoring empty fragments.
+    return len([w for w in str(s).strip().split() if w])
+
+
+def _is_valid_keyword_string(s: str) -> bool:
+    if len(s) > MAX_KEYWORD_LEN:
+        return False
+    if _word_count(s) > MAX_KEYWORD_WORDS:
+        return False
+    return True
+
+
+def _read_csv_with_fallbacks(path: Path, **kwargs) -> pd.DataFrame:
+    """Read CSV robustly across common encodings.
+
+    Tries utf-8 first, then cp1252 (common on Windows exports), then latin1.
+    """
+    last_err: Optional[Exception] = None
+    for enc in ("utf-8", "utf-8-sig", "cp1252", "latin1"):
+        try:
+            return pd.read_csv(path, encoding=enc, **kwargs)
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+    # Re-raise with context
+    if last_err is not None:
+        raise last_err
+    raise RuntimeError(f"Failed to read CSV: {path}")
 
 
 def normalize_keyword(kw):
@@ -48,6 +85,10 @@ def clean_keyword(kw):
     
     # Remove [...] patterns
     kw = re.sub(r'\[.*?\]', '', kw).strip()
+
+    # Filter out overly-long keywords (often junk / export artifacts)
+    if not _is_valid_keyword_string(kw):
+        return None
     
     # Check for special characters (: / . but allow apostrophes)
     # Allow letters, numbers, spaces, and apostrophes
@@ -83,8 +124,33 @@ def main():
         default='data/reports',
         help='Directory containing keyword reports (default: data/reports)'
     )
+    parser.add_argument(
+        '--log-file',
+        type=str,
+        default=None,
+        help=(
+            "Path to write a copy of console output. If omitted, writes to logs/compare_keywords_<timestamp>.log. "
+            "Set to empty string to disable file logging."
+        )
+    )
+    parser.add_argument(
+        '--search-terms',
+        type=str,
+        default='data/gkp/broad_match_search_terms.csv',
+        help=(
+            "CSV file containing existing broad-match search terms "
+            "(default: data/gkp/broad_match_search_terms.csv)"
+        )
+    )
     
     args = parser.parse_args()
+
+    log_path = setup_tee_logging(
+        log_file=args.log_file,
+        default_log_prefix='compare_keywords',
+    )
+    if log_path is not None:
+        print(f"[Log] Writing output to {log_path}")
     
     print("=" * 70)
     print("Keyword Comparison: Semrush vs Existing")
@@ -132,6 +198,10 @@ def main():
     # Normalize and remove duplicates
     semrush_kws_norm = set(normalize_keyword(kw) for kw in semrush_kws_cleaned)
     semrush_kws_norm.discard('')  # Remove empty strings
+
+    semrush_before_len = len(semrush_kws_norm)
+    semrush_kws_norm = {kw for kw in semrush_kws_norm if _is_valid_keyword_string(kw)}
+    semrush_len_removed = semrush_before_len - len(semrush_kws_norm)
     
     print(f"  Found {len(semrush_kws_raw)} unique raw keywords")
     print(f"  {len(semrush_kws_cleaned)} keywords after cleaning (removed invalid characters/brackets)")
@@ -142,9 +212,52 @@ def main():
         if len(filtered_out) > 10:
             print(f"    ... and {len(filtered_out) - 10} more")
     print(f"  {len(semrush_kws_norm)} unique keywords after normalization")
+    if semrush_len_removed:
+        print(
+            f"  Filtered out {semrush_len_removed} keywords longer than {MAX_KEYWORD_LEN} chars "
+            f"or more than {MAX_KEYWORD_WORDS} words"
+        )
+
+    # Load existing search terms (broad match) if available
+    print(f"\n[Step 3] Loading existing search terms from {args.search_terms}...")
+    search_terms_file = Path(args.search_terms)
+    search_terms_norm = set()
+    if search_terms_file.exists():
+        try:
+            search_terms_df = _read_csv_with_fallbacks(search_terms_file)
+        except Exception as e:
+            print(f"  ERROR reading {args.search_terms}: {e}")
+            sys.exit(1)
+
+        if 'Search term' not in search_terms_df.columns:
+            print(
+                "  ERROR: Expected column 'Search term' in "
+                f"{args.search_terms}. Available columns: {list(search_terms_df.columns)}"
+            )
+            sys.exit(1)
+
+        raw_terms = search_terms_df['Search term'].dropna().unique()
+        cleaned_terms = [clean_keyword(t) for t in raw_terms]
+        cleaned_terms = [t for t in cleaned_terms if t is not None]
+        search_terms_norm = set(normalize_keyword(t) for t in cleaned_terms)
+        search_terms_norm.discard('')
+
+        st_before_len = len(search_terms_norm)
+        search_terms_norm = {kw for kw in search_terms_norm if _is_valid_keyword_string(kw)}
+        st_len_removed = st_before_len - len(search_terms_norm)
+
+        print(f"  Found {len(raw_terms)} unique raw search terms")
+        print(f"  {len(search_terms_norm)} unique search terms after cleaning/normalization")
+        if st_len_removed:
+            print(
+                f"  Filtered out {st_len_removed} search terms longer than {MAX_KEYWORD_LEN} chars "
+                f"or more than {MAX_KEYWORD_WORDS} words"
+            )
+    else:
+        print(f"  WARNING: Search terms file not found, continuing without it: {search_terms_file}")
     
     # Load existing keywords
-    print(f"\n[Step 3] Loading and formatting existing keywords from {args.data_dir}...")
+    print(f"\n[Step 4] Loading and formatting existing keywords from {args.data_dir}...")
     try:
         existing_df = load_and_combine_keyword_data(args.data_dir)
         # Format keywords to remove [] and ""
@@ -152,27 +265,39 @@ def main():
         existing_kws_raw = existing_df['Keyword'].dropna().unique()
         existing_kws_norm = set(normalize_keyword(kw) for kw in existing_kws_raw)
         existing_kws_norm.discard('')  # Remove empty strings
+
+        ex_before_len = len(existing_kws_norm)
+        existing_kws_norm = {kw for kw in existing_kws_norm if _is_valid_keyword_string(kw)}
+        ex_len_removed = ex_before_len - len(existing_kws_norm)
         print(f"  Found {len(existing_kws_raw)} unique existing keywords (raw, after format_keyword_data)")
         print(f"  {len(existing_kws_norm)} unique keywords after normalization")
+        if ex_len_removed:
+            print(
+                f"  Filtered out {ex_len_removed} existing keywords longer than {MAX_KEYWORD_LEN} chars "
+                f"or more than {MAX_KEYWORD_WORDS} words"
+            )
     except FileNotFoundError as e:
         print(f"  ERROR: Could not load existing keywords: {e}")
         sys.exit(1)
     
     # Classify keywords
-    print(f"\n[Step 4] Classifying keywords...")
-    # Keywords in Semrush that are NOT in existing
-    new_kws = semrush_kws_norm - existing_kws_norm
-    # Keywords that appear in both (will be marked as existing)
-    overlap_kws = semrush_kws_norm & existing_kws_norm
-    # All existing keywords (whether or not they're in Semrush)
+    print(f"\n[Step 5] Classifying keywords...")
+    # Precedence for overlaps: existing > existing searches > new
     all_existing_kws = existing_kws_norm
-    
-    print(f"  New keywords (in Semrush only): {len(new_kws)}")
-    print(f"  Overlapping keywords (in both): {len(overlap_kws)}")
+    existing_search_terms = search_terms_norm - all_existing_kws
+    new_kws = semrush_kws_norm - all_existing_kws - search_terms_norm
+
+    overlap_existing = semrush_kws_norm & all_existing_kws
+    overlap_search_terms = (semrush_kws_norm & search_terms_norm) - all_existing_kws
+
+    print(f"  New keywords (Semrush only): {len(new_kws)}")
+    print(f"  Existing search terms (added): {len(existing_search_terms)}")
     print(f"  All existing keywords: {len(all_existing_kws)}")
+    print(f"  Overlap: Semrush ∩ existing: {len(overlap_existing)}")
+    print(f"  Overlap: Semrush ∩ search terms (not existing): {len(overlap_search_terms)}")
     
     # Create output dataframe
-    print(f"\n[Step 5] Creating output file...")
+    print(f"\n[Step 6] Creating output file...")
     output_rows = []
     
     # Add new keywords (in Semrush but not existing)
@@ -180,6 +305,13 @@ def main():
         output_rows.append({
             'Keyword': kw,
             'Origin': 'new'
+        })
+
+    # Add existing search terms (broad-match search terms not already in existing)
+    for kw in sorted(existing_search_terms):
+        output_rows.append({
+            'Keyword': kw,
+            'Origin': 'existing searches'
         })
     
     # Add all existing keywords
@@ -204,8 +336,10 @@ def main():
     print("SUMMARY")
     print("=" * 70)
     new_count = (output_df['Origin'] == 'new').sum()
+    existing_search_count = (output_df['Origin'] == 'existing searches').sum()
     existing_count = (output_df['Origin'] == 'existing').sum()
     print(f"  New keywords:      {new_count:6d}")
+    print(f"  Existing searches: {existing_search_count:6d}")
     print(f"  Existing keywords: {existing_count:6d}")
     print(f"  Total:             {len(output_df):6d}")
     print(f"\n  Output file: {output_file.resolve()}")

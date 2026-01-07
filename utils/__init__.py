@@ -40,6 +40,10 @@ from .data_pipeline import (
     load_embeddings,
 )
 
+from .tee_logging import (
+    setup_tee_logging,
+)
+
 __all__ = [
     # Data cleaning
     'clean_currency',
@@ -65,4 +69,6 @@ __all__ = [
     'prepare_train_test_split',
     'save_outputs',
     'load_embeddings',
+    # Logging
+    'setup_tee_logging',
 ]

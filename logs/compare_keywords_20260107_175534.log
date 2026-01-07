@@ -1,0 +1,60 @@
+[Log] Writing output to logs\compare_keywords_20260107_175534.log
+======================================================================
+Keyword Comparison: Semrush vs Existing
+======================================================================
+
+[Step 1] Loading new keywords from data/gkp/semrush_new_kws.csv...
+  Loaded 1090 rows from data/gkp/semrush_new_kws.csv
+  Columns: ['Keyword']
+  Using keyword column: 'Keyword'
+
+[Step 2] Cleaning and normalizing new keywords...
+  Found 1090 unique raw keywords
+  1037 keywords after cleaning (removed invalid characters/brackets)
+  Filtered out 53 keywords with special characters:
+    - 2024 generative ai course: introducing generative ai with aws
+    - 2024 oracle cloud infrastructure generative ai professional certification/course
+    - [author] generative ai: the evolution of thoughtful online search course
+    - [author] master generative ai: automate content effortlessly with ai course
+    - ai marketing course: transforming strategies with generative ai
+    - ai-based elearning course generators
+    - are there any generative ai courses that include hands-on projects
+    - are there any generative ai courses that offer hands-on projects
+    - aws partner: generative ai essentials business course
+    - best generative ai course with hands-on projects 2025
+    ... and 43 more
+  1033 unique keywords after normalization
+
+[Step 3] Loading existing search terms from data/gkp/broad_match_search_terms.csv...
+  Found 3800 unique raw search terms
+  3722 unique search terms after cleaning/normalization
+
+[Step 4] Loading and formatting existing keywords from data/reports...
+[Step 1] Loading and combining keyword data...
+  Using combined raw report: Search keyword - raw input to models.csv
+  Data covers: 2024-07-05 00:00:00 to 2026-01-07 00:00:00
+  Total rows: 59466
+[Step 2] Formatting keyword data...
+  Found 163 unique existing keywords (raw, after format_keyword_data)
+  163 unique keywords after normalization
+
+[Step 5] Classifying keywords...
+  New keywords (Semrush only): 832
+  Existing search terms (added): 3660
+  All existing keywords: 163
+  Overlap: Semrush ∩ existing: 32
+  Overlap: Semrush ∩ search terms (not existing): 169
+
+[Step 6] Creating output file...
+  Saved 4655 keywords to data/gkp/keywords_classified.csv
+
+======================================================================
+SUMMARY
+======================================================================
+  New keywords:         832
+  Existing searches:   3660
+  Existing keywords:    163
+  Total:               4655
+
+  Output file: C:\Users\jsitu\OneDrive\Documents\Courses\Research\ad_opt\data\gkp\keywords_classified.csv
+======================================================================

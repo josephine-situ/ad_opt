@@ -4,7 +4,7 @@ Converts the Jupyter notebook workflow to a reusable Python script for preparing
 
 ## Features
 
-- Loads and combines keyword data from 2024 and 2025
+- Loads keyword data from a single combined raw export ("Search keyword - raw input to models.csv")
 - Extracts temporal features (day of week, holidays, course start dates)
 - Merges with Google Ads keyword planner data
 - Generates keyword embeddings using either **TF-IDF** or **BERT**
@@ -57,7 +57,7 @@ pip install sentence-transformers
 
 ### Main Pipeline Steps
 
-1. **Load Data**: Combine 2024 and 2025 keyword reports
+1. **Load Data**: Load keyword report export (single raw CSV)
 2. **Format**: Clean campaigns, regions, keywords
 3. **Date Features**: Extract day_of_week, is_weekend, month, is_public_holiday, days_to_next_course_start
 4. **Filter**: Remove early records (before 2024-11-03)

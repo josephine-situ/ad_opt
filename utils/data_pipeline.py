@@ -19,7 +19,12 @@ from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 
 def load_and_combine_keyword_data(data_dir="data/reports"):
     """
-    Load 2024 and 2025 keyword data and combine them.
+    Load keyword performance data from raw Google Ads exports.
+
+    Supports either:
+    - A single combined CSV: "Search keyword - raw input to models.csv" (preferred)
+      where the first two rows are metadata, and the third row is the header.
+    - Legacy split exports for 2024 (xlsx) and 2025 (utf-16 TSV).
     
     Args:
     - data_dir (str): Directory containing the data files.
@@ -28,7 +33,73 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     - kw_df (pd.DataFrame): Combined keyword data.
     """
     print("[Step 1] Loading and combining keyword data...")
+
+    data_path = Path(data_dir)
+
+    def _read_csv_with_fallbacks(path, **kwargs):
+        last_err = None
+        for enc in ("utf-8", "utf-8-sig", "cp1252", "latin1"):
+            try:
+                return pd.read_csv(path, encoding=enc, **kwargs)
+            except UnicodeDecodeError as e:
+                last_err = e
+                continue
+        if last_err is not None:
+            raise last_err
+        raise RuntimeError(f"Failed to read CSV: {path}")
+
+    # Preferred: new single-file export
+    combined_file = data_path / 'Search keyword - raw input to models.csv'
+    if combined_file.exists():
+        print(f"  Using combined raw report: {combined_file.name}")
+        df = _read_csv_with_fallbacks(combined_file, skiprows=2)
+        df.columns = df.columns.astype(str).str.strip()
+
+        # Map new export column names to the legacy names expected downstream
+        rename_map = {
+            'Search keyword': 'Keyword',
+            'Search keyword match type': 'Match type',
+        }
+        df = df.rename(columns=rename_map)
+
+        if 'Day' not in df.columns:
+            raise KeyError(f"Expected 'Day' column in {combined_file}")
+        if 'Keyword' not in df.columns:
+            raise KeyError(f"Expected 'Search keyword'/'Keyword' column in {combined_file}")
+        if 'Campaign' not in df.columns:
+            raise KeyError(f"Expected 'Campaign' column in {combined_file}")
+
+        # Parse dates
+        df['Day'] = pd.to_datetime(df['Day'], errors='coerce')
+        df = df.dropna(subset=['Day'])
+
+        # Clean numeric columns
+        cols_money = ['Cost', 'Avg. CPC', 'Conv. value']
+        for col in cols_money:
+            if col in df.columns:
+                df[col] = df[col].apply(clean_currency).replace('--', 0).astype(float)
+
+        # Impressions / clicks sometimes come in with commas
+        if 'Impr.' in df.columns:
+            df['Impr.'] = df['Impr.'].astype(str).str.replace(',', '').replace('--', 0).astype(float)
+        if 'Clicks' in df.columns:
+            df['Clicks'] = df['Clicks'].astype(str).str.replace(',', '').replace('--', 0).astype(float)
+
+        # Percent columns
+        if 'CTR' in df.columns:
+            df['CTR'] = df['CTR'].apply(convert_percent_to_float)
+        if 'Conv. rate' in df.columns:
+            df['Conv. rate'] = df['Conv. rate'].apply(convert_percent_to_float)
+
+        # Keep only rows where Clicks > 0 (consistent with previous behavior)
+        if 'Clicks' in df.columns:
+            df = df[df['Clicks'] > 0]
+
+        print(f"  Data covers: {df['Day'].min()} to {df['Day'].max()}")
+        print(f"  Total rows: {len(df)}")
+        return df
     
+    # --- Legacy path: Load 2024 and 2025 files ---
     # Load 2024 data
     df_2024 = pd.read_excel(f"{data_dir}/Search keyword report (by Day 2024).xlsx")
     df_2024['Day'] = pd.to_datetime(df_2024['Day'])

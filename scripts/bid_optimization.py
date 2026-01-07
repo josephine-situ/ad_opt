@@ -3113,7 +3113,7 @@ def main():
                 new_kw_set = set(
                     _normalize_kw(s)
                     for s in classified_df.loc[
-                        classified_df['Origin'].astype(str).str.lower().eq('new'),
+                        classified_df['Origin'].astype(str).str.strip().str.lower().isin({'new', 'existing searches'}),
                         'Keyword',
                     ]
                     .dropna()
@@ -3136,8 +3136,10 @@ def main():
         if args.trial is not None:
             # Mix new keywords with existing ones (identified by Origin column)
             classified_df = pd.read_csv(str(classified_keywords_file))
-            new_keywords_df = classified_df[classified_df['Origin'] == 'new']
-            existing_keywords_df = classified_df[classified_df['Origin'] == 'existing']
+            origin_norm = classified_df.get('Origin', pd.Series([], dtype=str)).astype(str).str.strip().str.lower()
+            # Treat both 'new' and 'existing searches' as new
+            new_keywords_df = classified_df[origin_norm.isin({'new', 'existing searches'})]
+            existing_keywords_df = classified_df[origin_norm.eq('existing')]
             
             new_kws = new_keywords_df['Keyword'].dropna().astype(str).tolist()
             existing_kws = existing_keywords_df['Keyword'].dropna().astype(str).tolist()

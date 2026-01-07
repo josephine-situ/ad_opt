@@ -28,6 +28,7 @@ from utils import (
     add_embeddings,
     prepare_train_test_split,
     save_outputs,
+    setup_tee_logging,
 )
 from utils.date_features import COURSE_START_DATES
 
@@ -97,8 +98,24 @@ def main():
         action='store_true',
         help='Force reload from source files, skip all caches'
     )
+    parser.add_argument(
+        '--log-file',
+        type=str,
+        default=None,
+        help=(
+            "Path to write a copy of console output. If omitted, writes to logs/tidy_get_data_<timestamp>.log. "
+            "Set to empty string to disable file logging."
+        )
+    )
     
     args = parser.parse_args()
+
+    log_path = setup_tee_logging(
+        log_file=args.log_file,
+        default_log_prefix='tidy_get_data',
+    )
+    if log_path is not None:
+        print(f"[Log] Writing output to {log_path}")
     
     print("=" * 70)
     print("Data Preparation Pipeline for Ad Optimization")

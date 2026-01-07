@@ -4,6 +4,11 @@
 
 This project implements a machine learning pipeline for optimizing keyword bids in Google Ads. It includes data preprocessing, model training, and bid optimization using linear programming.
 
+## Steps
+1. Get report from Google Ads (Search keyword - raw input to models.csv)
+2. Run compare_keywords.py to combine new and existing keywords and search terms.
+3. Copy and paste these keywords into Google Keyword Planner to get historical search popularity and competitiveness indices.
+
 ## Directory Structure
 
 ```
@@ -272,7 +277,7 @@ python scripts/bid_optimization.py \
 ```
 
 Uses Gurobi linear programming to maximize profit:
-- Loads new keywords from `data/gkp/keywords_classified.csv`
+- Loads keywords from `data/gkp/keywords_classified.csv` (Origin: `existing`, `existing searches`, `new`)
 - Generates embeddings using saved pipeline
 - Loads trained models for conversion and clicks prediction
 - Solves optimization problem subject to budget and bid constraints
