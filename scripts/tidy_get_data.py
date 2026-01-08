@@ -31,6 +31,13 @@ from utils import (
     setup_tee_logging,
 )
 from utils.date_features import COURSE_START_DATES
+from utils.data_pipeline import MIN_DATE_CUTOFF
+
+from utils.keyword_diversity_models import (
+    train_or_load_and_predict,
+    DEFAULT_ENTROPY_COL,
+    DEFAULT_HHI_COL,
+)
 
 
 def load_or_cache(func, cache_path, force_reload=False, *args, **kwargs):
@@ -107,6 +114,24 @@ def main():
             "Set to empty string to disable file logging."
         )
     )
+
+    parser.add_argument(
+        '--diversity-mode',
+        type=str,
+        default='training',
+        choices=['off', 'training', 'prod'],
+        help=(
+            "Whether to add stacked keyword diversity features (entropy/HHI). "
+            "'training' generates keyword-grouped OOF predictions; 'prod' uses saved models. "
+            "Default: training."
+        )
+    )
+    parser.add_argument(
+        '--diversity-n-splits',
+        type=int,
+        default=5,
+        help="Number of GroupKFold splits for diversity OOF predictions (default: 5)"
+    )
     
     args = parser.parse_args()
 
@@ -123,6 +148,7 @@ def main():
     print(f"Embedding method: {args.embedding_method}")
     print(f"N components: {args.n_components}")
     print(f"Force reload: {args.force_reload}")
+    print(f"Diversity mode: {args.diversity_mode}")
     print("=" * 70)
     
     try:
@@ -134,14 +160,36 @@ def main():
         
         # Pipeline with automatic caching at each time-consuming step
         print("\n[Step 1] Load and combine keyword data...")
-        kw_df = load_or_cache(
-            load_and_combine_keyword_data,
-            cache_path / 'step1_combined.parquet',
-            args.force_reload,
-            args.data_dir
-        )
+        diversity_df = None
+        if args.diversity_mode != 'off':
+            # Cache the two outputs separately (parquet can't store tuple directly).
+            # NOTE: cache names include "grouped" to avoid reusing older caches from the pre-grouping loader.
+            main_cache = cache_path / 'step1_combined_main_grouped.parquet'
+            div_cache = cache_path / 'step1_combined_diversity_ungrouped.parquet'
+
+            if main_cache.exists() and div_cache.exists() and not args.force_reload:
+                print(f"  [Cache] Loading from {main_cache.name} and {div_cache.name}")
+                kw_df = pd.read_parquet(main_cache)
+                diversity_df = pd.read_parquet(div_cache)
+            else:
+                print("  [Computing] Running load_and_combine_keyword_data (with diversity frames)...")
+                kw_df, diversity_df = load_and_combine_keyword_data(args.data_dir, return_diversity_frames=True)
+                main_cache.parent.mkdir(exist_ok=True, parents=True)
+                kw_df.to_parquet(main_cache)
+                diversity_df.to_parquet(div_cache)
+                print(f"  [Saved] Cached to {main_cache.name} and {div_cache.name}")
+        else:
+            kw_df = load_or_cache(
+                load_and_combine_keyword_data,
+                # NOTE: cache name includes "grouped" to avoid reusing older caches from the pre-grouping loader.
+                cache_path / 'step1_combined_grouped.parquet',
+                args.force_reload,
+                args.data_dir
+            )
         
         print("\n[Step 2] Format keyword data...")
+        # `load_and_combine_keyword_data` now already normalizes Keyword and derives Region.
+        # We keep this step for compatibility and to enforce the expected column set.
         kw_df = format_keyword_data(kw_df)
         
         print("\n[Step 3] Extract date features...")
@@ -160,6 +208,12 @@ def main():
             args.force_reload,
             kw_df
         )
+
+        # Keep diversity target data on the same date window as the main pipeline.
+        if args.diversity_mode != 'off' and diversity_df is not None:
+            print("\n[Step 4b] Filter diversity data by date...")
+            diversity_df = filter_data_by_date(diversity_df, min_date=MIN_DATE_CUTOFF)
+            print(f"  Diversity rows after filter: {len(diversity_df)}")
         
         print("\n[Step 5] Load GKP data...")
         gkp_df = get_gkp_data()
@@ -190,6 +244,48 @@ def main():
             True,  # save_models=True
             args.output_dir  # model_dir
         )
+
+        # Optional: Add stacked keyword diversity features (entropy/HHI) from search-term report.
+        if args.diversity_mode != 'off':
+            print(f"\n[Step 7.5] Adding keyword diversity features ({args.diversity_mode})...")
+            if diversity_df is None:
+                raise RuntimeError("diversity_mode is enabled but diversity_df was not loaded")
+
+            diversity_preds = train_or_load_and_predict(
+                main_df=df,
+                search_term_df=diversity_df,
+                embedding_method=args.embedding_method,
+                n_components=args.n_components,
+                mode=args.diversity_mode,
+                model_dir=args.output_dir,
+                n_splits=args.diversity_n_splits,
+            )
+
+            df = df.merge(diversity_preds, on='Keyword', how='left')
+
+            # Ensure columns exist and are numeric.
+            for col in (DEFAULT_ENTROPY_COL, DEFAULT_HHI_COL):
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    # Keep pipeline robust; missing predictions get 0.0.
+                    df[col] = df[col].fillna(0.0)
+
+        # Add interaction terms: competition (indexed value) x match type indicators
+        print("\n[Step 7.6] Adding competition × match-type interaction feature...")
+        if 'Competition (indexed value)' in df.columns and 'Match type' in df.columns:
+            comp = pd.to_numeric(df['Competition (indexed value)'], errors='coerce')
+            is_exact = (df['Match type'] == 'Exact match').astype(int)
+            is_phrase = (df['Match type'] == 'Phrase match').astype(int)
+            is_broad = (df['Match type'] == 'Broad match').astype(int)
+
+            df['competition_x_is_exact'] = (comp * is_exact).fillna(0.0)
+            df['competition_x_is_phrase'] = (comp * is_phrase).fillna(0.0)
+            df['competition_x_is_broad'] = (comp * is_broad).fillna(0.0)
+        else:
+            # Create the column for downstream consistency even if source cols are missing.
+            df['competition_x_is_exact'] = 0.0
+            df['competition_x_is_phrase'] = 0.0
+            df['competition_x_is_broad'] = 0.0
         
         # Remove rows with NaN values before splitting
         print("\n[Step 8] Removing rows with NaN values...")

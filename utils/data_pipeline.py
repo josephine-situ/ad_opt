@@ -22,7 +22,68 @@ from .keyword_matching import (
 )
 
 
-def load_and_combine_keyword_data(data_dir="data/reports"):
+# Default cutoff used across the pipeline (main + diversity targets)
+MIN_DATE_CUTOFF = '2024-11-03'
+
+
+def _derive_region_from_campaign(df: pd.DataFrame) -> pd.Series:
+    """Derive Region from Campaign using the same convention as format_keyword_data."""
+
+    if 'Campaign' not in df.columns:
+        return pd.Series([None] * len(df), index=df.index)
+
+    campaign = df['Campaign'].astype(str)
+    campaign = campaign.str.replace(r'\[.*?\]', '', regex=True)
+    region = campaign.str.split('-').str[-1].str.strip()
+    region = region.replace({'USA and CA': 'USA'})
+    return region
+
+
+def _normalize_keyword_text(s: pd.Series) -> pd.Series:
+    return s.astype(str).str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
+
+
+def _group_main_keyword_report(df: pd.DataFrame) -> pd.DataFrame:
+    """Group potentially search-term-level rows into the main keyword/day/match/region grain."""
+
+    required = {'Day', 'Keyword', 'Match type', 'Region'}
+    missing = required - set(df.columns)
+    if missing:
+        raise KeyError(f"Cannot group main keyword report; missing columns: {sorted(missing)}")
+
+    group_keys = ['Day', 'Keyword', 'Match type', 'Region']
+
+    # Aggregate additive metrics.
+    agg_map = {}
+    for col in ('Clicks', 'Cost', 'Conv. value', 'Impr.'):
+        if col in df.columns:
+            agg_map[col] = 'sum'
+
+    grouped = df.groupby(group_keys, dropna=False).agg(agg_map).reset_index()
+
+    # Recompute Avg. CPC as Cost / Clicks when possible.
+    if 'Cost' in grouped.columns and 'Clicks' in grouped.columns:
+        grouped['Avg. CPC'] = grouped.apply(
+            lambda r: (r['Cost'] / r['Clicks']) if float(r.get('Clicks', 0) or 0) > 0 else None,
+            axis=1,
+        )
+    elif 'Avg. CPC' in df.columns and 'Clicks' in df.columns:
+        tmp = df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Clicks']].copy()
+        tmp['_w_cpc'] = tmp['Avg. CPC'] * tmp['Clicks']
+        cpc = tmp.groupby(group_keys, dropna=False).agg({'_w_cpc': 'sum', 'Clicks': 'sum'}).reset_index()
+        cpc['Avg. CPC'] = cpc.apply(
+            lambda r: (r['_w_cpc'] / r['Clicks']) if float(r.get('Clicks', 0) or 0) > 0 else None,
+            axis=1,
+        )
+        grouped = grouped.merge(cpc[group_keys + ['Avg. CPC']], on=group_keys, how='left')
+
+    if 'Clicks' in grouped.columns:
+        grouped = grouped[grouped['Clicks'] > 0].copy()
+
+    return grouped
+
+
+def load_and_combine_keyword_data(data_dir="data/reports", return_diversity_frames: bool = False):
     """
     Load keyword performance data from raw Google Ads exports.
 
@@ -34,8 +95,13 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     Args:
     - data_dir (str): Directory containing the data files.
     
-    Returns:
-    - kw_df (pd.DataFrame): Combined keyword data.
+        Returns:
+        - If return_diversity_frames is False (default):
+                kw_main_df (pd.DataFrame): grouped by Day/Keyword/Match type/Region for the main pipeline.
+            If return_diversity_frames is True:
+                (kw_main_df, diversity_df)
+                    - kw_main_df: grouped by Day/Keyword/Match type/Region for the main pipeline.
+                    - diversity_df: ungrouped, filtered to Broad/Phrase match, intended for entropy/HHI targets.
     """
     print("[Step 1] Loading and combining keyword data...")
 
@@ -100,9 +166,33 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
         if 'Clicks' in df.columns:
             df = df[df['Clicks'] > 0]
 
+        # Normalize core keys for both grouped main and diversity frame.
+        df['Keyword'] = _normalize_keyword_text(df['Keyword'])
+        df['Region'] = _derive_region_from_campaign(df)
+
+        # Main (pipeline) dataframe: always grouped to avoid duplicates from search-term level reports.
+        kw_main_df = _group_main_keyword_report(df)
+
+        if return_diversity_frames:
+            diversity_df = df.copy()
+            allowed = {'Broad match', 'Phrase match'}
+            if 'Match type' in diversity_df.columns:
+                diversity_df = diversity_df[diversity_df['Match type'].isin(allowed)].copy()
+
+            # Normalize search term column name if present.
+            if 'Search term' in diversity_df.columns and 'Search Term' not in diversity_df.columns:
+                diversity_df = diversity_df.rename(columns={'Search term': 'Search Term'})
+            if 'Search Term' in diversity_df.columns:
+                diversity_df['Search Term'] = diversity_df['Search Term'].astype(str).str.lower().str.strip()
+
+            print(f"  Main grouped rows: {len(kw_main_df)}")
+            print(f"  Diversity rows (broad/phrase, ungrouped): {len(diversity_df)}")
+            return kw_main_df, diversity_df
+
         print(f"  Data covers: {df['Day'].min()} to {df['Day'].max()}")
-        print(f"  Total rows: {len(df)}")
-        return df
+        print(f"  Total rows (raw): {len(df)}")
+        print(f"  Total rows (grouped): {len(kw_main_df)}")
+        return kw_main_df
     
     # --- Legacy path: Load 2024 and 2025 files ---
     # Load 2024 data
@@ -146,14 +236,32 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     
     # Combine
     kw_df = pd.concat([df_2024, df_2025], ignore_index=True).sort_values('Day')
-    
+
     # Keep only rows where Clicks > 0
     kw_df = kw_df[kw_df['Clicks'] > 0]
-    
-    print(f"  Data covers: {kw_df['Day'].min()} to {kw_df['Day'].max()}")
-    print(f"  Total rows: {len(kw_df)}")
-    
-    return kw_df
+
+    # Normalize to main grain (legacy path should also be grouped, for consistency).
+    if 'Keyword' in kw_df.columns:
+        kw_df['Keyword'] = _normalize_keyword_text(kw_df['Keyword'])
+    if 'Region' not in kw_df.columns:
+        kw_df['Region'] = _derive_region_from_campaign(kw_df)
+
+    kw_main_df = _group_main_keyword_report(kw_df)
+
+    if return_diversity_frames:
+        diversity_df = kw_df.copy()
+        allowed = {'Broad match', 'Phrase match'}
+        if 'Match type' in diversity_df.columns:
+            diversity_df = diversity_df[diversity_df['Match type'].isin(allowed)].copy()
+        if 'Search term' in diversity_df.columns and 'Search Term' not in diversity_df.columns:
+            diversity_df = diversity_df.rename(columns={'Search term': 'Search Term'})
+        if 'Search Term' in diversity_df.columns:
+            diversity_df['Search Term'] = diversity_df['Search Term'].astype(str).str.lower().str.strip()
+        return kw_main_df, diversity_df
+
+    print(f"  Data covers: {kw_main_df['Day'].min()} to {kw_main_df['Day'].max()}")
+    print(f"  Total rows (grouped): {len(kw_main_df)}")
+    return kw_main_df
 
 
 def format_keyword_data(kw_df):
@@ -167,12 +275,15 @@ def format_keyword_data(kw_df):
     - kw_df (pd.DataFrame): Formatted keyword data.
     """
     print("[Step 2] Formatting keyword data...")
-    
-    kw_df['Campaign'] = kw_df['Campaign'].str.replace(r'\[.*?\]', '', regex=True)
-    kw_df['Region'] = kw_df['Campaign'].str.split('-').str[-1].str.strip()
-    kw_df['Region'] = kw_df['Region'].replace({'USA and CA': 'USA'})
-    kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
-    kw_df['Day'] = pd.to_datetime(kw_df['Day'])
+
+    # Be tolerant: load_and_combine_keyword_data may already have Region and grouped rows.
+    if 'Region' not in kw_df.columns:
+        kw_df['Region'] = _derive_region_from_campaign(kw_df)
+
+    if 'Keyword' in kw_df.columns:
+        kw_df['Keyword'] = _normalize_keyword_text(kw_df['Keyword'])
+    if 'Day' in kw_df.columns:
+        kw_df['Day'] = pd.to_datetime(kw_df['Day'])
     
     kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Cost', 'Conv. value', 'Clicks']].copy()
     
@@ -215,7 +326,7 @@ def extract_date_features(kw_df, course_start_dts):
     return kw_df
 
 
-def filter_data_by_date(kw_df, min_date='2024-11-03'):
+def filter_data_by_date(kw_df, min_date: str = MIN_DATE_CUTOFF):
     """
     Filter data to remove early records (based on EDA insights).
     
@@ -709,17 +820,28 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     
     # Feature and target columns
     # Use new time series statistics columns (from merge_with_ads_data)
-    feature_cols = [
+    base_feature_cols = [
         'Match type', 'Region', 'day_of_week', 'is_weekend', 'month', 
         'is_public_holiday', 'days_to_next_course_start', 
         'last_month_searches', 'three_month_avg', 'six_month_avg',
         'mom_change', 'search_trend',
         'Competition (indexed value)', 
         'Top of page bid (low range)', 'Top of page bid (high range)', 'Avg. CPC'
-    ] + embedding_cols
+    ]
+
+    # Optional engineered / stacked features.
+    optional_feature_cols = [
+        'keyword_entropy_pred',
+        'keyword_hhi_pred',
+        'competition_x_is_exact',
+        'competition_x_is_phrase',
+        'competition_x_is_broad',
+    ]
+
+    feature_cols = base_feature_cols + [c for c in optional_feature_cols if c in df.columns] + embedding_cols
     
     # Check for missing required columns
-    missing_cols = [col for col in feature_cols if col not in df.columns]
+    missing_cols = [col for col in base_feature_cols if col not in df.columns]
     target_cols = ['Conv. value', 'Clicks', 'EPC']
     missing_targets = [col for col in target_cols if col not in df.columns]
     
