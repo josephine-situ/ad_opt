@@ -358,6 +358,7 @@ def impute_missing_data(df):
 
     # Optional: report missingness split by keyword origin.
     origin_missing_counts = None
+    origin_keyword_stats = None
     if 'Keyword' in df.columns:
         origin_map = load_keyword_origin_map()
         if origin_map:
@@ -369,6 +370,17 @@ def impute_missing_data(df):
                 .sum(axis=1)
                 .to_dict()
             )
+            
+            # Also calculate: keywords with missing data / all keywords per origin
+            origin_keyword_stats = {}
+            for origin in origin_series.unique():
+                origin_mask = origin_series == origin
+                keywords_in_origin = df[origin_mask]['Keyword'].nunique()
+                keywords_with_missing = df[origin_mask].isnull().any(axis=1).sum()
+                origin_keyword_stats[origin] = {
+                    'total_keywords': keywords_in_origin,
+                    'keywords_with_missing': keywords_with_missing
+                }
     
     # Create summary table
     summary_data = []
@@ -410,7 +422,14 @@ def impute_missing_data(df):
         denom = float(initial_nulls) if initial_nulls else 0.0
         for origin, count in sorted(origin_missing_counts.items(), key=lambda x: (-x[1], x[0])):
             pct = (float(count) / denom * 100.0) if denom else 0.0
-            print(f"    {origin:<18} {int(count):>10} ({pct:6.2f}%)")
+            
+            # Also show keywords with missing data / all keywords from that origin
+            kw_stat = origin_keyword_stats.get(origin, {})
+            total_kws = kw_stat.get('total_keywords', 0)
+            kws_with_missing = kw_stat.get('keywords_with_missing', 0)
+            kw_pct = (float(kws_with_missing) / total_kws * 100.0) if total_kws > 0 else 0.0
+            
+            print(f"    {origin:<18} {int(count):>10} ({pct:6.2f}%)  |  {kws_with_missing:>4}/{total_kws:<4} keywords ({kw_pct:5.1f}%)")
     
     return df
 
