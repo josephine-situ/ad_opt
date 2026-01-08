@@ -5,9 +5,9 @@ Loads, cleans, and preprocesses keyword and ads data with embeddings.
 Supports both TF-IDF and BERT embeddings for keyword representations.
 
 Usage:
-    python tidy_get_data.py --embedding-method tfidf
-    python tidy_get_data.py --embedding-method bert
-    python tidy_get_data.py --force-reload # Force full recompute if you updated source data
+    python scripts/tidy_get_data.py --embedding-method tfidf
+    python scripts/tidy_get_data.py --embedding-method bert
+    python scripts/tidy_get_data.py --force-reload # Force full recompute if you updated source data
 """
 
 import argparse

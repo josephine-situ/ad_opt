@@ -7,7 +7,7 @@ This project implements a machine learning pipeline for optimizing keyword bids 
 ## Steps
 1. Get report from Google Ads (Search keyword - raw input to models.csv)
 2. Run compare_keywords.py to combine new and existing keywords and search terms.
-3. Copy and paste these keywords into Google Keyword Planner to get historical search popularity and competitiveness indices.
+3. Copy and paste these keywords into Google Keyword Planner (change to Google and search partners) to get historical search popularity and competitiveness indices.
 
 ## Directory Structure
 

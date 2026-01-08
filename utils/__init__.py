@@ -44,6 +44,13 @@ from .tee_logging import (
     setup_tee_logging,
 )
 
+from .keyword_matching import (
+    normalize_kw_basic,
+    normalize_kw_similar_words,
+    load_keyword_origin_map,
+    fuzzy_fill_from_gkp,
+)
+
 __all__ = [
     # Data cleaning
     'clean_currency',
@@ -71,4 +78,9 @@ __all__ = [
     'load_embeddings',
     # Logging
     'setup_tee_logging',
+    # Keyword matching
+    'normalize_kw_basic',
+    'normalize_kw_similar_words',
+    'load_keyword_origin_map',
+    'fuzzy_fill_from_gkp',
 ]

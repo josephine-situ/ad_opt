@@ -31,7 +31,7 @@ from sklearn.covariance import EmpiricalCovariance
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils import load_embeddings
+from utils import load_embeddings, fuzzy_fill_from_gkp
 from utils.data_pipeline import get_gkp_data, impute_missing_data
 
 # Check for required libraries
@@ -416,6 +416,20 @@ def create_feature_matrix(
         how='left'
     )
 
+    # Fallback: try similar-word normalization for any still-unmatched rows.
+    gkp_value_cols = [c for c in gkp_df.columns if c not in {'Keyword', 'Keyword_join'}]
+    _ = fuzzy_fill_from_gkp(
+        result,
+        keyword_col='Keyword_join',
+        gkp_df=gkp_df,
+        gkp_keyword_col='Keyword_join',
+        value_cols=gkp_value_cols,
+        verbose=True,
+        source_display_col='Keyword',
+        target_display_col='Keyword',
+        print_all_mappings=True,
+    )
+
     # Compute time-series stats from searches_YYYY_MM columns
     search_cols = sorted([c for c in result.columns if c.startswith('searches_')])
     if search_cols:
@@ -481,8 +495,8 @@ def create_feature_matrix(
     # Impute missing values (uses repo's current imputation strategy)
     result = impute_missing_data(result)
 
-    # Drop helper join key but keep Keyword/Region/Match type/Day
-    result = result.drop(columns=['Keyword_join'], errors='ignore')
+    # Drop helper join keys but keep Keyword/Region/Match type/Day
+    result = result.drop(columns=['Keyword_join', '_kw_key'], errors='ignore')
     
     # Date features always come from the requested target day (or today)
     from utils.date_features import calculate_date_features
