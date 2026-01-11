@@ -50,6 +50,8 @@ import pandas as pd
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from utils.tee_logging import setup_tee_logging
+
 from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.impute import SimpleImputer
@@ -1106,30 +1108,25 @@ def main() -> None:
         default="models",
         help="Output directory for trained models/weights (default: models)",
     )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        default=None,
+        help=(
+            "Log file path. Default: logs/model_performance_<target>_<embedding>.log. "
+            "Set to empty string '' to disable file logging."
+        ),
+    )
 
     args = parser.parse_args()
 
-    # Set up file to capture all output
-    logs_dir = Path("logs")
-    logs_dir.mkdir(exist_ok=True)
-    log_file = logs_dir / f"model_performance_{args.target}_{args.embedding_method}.log"
-    
-    # Open log file for writing
-    log_fp = open(log_file, "w")
-    
-    # Create a custom print function that writes to both console and file
-    import builtins
-    _original_print = builtins.print
-    
-    def custom_print(*args, **kwargs):
-        # Print to console
-        _original_print(*args, **kwargs)
-        # Print to file
-        _original_print(*args, **kwargs, file=log_fp)
-        log_fp.flush()  # Ensure it's written immediately
-    
-    # Replace print in builtins for the entire script
-    builtins.print = custom_print
+    # Tee stdout/stderr to a log file (plus console).
+    # Preserves previous default filename for easier comparisons across runs.
+    default_log_file = Path("logs") / f"model_performance_{args.target}_{args.embedding_method}.log"
+    log_file_arg = args.log_file if args.log_file is not None else str(default_log_file)
+    log_path = setup_tee_logging(log_file=log_file_arg)
+    if log_path is not None:
+        print(f"[Logging] Tee output to {log_path}")
 
     print("=" * 70)
     print("Prediction Modeling for Ad Optimization (No IAI)")
