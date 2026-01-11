@@ -55,7 +55,7 @@ from utils.tee_logging import setup_tee_logging
 from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, TweedieRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import ParameterGrid
@@ -1262,9 +1262,6 @@ def main() -> None:
     # Print to console and log file
     for line in summary_lines:
         print(line)
-    
-    # Close the log file
-    log_fp.close()
 
 
 if __name__ == "__main__":
