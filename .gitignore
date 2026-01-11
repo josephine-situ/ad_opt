@@ -131,12 +131,6 @@ dmypy.json
 Thumbs.db
 .DS_Store
 
-# Project-specific
-*.xlsx
-*.xls
-optimized_bids.csv
-.env.local
-
 # Large data files (keep raw source structure, exclude processed)
 # Note: clean_data/ and raw_data/ should be tracked if small enough,
 # but exclude very large files that are downloaded/generated
