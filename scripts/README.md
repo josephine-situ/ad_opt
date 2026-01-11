@@ -133,3 +133,45 @@ Optional: Tweedie-loss "random forest" (XGBoost RF mode)
 pip install -e ".[ml_open]"
 python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm rf
 ```
+
+---
+
+# Ablation Studies
+
+This repo includes a lightweight ablation runner that automates two experiment families:
+
+1) **Embedding dimension ablation** (e.g., BERT 10D → 50D)
+2) **Feature combination ablation** (baseline vs adding HHI/entropy/interaction features)
+
+The runner will materialize datasets on-demand by calling `scripts/tidy_get_data.py` into per-experiment folders, so it will not overwrite your main `data/clean/*.csv` outputs.
+
+## Usage
+
+### Embedding dimension ablation
+
+```bash
+python scripts/run_ablation_studies.py embedding-dims \
+  --embedding-method bert \
+  --dims 10 20 30 40 50 \
+  --targets conversion clicks epc
+```
+
+By default this uses the **baseline** feature set (no HHI/entropy/interaction) and runs `tidy_get_data` with `--diversity-mode off` to isolate the effect of embedding dimensionality.
+
+### Feature combination ablation
+
+```bash
+python scripts/run_ablation_studies.py feature-combos \
+  --embedding-method bert \
+  --n-components 20 \
+  --targets conversion epc
+```
+
+## Outputs
+
+- Results CSVs are written to `opt_results/analysis/ablations/`.
+- Per-dimension datasets are written under `data/clean/ablations/`.
+
+## Note on caching
+
+`scripts/tidy_get_data.py` caches embeddings separately per `(embedding_method, n_components)`.
