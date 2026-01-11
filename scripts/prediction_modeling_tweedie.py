@@ -1088,7 +1088,7 @@ def main() -> None:
         "--models",
         type=str,
         nargs="+",
-        default=["glm"],
+        default=["glm",'xgb','rf'],
         choices=["glm", "xgb", "rf", "tabpfn"],
         help="Which models to train (default: glm xgb rf tabpfn)",
     )

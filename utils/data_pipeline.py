@@ -19,58 +19,58 @@ from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 
 def load_and_combine_keyword_data(data_dir="data/reports"):
     """
-    Load 2024 and 2025 keyword data and combine them.
+    Load keyword performance data from the consolidated report export.
     
     Args:
     - data_dir (str): Directory containing the data files.
     
     Returns:
-    - kw_df (pd.DataFrame): Combined keyword data.
+    - kw_df (pd.DataFrame): Raw keyword data with consistent columns.
     """
     print("[Step 1] Loading and combining keyword data...")
-    
-    # Load 2024 data
-    df_2024 = pd.read_excel(f"{data_dir}/Search keyword report (by Day 2024).xlsx")
-    df_2024['Day'] = pd.to_datetime(df_2024['Day'])
-    
-    # Load 2025 data (UTF-16, tab-separated)
-    df_2025 = pd.read_csv(
-        f"{data_dir}/Search keyword report (By day 2025).csv",
-        sep='\t',
-        encoding='utf-16',
-        dtype={'Day': str}
-    )
-    
-    # Fix dates (force US format)
-    df_2025['Day'] = pd.to_datetime(df_2025['Day'], dayfirst=False, errors='coerce')
-    df_2025 = df_2025.dropna(subset=['Day'])
-    
-    # Clean currency columns
-    cols_money = ['Cost', 'Avg. CPC', 'Conv. value']
-    for col in cols_money:
-        if col in df_2025.columns:
-            df_2025[col] = df_2025[col].apply(clean_currency).replace('--', 0).astype(float)
-    
-    # Clean any other currency columns (Conv. value / cost, etc.)
-    currency_cols = [col for col in df_2025.columns if any(x in col.lower() for x in ['cost', 'cpc', 'value', 'bid'])]
-    for col in currency_cols:
-        if col not in cols_money and df_2025[col].dtype == 'object':
-            try:
-                df_2025[col] = df_2025[col].apply(clean_currency).replace('--', 0).astype(float)
-            except:
-                pass  # Skip if can't convert
-    
-    # Clean impressions
-    df_2025['Impr.'] = df_2025['Impr.'].astype(str).str.replace(',', '').replace('--', 0).astype(float)
-    
-    # Clean CTR and Conv. rate (percentage columns)
-    df_2025['CTR'] = df_2025['CTR'].apply(convert_percent_to_float)
-    if 'Conv. rate' in df_2025.columns:
-        df_2025['Conv. rate'] = df_2025['Conv. rate'].apply(convert_percent_to_float)
-    
-    # Combine
-    kw_df = pd.concat([df_2024, df_2025], ignore_index=True).sort_values('Day')
-    
+
+    report_path = Path(data_dir) / "Search keyword - raw input to models.csv"
+    if not report_path.exists():
+        raise FileNotFoundError(
+            f"Keyword report not found: {report_path}. "
+            "Expected the consolidated export 'Search keyword - raw input to models.csv' in the reports directory."
+        )
+
+    # The first 2 rows are metadata lines (title + date range). The 3rd row is the real header.
+    kw_df = pd.read_csv(report_path, skiprows=2)
+    kw_df.columns = kw_df.columns.astype(str).str.strip()
+
+    # Normalize to the pipeline's expected raw schema
+    rename_map = {
+        'Search keyword': 'Keyword',
+        'Search keyword match type': 'Match type',
+    }
+    kw_df = kw_df.rename(columns={k: v for k, v in rename_map.items() if k in kw_df.columns})
+
+    required_cols = {'Day', 'Keyword', 'Match type', 'Campaign', 'Clicks', 'Avg. CPC', 'Conv. value'}
+    missing = sorted(required_cols - set(kw_df.columns))
+    if missing:
+        raise ValueError(
+            f"Keyword report is missing required columns: {missing}. "
+            f"Available columns: {list(kw_df.columns)}"
+        )
+
+    kw_df['Day'] = pd.to_datetime(kw_df['Day'], errors='coerce')
+    kw_df = kw_df.dropna(subset=['Day'])
+
+    # Ensure numeric types (some exports may include currency formatting)
+    for col in ['Clicks', 'Avg. CPC', 'Conv. value']:
+        if kw_df[col].dtype == 'object':
+            kw_df[col] = kw_df[col].astype(str).apply(clean_currency)
+        kw_df[col] = pd.to_numeric(kw_df[col], errors='coerce')
+
+    kw_df['Clicks'] = kw_df['Clicks'].fillna(0)
+    kw_df['Avg. CPC'] = kw_df['Avg. CPC'].fillna(0)
+    kw_df['Conv. value'] = kw_df['Conv. value'].fillna(0)
+
+    # Prior reports included explicit Cost; this export does not.
+    kw_df['Cost'] = kw_df['Clicks'] * kw_df['Avg. CPC']
+
     # Keep only rows where Clicks > 0
     kw_df = kw_df[kw_df['Clicks'] > 0]
     
