@@ -15,6 +15,7 @@ from .date_features import (
     calculate_days_to_next,
 )
 from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
+from .keyword_matching import fuzzy_fill_from_gkp
 
 
 def load_and_combine_keyword_data(data_dir="data/reports"):
@@ -316,7 +317,14 @@ def impute_missing_data(df):
     return df
 
 
-def merge_with_ads_data(kw_df, gkp_df=None):
+def merge_with_ads_data(
+    kw_df,
+    gkp_df=None,
+    *,
+    use_fuzzy_matching: bool = True,
+    drop_unmatched_gkp: bool = False,
+    unmatched_print_limit: int = 50,
+):
     """
     Merge keyword data with GKP data (keyword planner info) by Keyword and Date.
     
@@ -354,90 +362,125 @@ def merge_with_ads_data(kw_df, gkp_df=None):
         # Find which search columns are available (searches_YYYY_MM format)
         search_cols = sorted([col for col in gkp_df.columns if col.startswith('searches_')])
         print(f"  Found {len(search_cols)} monthly search columns")
-        
-        # Merge on Keyword
+
+        # Exact merge on normalized Keyword (baseline behavior).
         merged_df = pd.merge(merged_df, gkp_df, on='Keyword', how='left')
+
+        # Optional fuzzy-ish fill pass to increase join rate without changing
+        # already-matched rows.
+        if use_fuzzy_matching:
+            fuzzy_fill_from_gkp(
+                merged_df,
+                keyword_col='Keyword',
+                gkp_df=gkp_df,
+                gkp_keyword_col='Keyword',
+                value_cols=[c for c in gkp_df.columns if c != 'Keyword'],
+                verbose=True,
+                source_display_col='Keyword',
+                print_all_mappings=False,
+            )
+
+        # Print (and optionally drop) any keywords that still have no GKP coverage.
+        # We treat missing values in the first available GKP column as "unmatched".
+        gkp_cols = [c for c in gkp_df.columns if c != 'Keyword']
+        gkp_cols = [c for c in gkp_cols if c in merged_df.columns]
+        if gkp_cols:
+            indicator_col = gkp_cols[0]
+            unmatched_mask = merged_df[indicator_col].isnull()
+            if unmatched_mask.any():
+                unmatched_keywords = sorted(merged_df.loc[unmatched_mask, 'Keyword'].astype(str).unique().tolist())
+                matched_keywords = sorted(merged_df.loc[~unmatched_mask, 'Keyword'].astype(str).unique().tolist())
+
+                print(f"  Matched {len(matched_keywords)} unique keywords from GKP")
+                print(f"  Unmatched {len(unmatched_keywords)} keywords after {'fuzzy' if use_fuzzy_matching else 'exact'} merge")
+                if unmatched_keywords:
+                    to_print = unmatched_keywords[:max(0, int(unmatched_print_limit))]
+                    if to_print:
+                        print(f"  Unmatched keyword examples ({len(to_print)}): {to_print}")
+                    if len(unmatched_keywords) > len(to_print):
+                        print(f"  (Truncated; increase unmatched_print_limit to see more)")
+
+                if drop_unmatched_gkp:
+                    before = len(merged_df)
+                    merged_df = merged_df.loc[~unmatched_mask].copy()
+                    after = len(merged_df)
+                    print(f"  Dropped {before - after} rows with no GKP match")
         
         # Calculate time series statistics for each row
         if search_cols:
             print(f"  Calculating time series statistics...")
-            
-            def calculate_ts_stats(row, search_cols, gkp_df_dict):
-                """Calculate time series statistics for a single keyword-month combination."""
-                keyword = row['Keyword']
+
+            import numpy as np
+
+            month_keys = [c.replace('searches_', '') for c in search_cols]
+
+            def _safe_float(v):
+                """Best-effort numeric parse; returns None for NaN/inf/unparseable."""
+                try:
+                    x = float(v)
+                except Exception:
+                    return None
+                if not np.isfinite(x):
+                    return None
+                return x
+
+            def calculate_ts_stats(row, search_cols, month_keys):
+                """Calculate time series stats from the row's monthly searches columns."""
                 year_month = row['year_month']  # Format: YYYY_MM
-                
-                stats = {}
-                
-                # Find all available search values for this keyword
-                if keyword in gkp_df_dict:
-                    kw_searches = gkp_df_dict[keyword]  # dict of YYYY_MM -> search value
-                    
-                    if kw_searches:
-                        sorted_months = sorted(kw_searches.keys())
-                        
-                        # Find months before the current row's month
-                        months_before = [m for m in sorted_months if m < year_month]
-                        
-                        if months_before:
-                            # Use the most recent month available (most recent overall, not necessarily before)
-                            stats['last_month_searches'] = kw_searches[sorted_months[-1]]
-                            
-                            # 3-month and 6-month averages using months before current date
-                            three_m = [kw_searches[m] for m in months_before[-3:]]
-                            six_m = [kw_searches[m] for m in months_before[-6:]]
-                            
-                            stats['three_month_avg'] = sum(three_m) / len(three_m) if three_m else None
-                            stats['six_month_avg'] = sum(six_m) / len(six_m) if six_m else None
-                            
-                            # MoM change (comparing adjacent months before current date)
-                            if len(months_before) >= 2:
-                                prev_month = months_before[-2]
-                                curr_month = months_before[-1]
-                                prev_val = kw_searches.get(prev_month, 0)
-                                curr_val = kw_searches.get(curr_month, 0)
-                                if prev_val > 0:
-                                    # Avoid division by zero
-                                    stats['mom_change'] = ((curr_val - prev_val) / prev_val) * 100
-                                else:
-                                    if curr_val > 0:
-                                        stats['mom_change'] = 100.0
-                                    else:
-                                        stats['mom_change'] = 0. 
-                            else:
-                                stats['mom_change'] = None
-                            
-                            # Search trend (linear regression slope of 6 months before current date)
-                            if len(six_m) >= 2:
-                                import numpy as np
-                                x = np.arange(len(six_m))
-                                y = np.array(six_m)
-                                # Simple slope calculation
-                                if len(x) > 1:
-                                    slope = np.polyfit(x, y, 1)[0]
-                                    stats['search_trend'] = slope
-                                else:
-                                    stats['search_trend'] = None
-                            else:
-                                stats['search_trend'] = None
-                
-                return stats
-            
-            # Build a dictionary mapping keyword -> {YYYY_MM -> search_value}
-            gkp_dict = {}
-            for _, row in gkp_df.iterrows():
-                kw = row['Keyword']
-                if kw not in gkp_dict:
-                    gkp_dict[kw] = {}
-                
-                for col in search_cols:
-                    month_key = col.replace('searches_', '')
-                    gkp_dict[kw][month_key] = row[col]
-            
-            # Calculate stats for each row
+
+                # Use most recent month available overall (not necessarily < year_month)
+                last_val = None
+                for col in reversed(search_cols):
+                    v = _safe_float(row.get(col))
+                    if v is not None:
+                        last_val = v
+                        break
+
+                # Only months strictly before the row's month
+                before_vals = []
+                for mk, col in zip(month_keys, search_cols):
+                    if mk < year_month:
+                        v = _safe_float(row.get(col))
+                        if v is not None:
+                            before_vals.append((mk, v))
+
+                three_vals = [v for _, v in before_vals[-3:]]
+                six_vals = [v for _, v in before_vals[-6:]]
+
+                three_avg = (sum(three_vals) / len(three_vals)) if three_vals else None
+                six_avg = (sum(six_vals) / len(six_vals)) if six_vals else None
+
+                mom = None
+                if len(before_vals) >= 2:
+                    prev_val = before_vals[-2][1]
+                    curr_val = before_vals[-1][1]
+                    if prev_val > 0:
+                        mom = ((curr_val - prev_val) / prev_val) * 100
+                    else:
+                        mom = 100.0 if curr_val > 0 else 0.0
+
+                trend = None
+                if len(six_vals) >= 2:
+                    x = np.arange(len(six_vals))
+                    y = np.array(six_vals)
+                    if len(x) > 1:
+                        # Guard against rare LAPACK/SVD failures; trend is non-critical.
+                        try:
+                            trend = np.polyfit(x, y, 1)[0]
+                        except Exception:
+                            trend = None
+
+                return {
+                    'last_month_searches': last_val,
+                    'three_month_avg': three_avg,
+                    'six_month_avg': six_avg,
+                    'mom_change': mom,
+                    'search_trend': trend,
+                }
+
             stats_list = []
             for idx, row in merged_df.iterrows():
-                stats = calculate_ts_stats(row, search_cols, gkp_dict)
+                stats = calculate_ts_stats(row, search_cols, month_keys)
                 stats_list.append(stats)
             
             # Add stats columns
@@ -447,23 +490,13 @@ def merge_with_ads_data(kw_df, gkp_df=None):
             
             print(f"  Added time series statistics columns")
         
-        # Identify unmatched keywords (rows where GKP data wasn't found)
-        gkp_cols = [col for col in gkp_df.columns if col not in ['Keyword', 'year_month']]
-        if gkp_cols:
-            unmatched_mask = merged_df[gkp_cols[0]].isnull()
-            unmatched_keywords = merged_df[unmatched_mask]['Keyword'].unique()
-            matched_keywords = merged_df[~unmatched_mask]['Keyword'].unique()
-            
-            print(f"  Matched {len(matched_keywords)} unique keywords from GKP")
-            if len(unmatched_keywords) > 0:
-                sample = list(unmatched_keywords[:5])
-                print(f"  Unmatched {len(unmatched_keywords)} keywords (no GKP data): {sample}{'...' if len(unmatched_keywords) > 5 else ''}")
+        # (Unmatched keyword reporting handled above, right after merge/fuzzy fill)
     
     # # debug
     # merged_df.to_csv('check_merge.csv', index=False)
 
     # Clean up temporary columns
-    merged_df.drop(columns=['year_month'], inplace=True)
+    merged_df.drop(columns=['year_month', '_kw_key'], errors='ignore', inplace=True)
     
     # Drop individual month search columns
     search_cols_to_drop = [col for col in merged_df.columns if col.startswith('searches_')]

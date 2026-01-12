@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils import load_embeddings
 from utils.data_pipeline import get_gkp_data, impute_missing_data
+from utils.keyword_matching import fuzzy_fill_from_gkp
 
 # Check for required libraries
 try:
@@ -406,7 +407,8 @@ def create_feature_matrix(
 
     # Normalize join keys for GKP merge
     gkp_df = gkp_df.copy()
-    gkp_df['Keyword_join'] = gkp_df['Keyword'].astype(str).str.lower().str.strip()
+    gkp_df['Keyword'] = gkp_df['Keyword'].astype(str).str.lower().str.strip()
+    gkp_df['Keyword_join'] = gkp_df['Keyword']
 
     # Merge keyword stats onto each keyword-region-match row
     result = combo_df.merge(
@@ -414,6 +416,18 @@ def create_feature_matrix(
         left_on='Keyword_join',
         right_on='Keyword_join',
         how='left'
+    )
+
+    # Fill remaining unmatched rows via similar-word normalization.
+    # This keeps the existing exact normalized merge behavior, and only fills leftover NaNs.
+    fuzzy_fill_from_gkp(
+        result,
+        keyword_col='Keyword',
+        gkp_df=gkp_df,
+        gkp_keyword_col='Keyword',
+        verbose=True,
+        source_display_col='Keyword',
+        print_all_mappings=False,
     )
 
     # Compute time-series stats from searches_YYYY_MM columns
@@ -482,7 +496,7 @@ def create_feature_matrix(
     result = impute_missing_data(result)
 
     # Drop helper join key but keep Keyword/Region/Match type/Day
-    result = result.drop(columns=['Keyword_join'], errors='ignore')
+    result = result.drop(columns=['Keyword_join', '_kw_key'], errors='ignore')
     
     # Date features always come from the requested target day (or today)
     from utils.date_features import calculate_date_features

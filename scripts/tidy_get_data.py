@@ -176,7 +176,10 @@ def main():
             cache_path / 'step6_merged.parquet',
             args.force_reload,
             kw_df,
-            gkp_df
+            gkp_df,
+            use_fuzzy_matching=True,
+            drop_unmatched_gkp=True,
+            unmatched_print_limit=200,
         )
         
         cleaned_df = merged_df  # Imputation already handled, no additional cleaning needed
