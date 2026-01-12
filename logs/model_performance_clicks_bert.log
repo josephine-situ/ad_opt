@@ -1,0 +1,83 @@
+[Logging] Tee output to logs\model_performance_clicks_bert.log
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: clicks
+Models: glm, xgb, rf
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 14100 rows, Test: 4701 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (14100, 66), Test shape: (4701, 66)
+
+--- Linear Regression (MSE) ---
+  Best params: {'model__alpha': 5.0}
+  Train MSE (lower is better): 108.2182
+  Test  MSE (lower is better): 105.1608
+  [GLM train] mean(y)=4.7237 mean(pred)=4.7237 bias=0.0000
+  [GLM train] quantiles y: min=1 p1=1 med=2 p99=57 max=333
+  [GLM train] quantiles pred: min=-7.011 p1=-3.101 med=3.445 p99=25.12 max=28.51
+  [GLM test] mean(y)=4.7179 mean(pred)=4.5766 bias=-0.1413
+  [GLM test] quantiles y: min=1 p1=1 med=2 p99=59 max=215
+  [GLM test] quantiles pred: min=-6.82 p1=-3.537 med=3.354 p99=24.37 max=28.55
+  Saved pipeline to models\glm_bert_clicks.joblib
+  Saved preprocessor to models\glm_bert_clicks_preprocess.joblib
+  Exported weights: weights_bert_clicks_numeric.csv, weights_bert_clicks_constant.csv, weights_bert_clicks_categorical.csv
+  [GLM] Global bias: -0.1413
+  [GLM] Top decile lift: 3.9293
+  [GLM] Conditional MAE: 4.4617
+  [GLM] R^2: 0.2468
+
+--- XGBoost (MSE) ---
+  Best params: {'model__colsample_bytree': 1.0, 'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20, 'model__subsample': 1.0}
+  Train MSE (lower is better): 27.4429
+  Test  MSE (lower is better): 39.0677
+  [XGB train] mean(y)=4.7237 mean(pred)=4.7240 bias=0.0003
+  [XGB train] quantiles y: min=1 p1=1 med=2 p99=57 max=333
+  [XGB train] quantiles pred: min=-3.148 p1=0.4026 med=2.493 p99=51.97 max=183.9
+  [XGB test] mean(y)=4.7179 mean(pred)=4.7509 bias=0.0330
+  [XGB test] quantiles y: min=1 p1=1 med=2 p99=59 max=215
+  [XGB test] quantiles pred: min=-4.512 p1=0.2963 med=2.493 p99=52.16 max=183.9
+  Saved model to models\xgb_mse_bert_clicks.json
+  Saved preprocessor to models\xgb_mse_bert_clicks_preprocess.joblib
+  [XGB] Global bias: 0.0330
+  [XGB] Top decile lift: 4.9242
+  [XGB] Conditional MAE: 2.4488
+  [XGB] R^2: 0.7202
+
+--- XGBoost RF (MSE) ---
+  Best params: {'model__colsample_bynode': 0.9, 'model__max_depth': 4, 'model__n_estimators': 20, 'model__subsample': 0.9}
+  Train MSE (lower is better): 137.8542
+  Test  MSE (lower is better): 137.9781
+  [RF train] mean(y)=4.7237 mean(pred)=4.7235 bias=-0.0002
+  [RF train] quantiles y: min=1 p1=1 med=2 p99=57 max=333
+  [RF train] quantiles pred: min=4.695 p1=4.695 med=4.699 p99=4.982 max=6.004
+  [RF test] mean(y)=4.7179 mean(pred)=4.7238 bias=0.0058
+  [RF test] quantiles y: min=1 p1=1 med=2 p99=59 max=215
+  [RF test] quantiles pred: min=4.695 p1=4.695 med=4.699 p99=4.982 max=6.004
+  Saved model to models\rf_mse_bert_clicks.json
+  [RF] Global bias: 0.0058
+  [RF] Top decile lift: 4.7190
+  [RF] Conditional MAE: 4.8206
+  [RF] R^2: 0.0118
+
+======================================================================
+Model Performance Summary (Test MSE - lower is better)
+======================================================================
+
+Target Statistics (for context):
+  Mean: 4.7179
+  Std Dev: 11.8175
+  Variance (baseline MSE): 139.6536
+  Median: 2.0000
+  Min: 1.0000
+  Max: 215.0000
+
+  XGB   : MSE=39.0677 | R^2=0.7202 | bias=0.0330 | top-decile lift=4.9242 | cMAE=2.4488
+  GLM   : MSE=105.1608 | R^2=0.2468 | bias=-0.1413 | top-decile lift=3.9293 | cMAE=4.4617
+  RF    : MSE=137.9781 | R^2=0.0118 | bias=0.0058 | top-decile lift=4.7190 | cMAE=4.8206
+
+Best model: XGB
+======================================================================

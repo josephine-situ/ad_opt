@@ -1,0 +1,51 @@
+[Logging] Tee output to logs\compare_keywords_20260111_173705.log
+======================================================================
+Keyword Comparison: Semrush vs Existing
+======================================================================
+
+[Step 1] Loading new keywords from data/gkp/semrush_new_kws.csv...
+  Loaded 1090 rows from data/gkp/semrush_new_kws.csv
+  Columns: ['Keyword']
+  Using keyword column: 'Keyword'
+
+[Step 2] Cleaning and normalizing new keywords...
+  Found 1090 unique raw keywords
+  1037 keywords after cleaning + filters
+  Filtered out 53 (invalid chars/brackets). Example:
+    - 2024 generative ai course: introducing generative ai with aws
+    - 2024 oracle cloud infrastructure generative ai professional certification/course
+    - [author] generative ai: the evolution of thoughtful online search course
+    - [author] master generative ai: automate content effortlessly with ai course
+    - ai marketing course: transforming strategies with generative ai
+  1033 unique keywords after normalization
+
+[Step 3] Loading existing search terms from data/reports/Search keyword - search terms.csv...
+  Loaded 1419 rows
+  703 unique search terms (raw)
+  675 search terms after cleaning + filters
+  Filtered out 28 search terms (invalid/too long). Example:
+    - ai 课程
+    - aws ai & ml scholarship program
+    - comment créer intelligence artificielle
+    - https aistudio google com prompts new_chat
+    - massachusetts teknoloji enstitüsü
+  675 unique search terms (normalized)
+
+[Step 4] Loading and formatting existing keywords from data/reports...
+[Step 1] Loading and combining keyword data...
+  Data covers: 2024-07-05 00:00:00 to 2026-01-11 00:00:00
+  Total rows: 32440
+[Step 2] Formatting keyword data...
+  Found 165 unique existing keywords (raw, after format_keyword_data)
+  165 unique keywords after normalization
+
+[Step 5] Classifying keywords and de-duplicating...
+  Saved 1798 keywords to data/gkp/keywords_classified.csv
+
+======================================================================
+SUMMARY
+======================================================================
+  Existing keywords:           165
+  Existing searches:           638
+  New keywords:                995
+  Total (deduped union):      1798

@@ -1069,7 +1069,7 @@ def main() -> None:
     parser.add_argument(
         "--target",
         type=str,
-        default="epc",
+        default="clicks",
         choices=["conversion", "epc", "clicks"],
         help="Target variable: conversion (Conv. value), epc (EPC), or clicks (default: epc)",
     )

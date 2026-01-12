@@ -1,0 +1,138 @@
+[Logging] Tee output to logs\tidy_get_data_20260112_170301.log
+======================================================================
+Data Preparation Pipeline for Ad Optimization
+======================================================================
+Embedding method: bert
+N components: 50
+Force reload: True
+======================================================================
+
+[Step 1] Load and combine keyword data...
+  [Computing] Running load_and_combine_keyword_data...
+[Step 1] Loading and combining keyword data...
+  Data covers: 2024-07-05 00:00:00 to 2026-01-11 00:00:00
+  Total rows: 32440
+  [Saved] Cached to step1_combined.parquet
+
+[Step 2] Format keyword data...
+[Step 2] Formatting keyword data...
+
+[Step 3] Extract date features...
+  [Computing] Running extract_date_features...
+[Step 3] Extracting date features...
+  [Saved] Cached to step3_features.parquet
+
+[Step 4] Filter data by date...
+  [Computing] Running filter_data_by_date...
+[Step 4] Filtering data from 2024-11-03 onwards...
+  Rows after filter: 19580
+  [Saved] Cached to step4_filtered.parquet
+
+[Step 5] Load GKP data...
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  Loaded 1749 rows from Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  After cleaning: 1747 rows with unique keywords
+
+[Step 5.5] Impute missing data...
+[Step 5.5] Imputing missing data...
+  Total: Imputed 0 missing values (0.00% of total data)
+[Step 5.5] Imputing missing data...
+c:\Users\jsitu\OneDrive\Documents\Courses\Research\ad_opt\utils\data_pipeline.py:291: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  df[col].fillna(0, inplace=True)
+c:\Users\jsitu\OneDrive\Documents\Courses\Research\ad_opt\utils\data_pipeline.py:294: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  df[col].fillna('Missing', inplace=True)
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  searches_2024_07                        26.73% numeric (0)               (n=467)
+  searches_2024_08                        26.73% numeric (0)               (n=467)
+  searches_2024_09                        26.73% numeric (0)               (n=467)
+  searches_2024_10                        26.73% numeric (0)               (n=467)
+  searches_2024_11                        26.73% numeric (0)               (n=467)
+  searches_2024_12                        26.73% numeric (0)               (n=467)
+  searches_2025_01                        26.73% numeric (0)               (n=467)
+  searches_2025_02                        26.73% numeric (0)               (n=467)
+  searches_2025_03                        26.73% numeric (0)               (n=467)
+  searches_2025_04                        26.73% numeric (0)               (n=467)
+  searches_2025_05                        26.73% numeric (0)               (n=467)
+  searches_2025_06                        26.73% numeric (0)               (n=467)
+  searches_2025_07                        26.73% numeric (0)               (n=467)
+  searches_2025_08                        26.73% numeric (0)               (n=467)
+  searches_2025_09                        26.73% numeric (0)               (n=467)
+  searches_2025_10                        26.73% numeric (0)               (n=467)
+  searches_2025_11                        26.73% numeric (0)               (n=467)
+  Competition                             38.12% categorical (Missing)     (n=666)
+  Competition (indexed value)             38.12% numeric (0)               (n=666)
+  Top of page bid (low range)             54.26% numeric (0)               (n=948)
+  Top of page bid (high range)            54.26% numeric (0)               (n=948)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 11167 missing values (29.06% of total data)
+
+[Step 6] Merge with GKP data...
+  [Computing] Running merge_with_ads_data...
+[Step 6] Merging with GKP data by keyword and date...
+  Found 17 monthly search columns
+  Fuzzy-matched 437 rows using similar-word normalization
+  Example fuzzy mappings: ['ai certification courses -> ai certificate course', 'ai for engineers -> ai for engineering', 'artificial intelligence for engineering -> ai for engineering', 'artificial intelligence for engineers -> ai for engineering']
+  Matched 154 unique keywords from GKP
+  Unmatched 6 keywords after fuzzy merge
+  Unmatched keyword examples (6): ['ai online courses', 'artificial intelligence ms in usa', 'courses on artificial intelligence', 'diploma in artificial intelligence', 'stanford ai course', 'stanford ai courses']
+  Dropped 779 rows with no GKP match
+  Calculating time series statistics...
+  Added time series statistics columns
+  Calculated EPC (Expected Conversion value Per Click)
+
+  NaN check after time series calculations:
+    last_month_searches            0 rows (  0.00%)
+    three_month_avg                0 rows (  0.00%)
+    six_month_avg                  0 rows (  0.00%)
+    mom_change                     0 rows (  0.00%)
+    search_trend                   0 rows (  0.00%)
+  Merged rows: 18801
+  [Saved] Cached to step6_merged.parquet
+
+[Step 7] Add BERT embeddings...
+  [Computing] Running add_embeddings...
+[Step 8] Computing BERT embeddings...
+  Processing 154 unique keywords...
+C:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+C:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+C:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+C:\Users\jsitu\anaconda3\lib\site-packages\huggingface_hub\file_download.py:945: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+C:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+Batches:   0%|                                                                                                        | 0/5 [00:00<?, ?it/s]Batches:  20%|###################2                                                                            | 1/5 [00:01<00:07,  1.97s/it]Batches:  60%|#########################################################6                                      | 3/5 [00:02<00:01,  1.81it/s]Batches: 100%|################################################################################################| 5/5 [00:02<00:00,  2.31it/s]
+  Saved BERT pipeline to data\clean\bert_pipeline_50d.pkl
+  Embeddings added with shape: 154 x 51
+  [Saved] Cached to step8_embeddings_bert.parquet
+
+[Step 8] Removing rows with NaN values...
+  Data after NaN removal: 18801 rows
+
+[Step 9] Preparing train-test split and saving outputs...
+[Step 9] Preparing train-test split...
+  Train set: 14100 rows
+  Test set: 4701 rows
+[Step 10] Saving outputs to data/clean/...
+  Saved: data\clean\ad_opt_data_bert.csv
+  Saved: data\clean\train_bert.csv
+  Saved: data\clean\test_bert.csv
+  Saved: data\clean\unique_keyword_embeddings_bert.csv (154 rows)
+======================================================================
+✓ Pipeline completed successfully!
+======================================================================

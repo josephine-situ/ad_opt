@@ -1,0 +1,86 @@
+[Logging] Tee output to logs\model_performance_epc_bert.log
+======================================================================
+Prediction Modeling for Ad Optimization (No IAI)
+======================================================================
+Target: epc
+Models: glm, xgb, rf
+Embedding method: bert
+======================================================================
+Loading data from data/clean...
+  Train: 14100 rows, Test: 4701 rows
+
+Features (66): Match type, Region, day_of_week, is_weekend, month...
+Train shape: (14100, 66), Test shape: (4701, 66)
+
+--- Linear Regression (MSE) ---
+  [GLM] Best CV MSE (weighted): 45008.036259
+  Best params: {'model__alpha': 0.0}
+  Train MSE (lower is better): 44432.6285
+  Test  MSE (lower is better): 38253.4829
+  [GLM train] mean(y)=25.1211 mean(pred)=23.6606 bias=-1.4605 | wmean(y)=19.3144 wmean(pred)=19.3210 wbias=0.0066
+  [GLM train] quantiles y: min=0 p1=0 med=0 p99=212.8 max=1.628e+04
+  [GLM train] quantiles pred: min=-111.8 p1=-41.25 med=17.75 p99=158.3 max=556
+  [GLM test] mean(y)=22.7055 mean(pred)=23.7263 bias=1.0208 | wmean(y)=14.8010 wmean(pred)=18.8140 wbias=4.0130
+  [GLM test] quantiles y: min=0 p1=0 med=0 p99=200 max=1.366e+04
+  [GLM test] quantiles pred: min=-299.8 p1=-43 med=17.75 p99=154.8 max=548
+  Saved pipeline to models\glm_bert_epc.joblib
+  Saved preprocessor to models\glm_bert_epc_preprocess.joblib
+  Exported weights: weights_bert_epc_numeric.csv, weights_bert_epc_constant.csv, weights_bert_epc_categorical.csv
+  [GLM] Global bias: 4.0130
+  [GLM] Top decile lift: 4.8689
+  [GLM] Conditional MAE: 57.3357
+  [GLM] R^2: 0.0089
+
+--- XGBoost (MSE) ---
+  [XGB] Best CV MSE (weighted): 44762.755535
+  Best params: {'model__colsample_bytree': 1.0, 'model__learning_rate': 0.3, 'model__max_depth': 2, 'model__n_estimators': 10, 'model__subsample': 1.0}
+  Train MSE (lower is better): 41813.3739
+  Test  MSE (lower is better): 38831.3555
+  [XGB train] mean(y)=25.1211 mean(pred)=23.6634 bias=-1.4576 | wmean(y)=19.3144 wmean(pred)=19.3006 wbias=-0.0138
+  [XGB train] quantiles y: min=0 p1=0 med=0 p99=212.8 max=1.628e+04
+  [XGB train] quantiles pred: min=7.238 p1=7.238 med=14.28 p99=295.6 max=2956
+  [XGB test] mean(y)=22.7055 mean(pred)=22.7106 bias=0.0051 | wmean(y)=14.8010 wmean(pred)=19.0887 wbias=4.2876
+  [XGB test] quantiles y: min=0 p1=0 med=0 p99=200 max=1.366e+04
+  [XGB test] quantiles pred: min=7.238 p1=7.238 med=14.28 p99=259.8 max=1216
+  Saved model to models\xgb_mse_bert_epc.json
+  Saved preprocessor to models\xgb_mse_bert_epc_preprocess.joblib
+  [XGB] Global bias: 4.2876
+  [XGB] Top decile lift: 4.5323
+  [XGB] Conditional MAE: 56.4889
+  [XGB] R^2: -0.0060
+
+--- XGBoost RF (MSE) ---
+  [RF] Best CV MSE (weighted): 45512.153964
+  Best params: {'model__colsample_bynode': 0.7, 'model__max_depth': 4, 'model__n_estimators': 20, 'model__subsample': 0.9}
+  Train MSE (lower is better): 45347.3966
+  Test  MSE (lower is better): 38611.8842
+  [RF train] mean(y)=25.1211 mean(pred)=19.3492 bias=-5.7719 | wmean(y)=19.3144 wmean(pred)=19.3131 wbias=-0.0013
+  [RF train] quantiles y: min=0 p1=0 med=0 p99=212.8 max=1.628e+04
+  [RF train] quantiles pred: min=19.21 p1=19.21 med=19.26 p99=20.55 max=67.42
+  [RF test] mean(y)=22.7055 mean(pred)=19.3377 bias=-3.3678 | wmean(y)=14.8010 wmean(pred)=19.3104 wbias=4.5094
+  [RF test] quantiles y: min=0 p1=0 med=0 p99=200 max=1.366e+04
+  [RF test] quantiles pred: min=19.21 p1=19.21 med=19.26 p99=20.45 max=38.24
+  Saved model to models\rf_mse_bert_epc.json
+  [RF] Global bias: 4.5094
+  [RF] Top decile lift: 4.2521
+  [RF] Conditional MAE: 59.1921
+  [RF] R^2: -0.0003
+
+======================================================================
+Model Performance Summary (Test MSE - lower is better)
+======================================================================
+
+Target Statistics (for context):
+  Mean: 22.7055
+  Std Dev: 345.0462
+  Variance (baseline MSE): 119056.8750
+  Median: 0.0000
+  Min: 0.0000
+  Max: 13661.7000
+
+  GLM   : MSE=38253.4829 | R^2=0.0089 | bias=4.0130 | top-decile lift=4.8689 | cMAE=57.3357
+  RF    : MSE=38611.8842 | R^2=-0.0003 | bias=4.5094 | top-decile lift=4.2521 | cMAE=59.1921
+  XGB   : MSE=38831.3555 | R^2=-0.0060 | bias=4.2876 | top-decile lift=4.5323 | cMAE=56.4889
+
+Best model: GLM
+======================================================================
