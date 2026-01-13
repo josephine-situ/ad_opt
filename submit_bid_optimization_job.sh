@@ -39,11 +39,11 @@ echo "SLURM_ARRAY_TASK_ID: ${SLURM_ARRAY_TASK_ID} -> lambda=${LAMBDA}"
 TARGET_DAY=$(date +%F)
 
 # Cache key controls reuse of base formulation + artifacts across lambdas
-CACHE_KEY="bert_glm_xgb_${TARGET_DAY}_full"
+CACHE_KEY="bert_ridge_xgb_${TARGET_DAY}_full"
 
 python -u scripts/bid_optimization.py \
 	--embedding-method bert \
-	--alg-conv glm \
+	--alg-conv ridge \
 	--alg-clicks xgb \
 	--target-day ${TARGET_DAY} \
 	--exploration-lambda ${LAMBDA} \

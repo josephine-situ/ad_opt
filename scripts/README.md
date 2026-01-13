@@ -124,12 +124,12 @@ Optional: XGBoost Tweedie comparison model
 
 ```bash
 pip install -e ".[ml_open]"
-python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm xgb
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models ridge xgb
 ```
 
 Optional: Tweedie-loss "random forest" (XGBoost RF mode)
 
 ```bash
 pip install -e ".[ml_open]"
-python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm rf
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models ridge rf
 ```

@@ -1,15 +1,12 @@
 feature,level,weight
-Match type,Broad match,2.5014458031608875
-Match type,Exact match,-1.5764772593096594
-Match type,Phrase match,-0.9249685437103908
-Region,A,-2.3701346242448964
-Region,B,-1.3385356496190701
-Region,C,4.2013168712531295
-Region,USA,-0.49264659740632866
-day_of_week,Friday,-0.2250440758018366
-day_of_week,Monday,0.08801240409179911
-day_of_week,Saturday,-0.22561695645330979
-day_of_week,Sunday,0.23790966440954578
-day_of_week,Thursday,-0.03810687266043184
-day_of_week,Tuesday,0.16848224702800416
-day_of_week,Wednesday,-0.005636410626578807
+Match type,Exact match,-4.552799510790504
+Match type,Phrase match,-3.861220849782702
+Region,B,1.472883733501635
+Region,C,7.9068696895286035
+Region,USA,3.414614281718846
+day_of_week,Monday,0.7770070189494382
+day_of_week,Saturday,-0.24188605908271502
+day_of_week,Sunday,0.28476796714444214
+day_of_week,Thursday,0.3478929110606622
+day_of_week,Tuesday,0.6956197275148613
+day_of_week,Wednesday,0.13379194784771237

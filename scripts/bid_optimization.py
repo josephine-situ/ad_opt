@@ -532,9 +532,9 @@ def create_feature_matrix(
     # - ORT/MORT need raw categoricals (strings).
     # - XGB models in this repo are trained with a saved sklearn ColumnTransformer
     #   (one-hot inside the preprocessor), so they need raw categoricals as input.
-    # - GLM models also use a saved sklearn ColumnTransformer preprocessor,
+    # - Ridge models also use a saved sklearn ColumnTransformer preprocessor,
     #   so they also need raw categoricals as input.
-    raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
+    raw_cat_algs = {'ort', 'mort', 'xgb', 'ridge'}
     use_raw_epc = (alg_epc in raw_cat_algs)
     use_raw_clicks = (alg_clicks in raw_cat_algs)
     use_both_raw = use_raw_epc and use_raw_clicks
@@ -753,28 +753,28 @@ def embed_affine_in_bid(
     return model, pred_vars
 
 
-def _extract_glm_coefficients(glm_model_path: Path, preprocessor_path: Path) -> Tuple[float, np.ndarray, List[str]]:
-    """Extract intercept and coefficients from a trained GLM model.
+def _extract_ridge_coefficients(ridge_model_path: Path, preprocessor_path: Path) -> Tuple[float, np.ndarray, List[str]]:
+    """Extract intercept and coefficients from a trained Ridge model.
     
     Args:
-        glm_model_path: Path to saved GLM model (.joblib)
+        ridge_model_path: Path to saved Ridge model (.joblib)
         preprocessor_path: Path to saved preprocessor (.joblib)
     
     Returns:
         Tuple of (intercept, coefficients_array, feature_names)
     """
     if joblib is None:
-        raise ImportError("joblib is required to load GLM models")
+        raise ImportError("joblib is required to load Ridge models")
     
-    # Load the GLM model and preprocessor
-    glm_pipeline = joblib.load(glm_model_path)
+    # Load the Ridge model and preprocessor
+    ridge_pipeline = joblib.load(ridge_model_path)
     preprocessor = joblib.load(preprocessor_path)
     
     # Extract from pipeline
-    glm_model = glm_pipeline.named_steps['model']
+    ridge_model = ridge_pipeline.named_steps['model']
     
-    intercept = float(glm_model.intercept_)
-    coefficients = glm_model.coef_.ravel()
+    intercept = float(ridge_model.intercept_)
+    coefficients = ridge_model.coef_.ravel()
     feature_names = list(preprocessor.get_feature_names_out())
     # Strip the "num__" and "cat__" prefixes
     feature_names = [name.split('__', 1)[1] if '__' in name else name for name in feature_names]
@@ -1458,8 +1458,8 @@ def optimize_bids_embedded(
     clicks_model=None,
     epc_xgb_paths: Optional[Tuple[Path, Path]] = None,
     clicks_xgb_paths: Optional[Tuple[Path, Path]] = None,
-    epc_glm_preproc_path: Optional[Path] = None,
-    clicks_glm_preproc_path: Optional[Path] = None,
+    epc_ridge_preproc_path: Optional[Path] = None,
+    clicks_ridge_preproc_path: Optional[Path] = None,
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
     embedding_method: str = 'bert',
@@ -1484,7 +1484,7 @@ def optimize_bids_embedded(
 
     Args:
         X_ort: Feature matrix with categorical features as strings (for ORT models). If None, will use X_lr.
-        X_lr: Feature matrix with categorical features one-hot encoded (for LR/GLM weights). If None, will use X_ort.
+        X_lr: Feature matrix with categorical features one-hot encoded (for LR/Ridge weights). If None, will use X_ort.
         weights_dict: Model weights dict with keys: 'epc_const', 'epc_weights', 'clicks_const', 'clicks_weights'.
         budget: Total budget constraint B.
         max_bid: Upper bound on each bid b_i.
@@ -1499,7 +1499,7 @@ def optimize_bids_embedded(
     M_g = 400     # Max potential clicks (Big-M for g)
     M_f = 40000   # Max potential EPC (Big-M for f). Kept large for safety.
 
-    raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
+    raw_cat_algs = {'ort', 'mort', 'xgb', 'ridge'}
 
     use_ort_epc = (alg_epc in {'ort', 'mort'})
     use_ort_clicks = (alg_clicks in {'ort', 'mort'})
@@ -1572,27 +1572,29 @@ def optimize_bids_embedded(
             max_bid=max_bid,
         )
     else:
-        if alg_epc == 'glm':
-            if epc_glm_preproc_path is None:
-                raise ValueError("epc_glm_preproc_path is required when alg_epc == 'glm'")
+        if alg_epc == 'ridge':
+            if epc_ridge_preproc_path is None:
+                raise ValueError("epc_ridge_preproc_path is required when alg_epc == 'ridge'")
             try:
-                preprocessor_epc = joblib.load(epc_glm_preproc_path)
+                preprocessor_epc = joblib.load(epc_ridge_preproc_path)
             except (AttributeError, ImportError) as e:
                 raise RuntimeError(
-                    f"Failed to load GLM preprocessor from {epc_glm_preproc_path}.\n"
+                    f"Failed to load Ridge preprocessor from {epc_ridge_preproc_path}.\n"
                     f"Error: {e}"
                 ) from e
-            
-            # Extract coefficients from actual GLM model
-            epc_glm_model_path = Path('models') / f'glm_{embedding_method}_epc.joblib'
-            epc_intercept, epc_coeffs, _ = _extract_glm_coefficients(epc_glm_model_path, epc_glm_preproc_path)
 
-            # Embed the GLM exactly in terms of the bid variable by precomputing
-            # Z0 (bid=0) and dZ (per unit bid) in the preprocessed feature space.
+            epc_ridge_model_path = Path('models') / f'ridge_{embedding_method}_epc.joblib'
+            epc_intercept, epc_coeffs, _ = _extract_ridge_coefficients(
+                epc_ridge_model_path,
+                epc_ridge_preproc_path,
+            )
+
             X_epc_aligned, expected_cols = _align_X_for_preprocessor(preprocessor_epc, X_epc)
             cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
             if not cpc_candidates:
-                raise KeyError(f"Could not find Avg. CPC in expected columns for GLM EPC: {expected_cols[:5]}...")
+                raise KeyError(
+                    f"Could not find Avg. CPC in expected columns for Ridge EPC: {expected_cols[:5]}..."
+                )
             cpc_col = cpc_candidates[0]
 
             X0 = X_epc_aligned.copy()
@@ -1650,26 +1652,26 @@ def optimize_bids_embedded(
         # Use LR model
         clicks_const = weights_dict['clicks_const']
         clicks_weights = weights_dict['clicks_weights']
-        if alg_clicks == 'glm':
-            if clicks_glm_preproc_path is None:
-                raise ValueError("clicks_glm_preproc_path is required when alg_clicks == 'glm'")
+        if alg_clicks == 'ridge':
+            if clicks_ridge_preproc_path is None:
+                raise ValueError("clicks_ridge_preproc_path is required when alg_clicks == 'ridge'")
             try:
-                preprocessor_clicks = joblib.load(clicks_glm_preproc_path)
+                preprocessor_clicks = joblib.load(clicks_ridge_preproc_path)
             except (AttributeError, ImportError) as e:
                 raise RuntimeError(
-                    f"Failed to load GLM preprocessor from {clicks_glm_preproc_path}.\n"
+                    f"Failed to load Ridge preprocessor from {clicks_ridge_preproc_path}.\n"
                     f"Error: {e}"
                 ) from e
             
-            # Extract coefficients from actual GLM model
-            clicks_glm_model_path = Path('models') / f'glm_{embedding_method}_clicks.joblib'
-            clicks_intercept, clicks_coeffs, _ = _extract_glm_coefficients(clicks_glm_model_path, clicks_glm_preproc_path)
+            # Extract coefficients from actual Ridge model
+            clicks_ridge_model_path = Path('models') / f'ridge_{embedding_method}_clicks.joblib'
+            clicks_intercept, clicks_coeffs, _ = _extract_ridge_coefficients(clicks_ridge_model_path, clicks_ridge_preproc_path)
 
             X_clicks_aligned, expected_cols = _align_X_for_preprocessor(preprocessor_clicks, X_clicks)
             cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
             if not cpc_candidates:
                 raise KeyError(
-                    f"Could not find Avg. CPC in expected columns for GLM clicks: {expected_cols[:5]}..."
+                    f"Could not find Avg. CPC in expected columns for Ridge clicks: {expected_cols[:5]}..."
                 )
             cpc_col = cpc_candidates[0]
 
@@ -2008,7 +2010,7 @@ def _write_bids_outputs(
 
 
 def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_epc, X_clicks, epc_model, clicks_model, 
-                      epc_xgb_paths, clicks_xgb_paths, epc_glm_preproc_path=None, clicks_glm_preproc_path=None,
+                      epc_xgb_paths, clicks_xgb_paths, epc_ridge_preproc_path=None, clicks_ridge_preproc_path=None,
                       alg_epc='lr', alg_clicks='lr', embedding_method='bert',
                       preprocessor_epc=None, preprocessor_clicks=None):
     """Validate that optimized solution predictions match original models.
@@ -2026,10 +2028,10 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
         clicks_model: Trained clicks model (IAI if ORT, None for others)
         epc_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB EPC
         clicks_xgb_paths: Tuple of (model_path, preprocessor_path) for XGB clicks
-        epc_glm_preproc_path: Path to GLM EPC preprocessor
-        clicks_glm_preproc_path: Path to GLM clicks preprocessor
-        alg_epc: Algorithm for EPC ('lr', 'glm', 'xgb', 'ort', 'mort')
-        alg_clicks: Algorithm for clicks ('lr', 'glm', 'xgb', 'ort', 'mort')
+        epc_ridge_preproc_path: Path to Ridge EPC preprocessor
+        clicks_ridge_preproc_path: Path to Ridge clicks preprocessor
+        alg_epc: Algorithm for EPC ('lr', 'ridge', 'xgb', 'ort', 'mort')
+        alg_clicks: Algorithm for clicks ('lr', 'ridge', 'xgb', 'ort', 'mort')
         embedding_method: 'bert' or 'tfidf'
         preprocessor_epc: Preprocessor for XGB EPC (loaded if not provided)
         preprocessor_clicks: Preprocessor for XGB clicks (loaded if not provided)
@@ -2074,24 +2076,24 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
                 epc_preds = booster_epc.predict(Z_epc_dmatrix)
         elif alg_epc == 'ort' or alg_epc == 'mort':
             epc_preds = epc_model.predict(X_validate_epc.values)
-        elif alg_epc == 'glm':
-            # GLM EPC validation
-            if epc_glm_preproc_path is None:
-                print("WARNING: EPC GLM preprocessor path not available for validation")
+        elif alg_epc == 'ridge':
+            # Ridge EPC validation
+            if epc_ridge_preproc_path is None:
+                print("WARNING: EPC Ridge preprocessor path not available for validation")
                 epc_preds = None
             else:
                 try:
-                    preprocessor_glm_epc = joblib.load(epc_glm_preproc_path)
-                    glm_epc_model_path = Path('models') / f'glm_{embedding_method}_epc.joblib'
-                    epc_intercept, epc_coeffs, _ = _extract_glm_coefficients(glm_epc_model_path, Path(epc_glm_preproc_path))
+                    preprocessor_ridge_epc = joblib.load(epc_ridge_preproc_path)
+                    ridge_epc_model_path = Path('models') / f'ridge_{embedding_method}_epc.joblib'
+                    epc_intercept, epc_coeffs, _ = _extract_ridge_coefficients(ridge_epc_model_path, Path(epc_ridge_preproc_path))
 
-                    X_epc_aligned, _ = _align_X_for_preprocessor(preprocessor_glm_epc, X_validate_epc)
-                    Z_epc = preprocessor_glm_epc.transform(X_epc_aligned)
+                    X_epc_aligned, _ = _align_X_for_preprocessor(preprocessor_ridge_epc, X_validate_epc)
+                    Z_epc = preprocessor_ridge_epc.transform(X_epc_aligned)
                     # Works for both dense and sparse matrices
                     epc_preds = epc_intercept + (Z_epc @ epc_coeffs)
                     epc_preds = np.asarray(epc_preds).ravel()
                 except Exception as e:
-                    print(f"Note: GLM EPC validation failed: {e}")
+                    print(f"Note: Ridge EPC validation failed: {e}")
                     epc_preds = None
         else:
             # LR or other - not implemented, skip validation
@@ -2119,25 +2121,25 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
                 clicks_preds = booster_clicks.predict(Z_clicks_dmatrix)
         elif alg_clicks == 'ort' or alg_clicks == 'mort':
             clicks_preds = clicks_model.predict(X_validate_clicks.values)
-        elif alg_clicks == 'glm':
-            # GLM clicks validation
-            if clicks_glm_preproc_path is None:
-                print("WARNING: Clicks GLM preprocessor path not available for validation")
+        elif alg_clicks == 'ridge':
+            # Ridge clicks validation
+            if clicks_ridge_preproc_path is None:
+                print("WARNING: Clicks Ridge preprocessor path not available for validation")
                 clicks_preds = None
             else:
                 try:
-                    preprocessor_glm_clicks = joblib.load(clicks_glm_preproc_path)
-                    glm_clicks_model_path = Path('models') / f'glm_{embedding_method}_clicks.joblib'
-                    clicks_intercept, clicks_coeffs, _ = _extract_glm_coefficients(
-                        glm_clicks_model_path, Path(clicks_glm_preproc_path)
+                    preprocessor_ridge_clicks = joblib.load(clicks_ridge_preproc_path)
+                    ridge_clicks_model_path = Path('models') / f'ridge_{embedding_method}_clicks.joblib'
+                    clicks_intercept, clicks_coeffs, _ = _extract_ridge_coefficients(
+                        ridge_clicks_model_path, Path(clicks_ridge_preproc_path)
                     )
 
-                    X_clicks_aligned, _ = _align_X_for_preprocessor(preprocessor_glm_clicks, X_validate_clicks)
-                    Z_clicks = preprocessor_glm_clicks.transform(X_clicks_aligned)
+                    X_clicks_aligned, _ = _align_X_for_preprocessor(preprocessor_ridge_clicks, X_validate_clicks)
+                    Z_clicks = preprocessor_ridge_clicks.transform(X_clicks_aligned)
                     clicks_preds = clicks_intercept + (Z_clicks @ clicks_coeffs)
                     clicks_preds = np.asarray(clicks_preds).ravel()
                 except Exception as e:
-                    print(f"Note: GLM clicks validation failed: {e}")
+                    print(f"Note: Ridge clicks validation failed: {e}")
                     clicks_preds = None
         else:
             print(f"Note: Validation not implemented for {alg_clicks} clicks model")
@@ -2161,8 +2163,10 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
             epc_diff = epc_preds - solver_epc_preds
             epc_mae = np.abs(epc_diff).mean()
             epc_rmse = np.sqrt((epc_diff ** 2).mean())
+            epc_max_abs = np.abs(epc_diff).max()
             print(f"  Difference (model - solver):")
             print(f"    MAE: {epc_mae:.6f}, RMSE: {epc_rmse:.6f}")
+            print(f"    Max abs: {epc_max_abs:.12f}")
 
             if solver_epc_preds.min() >= -1e-9 and epc_preds.min() < -1e-9:
                 epc_clipped = np.maximum(epc_preds, 0.0)
@@ -2172,7 +2176,9 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
                 print(f"  (Also vs clipped model preds, since optimization enforces f>=0)")
                 print(f"    MAE: {epc_mae_clip:.6f}, RMSE: {epc_rmse_clip:.6f}")
 
-            if epc_mae > 0.1 * epc_preds.std():
+            # Use robust tolerance-based comparison to avoid false positives when std == 0.
+            # Note: solver predictions can differ slightly due to numerical tolerances.
+            if not np.allclose(epc_preds, solver_epc_preds, rtol=1e-6, atol=1e-6):
                 print(f"  ⚠️  WARNING: Large difference between model and solver predictions!")
             else:
                 print(f"  ✓ EPC predictions align well")
@@ -2194,8 +2200,10 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
             clicks_diff = clicks_preds - solver_clicks_preds
             clicks_mae = np.abs(clicks_diff).mean()
             clicks_rmse = np.sqrt((clicks_diff ** 2).mean())
+            clicks_max_abs = np.abs(clicks_diff).max()
             print(f"  Difference (model - solver):")
             print(f"    MAE: {clicks_mae:.6f}, RMSE: {clicks_rmse:.6f}")
+            print(f"    Max abs: {clicks_max_abs:.12f}")
 
             if solver_clicks_preds.min() >= -1e-9 and clicks_preds.min() < -1e-9:
                 clicks_clipped = np.maximum(clicks_preds, 0.0)
@@ -2205,7 +2213,7 @@ def validate_solution(optimized_bids, solver_epc_preds, solver_clicks_preds, X_e
                 print(f"  (Also vs clipped model preds, since optimization enforces g>=0)")
                 print(f"    MAE: {clicks_mae_clip:.6f}, RMSE: {clicks_rmse_clip:.6f}")
 
-            if clicks_mae > 0.1 * clicks_preds.std():
+            if not np.allclose(clicks_preds, solver_clicks_preds, rtol=1e-6, atol=1e-6):
                 print(f"  ⚠️  WARNING: Large difference between model and solver predictions!")
             else:
                 print(f"  ✓ Clicks predictions align well")
@@ -2265,11 +2273,11 @@ def _predict_linear_weights_at_bid0(*, X: pd.DataFrame, const: float, weights: d
     return preds
 
 
-def _predict_glm_at_bid0(*, X_raw: pd.DataFrame, glm_preproc_path: Path, glm_model_path: Path) -> np.ndarray:
-    """Predict GLM outputs at bid=0 using saved preprocessor + model coefficients."""
+def _predict_ridge_at_bid0(*, X_raw: pd.DataFrame, ridge_preproc_path: Path, ridge_model_path: Path) -> np.ndarray:
+    """Predict Ridge outputs at bid=0 using saved preprocessor + model coefficients."""
 
-    preprocessor = joblib.load(glm_preproc_path)
-    intercept, coeffs, _ = _extract_glm_coefficients(glm_model_path, glm_preproc_path)
+    preprocessor = joblib.load(ridge_preproc_path)
+    intercept, coeffs, _ = _extract_ridge_coefficients(ridge_model_path, ridge_preproc_path)
 
     X_aligned, expected_cols = _align_X_for_preprocessor(preprocessor, X_raw)
     cpc_candidates = [c for c in ("Avg. CPC", "Avg_ CPC") if c in expected_cols]
@@ -2329,8 +2337,8 @@ def filter_rows_feasible_at_bid0(
     clicks_model,
     epc_xgb_paths: Optional[Tuple[Path, Path]],
     clicks_xgb_paths: Optional[Tuple[Path, Path]],
-    epc_glm_preproc_path: Optional[Path],
-    clicks_glm_preproc_path: Optional[Path],
+    epc_ridge_preproc_path: Optional[Path],
+    clicks_ridge_preproc_path: Optional[Path],
     tol: float = 1e-9,
 ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], List[int], List[str], List[str]]:
     """Drop rows where either EPC or clicks at bid=0 is negative.
@@ -2338,7 +2346,7 @@ def filter_rows_feasible_at_bid0(
     This guarantees the optimization has a feasible solution with b=0.
     """
 
-    raw_cat_algs = {"ort", "mort", "xgb", "glm"}
+    raw_cat_algs = {"ort", "mort", "xgb", "ridge"}
 
     X_epc = X_ort if (alg_epc in raw_cat_algs) else X_lr
     X_clicks = X_ort if (alg_clicks in raw_cat_algs) else X_lr
@@ -2359,11 +2367,11 @@ def filter_rows_feasible_at_bid0(
             raise ValueError("epc_xgb_paths required to filter XGB EPC")
         xgb_path, preproc_path = epc_xgb_paths
         epc0 = _predict_xgb_at_bid0(X_raw=X_epc, xgb_model_path=xgb_path, preproc_path=preproc_path)
-    elif alg_epc == "glm":
-        if epc_glm_preproc_path is None:
-            raise ValueError("epc_glm_preproc_path required to filter GLM EPC")
-        glm_path = Path("models") / f"glm_{embedding_method}_epc.joblib"
-        epc0 = _predict_glm_at_bid0(X_raw=X_epc, glm_preproc_path=Path(epc_glm_preproc_path), glm_model_path=glm_path)
+    elif alg_epc == "ridge":
+        if epc_ridge_preproc_path is None:
+            raise ValueError("epc_ridge_preproc_path required to filter Ridge EPC")
+        ridge_path = Path("models") / f"ridge_{embedding_method}_epc.joblib"
+        epc0 = _predict_ridge_at_bid0(X_raw=X_epc, ridge_preproc_path=Path(epc_ridge_preproc_path), ridge_model_path=ridge_path)
     else:
         if weights_dict is None:
             raise ValueError("weights_dict required to filter LR EPC")
@@ -2383,14 +2391,14 @@ def filter_rows_feasible_at_bid0(
             raise ValueError("clicks_xgb_paths required to filter XGB clicks")
         xgb_path, preproc_path = clicks_xgb_paths
         clicks0 = _predict_xgb_at_bid0(X_raw=X_clicks, xgb_model_path=xgb_path, preproc_path=preproc_path)
-    elif alg_clicks == "glm":
-        if clicks_glm_preproc_path is None:
-            raise ValueError("clicks_glm_preproc_path required to filter GLM clicks")
-        glm_path = Path("models") / f"glm_{embedding_method}_clicks.joblib"
-        clicks0 = _predict_glm_at_bid0(
+    elif alg_clicks == "ridge":
+        if clicks_ridge_preproc_path is None:
+            raise ValueError("clicks_ridge_preproc_path required to filter Ridge clicks")
+        ridge_path = Path("models") / f"ridge_{embedding_method}_clicks.joblib"
+        clicks0 = _predict_ridge_at_bid0(
             X_raw=X_clicks,
-            glm_preproc_path=Path(clicks_glm_preproc_path),
-            glm_model_path=glm_path,
+            ridge_preproc_path=Path(clicks_ridge_preproc_path),
+            ridge_model_path=ridge_path,
         )
     else:
         if weights_dict is None:
@@ -2813,10 +2821,11 @@ def _compute_clicks_bid_bounds_from_history(
         for r in bounds_df.itertuples(index=False)
     }
 
-    # Embeddings source for nearest-neighbor fallback
-    emb_source = keyword_df
-
-    emb_cols = [c for c in emb_source.columns if c.startswith(f"{embedding_method}_")]
+    # Embeddings source for nearest-neighbor fallback.
+    # IMPORTANT: nearest-neighbor requires vectors for *historical* keywords too.
+    # The optimizer's keyword_df only contains the current run's keywords, so it
+    # is usually insufficient as a candidate embedding store.
+    emb_cols = [c for c in keyword_df.columns if c.startswith(f"{embedding_method}_")]
     if not emb_cols:
         # Exact-only fallback
         for i in range(K):
@@ -2842,20 +2851,53 @@ def _compute_clicks_bid_bounds_from_history(
         ubs = np.maximum(ubs, lbs)
         return lbs, ubs, pd.DataFrame(debug_rows)
 
-    emb_source = emb_source.copy()
-    emb_source["Keyword_join"] = emb_source["Keyword"].astype(str).str.lower().str.strip()
+    # Build an embedding lookup from a persisted "unique_keyword_embeddings" table
+    # (covers the historical training universe) + the current keyword_df (covers
+    # brand-new keywords).
+    emb_lookup: Dict[str, np.ndarray] = {}
 
-    emb_lookup = {
-        r.Keyword_join: np.asarray([getattr(r, c) for c in emb_cols], dtype=float)
-        for r in emb_source[["Keyword_join"] + emb_cols].itertuples(index=False)
-        if np.isfinite(np.asarray([getattr(r, c) for c in emb_cols], dtype=float)).all()
-    }
+    def _add_embeddings_from_df(df: pd.DataFrame) -> None:
+        if df is None or df.empty:
+            return
+        if "Keyword" not in df.columns:
+            return
+        df_use = df.copy()
+        df_use["Keyword_join"] = df_use["Keyword"].astype(str).str.lower().str.strip()
+        cols = [c for c in emb_cols if c in df_use.columns]
+        if not cols:
+            return
+        for r in df_use[["Keyword_join"] + cols].itertuples(index=False):
+            v = np.asarray([getattr(r, c) for c in cols], dtype=float)
+            if not np.isfinite(v).all():
+                continue
+            emb_lookup[str(getattr(r, "Keyword_join"))] = v
+
+    # Prefer a persisted embedding table that matches the training CSV's pipeline.
+    # IMPORTANT: Embeddings from different pipelines (e.g., different SVD fits) are
+    # not comparable with cosine similarity; even identical keywords can end up with
+    # strongly negative cosine similarity.
+    emb_file_candidates = [
+        training_csv.parent / f"unique_keyword_embeddings_{embedding_method}.csv",
+        Path("data") / "clean" / f"unique_keyword_embeddings_{embedding_method}.csv",
+        Path("data") / "embeddings" / f"unique_keyword_embeddings_{embedding_method}.csv",
+    ]
+    for f in emb_file_candidates:
+        if f.exists():
+            try:
+                emb_df = load_embeddings(f, embedding_method=embedding_method)
+                _add_embeddings_from_df(emb_df)
+                break
+            except Exception as e:
+                print(f"Warning: failed to load embeddings from {f}: {type(e).__name__}: {e}")
+
+    # Also include the current run's keyword_df so brand-new keywords can be queried.
+    _add_embeddings_from_df(keyword_df)
 
     # Candidate rows w/ vectors
     cand_rows = []
     cand_vecs = []
     for r in bounds_df.itertuples(index=False):
-        v = emb_lookup.get(r.Keyword_join)
+        v = emb_lookup.get(str(r.Keyword_join))
         if v is None:
             continue
         cand_rows.append(r)
@@ -2929,12 +2971,17 @@ def _compute_clicks_bid_bounds_from_history(
         x = x / (np.linalg.norm(x) + 1e-12)
 
         tier1 = (reg_arr == reg) & (mt_arr == mt)
+        tier2 = (reg_arr == reg)
         if tier1.any():
             idxs = np.where(tier1)[0]
             tier = "same_region_and_match"
+        elif tier2.any():
+            idxs = np.where(tier2)[0]
+            tier = "same_region"
         else:
-            _add_debug(i=i, source="no_history_for_region_match", lb=lbs[i], ub=ubs[i])
-            continue
+            # Fall back to any region/match.
+            idxs = np.arange(len(cand_df), dtype=int)
+            tier = "any"
 
         sims = Vn[idxs] @ x
         best_local = int(np.argmax(sims))
@@ -2987,16 +3034,16 @@ def main():
     parser.add_argument(
         '--alg-conv',
         type=str,
-        default='glm',
-        choices=['lr', 'glm', 'xgb', 'ort', 'mort'],
-        help='Algorithm type for EPC model: lr (linear weights), glm (Tweedie GLM weights), xgb (XGBoost Tweedie; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
+        default='ridge',
+        choices=['lr', 'ridge', 'xgb', 'ort', 'mort'],
+        help='Algorithm type for EPC model: lr (linear weights), ridge (Ridge baseline weights), xgb (XGBoost MSE; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--alg-clicks',
         type=str,
         default='xgb', # 'lr', # 
-        choices=['lr', 'glm', 'xgb', 'ort', 'mort'],
-        help='Algorithm type for clicks model: lr (linear weights), glm (Tweedie GLM weights), xgb (XGBoost Tweedie; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
+        choices=['lr', 'ridge', 'xgb', 'ort', 'mort'],
+        help='Algorithm type for clicks model: lr (linear weights), ridge (Ridge baseline weights), xgb (XGBoost MSE; no IAI), ort (optimal tree; requires IAI), mort (mirrored ORT with hyperplanes; requires IAI) (default: lr)'
     )
     parser.add_argument(
         '--budget',
@@ -3078,6 +3125,15 @@ def main():
         help='Skip validate_solution (useful for fast lambda sweeps).'
     )
 
+    parser.add_argument(
+        '--treat-existing-searches-as-new',
+        action='store_true',
+        help=(
+            "Treat keywords with Origin='existing searches' as new keywords for the purposes of "
+            "the exploration objective and output flags (does not change bidding constraints)."
+        ),
+    )
+
     
     args = parser.parse_args()
 
@@ -3124,16 +3180,21 @@ def main():
 
             new_kw_set: Set[str] = set()
             if 'Origin' in classified_df.columns:
+                origin_lc = classified_df['Origin'].astype(str).str.lower()
                 new_kw_set = set(
                     _normalize_kw(s)
                     for s in classified_df.loc[
-                        classified_df['Origin'].astype(str).str.lower().eq('new'),
+                        origin_lc.eq('new'),
                         'Keyword',
                     ]
                     .dropna()
                     .astype(str)
                     .tolist()
                 )
+
+                if args.treat_existing_searches_as_new:
+                    extra = classified_df.loc[origin_lc.eq('existing searches'), 'Keyword'].dropna().astype(str).tolist()
+                    new_kw_set |= set(_normalize_kw(s) for s in extra)
             print(f"Loaded {len(keywords_to_embed)} keywords from {classified_keywords_file} (new={len(new_kw_set)})")
         else:
             # Fall back to loading from latest GKP export
@@ -3153,9 +3214,11 @@ def main():
             origin_lc = classified_df.get('Origin', '').astype(str).str.lower()
             new_keywords_df = classified_df[origin_lc.eq('new')]
             existing_keywords_df = classified_df[origin_lc.isin({'existing', 'existing searches'})]
+            existing_searches_df = classified_df[origin_lc.eq('existing searches')]
             
             new_kws = new_keywords_df['Keyword'].dropna().astype(str).tolist()
             existing_kws = existing_keywords_df['Keyword'].dropna().astype(str).tolist()
+            existing_searches_kws = existing_searches_df['Keyword'].dropna().astype(str).tolist()
             
             # Take half from new, half from existing (or adjust if not enough of one type)
             new_count = min(args.trial // 2, len(new_kws))
@@ -3166,6 +3229,9 @@ def main():
             print(f"⚠️  Trial mode: using {new_count} new + {existing_count} existing keywords = {len(keywords_to_embed)} total")
 
             new_kw_set = set(_normalize_kw(s) for s in new_kws[:new_count])
+            if args.treat_existing_searches_as_new:
+                # Only mark the *existing searches* subset as new.
+                new_kw_set |= set(_normalize_kw(s) for s in existing_searches_kws[:existing_count])
 
         # Fast path: reuse cached base formulation + mapping + keyword_df
         if args.cache_mode in {'auto', 'reuse'} and base_lp.exists():
@@ -3269,7 +3335,7 @@ def main():
         # Ensure is_new_keyword is correctly populated in the keyword_df
         keyword_df['is_new_keyword'] = keyword_df['Keyword'].astype(str).map(lambda s: _normalize_kw(s) in new_kw_set)
         
-        # Only load weights for non-XGB models (LR/GLM use weights_dict)
+        # Only load weights for non-XGB models (LR/Ridge use weights_dict)
         if args.alg_conv != 'xgb' or args.alg_clicks != 'xgb':
             weights_dict = load_weights_from_csv(
                 embedding_method=args.embedding_method,
@@ -3289,7 +3355,7 @@ def main():
         )
         
         # Unpack results based on model types
-        raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
+        raw_cat_algs = {'ort', 'mort', 'xgb', 'ridge'}
         is_mixed = ((args.alg_conv in raw_cat_algs) and (args.alg_clicks not in raw_cat_algs)) or ((args.alg_conv not in raw_cat_algs) and (args.alg_clicks in raw_cat_algs))
         if is_mixed:
             X_ort, X_lr, kw_idx_list, region_list, match_list = feature_matrix_result
@@ -3325,7 +3391,7 @@ def main():
         mapping_df.to_csv(mapping_file, index=False)
         print(f"Saved mapping to {mapping_file}")
 
-        # Embedded mode: supports linear weights (LR/GLM), ORT/MORT (IAI), and XGB (no IAI)
+        # Embedded mode: supports linear weights (LR/Ridge), ORT/MORT (IAI), and XGB (no IAI)
         epc_model = None
         clicks_model = None
         epc_xgb_paths = None
@@ -3369,21 +3435,21 @@ def main():
             clicks_xgb_paths = (clicks_xgb_model_path, clicks_xgb_preproc_path)
             print(f"  Using XGB clicks model from {clicks_xgb_model_path}")
 
-        # Load GLM preprocessors if needed
-        epc_glm_preproc_path = None
-        clicks_glm_preproc_path = None
+        # Load Ridge preprocessors if needed
+        epc_ridge_preproc_path = None
+        clicks_ridge_preproc_path = None
         
-        if args.alg_conv == 'glm':
-            epc_glm_preproc_path = Path(args.models_dir) / f'glm_{args.embedding_method}_epc_preprocess.joblib'
-            if not epc_glm_preproc_path.exists():
-                raise FileNotFoundError(f"GLM EPC preprocessor not found: {epc_glm_preproc_path}")
-            print(f"  Using GLM EPC preprocessor from {epc_glm_preproc_path}")
+        if args.alg_conv == 'ridge':
+            epc_ridge_preproc_path = Path(args.models_dir) / f'ridge_{args.embedding_method}_epc_preprocess.joblib'
+            if not epc_ridge_preproc_path.exists():
+                raise FileNotFoundError(f"Ridge EPC preprocessor not found: {epc_ridge_preproc_path}")
+            print(f"  Using Ridge EPC preprocessor from {epc_ridge_preproc_path}")
         
-        if args.alg_clicks == 'glm':
-            clicks_glm_preproc_path = Path(args.models_dir) / f'glm_{args.embedding_method}_clicks_preprocess.joblib'
-            if not clicks_glm_preproc_path.exists():
-                raise FileNotFoundError(f"GLM clicks preprocessor not found: {clicks_glm_preproc_path}")
-            print(f"  Using GLM clicks preprocessor from {clicks_glm_preproc_path}")
+        if args.alg_clicks == 'ridge':
+            clicks_ridge_preproc_path = Path(args.models_dir) / f'ridge_{args.embedding_method}_clicks_preprocess.joblib'
+            if not clicks_ridge_preproc_path.exists():
+                raise FileNotFoundError(f"Ridge clicks preprocessor not found: {clicks_ridge_preproc_path}")
+            print(f"  Using Ridge clicks preprocessor from {clicks_ridge_preproc_path}")
 
         # --- Feasibility guard: ensure b=0 is feasible ---
         # Drop any keyword/region/match combos where either EPC or clicks is negative at bid=0.
@@ -3402,8 +3468,8 @@ def main():
             clicks_model=clicks_model,
             epc_xgb_paths=epc_xgb_paths,
             clicks_xgb_paths=clicks_xgb_paths,
-            epc_glm_preproc_path=epc_glm_preproc_path,
-            clicks_glm_preproc_path=clicks_glm_preproc_path,
+            epc_ridge_preproc_path=epc_ridge_preproc_path,
+            clicks_ridge_preproc_path=clicks_ridge_preproc_path,
         )
 
         # --- Trust box: enforce Trust Ellipsoid (Mahalanobis) ---
@@ -3480,8 +3546,8 @@ def main():
             clicks_model=clicks_model,
             epc_xgb_paths=epc_xgb_paths,
             clicks_xgb_paths=clicks_xgb_paths,
-            epc_glm_preproc_path=epc_glm_preproc_path,
-            clicks_glm_preproc_path=clicks_glm_preproc_path,
+            epc_ridge_preproc_path=epc_ridge_preproc_path,
+            clicks_ridge_preproc_path=clicks_ridge_preproc_path,
             alg_epc=args.alg_conv,
             alg_clicks=args.alg_clicks,
             embedding_method=args.embedding_method,
@@ -3501,7 +3567,7 @@ def main():
             bids_df['lambda'] = float(args.exploration_lambda)
 
             # Validate solution predictions
-            raw_cat_algs = {'ort', 'mort', 'xgb', 'glm'}
+            raw_cat_algs = {'ort', 'mort', 'xgb', 'ridge'}
             X_for_epc = X_ort if args.alg_conv in raw_cat_algs else X_lr
             X_for_clicks = X_ort if args.alg_clicks in raw_cat_algs else X_lr
 
@@ -3516,8 +3582,8 @@ def main():
                     clicks_model=clicks_model,
                     epc_xgb_paths=epc_xgb_paths if args.alg_conv == 'xgb' else None,
                     clicks_xgb_paths=clicks_xgb_paths if args.alg_clicks == 'xgb' else None,
-                    epc_glm_preproc_path=epc_glm_preproc_path if args.alg_conv == 'glm' else None,
-                    clicks_glm_preproc_path=clicks_glm_preproc_path if args.alg_clicks == 'glm' else None,
+                    epc_ridge_preproc_path=epc_ridge_preproc_path if args.alg_conv == 'ridge' else None,
+                    clicks_ridge_preproc_path=clicks_ridge_preproc_path if args.alg_clicks == 'ridge' else None,
                     alg_epc=args.alg_conv,
                     alg_clicks=args.alg_clicks,
                     embedding_method=args.embedding_method

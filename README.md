@@ -219,7 +219,7 @@ python scripts/prediction_modeling_tweedie.py --target conversion
 python scripts/prediction_modeling_tweedie.py --target clicks
 
 # Train only specific models
-python scripts/prediction_modeling_tweedie.py --target conversion --models glm
+python scripts/prediction_modeling_tweedie.py --target conversion --models ridge
 
 # Use BERT embeddings
 python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method bert
@@ -228,7 +228,7 @@ To also train an open-source XGBoost Tweedie model for comparison:
 
 ```bash
 pip install -e ".[ml_open]"
-python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models glm xgb
+python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method tfidf --models ridge xgb
 ```
 
 **Legacy (IAI-based) training script**

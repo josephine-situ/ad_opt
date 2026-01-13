@@ -1,7 +1,12 @@
 """Prediction Modeling (No IAI) for Ad Optimization
 ================================================
 
-Trains Tweedie-loss regression models to predict:
+NOTE: The filename is historically misnamed.
+
+The exported linear-model weights used by `scripts/bid_optimization.py` come
+from a Ridge regression baseline trained to minimize (optionally weighted) MSE.
+
+Trains prediction models to predict:
 - conversion: "Conv. value"
 - clicks: "Clicks"
 - epc: "EPC"
@@ -11,28 +16,24 @@ that does NOT require InterpretableAI (IAI) or a license.
 
 Key outputs
 -----------
-1) A Tweedie GLM (linear) trained with scikit-learn's `TweedieRegressor`.
-   - Saves a fitted pipeline to `models/glm_{embedding}_{target}.joblib`
+1) A linear Ridge baseline trained with scikit-learn's `Ridge`.
+    - Saves a fitted pipeline to `models/ridge_{embedding}_{target}.joblib`
    - Exports coefficients in the CSV format already consumed by
      `scripts/bid_optimization.py`:
        - `models/weights_{embedding}_{target}_numeric.csv`
        - `models/weights_{embedding}_{target}_categorical.csv` (if any)
        - `models/weights_{embedding}_{target}_constant.csv`
 
-2) Optionally, an XGBoost model trained with Tweedie objective.
-   - Saves to `models/xgb_tweedie_{embedding}_{target}.json`
+2) Optionally, an XGBoost model trained as an MSE baseline.
+    - Saves to `models/xgb_mse_{embedding}_{target}.json`
 
 Usage
 -----
 python scripts/prediction_modeling_tweedie.py --target conversion --embedding-method bert
-python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert --models glm xgb
+python scripts/prediction_modeling_tweedie.py --target clicks --embedding-method bert --models ridge xgb
 
 Notes
 -----
-- Tweedie variance power defaults:
-  - clicks: 1.0 (Poisson)
-    - conversion: 1.5
-        - epc (aggregated EPC with weights): 1.5
 - Targets are assumed to be non-negative.
 """
 
@@ -55,7 +56,7 @@ from utils.tee_logging import setup_tee_logging
 from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import Ridge, TweedieRegressor
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import ParameterGrid
@@ -473,7 +474,10 @@ def build_preprocessor(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], L
     cat_pipe = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=True)),
+            # Drop one level per categorical feature to avoid the dummy-variable trap:
+            # with full one-hot + an intercept, the design matrix contains redundant
+            # constant columns which can cause huge, unstable coefficients.
+            ("onehot", OneHotEncoder(handle_unknown="ignore", drop="first", sparse_output=True)),
         ]
     )
 
@@ -644,7 +648,27 @@ def train_glm_mse(
     sample_weight_train: Optional[pd.Series] = None,
     sample_weight_test: Optional[pd.Series] = None,
 ) -> Tuple[Pipeline, float, Dict[str, float]]:
-    print("\n--- Linear Regression (MSE) ---")
+    raise RuntimeError(
+        "train_glm_mse was renamed to train_ridge_mse. "
+        "Update callers to use train_ridge_mse."
+    )
+
+
+def train_ridge_mse(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    *,
+    target: str,
+    embedding_method: str,
+    seed: int,
+    out_dir: Path,
+    cv_folds: int,
+    sample_weight_train: Optional[pd.Series] = None,
+    sample_weight_test: Optional[pd.Series] = None,
+) -> Tuple[Pipeline, float, Dict[str, float]]:
+    print("\n--- Ridge Regression (MSE) ---")
 
     preprocessor, numeric_cols, categorical_cols = build_preprocessor(X_train)
 
@@ -703,22 +727,23 @@ def train_glm_mse(
     print(f"  Train MSE (lower is better): {mse_train:.4f}")
     print(f"  Test  MSE (lower is better): {mse_test:.4f}")
 
-    _print_diagnostics(label="GLM train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
-    _print_diagnostics(label="GLM test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
+    _print_diagnostics(label="Ridge train", y_true=y_train, y_pred=y_pred_train, sample_weight=sample_weight_train)
+    _print_diagnostics(label="Ridge test", y_true=y_test, y_pred=y_pred_test, sample_weight=sample_weight_test)
 
-    # Save fitted pipeline
-    model_path = out_dir / f"glm_{embedding_method}_{target}.joblib"
+    # Save fitted pipeline.
+    # Historical naming used "glm_*"; we now save as "ridge_*".
+    model_path = out_dir / f"ridge_{embedding_method}_{target}.joblib"
     joblib.dump(best, model_path)
     print(f"  Saved pipeline to {model_path}")
 
-    # Save the fitted preprocessing pipeline for use in bid_optimization
-    # This is required to reproduce identical transformations when embedding the GLM
-    preproc_path = out_dir / f"glm_{embedding_method}_{target}_preprocess.joblib"
+    # Save the fitted preprocessing pipeline for use in bid_optimization.
+    # This is required to reproduce identical transformations when embedding the linear model.
+    preproc_path = out_dir / f"ridge_{embedding_method}_{target}_preprocess.joblib"
     joblib.dump(best.named_steps["preprocess"], preproc_path)
     print(f"  Saved preprocessor to {preproc_path}")
 
     # Export weights in existing CSV format
-    export_glm_weights(best, numeric_cols, categorical_cols, embedding_method, target, out_dir)
+    export_ridge_weights(best, numeric_cols, categorical_cols, embedding_method, target, out_dir)
 
     metrics = {
         "global_bias": compute_global_bias(y_test, y_pred_test, sample_weight=sample_weight_test),
@@ -727,26 +752,26 @@ def train_glm_mse(
         "r2_score": r2_score(y_test, y_pred_test, sample_weight=sample_weight_test),
     }
 
-    print(f"  [GLM] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [GLM] Global bias: nan")
-    print(f"  [GLM] Top decile lift: {metrics['top_decile_lift']:.4f}" if not np.isnan(metrics["top_decile_lift"]) else "  [GLM] Top decile lift: nan")
-    print(f"  [GLM] Conditional MAE: {metrics['conditional_mae']:.4f}" if not np.isnan(metrics["conditional_mae"]) else "  [GLM] Conditional MAE: nan")
-    print(f"  [GLM] R^2: {metrics['r2_score']:.4f}" if not np.isnan(metrics["r2_score"]) else "  [GLM] R^2: nan")
+    print(f"  [Ridge] Global bias: {metrics['global_bias']:.4f}" if not np.isnan(metrics["global_bias"]) else "  [Ridge] Global bias: nan")
+    print(f"  [Ridge] Top decile lift: {metrics['top_decile_lift']:.4f}" if not np.isnan(metrics["top_decile_lift"]) else "  [Ridge] Top decile lift: nan")
+    print(f"  [Ridge] Conditional MAE: {metrics['conditional_mae']:.4f}" if not np.isnan(metrics["conditional_mae"]) else "  [Ridge] Conditional MAE: nan")
+    print(f"  [Ridge] R^2: {metrics['r2_score']:.4f}" if not np.isnan(metrics["r2_score"]) else "  [Ridge] R^2: nan")
 
     return best, mse_test, metrics
 
 
-def export_glm_weights(
-    fitted_glm_pipeline: Pipeline,
+def export_ridge_weights(
+    fitted_ridge_pipeline: Pipeline,
     numeric_cols: List[str],
     categorical_cols: List[str],
     embedding_method: str,
     target: str,
     out_dir: Path,
 ) -> None:
-    """Export GLM intercept + coefficients to the repo's existing weight CSV format."""
+    """Export Ridge intercept + coefficients to the repo's existing weight CSV format."""
 
-    preprocess: ColumnTransformer = fitted_glm_pipeline.named_steps["preprocess"]
-    model: TweedieRegressor = fitted_glm_pipeline.named_steps["model"]
+    preprocess: ColumnTransformer = fitted_ridge_pipeline.named_steps["preprocess"]
+    model: Ridge = fitted_ridge_pipeline.named_steps["model"]
 
     feature_names = list(preprocess.get_feature_names_out())
     coefs = model.coef_.ravel()
@@ -1069,7 +1094,7 @@ def main() -> None:
     parser.add_argument(
         "--target",
         type=str,
-        default="epc",
+        default="clicks",
         choices=["conversion", "epc", "clicks"],
         help="Target variable: conversion (Conv. value), epc (EPC), or clicks (default: epc)",
     )
@@ -1090,9 +1115,9 @@ def main() -> None:
         "--models",
         type=str,
         nargs="+",
-        default=["glm",'xgb','rf'],
-        choices=["glm", "xgb", "rf", "tabpfn"],
-        help="Which models to train (default: glm xgb rf tabpfn)",
+        default=["ridge", "xgb", "rf"],
+        choices=["ridge", "xgb", "rf", "tabpfn"],
+        help="Which models to train (default: ridge xgb rf tabpfn)",
     )
     parser.add_argument(
         "--tabpfn-max-train-rows",
@@ -1152,8 +1177,8 @@ def main() -> None:
 
     results: Dict[str, Dict[str, object]] = {}
 
-    if "glm" in args.models:
-        _, score, metrics = train_glm_mse(
+    if "ridge" in args.models:
+        _, score, metrics = train_ridge_mse(
             X_train,
             y_train,
             X_test,
@@ -1166,7 +1191,7 @@ def main() -> None:
             sample_weight_train=w_train,
             sample_weight_test=w_test,
         )
-        results["GLM"] = {"score": score, "metrics": metrics}
+        results["Ridge"] = {"score": score, "metrics": metrics}
 
     if "xgb" in args.models:
         _, score, metrics = train_xgb_mse(
