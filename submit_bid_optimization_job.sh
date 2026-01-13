@@ -8,7 +8,7 @@
 #SBATCH --error=logs/bid_opt_%A_%a.err
 
 # Lambda sweep (parallel): -1, 0, 1, 2, 4
-#SBATCH --array=0-4
+#SBATCH --array=0-3
 
 # Go to the submit directory and prep logs
 cd "${SLURM_SUBMIT_DIR:-$PWD}"
@@ -30,7 +30,7 @@ conda activate adopt_env
 # Run bid optimization with GLM for EPC and XGB MSE models for clicks
 echo "Running bid_optimization.py with GLM for EPC and XGB MSE models for clicks"
 
-LAMBDAS=(-1 0 1 2 4)
+LAMBDAS=(0 10 100 1000)
 LAMBDA=${LAMBDAS[$SLURM_ARRAY_TASK_ID]}
 
 echo "SLURM_ARRAY_TASK_ID: ${SLURM_ARRAY_TASK_ID} -> lambda=${LAMBDA}"

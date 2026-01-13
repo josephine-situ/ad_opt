@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-01-12T21:36:10.143212",
+  "cache_key": "bert_ridge_xgb_2026-01-12_full",
+  "embedding_method": "bert",
+  "alg_epc": "ridge",
+  "alg_clicks": "xgb",
+  "target_day": "2026-01-12",
+  "trial": null
+}
