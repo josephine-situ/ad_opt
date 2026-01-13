@@ -152,7 +152,7 @@ def main() -> None:
         td = str(args.target_day).strip()
         if td.lower() in {"today", ""}:
             td = date.today().strftime("%Y-%m-%d")
-        args.cache_key = f"bert_glm_xgb_{td}_full"
+        args.cache_key = f"bert_ridge_xgb_{td}_full"
 
     sweep_dir = Path(args.sweep_dir) if args.sweep_dir else Path("opt_results/bids") / "lambda_sweep" / args.cache_key
     if not sweep_dir.exists():
