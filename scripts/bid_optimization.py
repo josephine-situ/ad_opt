@@ -430,54 +430,56 @@ def create_feature_matrix(
         print_all_mappings=False,
     )
 
-    # Compute time-series stats from searches_YYYY_MM columns
-    search_cols = sorted([c for c in result.columns if c.startswith('searches_')])
-    if search_cols:
-        def _ts_stats_from_row(row):
-            values = [row[c] for c in search_cols]
-            clean_vals = []
-            for v in values:
-                try:
-                    clean_vals.append(float(v))
-                except Exception:
-                    clean_vals.append(np.nan)
+    # Should use the same functions as tidy_get_data
 
-            last_val = clean_vals[-1] if clean_vals else np.nan
+    # # Compute time-series stats from searches_YYYY_MM columns
+    # search_cols = sorted([c for c in result.columns if c.startswith('searches_')])
+    # if search_cols:
+    #     def _ts_stats_from_row(row):
+    #         values = [row[c] for c in search_cols]
+    #         clean_vals = []
+    #         for v in values:
+    #             try:
+    #                 clean_vals.append(float(v))
+    #             except Exception:
+    #                 clean_vals.append(np.nan)
 
-            three = [v for v in clean_vals[-3:] if not np.isnan(v)]
-            six = [v for v in clean_vals[-6:] if not np.isnan(v)]
+    #         last_val = clean_vals[-1] if clean_vals else np.nan
 
-            three_avg = (sum(three) / len(three)) if three else np.nan
-            six_avg = (sum(six) / len(six)) if six else np.nan
+    #         three = [v for v in clean_vals[-3:] if not np.isnan(v)]
+    #         six = [v for v in clean_vals[-6:] if not np.isnan(v)]
 
-            mom = np.nan
-            if len(clean_vals) >= 2 and not np.isnan(clean_vals[-1]) and not np.isnan(clean_vals[-2]):
-                prev_val = clean_vals[-2]
-                curr_val = clean_vals[-1]
-                if prev_val > 0:
-                    mom = ((curr_val - prev_val) / prev_val) * 100.0
-                else:
-                    mom = 100.0 if curr_val > 0 else 0.0
+    #         three_avg = (sum(three) / len(three)) if three else np.nan
+    #         six_avg = (sum(six) / len(six)) if six else np.nan
 
-            trend = np.nan
-            if len(six) >= 2:
-                x = np.arange(len(six), dtype=float)
-                y = np.array(six, dtype=float)
-                trend = np.polyfit(x, y, 1)[0]
+    #         mom = np.nan
+    #         if len(clean_vals) >= 2 and not np.isnan(clean_vals[-1]) and not np.isnan(clean_vals[-2]):
+    #             prev_val = clean_vals[-2]
+    #             curr_val = clean_vals[-1]
+    #             if prev_val > 0:
+    #                 mom = ((curr_val - prev_val) / prev_val) * 100.0
+    #             else:
+    #                 mom = 100.0 if curr_val > 0 else 0.0
 
-            return pd.Series(
-                {
-                    'last_month_searches': last_val,
-                    'three_month_avg': three_avg,
-                    'six_month_avg': six_avg,
-                    'mom_change': mom,
-                    'search_trend': trend,
-                }
-            )
+    #         trend = np.nan
+    #         if len(six) >= 2:
+    #             x = np.arange(len(six), dtype=float)
+    #             y = np.array(six, dtype=float)
+    #             trend = np.polyfit(x, y, 1)[0]
 
-        ts_stats = result.apply(_ts_stats_from_row, axis=1)
-        for col in ts_stats.columns:
-            result[col] = ts_stats[col]
+    #         return pd.Series(
+    #             {
+    #                 'last_month_searches': last_val,
+    #                 'three_month_avg': three_avg,
+    #                 'six_month_avg': six_avg,
+    #                 'mom_change': mom,
+    #                 'search_trend': trend,
+    #             }
+    #         )
+
+    #     ts_stats = result.apply(_ts_stats_from_row, axis=1)
+    #     for col in ts_stats.columns:
+    #         result[col] = ts_stats[col]
 
     # Drop raw monthly columns to keep feature matrix consistent
     if search_cols:

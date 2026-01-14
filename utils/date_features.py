@@ -108,42 +108,42 @@ def calculate_days_to_next(d, course_start_dts=None):
     return int(min(diffs)) if diffs else np.nan
 
 
-def calculate_date_features(target_date, regions=None):
-    """
-    Calculate all date-related features for a target date.
+# def calculate_date_features(target_date, regions=None):
+#     """
+#     Calculate all date-related features for a target date.
     
-    Args:
-    - target_date (datetime or str): The target date to calculate features for.
-    - regions (list): List of regions for holiday calculation. If None, defaults to ['USA'].
+#     Args:
+#     - target_date (datetime or str): The target date to calculate features for.
+#     - regions (list): List of regions for holiday calculation. If None, defaults to ['USA'].
     
-    Returns:
-    - dict: Dictionary with keys: day_of_week, is_weekend, month, is_public_holiday, days_to_next_course_start
-    """
-    if isinstance(target_date, str):
-        target_date = pd.to_datetime(target_date)
+#     Returns:
+#     - dict: Dictionary with keys: day_of_week, is_weekend, month, is_public_holiday, days_to_next_course_start
+#     """
+#     if isinstance(target_date, str):
+#         target_date = pd.to_datetime(target_date)
     
-    if regions is None:
-        regions = ['USA']
+#     if regions is None:
+#         regions = ['USA']
     
-    # Basic date features
-    features = {
-        'day_of_week': target_date.strftime('%A'),
-        'is_weekend': 1 if target_date.weekday() >= 5 else 0,  # 5=Saturday, 6=Sunday
-        'month': target_date.month,
-        'days_to_next_course_start': calculate_days_to_next(target_date),
-    }
+#     # Basic date features
+#     features = {
+#         'day_of_week': target_date.strftime('%A'),
+#         'is_weekend': 1 if target_date.weekday() >= 5 else 0,  # 5=Saturday, 6=Sunday
+#         'month': target_date.strftime('%b'),
+#         'days_to_next_course_start': calculate_days_to_next(target_date),
+#     }
     
-    # Holiday features - check if date is a holiday in any of the regions
-    country_codes = [_region_to_country_code(r) for r in regions]
-    holiday_calendars = _get_holiday_calendars(country_codes)
+#     # Holiday features - check if date is a holiday in any of the regions
+#     country_codes = [_region_to_country_code(r) for r in regions]
+#     holiday_calendars = _get_holiday_calendars(country_codes)
     
-    is_holiday = 0
-    for country_code in set(country_codes):
-        cal = holiday_calendars.get(country_code)
-        if cal and target_date.date() in cal:
-            is_holiday = 1
-            break
+#     is_holiday = 0
+#     for country_code in set(country_codes):
+#         cal = holiday_calendars.get(country_code)
+#         if cal and target_date.date() in cal:
+#             is_holiday = 1
+#             break
     
-    features['is_public_holiday'] = is_holiday
+#     features['is_public_holiday'] = is_holiday
     
-    return features
+#     return features

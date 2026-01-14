@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils import (
     load_and_combine_keyword_data,
     format_keyword_data,
-    extract_date_features,
+    get_date_features,
     filter_data_by_date,
     get_gkp_data,
     impute_missing_data,
@@ -148,7 +148,7 @@ def main():
         
         print("\n[Step 3] Extract date features...")
         kw_df = load_or_cache(
-            extract_date_features,
+            get_date_features,
             cache_path / 'step3_features.parquet',
             args.force_reload,
             kw_df,
@@ -170,7 +170,7 @@ def main():
         kw_df = impute_missing_data(kw_df)
         gkp_df = impute_missing_data(gkp_df)
         
-        print("\n[Step 6] Merge with GKP data...")
+        print("\n[Step 6] Merge with GKP data and calculate search stats...")
         merged_df = load_or_cache(
             merge_with_ads_data,
             cache_path / 'step6_merged.parquet',
@@ -182,7 +182,13 @@ def main():
             unmatched_print_limit=200,
         )
         
-        cleaned_df = merged_df  # Imputation already handled, no additional cleaning needed
+        print("\n[Step 6.5] Remove outlier rows...")
+        cleaned_df = load_or_cache(
+            lambda df: df[df['Avg. CPC'] < 50],  # Example: remove rows with CPC >= 10,000
+            cache_path / 'step6_5_cleaned.parquet',
+            args.force_reload,
+            merged_df
+        )  
         
         print(f"\n[Step 7] Add {args.embedding_method.upper()} embeddings...")
         df = load_or_cache(

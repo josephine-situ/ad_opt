@@ -29,7 +29,7 @@ from .embeddings import (
 from .data_pipeline import (
     load_and_combine_keyword_data,
     format_keyword_data,
-    extract_date_features,
+    get_date_features,
     filter_data_by_date,
     get_gkp_data,
     impute_missing_data,
@@ -60,7 +60,7 @@ __all__ = [
     # Data pipeline
     'load_and_combine_keyword_data',
     'format_keyword_data',
-    'extract_date_features',
+    'get_date_features',
     'filter_data_by_date',
     'get_gkp_data',
     'impute_missing_data',
