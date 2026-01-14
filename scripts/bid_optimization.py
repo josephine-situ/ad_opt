@@ -1460,6 +1460,8 @@ def optimize_bids_embedded(
     clicks_xgb_paths: Optional[Tuple[Path, Path]] = None,
     epc_ridge_preproc_path: Optional[Path] = None,
     clicks_ridge_preproc_path: Optional[Path] = None,
+    epc_ridge_model_path: Optional[Path] = None,
+    clicks_ridge_model_path: Optional[Path] = None,
     alg_epc: str = 'lr',
     alg_clicks: str = 'lr',
     embedding_method: str = 'bert',
@@ -1468,6 +1470,9 @@ def optimize_bids_embedded(
     exploration_lambda: float = 0.0,
     new_row_mask: Optional[np.ndarray] = None,
     save_base_formulation_to: Optional[Path] = None,
+    write_lp: bool = True,
+    lp_dir: Optional[Path] = None,
+    solver_output_flag: int = 1,
 ):
     """Solve bid optimization with embedded ML models (OptiCL-style).
 
@@ -1530,7 +1535,7 @@ def optimize_bids_embedded(
 
     # Create model
     model = gp.Model('bid_optimization')
-    model.setParam('OutputFlag', 1) 
+    model.setParam('OutputFlag', int(solver_output_flag)) 
     model.setParam('TimeLimit', 300)
 
     # --- 0. Decision Variables ---
@@ -1583,7 +1588,8 @@ def optimize_bids_embedded(
                     f"Error: {e}"
                 ) from e
 
-            epc_ridge_model_path = Path('models') / f'ridge_{embedding_method}_epc.joblib'
+            if epc_ridge_model_path is None:
+                epc_ridge_model_path = Path('models') / f'ridge_{embedding_method}_epc.joblib'
             epc_intercept, epc_coeffs, _ = _extract_ridge_coefficients(
                 epc_ridge_model_path,
                 epc_ridge_preproc_path,
@@ -1664,7 +1670,8 @@ def optimize_bids_embedded(
                 ) from e
             
             # Extract coefficients from actual Ridge model
-            clicks_ridge_model_path = Path('models') / f'ridge_{embedding_method}_clicks.joblib'
+            if clicks_ridge_model_path is None:
+                clicks_ridge_model_path = Path('models') / f'ridge_{embedding_method}_clicks.joblib'
             clicks_intercept, clicks_coeffs, _ = _extract_ridge_coefficients(clicks_ridge_model_path, clicks_ridge_preproc_path)
 
             X_clicks_aligned, expected_cols = _align_X_for_preprocessor(preprocessor_clicks, X_clicks)
@@ -1766,19 +1773,20 @@ def optimize_bids_embedded(
         else:
             print("Note: exploration_lambda != 0 but no rows are marked as new; exploration term is 0")
 
-    # --- Save Model Formulation ---
-    model_dir = Path('opt_results/formulations')
-    model_dir.mkdir(exist_ok=True, parents=True)
-    
-    model.update()
-    
-    # Determine model type string for filename
-    model_type_str = f"{alg_epc}_{alg_clicks}"
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    lp_file = model_dir / f'bid_optimization_{model_type_str}_{timestamp}.lp'
-    model.write(str(lp_file))
-    print(f"\n  Model formulation saved to {lp_file}")
+    # --- Save Model Formulation (optional) ---
+    if bool(write_lp):
+        model_dir = Path('opt_results/formulations') if lp_dir is None else Path(lp_dir)
+        model_dir.mkdir(exist_ok=True, parents=True)
+
+        model.update()
+
+        # Determine model type string for filename
+        model_type_str = f"{alg_epc}_{alg_clicks}"
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        lp_file = model_dir / f'bid_optimization_{model_type_str}_{timestamp}.lp'
+        model.write(str(lp_file))
+        print(f"\n  Model formulation saved to {lp_file}")
     
     # --- Optimize ---
     model.setParam("NonConvex", 2)  # Allow bilinear terms in objective/constraints
@@ -3018,6 +3026,34 @@ def _compute_clicks_bid_bounds_from_history(
     ubs = np.maximum(ubs, lbs)
     debug_df = pd.DataFrame(debug_rows)
     return lbs, ubs, debug_df
+
+
+def compute_clicks_bid_bounds_from_history(
+    *,
+    training_csv: Path,
+    keyword_df: pd.DataFrame,
+    kw_idx_list: List[int],
+    region_list: List[str],
+    match_list: List[str],
+    embedding_method: str,
+    max_bid_cap: float,
+    min_active_bid: float = 0.01,
+) -> Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    """Public wrapper for per-row historical bid bounds.
+
+    This delegates to the internal implementation used by the main optimizer.
+    """
+
+    return _compute_clicks_bid_bounds_from_history(
+        training_csv=training_csv,
+        keyword_df=keyword_df,
+        kw_idx_list=kw_idx_list,
+        region_list=region_list,
+        match_list=match_list,
+        embedding_method=embedding_method,
+        max_bid_cap=max_bid_cap,
+        min_active_bid=min_active_bid,
+    )
 
 
 def main():

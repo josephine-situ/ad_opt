@@ -1,0 +1,20 @@
+{
+  "start_date": "2025-12-01",
+  "end_date": "2025-12-31",
+  "embedding_method": "bert",
+  "mask_frac": 0.2,
+  "discovery_rate": 1.0,
+  "ratio_cap": 2.0,
+  "lambdas": [
+    0.0,
+    10.0,
+    100.0
+  ],
+  "universe": "train",
+  "max_bid": 100.0,
+  "historical_bid_bounds": true,
+  "budget_mode": "observed",
+  "time_limit_s": 30,
+  "seed": 42,
+  "step_days": 1
+}
