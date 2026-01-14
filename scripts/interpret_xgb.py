@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 """
-Interpret XGBoost models using variable importance and SHAP values.
+Interpret XGBoost clicks model using variable importance and SHAP values.
 """
 
 import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import json
 import matplotlib.pyplot as plt
 import shap
+import joblib
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Configuration
-EMBEDDING_METHOD = 'bert'  # or 'tfidf'
+MODEL_PATH = Path(__file__).parent.parent / 'models' / 'xgb_clicks_model.joblib'
 OUTPUT_DIR = Path(__file__).parent.parent / 'model_interpretability'
 OUTPUT_DIR.mkdir(exist_ok=True)
-model_dir = Path(__file__).parent.parent / 'models'
 
 print("=" * 70)
-print("XGBoost Model Interpretation")
+print("XGBoost Clicks Model Interpretation")
 print("=" * 70)
 
 # ============================================================================
@@ -29,7 +28,7 @@ print("=" * 70)
 # ============================================================================
 print("\n1. Loading test data...")
 
-embedding_choice = 'bert' if EMBEDDING_METHOD == 'bert' else 'tfidf'
+embedding_choice = 'bert'
 test_file = Path(__file__).parent.parent / 'data' / 'clean' / f'test_{embedding_choice}.csv'
 
 X_test = pd.read_csv(test_file)
@@ -39,193 +38,141 @@ print(f"  Columns: {list(X_test.columns)[:10]}...")
 print(f"  Sample features: {list(X_test.columns[-10:])}")
 
 # ============================================================================
-# Load preprocessor and feature names
+# Load XGBoost clicks model
 # ============================================================================
-print("\n2b. Loading preprocessor...")
-
-import joblib
+print("\n3. Loading XGBoost clicks model...")
 
 try:
-    preprocessor = joblib.load(model_dir / f'xgb_mse_{embedding_choice}_epc_preprocess.joblib')
-    print(f"  Loaded preprocessor for {embedding_choice}")
+    pipeline = joblib.load(MODEL_PATH)
+    print(f"  Loaded clicks model: {MODEL_PATH.name}")
     
-    # Get feature names from the preprocessor
-    if hasattr(preprocessor, 'get_feature_names_out'):
-        feature_names = preprocessor.get_feature_names_out()
-        print(f"  Preprocessor output shape: {len(feature_names)} features")
+    # Extract the XGBoost model from the pipeline
+    if hasattr(pipeline, 'named_steps'):
+        # It's a Pipeline, extract the final estimator
+        model = pipeline.named_steps.get('model') or pipeline.steps[-1][1]
+        preprocessor = pipeline[:-1]  # All steps except the final model
+        print(f"  Extracted XGBoost model from pipeline")
     else:
-        feature_names = None
-        print(f"  Warning: Could not extract feature names from preprocessor")
+        # It's already a model
+        model = pipeline
+        preprocessor = None
+    
 except Exception as e:
-    print(f"  Error loading preprocessor: {e}")
+    print(f"  Error loading XGBoost model: {e}")
+    import traceback
+    traceback.print_exc()
+    model = None
     preprocessor = None
-    feature_names = None
-
-
-
-# ============================================================================
-# Load XGBoost models
-# ============================================================================
-print("\n3. Loading XGBoost mse models...")
-
-model_dir = Path(__file__).parent.parent / 'models'
-
-# Load mse models (EPC and clicks) using native XGBoost
-try:
-    import xgboost as xgb
-    
-    model_epc = xgb.Booster(model_file=str(model_dir / f'xgb_mse_{embedding_choice}_epc.json'))
-    model_clicks = xgb.Booster(model_file=str(model_dir / f'xgb_mse_{embedding_choice}_clicks.json'))
-    print(f"  Loaded EPC model: xgb_mse_{embedding_choice}_epc.json")
-    print(f"  Loaded clicks model: xgb_mse_{embedding_choice}_clicks.json")
-    
-except Exception as e:
-    print(f"  Error loading XGBoost models: {e}")
-    model_epc = None
-    model_clicks = None
 
 # ============================================================================
 # Variable Importance Analysis
 # ============================================================================
 print("\n4. Computing Variable Importance...")
 
-if model_epc is not None:
+if model is not None:
     try:
-        # Get variable importance for EPC model using native XGBoost
-        importance_epc_dict = model_epc.get_score(importance_type='weight')
-        imp_df_epc = pd.DataFrame(list(importance_epc_dict.items()), columns=['Feature', 'Importance'])
-        imp_df_epc = imp_df_epc.sort_values('Importance', ascending=False)
+        # Get variable importance using sklearn if available, otherwise try XGBoost
+        try:
+            importance_dict = model.get_score(importance_type='weight')
+        except AttributeError:
+            # sklearn-style model
+            try:
+                # Try to get feature names from preprocessor
+                if preprocessor is not None and hasattr(preprocessor, 'get_feature_names_out'):
+                    feature_names = preprocessor.get_feature_names_out()
+                    importance_dict = {feature_names[i]: v for i, v in enumerate(model.feature_importances_)}
+                else:
+                    importance_dict = {f'Feature_{i}': v for i, v in enumerate(model.feature_importances_)}
+            except Exception as e:
+                print(f"    Warning: Could not extract feature names: {e}")
+                importance_dict = {f'Feature_{i}': v for i, v in enumerate(model.feature_importances_)}
         
-        print("\n  EPC Model - Top 15 Important Features (by frequency):")
-        print("  " + "-" * 60)
-        for feat, imp_val in imp_df_epc.head(15).itertuples(index=False):
-            print(f"    {feat:45s}: {imp_val:10.0f}")
-            
-        # Save to CSV
-        imp_df_epc.to_csv(OUTPUT_DIR / f'variable_importance_epc_{embedding_choice}.csv', index=False)
-        print(f"\n  Saved to: {OUTPUT_DIR / f'variable_importance_epc_{embedding_choice}.csv'}")
-            
-    except Exception as e:
-        print(f"  Error getting variable importance for EPC: {e}")
-        import traceback
-        traceback.print_exc()
-
-if model_clicks is not None:
-    try:
-        # Get variable importance for clicks model using native XGBoost
-        importance_clicks_dict = model_clicks.get_score(importance_type='weight')
-        imp_df_clicks = pd.DataFrame(list(importance_clicks_dict.items()), columns=['Feature', 'Importance'])
-        imp_df_clicks = imp_df_clicks.sort_values('Importance', ascending=False)
+        imp_df = pd.DataFrame(list(importance_dict.items()), columns=['Feature', 'Importance'])
+        imp_df = imp_df.sort_values('Importance', ascending=False)
         
         print("\n  Clicks Model - Top 15 Important Features (by frequency):")
         print("  " + "-" * 60)
-        for feat, imp_val in imp_df_clicks.head(15).itertuples(index=False):
-            print(f"    {feat:45s}: {imp_val:10.0f}")
+        for feat, imp_val in imp_df.head(15).itertuples(index=False):
+            print(f"    {feat:45s}: {imp_val:10.4f}")
             
         # Save to CSV
-        imp_df_clicks.to_csv(OUTPUT_DIR / f'variable_importance_clicks_{embedding_choice}.csv', index=False)
-        print(f"\n  Saved to: {OUTPUT_DIR / f'variable_importance_clicks_{embedding_choice}.csv'}")
+        imp_df.to_csv(OUTPUT_DIR / 'variable_importance_clicks.csv', index=False)
+        print(f"\n  Saved to: {OUTPUT_DIR / 'variable_importance_clicks.csv'}")
             
     except Exception as e:
-        print(f"  Error getting variable importance for clicks: {e}")
+        print(f"  Error getting variable importance: {e}")
         import traceback
         traceback.print_exc()
 
 # ============================================================================
 # SHAP Values Analysis
 # ============================================================================
-print("\n5. Computing SHAP Values (this may take a moment)...")
+print("\n4. Computing SHAP Values (this may take a moment)...")
 
 try:
-    if preprocessor is None:
-        print("  Warning: Preprocessor not loaded, skipping SHAP analysis")
+    if model is not None:
+        print("  Computing SHAP for clicks model...")
+        try:
+            # Apply preprocessing if we have a pipeline
+            if preprocessor is not None:
+                print("  Applying preprocessing to test data...")
+                X_for_shap = preprocessor.transform(X_test)
+                if hasattr(X_for_shap, 'toarray'):
+                    X_for_shap = X_for_shap.toarray()
+                # Get feature names from preprocessor if available
+                try:
+                    feature_names = preprocessor.get_feature_names_out()
+                except AttributeError:
+                    # If preprocessor doesn't have get_feature_names_out, try without last step
+                    try:
+                        feature_names = preprocessor[:-1].get_feature_names_out()
+                    except (AttributeError, TypeError, IndexError):
+                        feature_names = None
+                
+                if feature_names is not None:
+                    X_for_shap = pd.DataFrame(X_for_shap, columns=feature_names)
+                else:
+                    X_for_shap = pd.DataFrame(X_for_shap, columns=[f'Feature_{i}' for i in range(X_for_shap.shape[1])])
+                print(f"  Preprocessed data shape: {X_for_shap.shape}")
+            else:
+                X_for_shap = X_test
+            
+            # Create SHAP explainer for XGBoost using raw test data
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_for_shap)
+            
+            # Calculate mean absolute SHAP values
+            shap_importance = pd.DataFrame({
+                'Feature': [str(f) for f in X_for_shap.columns],
+                'Mean_Abs_SHAP': np.abs(shap_values).mean(axis=0)
+            }).sort_values('Mean_Abs_SHAP', ascending=False)
+            
+            print("\n  Clicks Model - SHAP-based Feature Importance (Top 15):")
+            print("  " + "-" * 60)
+            for idx, row in shap_importance.head(15).iterrows():
+                print(f"    {row['Feature']:45s}: {row['Mean_Abs_SHAP']:10.6f}")
+
+            # Save SHAP importance
+            shap_importance.to_csv(OUTPUT_DIR / 'shap_importance_clicks.csv', index=False)
+            print(f"\n  Saved to: {OUTPUT_DIR / 'shap_importance_clicks.csv'}")
+
+            # Create SHAP summary plot
+            print("    Creating SHAP summary plot...")
+            try:
+                plt.figure(figsize=(10, 8))
+                shap.summary_plot(shap_values, X_for_shap, show=False)
+                plt.tight_layout()
+                plt.savefig(OUTPUT_DIR / 'shap_summary_clicks.png', dpi=100, bbox_inches='tight')
+                plt.close()
+                print(f"  SHAP summary plot saved to: {OUTPUT_DIR / 'shap_summary_clicks.png'}")
+            except Exception as e:
+                print(f"  Error creating SHAP summary plot: {e}")
+        except Exception as e:
+            print(f"  Error computing SHAP: {e}")
+            import traceback
+            traceback.print_exc()
     else:
-        # Apply preprocessor to test data to get the same shape as training
-        print("  Applying preprocessor to test data...")
-        X_preprocessed = preprocessor.transform(X_test)
-        
-        # Convert to dense if sparse
-        if hasattr(X_preprocessed, 'toarray'):
-            X_preprocessed = X_preprocessed.toarray()
-        
-        X_preprocessed = pd.DataFrame(X_preprocessed, columns=feature_names if feature_names is not None else [f'f{i}' for i in range(X_preprocessed.shape[1])])
-        print(f"  Preprocessed data shape: {X_preprocessed.shape}")
-        
-        if model_epc is not None:
-            print("  Computing SHAP for EPC model...")
-            try:
-                # Create SHAP explainer for XGBoost using preprocessed data
-                explainer_epc = shap.TreeExplainer(model_epc)
-                shap_values_epc = explainer_epc.shap_values(X_preprocessed)
-                
-                # Calculate mean absolute SHAP values
-                shap_importance_epc = pd.DataFrame({
-                    'Feature': X_preprocessed.columns,
-                    'Mean_Abs_SHAP': np.abs(shap_values_epc).mean(axis=0)
-                }).sort_values('Mean_Abs_SHAP', ascending=False)
-                
-                print("\n  EPC Model - SHAP-based Feature Importance (Top 15):")
-                print("  " + "-" * 60)
-                for idx, row in shap_importance_epc.head(15).iterrows():
-                    print(f"    {row['Feature']:45s}: {row['Mean_Abs_SHAP']:10.6f}")
-
-                # Save SHAP importance
-                shap_importance_epc.to_csv(OUTPUT_DIR / f'shap_importance_epc_{embedding_choice}.csv', index=False)
-                print(f"\n  Saved to: {OUTPUT_DIR / f'shap_importance_epc_{embedding_choice}.csv'}")
-
-                # Create SHAP summary plot
-                print("    Creating SHAP summary plot...")
-                try:
-                    plt.figure(figsize=(10, 8))
-                    shap.summary_plot(shap_values_epc, X_preprocessed, show=False)
-                    plt.tight_layout()
-                    plt.savefig(OUTPUT_DIR / f'shap_summary_epc_{embedding_choice}.png', dpi=100, bbox_inches='tight')
-                    plt.close()
-                    print(f"  SHAP summary plot saved to: {OUTPUT_DIR / f'shap_summary_epc_{embedding_choice}.png'}")
-                except Exception as e:
-                    print(f"  Error creating SHAP summary plot: {e}")
-            except Exception as e:
-                print(f"  Error computing SHAP for EPC: {e}")
-                import traceback
-                traceback.print_exc()
-
-        if model_clicks is not None:
-            print("  Computing SHAP for clicks model...")
-            try:
-                # Create SHAP explainer for XGBoost using preprocessed data
-                explainer_clicks = shap.TreeExplainer(model_clicks)
-                shap_values_clicks = explainer_clicks.shap_values(X_preprocessed)
-                
-                # Calculate mean absolute SHAP values
-                shap_importance_clicks = pd.DataFrame({
-                    'Feature': X_preprocessed.columns,
-                    'Mean_Abs_SHAP': np.abs(shap_values_clicks).mean(axis=0)
-                }).sort_values('Mean_Abs_SHAP', ascending=False)
-                
-                print("\n  Clicks Model - SHAP-based Feature Importance (Top 15):")
-                print("  " + "-" * 60)
-                for idx, row in shap_importance_clicks.head(15).iterrows():
-                    print(f"    {row['Feature']:45s}: {row['Mean_Abs_SHAP']:10.6f}")
-
-                # Save SHAP importance
-                shap_importance_clicks.to_csv(OUTPUT_DIR / f'shap_importance_clicks_{embedding_choice}.csv', index=False)
-                print(f"\n  Saved to: {OUTPUT_DIR / f'shap_importance_clicks_{embedding_choice}.csv'}")
-
-                # Create SHAP summary plot
-                print("    Creating SHAP summary plot...")
-                try:
-                    plt.figure(figsize=(10, 8))
-                    shap.summary_plot(shap_values_clicks, X_preprocessed, show=False)
-                    plt.tight_layout()
-                    plt.savefig(OUTPUT_DIR / f'shap_summary_clicks_{embedding_choice}.png', dpi=100, bbox_inches='tight')
-                    plt.close()
-                    print(f"  SHAP summary plot saved to: {OUTPUT_DIR / f'shap_summary_clicks_{embedding_choice}.png'}")
-                except Exception as e:
-                    print(f"  Error creating SHAP summary plot: {e}")
-            except Exception as e:
-                print(f"  Error computing SHAP for clicks: {e}")
-                import traceback
-                traceback.print_exc()
+        print("  Warning: Model not loaded, skipping SHAP analysis")
 
 except Exception as e:
     print(f"  Error in SHAP analysis: {e}")

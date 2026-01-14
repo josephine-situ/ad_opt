@@ -629,7 +629,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
         'last_month_searches', 'three_month_avg', 'six_month_avg',
         'mom_change', 'search_trend',
         'Competition (indexed value)', 
-        'Top of page bid (low range)', 'Top of page bid (high range)', 'Avg. CPC'
+        'Top of page bid (low range)', 'Top of page bid (high range)', 'Avg. CPC', 'Cost'
     ] + embedding_cols
     
     # Check for missing required columns
