@@ -381,6 +381,9 @@ def main():
     cache_dir = Path('opt_results/cache')
     cache_dir.mkdir(parents=True, exist_ok=True)
     
+    res_dir = Path('opt_results/bids')
+    res_dir.mkdir(parents=True, exist_ok=True)
+    
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
@@ -398,7 +401,7 @@ def main():
     # Extract solution and validate predictions
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X)
     if results_df is not None:
-        results_df.to_csv('opt_results/bids/optimized_costs.csv', index=False)
+        results_df.to_csv(res_dir / 'optimized_costs.csv', index=False)
         print("[Info] Optimization results saved to 'opt_results/bids/optimized_costs.csv'.")
 
 
