@@ -268,6 +268,7 @@ def optimize_bids(X, model_path, budget=400):
     model = gp.Model("max_clicks")
     model.setParam('OutputFlag', 1)
     model.setParam('TimeLimit', 300)
+    model.setParam('MIPGap', 0.05)
 
     cost_vars, pred_vars = embed_xgb(model, model_path, X)
 
