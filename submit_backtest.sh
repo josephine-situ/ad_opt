@@ -40,6 +40,6 @@ PY
 )
 
 echo "Running backtest_daily.py --day $DAY"
-python -u scripts/backtest_daily.py --day "$DAY" --keywords-n 10
+python -u scripts/backtest_daily.py --day "$DAY"
 
 echo "End: $(date)"

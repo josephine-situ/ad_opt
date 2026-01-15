@@ -1,0 +1,221 @@
+========== Env & Dir ==========
+Host: node1610
+Start: Thu Jan 15 01:18:44 EST 2026
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running backtest_daily.py --day 2025-12-22
+
+=== Day 2025-12-22 ===
+[Info] Created 16182 keyword combinations.
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  Loaded 1749 rows from Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  After cleaning: 1747 rows with unique keywords
+[Step 5.5] Imputing missing data...
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  searches_2024_07                        26.73% numeric (0)               (n=467)
+  searches_2024_08                        26.73% numeric (0)               (n=467)
+  searches_2024_09                        26.73% numeric (0)               (n=467)
+  searches_2024_10                        26.73% numeric (0)               (n=467)
+  searches_2024_11                        26.73% numeric (0)               (n=467)
+  searches_2024_12                        26.73% numeric (0)               (n=467)
+  searches_2025_01                        26.73% numeric (0)               (n=467)
+  searches_2025_02                        26.73% numeric (0)               (n=467)
+  searches_2025_03                        26.73% numeric (0)               (n=467)
+  searches_2025_04                        26.73% numeric (0)               (n=467)
+  searches_2025_05                        26.73% numeric (0)               (n=467)
+  searches_2025_06                        26.73% numeric (0)               (n=467)
+  searches_2025_07                        26.73% numeric (0)               (n=467)
+  searches_2025_08                        26.73% numeric (0)               (n=467)
+  searches_2025_09                        26.73% numeric (0)               (n=467)
+  searches_2025_10                        26.73% numeric (0)               (n=467)
+  searches_2025_11                        26.73% numeric (0)               (n=467)
+  Competition                             38.12% categorical (Missing)     (n=666)
+  Competition (indexed value)             38.12% numeric (0)               (n=666)
+  Top of page bid (low range)             54.26% numeric (0)               (n=948)
+  Top of page bid (high range)            54.26% numeric (0)               (n=948)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 11167 missing values (29.06% of total data)
+[Step 6] Merging with GKP data by keyword and date...
+  Found 17 monthly search columns
+  Fuzzy-matched 162 rows using similar-word normalization
+  Example fuzzy mappings: ['ai certification -> artificial intelligence certification', 'ai certification courses -> ai certificate course', 'ai courses -> artificial intelligence course', 'ai for engineers -> ai for engineering', 'ai learning courses -> ai learning course']
+  Matched 1765 unique keywords from GKP
+  Unmatched 33 keywords after fuzzy merge
+  Unmatched keyword examples (33): ['ai online courses', 'apply to mit', 'artificial intelligence ms in usa', 'business ai', 'course ai', 'courses on artificial intelligence', 'deeplearning ai', 'diploma in artificial intelligence', 'harvard cs50', 'harvard edx', "harvard's cs50", 'mit app inventor', 'mit artificial intelligence online course', 'mit course', 'mit courses', 'mit cursos online gratuitos', 'mit edx', 'mit in us', 'mit open course', 'mit open courses', 'mit opencourseware', 'mit summer programme', "mit women's technology program", 'mites mit', 'ocw mit', 'online ai courses', 'open courses mit', 'opencourseware mit', 'python mit', 'stanford ai', 'stanford ai course', 'stanford ai courses', 'university mit']
+  Calculating time series statistics...
+  Added time series statistics columns
+
+  NaN check after time series calculations (from unmatched keywords):
+    last_month_searches          297 rows (  1.84%)
+    three_month_avg              297 rows (  1.84%)
+    six_month_avg                297 rows (  1.84%)
+    mom_change                   297 rows (  1.84%)
+    search_trend                 297 rows (  1.84%)
+  Merged rows: 16182
+✅ Consistency Check Passed: Embeddings are identical.
+Set parameter WLSAccessID
+Set parameter WLSSecret
+Set parameter LicenseID to value 2760147
+Academic license 2760147 - for non-commercial use only - registered to jo___@mit.edu
+Set parameter OutputFlag to value 1
+Set parameter TimeLimit to value 300
+Set parameter MIPGap to value 0.05
+[Info] Pruned 1739 rows with negative predicted clicks at Cost=0.
+Gurobi Optimizer version 13.0.0 build v13.0.0rc1 (linux64 - "Rocky Linux 8.10 (Green Obsidian)")
+
+CPU model: AMD EPYC 9474F 48-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 96 physical cores, 192 logical processors, using up to 32 threads
+
+Non-default parameters:
+TimeLimit  300
+MIPGap  0.05
+
+Academic license 2760147 - for non-commercial use only - registered to jo___@mit.edu
+Optimize a model with 1614044 rows, 841673 columns and 4550557 nonzeros (Max)
+Model fingerprint: 0x148c4d18
+Model has 14443 linear objective coefficients
+Variable types: 28886 continuous, 812787 integer (812787 binary)
+Coefficient statistics:
+  Matrix range     [2e-03, 4e+02]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+01, 4e+02]
+Found heuristic solution: objective -0.0000000
+Presolve removed 325179 rows and 44914 columns (presolve time = 5s)...
+Presolve removed 827768 rows and 45100 columns (presolve time = 10s)...
+Presolve removed 827768 rows and 45100 columns (presolve time = 16s)...
+Presolve removed 830374 rows and 47223 columns (presolve time = 20s)...
+Presolve removed 830374 rows and 47223 columns (presolve time = 25s)...
+Presolve removed 830374 rows and 47236 columns
+Presolve time: 27.66s
+Presolved: 783670 rows, 794437 columns, 2587569 nonzeros
+Variable types: 14226 continuous, 780211 integer (780211 binary)
+Found heuristic solution: objective 66.0091397
+Deterministic concurrent LP optimizer: primal simplex, dual simplex, and barrier
+Showing barrier log only...
+
+Root barrier log...
+
+Ordering time: 0.43s
+
+Barrier statistics:
+ AA' NZ     : 1.290e+07
+ Factor NZ  : 2.024e+07 (roughly 800 MB of memory)
+ Factor Ops : 6.459e+08 (less than 1 second per iteration)
+ Threads    : 30
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0   2.98762201e+07  6.30260661e+07  1.68e+06 1.65e+00  1.80e+03    36s
+   1   7.18322491e+06  6.63398674e+07  4.22e+05 4.17e-14  4.92e+02    37s
+   2   4.60070811e+05  4.86339622e+07  2.08e+04 5.68e-14  4.31e+01    37s
+   3   1.41183740e+05  4.07230770e+07  4.97e+03 5.51e-14  2.38e+01    38s
+   4   8.11692015e+04  8.33447707e+06  2.32e+03 1.21e-13  5.73e+00    39s
+   5   3.81924033e+04  2.27700287e+06  8.24e+02 1.60e-13  1.66e+00    40s
+   6   1.99209694e+04  6.65519028e+05  2.70e+02 1.91e-13  5.03e-01    40s
+   7   1.12594021e+04  1.82520820e+05  8.81e+01 1.78e-13  1.45e-01    41s
+   8   8.68114841e+03  4.09769274e+04  3.03e+00 2.10e-13  1.72e-02    42s
+   9   1.37076665e+04  2.08965265e+04  2.09e-01 1.14e-13  3.46e-03    42s
+  10   1.45322764e+04  1.88336747e+04  8.36e-02 8.37e-14  2.05e-03    43s
+  11   1.46607934e+04  1.82714551e+04  6.80e-02 7.46e-14  1.72e-03    44s
+  12   1.47003707e+04  1.79957166e+04  6.44e-02 7.23e-14  1.57e-03    45s
+  13   1.47318476e+04  1.78031093e+04  6.14e-02 6.36e-14  1.46e-03    45s
+  14   1.47765451e+04  1.76308608e+04  5.77e-02 5.55e-14  1.36e-03    46s
+  15   1.48077203e+04  1.74943056e+04  5.56e-02 5.10e-14  1.28e-03    47s
+  16   1.48346580e+04  1.73690267e+04  5.38e-02 5.03e-14  1.21e-03    48s
+  17   1.48734107e+04  1.72760466e+04  5.15e-02 6.15e-14  1.14e-03    49s
+  18   1.49060638e+04  1.71732756e+04  4.96e-02 5.47e-14  1.08e-03    50s
+  19   1.49363736e+04  1.70938763e+04  4.79e-02 3.91e-14  1.03e-03    51s
+  20   1.49714153e+04  1.69848240e+04  4.59e-02 4.10e-14  9.60e-04    52s
+  21   1.50117910e+04  1.69386307e+04  4.38e-02 4.42e-14  9.18e-04    53s
+  22   1.50859720e+04  1.68532224e+04  3.95e-02 3.44e-14  8.42e-04    54s
+  23   1.51219425e+04  1.67569920e+04  3.75e-02 2.98e-14  7.79e-04    55s
+  24   1.51535479e+04  1.67026243e+04  3.55e-02 4.02e-14  7.38e-04    56s
+  25   1.51659665e+04  1.66314145e+04  3.48e-02 3.19e-14  6.98e-04    57s
+  26   1.51944825e+04  1.65841652e+04  3.33e-02 2.86e-14  6.62e-04    58s
+  27   1.52267491e+04  1.65399439e+04  3.16e-02 2.78e-14  6.26e-04    59s
+  28   1.52500227e+04  1.64789232e+04  3.05e-02 2.76e-14  5.86e-04    60s
+  29   1.52812528e+04  1.64337145e+04  2.89e-02 2.13e-14  5.49e-04    60s
+  30   1.53004648e+04  1.63961350e+04  2.80e-02 2.48e-14  5.22e-04    62s
+  31   1.53219900e+04  1.63563120e+04  2.70e-02 1.99e-14  4.93e-04    63s
+  32   1.53385593e+04  1.63310843e+04  2.61e-02 2.36e-14  4.73e-04    64s
+  33   1.53955273e+04  1.62829558e+04  2.33e-02 1.86e-14  4.23e-04    64s
+  34   1.54207360e+04  1.62289581e+04  2.21e-02 1.94e-14  3.85e-04    65s
+  35   1.54522836e+04  1.62099189e+04  2.05e-02 2.00e-14  3.61e-04    66s
+  36   1.54901637e+04  1.61723118e+04  1.86e-02 1.90e-14  3.25e-04    68s
+  37   1.55240855e+04  1.61501389e+04  1.69e-02 1.83e-14  2.98e-04    69s
+  38   1.55409632e+04  1.61152799e+04  1.61e-02 1.64e-14  2.74e-04    69s
+  39   1.55529788e+04  1.60974285e+04  1.55e-02 1.63e-14  2.60e-04    70s
+  40   1.55648670e+04  1.60886692e+04  1.49e-02 1.55e-14  2.50e-04    71s
+  41   1.55862437e+04  1.60731403e+04  1.38e-02 1.86e-14  2.32e-04    72s
+  42   1.56139430e+04  1.60550655e+04  1.24e-02 1.78e-14  2.10e-04    73s
+
+Barrier performed 42 iterations in 73.33 seconds (55.24 work units)
+Barrier solve interrupted - model solved by another algorithm
+
+Concurrent spin time: 0.29s
+
+Solved with dual simplex
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+  634018    1.5867698e+04   0.000000e+00   0.000000e+00     74s
+
+Root relaxation: objective 1.586770e+04, 634018 iterations, 41.81 seconds (18.03 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 15867.6976    0 17856   66.00914 15867.6976      -     -   77s
+H    0     0                    15010.987161 15867.6976  5.71%     -   78s
+H    0     0                    15011.478494 15867.6976  5.70%     -   78s
+H    0     0                    15014.817228 15867.6976  5.68%     -   80s
+H    0     0                    15015.062894 15867.6976  5.68%     -   81s
+H    0     0                    15025.770346 15867.6976  5.60%     -   83s
+H    0     0                    15035.738893 15867.6976  5.53%     -   85s
+H    0     0                    15035.759786 15867.6976  5.53%     -   90s
+H    0     0                    15035.877293 15867.6976  5.53%     -   92s
+H    0     0                    15036.283139 15867.6976  5.53%     -   94s
+H    0     0                    15037.107780 15867.6976  5.52%     -   96s
+H    0     0                    15037.776774 15867.6976  5.52%     -  108s
+     0     0          -    0      15037.7768 15789.6340  5.00%     -  113s
+
+Cutting planes:
+  Learned: 4375
+  Gomory: 20
+  Cover: 4622
+  Clique: 2170
+  MIR: 4349
+  GUB cover: 122
+  Zero half: 41
+  RLT: 21
+  Relax-and-lift: 715
+
+Explored 1 nodes (636781 simplex iterations) in 114.01 seconds (90.39 work units)
+Thread count was 32 (of 192 available processors)
+
+Solution count 10: 15037.8 15037.1 15036.3 ... 15011.5
+
+Optimal solution found (tolerance 5.00e-02)
+Best objective 1.503777677410e+04, best bound 1.578963399451e+04, gap 4.9998%
+[Info] Optimization Success. Objective Value: 15037.7768
+[Info] Max discrepancy between Gurobi and XGBoost: 3.558650
+[Info] Sample of Optimization Results:
+                Keyword Region  ... Actual Model Pred          Diff
+0  1 mit opencourseware    USA  ...          1.083048 -2.734627e-07
+1  1 mit opencourseware    USA  ...          1.363432 -4.251927e-07
+2  1 mit opencourseware    USA  ...          0.732252 -4.225270e-07
+3  1 mit opencourseware      A  ...          1.337993 -4.111097e-07
+4  1 mit opencourseware      A  ...          1.618377 -3.244211e-07
+
+[5 rows x 7 columns]
+
+Backtest complete. Evaluation saved to opt_results/backtests/daily_eval_2025-12-22.csv
+End: Thu Jan 15 01:21:21 EST 2026

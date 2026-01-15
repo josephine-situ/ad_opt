@@ -1,0 +1,163 @@
+========== Env & Dir ==========
+Host: node3103
+Start: Thu Jan 15 00:52:21 EST 2026
+Submit dir: /orcd/home/002/jositu/ad_opt
+PWD: /orcd/home/002/jositu/ad_opt
+===============================
+Load modules...
+Activate environment...
+Running backtest_daily.py --day 2025-12-02
+
+=== Day 2025-12-02 ===
+Set parameter WLSAccessID
+Set parameter WLSSecret
+Set parameter LicenseID to value 2760147
+Academic license 2760147 - for non-commercial use only - registered to jo___@mit.edu
+Set parameter OutputFlag to value 1
+Set parameter TimeLimit to value 300
+Set parameter MIPGap to value 0.05
+[Info] Pruned 1761 rows with negative predicted clicks at Cost=0.
+Gurobi Optimizer version 13.0.0 build v13.0.0rc1 (linux64 - "Rocky Linux 8.10 (Green Obsidian)")
+
+CPU model: AMD EPYC 9474F 48-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 96 physical cores, 192 logical processors, using up to 32 threads
+
+Non-default parameters:
+TimeLimit  300
+MIPGap  0.05
+
+Academic license 2760147 - for non-commercial use only - registered to jo___@mit.edu
+Optimize a model with 1514895 rows, 798994 columns and 4267635 nonzeros (Max)
+Model fingerprint: 0xd18ad600
+Model has 14421 linear objective coefficients
+Variable types: 28842 continuous, 770152 integer (770152 binary)
+Coefficient statistics:
+  Matrix range     [3e-04, 4e+02]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+01, 4e+02]
+Found heuristic solution: objective -0.0000000
+Presolve removed 788792 rows and 60547 columns (presolve time = 5s)...
+Presolve removed 788814 rows and 61000 columns (presolve time = 10s)...
+Presolve removed 788814 rows and 63430 columns (presolve time = 16s)...
+Presolve removed 790810 rows and 63511 columns
+Presolve time: 19.50s
+Presolved: 724085 rows, 735483 columns, 2391433 nonzeros
+Variable types: 14420 continuous, 721063 integer (721063 binary)
+Found heuristic solution: objective 46.6243862
+Deterministic concurrent LP optimizer: primal simplex, dual simplex, and barrier
+Showing barrier log only...
+
+Root barrier log...
+
+Ordering time: 0.38s
+
+Barrier statistics:
+ AA' NZ     : 1.098e+07
+ Factor NZ  : 1.721e+07 (roughly 700 MB of memory)
+ Factor Ops : 5.056e+08 (less than 1 second per iteration)
+ Threads    : 30
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0   2.15056986e+07  9.14091866e+07  2.22e+06 2.30e+00  1.71e+03    26s
+   1   7.28653209e+06  9.27086298e+07  8.05e+05 5.33e-14  6.45e+02    27s
+   2   4.92284107e+05  6.64232912e+07  4.44e+04 6.22e-14  6.25e+01    27s
+   3   2.20013419e+05  1.44727984e+07  1.74e+04 1.08e-13  1.48e+01    28s
+   4   6.60910077e+04  3.11929372e+06  3.33e+03 1.30e-13  2.77e+00    29s
+   5   2.51850849e+04  7.80146235e+05  7.98e+02 1.39e-13  6.59e-01    29s
+   6   1.33555041e+04  2.47756394e+05  2.31e+02 1.40e-13  1.97e-01    30s
+   7   1.01188461e+04  7.49782477e+04  3.25e+01 1.76e-13  4.30e-02    30s
+   8   1.49736903e+04  3.32010985e+04  5.06e+00 1.20e-13  1.04e-02    31s
+   9   1.75875565e+04  2.19371840e+04  8.34e-01 7.99e-14  2.31e-03    31s
+  10   1.79844870e+04  2.07009489e+04  3.16e-01 3.82e-14  1.41e-03    32s
+  11   1.81164223e+04  2.02893997e+04  2.12e-01 3.72e-14  1.13e-03    33s
+  12   1.81363773e+04  2.00110867e+04  2.03e-01 3.70e-14  9.72e-04    33s
+  13   1.81443030e+04  1.99074066e+04  1.99e-01 3.40e-14  9.15e-04    34s
+  14   1.81584861e+04  1.98525058e+04  1.93e-01 3.21e-14  8.79e-04    34s
+  15   1.81728485e+04  1.97973027e+04  1.87e-01 3.34e-14  8.43e-04    35s
+  16   1.81861373e+04  1.97494401e+04  1.81e-01 2.92e-14  8.11e-04    36s
+  17   1.82014095e+04  1.97192605e+04  1.76e-01 3.09e-14  7.87e-04    37s
+  18   1.82145404e+04  1.96725536e+04  1.70e-01 2.73e-14  7.56e-04    38s
+  19   1.82258681e+04  1.96329278e+04  1.66e-01 2.28e-14  7.30e-04    39s
+  20   1.82414191e+04  1.96021474e+04  1.60e-01 2.31e-14  7.06e-04    39s
+  21   1.82522541e+04  1.95598056e+04  1.56e-01 1.95e-14  6.78e-04    40s
+  22   1.82713353e+04  1.95112301e+04  1.50e-01 2.03e-14  6.43e-04    41s
+  23   1.82860957e+04  1.94943654e+04  1.45e-01 2.04e-14  6.26e-04    42s
+  24   1.83011073e+04  1.94750135e+04  1.41e-01 2.49e-14  6.09e-04    42s
+  25   1.83142612e+04  1.94505852e+04  1.36e-01 2.00e-14  5.89e-04    43s
+  26   1.83301240e+04  1.94225267e+04  1.31e-01 1.78e-14  5.66e-04    44s
+  27   1.83385482e+04  1.94035974e+04  1.28e-01 1.87e-14  5.52e-04    45s
+  28   1.83523015e+04  1.93771412e+04  1.24e-01 2.31e-14  5.31e-04    45s
+  29   1.83633935e+04  1.93560493e+04  1.20e-01 2.23e-14  5.14e-04    46s
+  30   1.83797983e+04  1.93311763e+04  1.16e-01 2.00e-14  4.93e-04    46s
+  31   1.83886434e+04  1.92999422e+04  1.13e-01 2.03e-14  4.72e-04    47s
+  32   1.84045334e+04  1.92780510e+04  1.08e-01 2.03e-14  4.53e-04    48s
+  33   1.84155303e+04  1.92611518e+04  1.05e-01 2.09e-14  4.38e-04    49s
+  34   1.84307831e+04  1.92379999e+04  1.01e-01 2.24e-14  4.18e-04    49s
+  35   1.84408233e+04  1.92168670e+04  9.83e-02 1.95e-14  4.02e-04    50s
+  36   1.84660661e+04  1.91936070e+04  9.19e-02 1.99e-14  3.77e-04    51s
+  37   1.84812994e+04  1.91589347e+04  8.83e-02 1.62e-14  3.51e-04    52s
+  38   1.84925685e+04  1.91404142e+04  8.54e-02 1.90e-14  3.36e-04    53s
+  39   1.85021937e+04  1.91205969e+04  8.29e-02 1.86e-14  3.21e-04    53s
+  40   1.85121709e+04  1.91068370e+04  8.03e-02 1.94e-14  3.08e-04    54s
+  41   1.85215278e+04  1.90988369e+04  7.78e-02 1.87e-14  2.99e-04    55s
+  42   1.85277242e+04  1.90934387e+04  7.61e-02 1.72e-14  2.93e-04    56s
+  43   1.85346255e+04  1.90832913e+04  7.43e-02 1.69e-14  2.85e-04    57s
+  44   1.85395345e+04  1.90713338e+04  7.29e-02 2.05e-14  2.76e-04    58s
+  45   1.85518213e+04  1.90617503e+04  6.95e-02 1.62e-14  2.64e-04    58s
+  46   1.85552251e+04  1.90549857e+04  6.86e-02 1.70e-14  2.59e-04    59s
+  47   1.85609729e+04  1.90494964e+04  6.71e-02 1.68e-14  2.53e-04    59s
+  48   1.85695860e+04  1.90386419e+04  6.49e-02 2.14e-14  2.43e-04    60s
+  49   1.85812731e+04  1.90249283e+04  6.18e-02 2.00e-14  2.30e-04    61s
+  50   1.85904127e+04  1.90125300e+04  5.96e-02 2.05e-14  2.19e-04    61s
+  51   1.85988411e+04  1.90025081e+04  5.75e-02 2.15e-14  2.09e-04    62s
+  52   1.86060634e+04  1.89958671e+04  5.58e-02 2.32e-14  2.02e-04    63s
+  53   1.86163824e+04  1.89920143e+04  5.32e-02 2.15e-14  1.95e-04    63s
+  54   1.86195171e+04  1.89848391e+04  5.24e-02 2.22e-14  1.90e-04    64s
+  55   1.86276788e+04  1.89790579e+04  5.04e-02 2.06e-14  1.82e-04    64s
+  56   1.86323605e+04  1.89708094e+04  4.93e-02 1.89e-14  1.76e-04    65s
+  57   1.86440678e+04  1.89667748e+04  4.64e-02 1.82e-14  1.67e-04    66s
+  58   1.86497672e+04  1.89547399e+04  4.50e-02 1.87e-14  1.58e-04    66s
+
+Barrier performed 58 iterations in 66.46 seconds (57.86 work units)
+Barrier solve interrupted - model solved by another algorithm
+
+Concurrent spin time: 11.98s (can be avoided by choosing Method=3)
+
+Solved with primal simplex
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+  617158    1.8832107e+04   0.000000e+00   0.000000e+00     67s
+
+Root relaxation: objective 1.883211e+04, 617158 iterations, 42.91 seconds (25.72 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 18832.1074    0 7120   46.62439 18832.1074      -     -   67s
+H    0     0                    17988.756911 18832.1074  4.69%     -   68s
+
+Explored 1 nodes (617158 simplex iterations) in 68.40 seconds (59.63 work units)
+Thread count was 32 (of 192 available processors)
+
+Solution count 3: 17988.8 46.6244 -0 
+
+Optimal solution found (tolerance 5.00e-02)
+Best objective 1.798875691071e+04, best bound 1.883210737084e+04, gap 4.6882%
+[Info] Optimization Success. Objective Value: 17988.7569
+[Info] Max discrepancy between Gurobi and XGBoost: 4.332790
+[Info] Sample of Optimization Results:
+                             Keyword Region  ... Actual Model Pred          Diff
+0               1 mit opencourseware      A  ...          0.023711 -4.657980e-07
+1               1 mit opencourseware      B  ...          0.308336  1.346180e-07
+2               1 mit opencourseware      B  ...          0.570632 -2.116900e-08
+3               1 mit opencourseware      B  ...          0.813691 -6.547035e-07
+4  5 day generative ai course google    USA  ...          0.084818  2.480269e-08
+
+[5 rows x 7 columns]
+
+Backtest complete. Evaluation saved to opt_results/backtests/daily_eval_2025-12-02.csv
+End: Thu Jan 15 00:54:01 EST 2026
