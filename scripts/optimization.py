@@ -190,7 +190,7 @@ def embed_xgb(model, model_path, X, budget=400):
     # Safety buffer of 1.05 accounts for floating point noise
     MAX_LHS = (budget / cost_scale) * 1.05 
     MIN_LHS = 0.0
-    epsilon = 0.0
+    epsilon = 5e-4 # Safety margin for float32 precision
     K = len(X_proc)
 
     for i in tqdm(range(K), desc="Embedding Rows"):
@@ -392,7 +392,7 @@ def main():
     
     # Optimize bids using Gurobi
     model_path = 'models/xgb_clicks_model.joblib'
-    # X = X[:1000]  # For testing with a smaller subset
+    # X = X[:100]  # For testing with a smaller subset
     model, cost_vars, pred_vars = optimize_bids(X, model_path)
 
     # Extract solution and validate predictions
