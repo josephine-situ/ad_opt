@@ -4,7 +4,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=8
-#SBATCH --array=0-30
+#SBATCH --array=0-30%2
 #SBATCH --output=logs/backtest_%A_%a.out
 #SBATCH --error=logs/backtest_%A_%a.err
 
