@@ -514,17 +514,17 @@ def merge_with_ads_data(
     
     # Calculate EPC (Expected conversion value Per Click)
     # Avoid division by zero by using fillna
-    merged_df['EPC'] = merged_df.apply(
-        lambda row: row['Conv. value'] / row['Clicks'] if row['Clicks'] > 0 else None,
-        axis=1
-    )
-    print(f"  Calculated EPC (Expected Conversion value Per Click)")
+    # merged_df['EPC'] = merged_df.apply(
+    #     lambda row: row['Conv. value'] / row['Clicks'] if row['Clicks'] > 0 else None,
+    #     axis=1
+    # )
+    # print(f"  Calculated EPC (Expected Conversion value Per Click)")
     
     # Check for NaNs introduced at this step
     ts_stat_cols = ['last_month_searches', 'three_month_avg', 'six_month_avg', 'mom_change', 'search_trend']
     ts_stat_cols = [col for col in ts_stat_cols if col in merged_df.columns]
     
-    print(f"\n  NaN check after time series calculations:")
+    print(f"\n  NaN check after time series calculations (from unmatched keywords):")
     for col in ts_stat_cols:
         nan_count = merged_df[col].isnull().sum()
         nan_pct = (nan_count / len(merged_df) * 100)
