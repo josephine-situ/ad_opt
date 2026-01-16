@@ -288,6 +288,21 @@ def optimize_bids(X, model_path, budget=400, x_max=None, kw_df=None, alpha=1.0):
     # Optional: x_max constraint (restrict max cost per keyword)
     if x_max is not None:
         model.addConstrs((cost_vars[i] <= x_max for i in range(len(cost_vars))), name='x_max_constraint')
+    
+    # Optional: New keyword budget constraint
+    if kw_df is not None:
+        X = X.merge(
+            kw_df[['Keyword', 'Origin']],
+            on='Keyword',
+            how='left'
+        )
+        if alpha < 1.0:
+            new_kw_indices = X.index[X['Origin'] != 'existing'].tolist()
+            if new_kw_indices:
+                model.addConstr(
+                    gp.quicksum(cost_vars[i] for i in new_kw_indices) <= alpha * budget,
+                    name='new_keyword_budget_constraint'
+                )
 
     # Optimize
     model.optimize()
@@ -350,7 +365,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
     # 4. Construct Results DataFrame
     # Pull metadata from the valid rows of X
-    results_df = X[['Keyword', 'Region', 'Match type']].copy()
+    results_df = X[['Keyword', 'Region', 'Match type', 'Origin']].copy()
     
     # Extract values from Gurobi variables
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
@@ -381,7 +396,8 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 def main():
     
     # Step 1: Create feature matrix with caching
-    keywords = pd.read_csv('data/gkp/keywords_classified.csv')['Keyword'].tolist()
+    kw_df = pd.read_csv('data/gkp/keywords_classified.csv')
+    keywords = kw_df['Keyword'].tolist()
     
     cache_dir = Path('opt_results/cache')
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -400,8 +416,8 @@ def main():
     
     # Optimize bids using Gurobi
     model_path = 'models/xgb_clicks_model.joblib'
-    X = X[:10000]  # For testing with a smaller subset
-    model, cost_vars, pred_vars = optimize_bids(X, model_path)
+    X = X[:10]  # For testing with a smaller subset
+    model, cost_vars, pred_vars, X = optimize_bids(X, model_path, kw_df=kw_df)
 
     # Extract solution and validate predictions
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X)
