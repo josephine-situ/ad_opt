@@ -87,6 +87,7 @@ def main():
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
     p.add_argument("--budget", type=float, default=400)
+    p.add_argument("--x-max", type=float, default=50)
     p.add_argument("--keywords-n", type=int, default=None)
     args = p.parse_args()
 
@@ -164,7 +165,7 @@ def main():
 
         # Optimize bids for day t, based on data from t-1
         X = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
-        m, cost_vars, pred_vars = optimize_bids(X, str(model_path), budget=budget)
+        m, cost_vars, pred_vars = optimize_bids(X, str(model_path), budget=budget, x_max=args.x_max)
         sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X)
 
         # Create evaluation model on day t to evaluate day t-1.

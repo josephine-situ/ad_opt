@@ -261,7 +261,7 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars
 
-def optimize_bids(X, model_path, budget=400):
+def optimize_bids(X, model_path, budget=400, x_max=None):
     """ Maximize clicks with embedded XGBoost model. 
     
     Formulation:
@@ -284,6 +284,10 @@ def optimize_bids(X, model_path, budget=400):
 
     # Budget constraint
     model.addConstr(gp.quicksum(cost_vars) <= budget, name='budget_constraint')
+
+    # Optional: x_max constraint (restrict max cost per keyword)
+    if x_max is not None:
+        model.addConstrs((cost_vars[i] <= x_max for i in range(len(cost_vars))), name='x_max_constraint')
 
     # Optimize
     model.optimize()
