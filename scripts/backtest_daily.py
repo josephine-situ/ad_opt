@@ -11,6 +11,7 @@ import argparse
 import sys
 import hashlib
 import os
+import numpy as np
 
 import joblib
 import pandas as pd
@@ -80,28 +81,25 @@ def in_sample_metrics(model: Pipeline, df: pd.DataFrame, *, features: list[str])
         "Bias": float((yhat - y).mean()),
     }
 
+def select_keywords(kw_df, keywords_n, masked):
+    """ Select keywords for backtesting, optionally masking some as "new" keywords."""
+    
+    if masked:
+        kw_df = kw_df[kw_df["Origin"] == "existing"].copy()
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--start", default="2025-12-01")
-    p.add_argument("--end", default="2025-12-03")
-    p.add_argument("--day", default=None)
-    p.add_argument("--budget", type=float, default=400)
-    p.add_argument("--x-max", type=float, default=50)
-    p.add_argument("--alpha", type=float, default=1.0, help="Max proportion of budget to new keywords")
-    p.add_argument("--keywords-n", type=int, default=None)
-    args = p.parse_args()
-
-    start_dt, end_dt, budget, x_max, alpha = args.start, args.end, args.budget, args.x_max, args.alpha
-
-    df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
-    df["Day"] = pd.to_datetime(df["Day"])
+        # Randomly select some existing keywords to be "new" for testing
+        existing_keywords = kw_df["Keyword"].tolist()
+        n_new = round(0.1 * len(existing_keywords))  # For example, 10% as new
+        new_keywords = np.random.choice(existing_keywords, size=n_new, replace=False)
+        kw_df.loc[kw_df["Keyword"].isin(new_keywords), "Origin"] = "new"
+        print(f"Selected {n_new} existing keywords as 'new' for testing. For example: {new_keywords[:5]}")
+    else:
+        new_keywords = None
 
     # Select keywords to test (if small run)
-    kw_df = pd.read_csv("data/gkp/keywords_classified.csv")
-    if args.keywords_n is not None:
+    if keywords_n is not None:
         origins = ["existing", "existing searches", "new"]
-        n_per_group = max(1, args.keywords_n // len(origins))
+        n_per_group = max(1, keywords_n // len(origins))
         selected = []
         for origin in origins:
             selected.extend(
@@ -112,13 +110,35 @@ def main():
 
         existing_set = set(selected)
         for k in kw_df["Keyword"]:
-            if len(selected) >= args.keywords_n:
+            if len(selected) >= keywords_n:
                 break
             if k not in existing_set:
                 selected.append(k)
-        keywords = selected[: args.keywords_n]
+        keywords = selected[: keywords_n]
     else:
         keywords = kw_df["Keyword"].tolist()
+
+    return kw_df, keywords, new_keywords
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--start", default="2025-12-01")
+    p.add_argument("--end", default="2025-12-03")
+    p.add_argument("--day", default=None)
+    p.add_argument("--budget", type=float, default=400)
+    p.add_argument("--x-max", type=float, default=50)
+    p.add_argument("--alpha", type=float, default=1.0, help="Max proportion of budget to new keywords")
+    p.add_argument("--keywords-n", type=int, default=None)
+    p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
+    args = p.parse_args()
+
+    start_dt, end_dt, budget, x_max, alpha, masked, keywords_n = args.start, args.end, args.budget, args.x_max, args.alpha, args.masked, args.keywords_n
+
+    df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
+    df["Day"] = pd.to_datetime(df["Day"])
+
+    kw_df = pd.read_csv("data/gkp/keywords_classified.csv")
+    kw_df, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
 
     if args.day is not None:
         opt_days = [pd.to_datetime(args.day)]
@@ -157,7 +177,12 @@ def main():
     for day in opt_days:
         print(f"\n=== Day {day.date()} ===")
 
-        # Train model on history up to t-1
+        # Select a new set of masked keywords each day
+        kw_df, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
+
+        # Train model on history up to t-1, excluding new keywords if masked
+        if masked:
+            df = df[~df['Keyword'].isin(new_keywords)].copy()
         hist = df[df["Day"] < day].copy()
         pipe = fit_click_model(hist, features=features)
         hist_m = in_sample_metrics(pipe, hist, features=features)
