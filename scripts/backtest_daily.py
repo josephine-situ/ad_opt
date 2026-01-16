@@ -95,9 +95,28 @@ def main():
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df["Day"] = pd.to_datetime(df["Day"])
 
-    keywords = pd.read_csv("data/gkp/keywords_classified.csv")["Keyword"].tolist()
+    # Select keywords to test (if small run)
+    kw_df = pd.read_csv("data/gkp/keywords_classified.csv")
     if args.keywords_n is not None:
-        keywords = keywords[: args.keywords_n]
+        origins = ["existing", "existing searches", "new"]
+        n_per_group = max(1, args.keywords_n // len(origins))
+        selected = []
+        for origin in origins:
+            selected.extend(
+                kw_df[kw_df["Origin"] == origin]["Keyword"]
+                .head(n_per_group)
+                .tolist()
+            )
+
+        existing_set = set(selected)
+        for k in kw_df["Keyword"]:
+            if len(selected) >= args.keywords_n:
+                break
+            if k not in existing_set:
+                selected.append(k)
+        keywords = selected[: args.keywords_n]
+    else:
+        keywords = kw_df["Keyword"].tolist()
 
     if args.day is not None:
         opt_days = [pd.to_datetime(args.day)]
