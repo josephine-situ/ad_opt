@@ -126,7 +126,7 @@ def create_feature_matrix(keywords, opt_date=None):
 
 def embed_xgb(model, model_path, X, budget=400):
     """
-    Embed XGBoost model into Gurobi, including the global base_score.
+    Embed XGBoost model into Gurobi.
     """
 
     # 1. Load Model and Preprocessor
@@ -134,78 +134,75 @@ def embed_xgb(model, model_path, X, budget=400):
     booster = pipeline.named_steps['model'].get_booster()
     preprocessor = pipeline.named_steps['preprocess']
 
-    # --- NEW: Get Base Score (Strict / No Fallback) ---
+    # Get Base Score
     config = json.loads(booster.save_config())
-    # This will raise KeyError if the path doesn't exist, as requested
     base_score = float(config['learner']['learner_model_param']['base_score'])
 
-    # 2. Filter Logic (Pruning rows where Prediction < 0 even with Cost=0)
-    X['Cost'] = 0.0 # Dummy value for preprocessor to run
+    # 2. Filter Logic
+    X['Cost'] = 0.0
     X_cost0 = X.copy()
     pred_clicks_cost0 = pipeline.predict(X_cost0)
     valid_indices = [i for i, pred in enumerate(pred_clicks_cost0) if pred >= 0]
     print(f"[Info] Pruned {len(X) - len(valid_indices)} rows with negative predicted clicks at Cost=0.")
     X = X.iloc[valid_indices].reset_index(drop=True)
 
-    # 3. Preprocess X (Static Features)
+    # 3. Preprocess X
     X_proc = preprocessor.transform(X)
-
-    # 4. Identify 'Cost' index
     feature_names = preprocessor.get_feature_names_out()
     cost_idx = list(feature_names).index('num__Cost')
-
-    # Get scale factor
     cost_scale = preprocessor.named_transformers_['num'].scale_[cost_idx]
 
-    # 5. Parse Tree Structure
+    # 4. Parse Tree Structure
+    def parse_single_tree(node, current_conds):
+        """Helper to extract paths. Standard recursive parsing."""
+        if 'leaf' in node:
+            yield (current_conds, node['leaf'])
+        else:
+            try:
+                feat_id = int(node['split'].replace('f', ''))
+            except ValueError:
+                return 
+            
+            threshold = node['split_condition']
+            yes_id = node['yes'] 
+            no_id = node['no']
+            
+            # Find children
+            yes_child = next(c for c in node['children'] if c['nodeid'] == yes_id)
+            no_child = next(c for c in node['children'] if c['nodeid'] == no_id)
+            
+            # Recurse Left (Yes)
+            yield from parse_single_tree(yes_child, current_conds + [(feat_id, 'lt', threshold)])
+            
+            # Recurse Right (No)
+            yield from parse_single_tree(no_child, current_conds + [(feat_id, 'ge', threshold)])
+
     def get_tree_paths(booster):
         tree_dumps = booster.get_dump(dump_format='json')
         all_paths = []
         for tree_json in tree_dumps:
             tree = json.loads(tree_json)
-            paths = []
-            def recurse(node, current_conds):
-                if 'leaf' in node:
-                    paths.append((current_conds, node['leaf']))
-                else:
-                    try:
-                        feat_id = int(node['split'].replace('f', ''))
-                    except ValueError:
-                        print(f"Warning: Could not parse feature {node['split']}")
-                        return 
-                    threshold = node['split_condition']
-                    recurse(node['children'][0], current_conds + [(feat_id, 'lt', threshold)])
-                    recurse(node['children'][1], current_conds + [(feat_id, 'ge', threshold)])
-            recurse(tree, [])
+            paths = list(parse_single_tree(tree, []))
             all_paths.append(paths)
         return all_paths
-
+    
     tree_paths = get_tree_paths(booster)
 
-    # 6. Build Gurobi Constraints
+    # 5. Build Gurobi Constraints
     cost_vars = [] 
     pred_vars = [] 
     
-    # Calculate global bounds once
-    # Safety buffer of 1.05 accounts for floating point noise
     MAX_LHS = (budget / cost_scale) * 1.05 
     MIN_LHS = 0.0
-    epsilon = 5e-4 # Safety margin for float32 precision
+    margin = 5e-4 # Safety margin
+    
     K = len(X_proc)
 
     for i in tqdm(range(K), desc="Embedding Rows"):
 
-        ### Add Binary Selection Variable ###
-        # u = 1 (Bid on this keyword), u = 0 (Do not bid)
-        u = model.addVar(vtype=GRB.BINARY, name=f"use_row_{i}")
-
         # A. Decision Variable 'x' (Cost)
         current_cost = model.addVar(lb=0.0, name=f"Cost_{i}")
         cost_vars.append(current_cost)
-
-        ### Link Cost to Selection Variable ###
-        # If u=0, Cost is forced to 0. If u=1, Cost <= Budget.
-        model.addConstr(current_cost <= budget * u, name=f"cost_limit_{i}")
 
         # B. Prediction Variable
         pred_var = model.addVar(lb=-GRB.INFINITY, name=f"pred_{i}")
@@ -214,44 +211,54 @@ def embed_xgb(model, model_path, X, budget=400):
         for t_idx, paths in enumerate(tree_paths):
             leaf_vars = []
             leaf_vals = []
+            
             for leaf_idx, (conds, leaf_val) in enumerate(paths):
-                # Pruning
+                
                 is_feasible = True
                 dynamic_conds = []
+                
                 for feat_idx, op, thr in conds:
                     if feat_idx == cost_idx:
+                        # Dynamic Feature: Add constraint later
                         dynamic_conds.append((op, thr))
                     else:
+                        # Static Feature: Prune immediately using Standard Math
                         val = X_proc[i, feat_idx]
-                        if op == 'lt' and not (val < thr):
+                        
+                        if op == 'lt' and not (val < thr): 
                             is_feasible = False; break
-                        elif op == 'ge' and not (val >= thr):
+                        elif op == 'ge' and not (val >= thr): 
                             is_feasible = False; break
                 
-                # Big-M Constraints
                 if is_feasible:
                     z = model.addVar(vtype=GRB.BINARY, name=f"z_{i}_{t_idx}_{leaf_idx}")
                     leaf_vars.append(z)
                     leaf_vals.append(leaf_val)
                     
+                    # Big-M Constraints for Cost (with Safety Margins)
                     for op, thr in dynamic_conds:
+                        lhs = current_cost / cost_scale
                         if op == "lt":
-                            M_tight = MAX_LHS - (thr - epsilon)
-                            model.addConstr(current_cost / cost_scale <= (thr - epsilon) + M_tight * (1 - z))
+                            # Cost <= Threshold - Margin
+                            bound = thr - margin
+                            M = MAX_LHS - bound
+                            model.addConstr(lhs <= bound + M * (1 - z))
                         elif op == "ge":
-                            M_tight = thr - MIN_LHS
-                            model.addConstr(current_cost / cost_scale >= thr - M_tight * (1 - z))
+                            # Cost >= Threshold + Margin
+                            bound = thr + margin
+                            M = bound - MIN_LHS
+                            model.addConstr(lhs >= bound - M * (1 - z))
+
             # Tree Aggregation
             if leaf_vars:
-                model.addConstr(gp.quicksum(leaf_vars) == u, name=f"tree_active_{i}_{t_idx}")
+                model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
                 tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
 
-        # --- UPDATED CONSTRAINT WITH BASE SCORE ---
-        model.addConstr(pred_var == tree_vars_sum + (base_score * u), name=f"def_pred_{i}")
+        # Prediction Constraint
+        model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
         pred_vars.append(pred_var) 
     
     model.update()
-
     return cost_vars, pred_vars
 
 def optimize_bids(X, model_path, budget=400):
@@ -268,7 +275,7 @@ def optimize_bids(X, model_path, budget=400):
     model = gp.Model("max_clicks")
     model.setParam('OutputFlag', 1)
     model.setParam('TimeLimit', 300)
-    model.setParam('MIPGap', 0.05)
+    model.setParam('MIPGap', 0.02)
 
     cost_vars, pred_vars = embed_xgb(model, model_path, X)
 
@@ -359,7 +366,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df['Gurobi Pred'] = [var.X for var in pred_vars]
     results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds_valid
     # Filter out rows where Optimal Cost is zero (not selected)
-    filt_opt_cost = results_df['Optimal Cost'] > 0
+    filt_opt_cost = results_df['Optimal Cost'] > 5e-4
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
@@ -398,11 +405,11 @@ def main():
         keywords
     )
 
-    X = X[X['Region'] != 'C']  # Filter out region C due to low EPC
+    X = X[X['Region'] != 'C'][:10000]  # Filter out region C due to low EPC
     
     # Optimize bids using Gurobi
     model_path = 'models/xgb_clicks_model.joblib'
-    # X = X[:100]  # For testing with a smaller subset
+    X = X[:10000]  # For testing with a smaller subset
     model, cost_vars, pred_vars = optimize_bids(X, model_path)
 
     # Extract solution and validate predictions

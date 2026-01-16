@@ -331,7 +331,7 @@ def merge_with_ads_data(
     gkp_df=None,
     *,
     use_fuzzy_matching: bool = True,
-    drop_unmatched_gkp: bool = False,
+    drop_unmatched_gkp: bool = True,
     unmatched_print_limit: int = 50,
 ):
     """
