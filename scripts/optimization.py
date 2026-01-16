@@ -359,12 +359,13 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df['Gurobi Pred'] = [var.X for var in pred_vars]
     results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds_valid
     # Filter out rows where Optimal Cost is zero (not selected)
-    results_df = results_df[results_df['Optimal Cost'] > 0].reset_index(drop=True)
+    filt_opt_cost = results_df['Optimal Cost'] > 0
+    results_df = results_df[filt_opt_cost].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
     # 5. Validation (Optional but Recommended)
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
-    X_validate = X_valid.copy()
+    X_validate = X_valid.copy()[filt_opt_cost].reset_index(drop=True)
     X_validate['Cost'] = results_df['Optimal Cost']
     
     # The pipeline prediction includes the base_score naturally
