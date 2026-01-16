@@ -136,17 +136,17 @@ def main():
     for day in opt_days:
         print(f"\n=== Day {day.date()} ===")
 
+        # Train model on history up to t-1
         hist = df[df["Day"] < day].copy()
         pipe = fit_click_model(hist, features=features)
         hist_m = in_sample_metrics(pipe, hist, features=features)
         model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
         joblib.dump(pipe, model_path)
 
+        # Optimize bids for day t, based on data from t-1
         X = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
         m, cost_vars, pred_vars = optimize_bids(X, str(model_path), budget=budget)
         sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X)
-        opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
-        sol.to_csv(opt_path, index=False)
 
         # Create evaluation model on day t to evaluate day t-1.
         # Predicted clicks is over the baseline: model(cost=act_cost) or model(cost=opt_cost) - model(cost=0).
@@ -166,23 +166,28 @@ def main():
         X_day = X.merge(
             sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
             on=["Keyword", "Region", "Match type"],
-            how="left",
-        )
+            how="right",
+        ) # right merge to keep rows with cost > 0 only
         X_day["Optimal Cost"] = X_day["Optimal Cost"].fillna(0.0)
         X_day["Cost"] = X_day["Optimal Cost"]
-        pred_opt = float(eval_model.predict(X_day[features]).sum())
+        pred_opt = eval_model.predict(X_day[features])
         opt_expected_clicks = float(sol["Gurobi Pred over Base"].sum())
 
         # Calculate baseline clicks with cost=0 for optimized set
         X_day_zero_cost = X_day.copy()
         X_day_zero_cost["Cost"] = 0.0
-        pred_opt_base = float(eval_model.predict(X_day_zero_cost[features]).sum())
+        pred_opt_base = eval_model.predict(X_day_zero_cost[features])
+
+        # Add t_clicks to solution for reference
+        sol["t_Clicks_OptCost"] = pred_opt - pred_opt_base
+        opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
+        sol.to_csv(opt_path, index=False)
 
         # Evaluation: all over baseline
         eval_rows.append(
             {
                 "Day": day.date(),
-                "t_Clicks_OptCost": pred_opt - pred_opt_base,
+                "t_Clicks_OptCost": float((pred_opt - pred_opt_base).sum()),
                 "t_Clicks_ActCost": pred_act - pred_base,
                 "tm1_Clicks_OptCost": opt_expected_clicks,
                 "Actual_Clicks": act_clicks,
