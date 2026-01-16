@@ -342,8 +342,6 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     
     # Create a temporary copy to check the 'Cost=0' condition
     X_temp = X.copy()
-    print(X_temp)
-    print(X_temp.columns)
     X_temp['Cost'] = 0.0
     
     # Predict using the full pipeline
