@@ -358,6 +358,8 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
     results_df['Gurobi Pred'] = [var.X for var in pred_vars]
     results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds_valid
+    # Filter out rows where Optimal Cost is zero (not selected)
+    results_df = results_df[results_df['Optimal Cost'] > 0].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
     # 5. Validation (Optional but Recommended)
