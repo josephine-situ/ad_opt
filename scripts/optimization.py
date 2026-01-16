@@ -259,9 +259,9 @@ def embed_xgb(model, model_path, X, budget=400):
         pred_vars.append(pred_var) 
     
     model.update()
-    return cost_vars, pred_vars
+    return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, x_max=None):
+def optimize_bids(X, model_path, budget=400, x_max=None, kw_df=None, alpha=1.0):
     """ Maximize clicks with embedded XGBoost model. 
     
     Formulation:
@@ -277,7 +277,7 @@ def optimize_bids(X, model_path, budget=400, x_max=None):
     model.setParam('TimeLimit', 300)
     model.setParam('MIPGap', 0.02)
 
-    cost_vars, pred_vars = embed_xgb(model, model_path, X)
+    cost_vars, pred_vars, X = embed_xgb(model, model_path, X)
 
     # Objective
     model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
@@ -310,7 +310,7 @@ def optimize_bids(X, model_path, budget=400, x_max=None):
         except Exception as e:
             print(f"[Warning] Failed to disambiguate status 4: {type(e).__name__}: {e}")
 
-    return model, cost_vars, pred_vars
+    return model, cost_vars, pred_vars, X
 
 def extract_solution(model, cost_vars, pred_vars, model_path, X):
     """
@@ -321,7 +321,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
         cost_vars: List of Gurobi variables for Cost.
         pred_vars: List of Gurobi variables for Predicted Clicks.
         model_path: Path to the .joblib model file.
-        X: The original DataFrame used for input (must contain metadata columns).
+        X: The processed DataFrame (filtered for positive predictive clicks at cost=0) used for input (must contain metadata columns).
         
     Returns:
         pd.DataFrame: Results containing only the valid (optimized) rows.
@@ -342,33 +342,22 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     
     # Create a temporary copy to check the 'Cost=0' condition
     X_temp = X.copy()
+    print(X_temp)
+    print(X_temp.columns)
     X_temp['Cost'] = 0.0
     
     # Predict using the full pipeline
     # (This handles scaling, encoding, and the base_score automatically)
     base_preds = pipeline.predict(X_temp)
-    
-    # Identify indices that survived the prune
-    valid_indices = [i for i, pred in enumerate(base_preds) if pred >= 0]
-    
-    # 3. Filter X to match the Gurobi Variables
-    # Now len(X_valid) should equal len(cost_vars)
-    X_valid = X.iloc[valid_indices].reset_index(drop=True)
-    base_preds_valid = base_preds[valid_indices]
-    
-    # Safety Check: Ensure alignment
-    if len(X_valid) != len(cost_vars):
-        raise ValueError(f"Mismatch! {len(cost_vars)} variables vs {len(X_valid)} valid rows. "
-                         "Check if embed_xgb logic was changed.")
 
     # 4. Construct Results DataFrame
     # Pull metadata from the valid rows of X
-    results_df = X_valid[['Keyword', 'Region', 'Match type']].copy()
+    results_df = X[['Keyword', 'Region', 'Match type']].copy()
     
     # Extract values from Gurobi variables
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
     results_df['Gurobi Pred'] = [var.X for var in pred_vars]
-    results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds_valid
+    results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds
     # Filter out rows where Optimal Cost is zero (not selected)
     filt_opt_cost = results_df['Optimal Cost'] > 5e-4
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
@@ -376,7 +365,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
     # 5. Validation (Optional but Recommended)
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
-    X_validate = X_valid.copy()[filt_opt_cost].reset_index(drop=True)
+    X_validate = X.copy()[filt_opt_cost].reset_index(drop=True)
     X_validate['Cost'] = results_df['Optimal Cost']
     
     # The pipeline prediction includes the base_score naturally
