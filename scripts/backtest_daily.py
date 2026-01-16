@@ -126,13 +126,13 @@ def main():
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
     p.add_argument("--budget", type=float, default=400)
-    p.add_argument("--x-max", type=float, default=50)
-    p.add_argument("--alpha", type=float, default=1.0, help="Max proportion of budget to new keywords")
+    p.add_argument("--x-max", type=float, nargs='+', default=[50])
+    p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Max proportion of budget to new keywords")
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     args = p.parse_args()
 
-    start_dt, end_dt, budget, x_max, alpha, masked, keywords_n = args.start, args.end, args.budget, args.x_max, args.alpha, args.masked, args.keywords_n
+    start_dt, end_dt, budget, x_max_list, alpha_list, masked, keywords_n = args.start, args.end, args.budget, args.x_max, args.alpha, args.masked, args.keywords_n
 
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df["Day"] = pd.to_datetime(df["Day"])
@@ -167,13 +167,17 @@ def main():
     ]
 
     models_dir = Path("models/backtests")
-    bids_dir = Path("opt_results/backtests/bids")
-    cache_dir = Path("opt_results/backtests/cache")
+    base_results_dir = Path("opt_results/backtests")
+    cache_dir = base_results_dir / "cache"
     models_dir.mkdir(parents=True, exist_ok=True)
-    bids_dir.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    eval_rows = []
+    # Dictionary to store evaluation rows for each parameter combination
+    eval_results = {}
+    for xm in x_max_list:
+        for al in alpha_list:
+            eval_results[(xm, al)] = []
+
     for day in opt_days:
         print(f"\n=== Day {day.date()} ===")
 
@@ -189,10 +193,8 @@ def main():
         model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
         joblib.dump(pipe, model_path)
 
-        # Optimize bids for day t, based on data from t-1
-        X = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
-        m, cost_vars, pred_vars, X = optimize_bids(X, str(model_path), budget=budget, x_max=x_max, kw_df=kw_df, alpha=alpha)
-        sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X)
+        # Precompute feature matrix (shared across parameters)
+        X_base = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
 
         # Create evaluation model on day t to evaluate day t-1.
         # Predicted clicks is over the baseline: model(cost=act_cost) or model(cost=opt_cost) - model(cost=0).
@@ -208,59 +210,80 @@ def main():
         obs_zero_cost["Cost"] = 0.0
         pred_base = float(eval_model.predict(obs_zero_cost[features]).sum())
 
-        # Optimized cost evaluation
-        X_day = X.merge(
-            sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
-            on=["Keyword", "Region", "Match type"],
-            how="right",
-        ) # right merge to keep rows with cost > 0 only
-        X_day["Optimal Cost"] = X_day["Optimal Cost"].fillna(0.0)
-        X_day["Cost"] = X_day["Optimal Cost"]
-        pred_opt = eval_model.predict(X_day[features])
-        opt_expected_clicks = float(sol["Gurobi Pred over Base"].sum())
+        # Optimize and Evaluate for each parameter combination
+        for xm in x_max_list:
+            for al in alpha_list:
+                # Define output directory for this run
+                run_dir = base_results_dir / f"xmax_{xm}_alpha_{al}"
+                bids_dir = run_dir / "bids"
+                bids_dir.mkdir(parents=True, exist_ok=True)
 
-        # Calculate baseline clicks with cost=0 for optimized set
-        X_day_zero_cost = X_day.copy()
-        X_day_zero_cost["Cost"] = 0.0
-        pred_opt_base = eval_model.predict(X_day_zero_cost[features])
+                # Optimize bids for day t
+                # Copy X_base to avoid modification issues
+                m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=budget, x_max=xm, kw_df=kw_df, alpha=al)
+                sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
-        # Add t_clicks to solution for reference
-        sol["t_Clicks_OptCost"] = pred_opt - pred_opt_base
-        opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
-        sol.to_csv(opt_path, index=False)
+                # Optimized cost evaluation
+                X_day = X_opt.merge(
+                    sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
+                    on=["Keyword", "Region", "Match type"],
+                    how="right",
+                ) # right merge to keep rows with cost > 0 only
+                X_day["Optimal Cost"] = X_day["Optimal Cost"].fillna(0.0)
+                X_day["Cost"] = X_day["Optimal Cost"]
+                pred_opt = eval_model.predict(X_day[features])
+                opt_expected_clicks = float(sol["Gurobi Pred over Base"].sum())
 
-        # Evaluation: all over baseline
-        eval_rows.append(
-            {
-                "Day": day.date(),
-                "t_Clicks_OptCost": float((pred_opt - pred_opt_base).sum()),
-                "t_Clicks_ActCost": pred_act - pred_base,
-                "tm1_Clicks_OptCost": opt_expected_clicks,
-                "Actual_Clicks": act_clicks,
-                "Opt_Cost": float(X_day["Optimal Cost"].sum()),
-                "Act_Cost": act_cost,
-                "Hist_MSE": hist_m["MSE"],
-                "Hist_R2": hist_m["R2"],
-                "Hist_Bias": hist_m["Bias"],
-                "Day_MSE": day_m["MSE"],
-                "Day_R2": day_m["R2"],
-                "Day_Bias": day_m["Bias"],
-                "N_Obs": int(len(obs)),
-                "N_Opt": int(len(X_day)),
-                "SlurmJobId": os.environ.get("SLURM_JOB_ID"),
-                "SlurmArrayTaskId": os.environ.get("SLURM_ARRAY_TASK_ID"),
-            }
-        )
+                # Calculate baseline clicks with cost=0 for optimized set
+                X_day_zero_cost = X_day.copy()
+                X_day_zero_cost["Cost"] = 0.0
+                pred_opt_base = eval_model.predict(X_day_zero_cost[features])
 
-    eval_df = pd.DataFrame(eval_rows)
-    out_dir = Path("opt_results/backtests")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    if args.day is not None:
-        eval_path = out_dir / f"daily_eval_{pd.to_datetime(args.day).date()}.csv"
-    else:
-        eval_path = out_dir / "daily_eval.csv"
-    eval_df.to_csv(eval_path, index=False)
-    print(f"\nBacktest complete. Evaluation saved to {eval_path}")
+                # Add t_clicks to solution for reference
+                sol["t_Clicks_OptCost"] = pred_opt - pred_opt_base
+                opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
+                sol.to_csv(opt_path, index=False)
+
+                # Evaluation: all over baseline
+                eval_results[(xm, al)].append(
+                    {
+                        "Day": day.date(),
+                        "t_Clicks_OptCost": float((pred_opt - pred_opt_base).sum()),
+                        "t_Clicks_ActCost": pred_act - pred_base,
+                        "tm1_Clicks_OptCost": opt_expected_clicks,
+                        "Actual_Clicks": act_clicks,
+                        "Opt_Cost": float(X_day["Optimal Cost"].sum()),
+                        "Act_Cost": act_cost,
+                        "Hist_MSE": hist_m["MSE"],
+                        "Hist_R2": hist_m["R2"],
+                        "Hist_Bias": hist_m["Bias"],
+                        "Day_MSE": day_m["MSE"],
+                        "Day_R2": day_m["R2"],
+                        "Day_Bias": day_m["Bias"],
+                        "N_Obs": int(len(obs)),
+                        "N_Opt": int(len(X_day)),
+                        "SlurmJobId": os.environ.get("SLURM_JOB_ID"),
+                        "SlurmArrayTaskId": os.environ.get("SLURM_ARRAY_TASK_ID"),
+                        "x_max": xm,
+                        "alpha": al
+                    }
+                )
+
+    # Save evaluation results for each combination
+    for (xm, al), rows in eval_results.items():
+        eval_df = pd.DataFrame(rows)
+        run_dir = base_results_dir / f"xmax_{xm}_alpha_{al}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        
+        if args.day is not None:
+             eval_path = run_dir / f"daily_eval_{pd.to_datetime(args.day).date()}.csv"
+        else:
+             eval_path = run_dir / "daily_eval.csv"
+        
+        eval_df.to_csv(eval_path, index=False)
+        print(f"Evaluation for x_max={xm}, alpha={al} saved to {eval_path}")
+
+    print(f"\nBacktest complete.")
 
 if __name__ == "__main__":
     main()
