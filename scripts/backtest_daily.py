@@ -148,6 +148,8 @@ def main():
         opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
         sol.to_csv(opt_path, index=False)
 
+        # Create evaluation model on day t to evaluate day t-1.
+        # Predicted clicks is over the baseline: model(cost=act_cost) or model(cost=opt_cost) - model(cost=0).
         obs = df[df["Day"] == day].copy()
         eval_model = fit_click_model(obs, features=features)
         day_m = in_sample_metrics(eval_model, obs, features=features)
@@ -155,6 +157,12 @@ def main():
         act_cost = float(obs["Cost"].sum())
         act_clicks = float(obs["Clicks"].sum())
 
+        # Calculate baseline clicks with cost=0
+        obs_zero_cost = obs.copy()
+        obs_zero_cost["Cost"] = 0.0
+        pred_base = float(eval_model.predict(obs_zero_cost[features]).sum())
+
+        # Optimized cost evaluation
         X_day = X.merge(
             sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
             on=["Keyword", "Region", "Match type"],
@@ -163,14 +171,20 @@ def main():
         X_day["Optimal Cost"] = X_day["Optimal Cost"].fillna(0.0)
         X_day["Cost"] = X_day["Optimal Cost"]
         pred_opt = float(eval_model.predict(X_day[features]).sum())
-        opt_expected_clicks = float(sol["Gurobi Pred"].sum())
+        opt_expected_clicks = float(sol["Gurobi Pred over Base"].sum())
 
+        # Calculate baseline clicks with cost=0 for optimized set
+        X_day_zero_cost = X_day.copy()
+        X_day_zero_cost["Cost"] = 0.0
+        pred_opt_base = float(eval_model.predict(X_day_zero_cost[features]).sum())
+
+        # Evaluation: all over baseline
         eval_rows.append(
             {
                 "Day": day.date(),
-                "Pred_Clicks_OptCost": pred_opt,
-                "Pred_Clicks_ActCost": pred_act,
-                "Opt_Expected_Clicks": opt_expected_clicks,
+                "t_Clicks_OptCost": pred_opt - pred_opt_base,
+                "t_Clicks_ActCost": pred_act - pred_base,
+                "tm1_Clicks_OptCost": opt_expected_clicks,
                 "Actual_Clicks": act_clicks,
                 "Opt_Cost": float(X_day["Optimal Cost"].sum()),
                 "Act_Cost": act_cost,

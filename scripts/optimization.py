@@ -343,6 +343,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     # 3. Filter X to match the Gurobi Variables
     # Now len(X_valid) should equal len(cost_vars)
     X_valid = X.iloc[valid_indices].reset_index(drop=True)
+    base_preds_valid = base_preds[valid_indices]
     
     # Safety Check: Ensure alignment
     if len(X_valid) != len(cost_vars):
@@ -356,6 +357,8 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     # Extract values from Gurobi variables
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
     results_df['Gurobi Pred'] = [var.X for var in pred_vars]
+    results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds_valid
+    print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
     # 5. Validation (Optional but Recommended)
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
