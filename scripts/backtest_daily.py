@@ -184,6 +184,9 @@ def main():
         # Select a new set of masked keywords each day
         kw_df, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
 
+        # Get observed data before filtering out keywords
+        obs = df[df["Day"] == day].copy()
+
         # Train model on history up to t-1, excluding new keywords if masked
         if masked:
             df = df[~df['Keyword'].isin(new_keywords)].copy()
@@ -198,7 +201,6 @@ def main():
 
         # Create evaluation model on day t to evaluate day t-1.
         # Predicted clicks is over the baseline: model(cost=act_cost) or model(cost=opt_cost) - model(cost=0).
-        obs = df[df["Day"] == day].copy()
         eval_model = fit_click_model(obs, features=features)
         day_m = in_sample_metrics(eval_model, obs, features=features)
         pred_act = float(eval_model.predict(obs[features]).sum())
