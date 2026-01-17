@@ -40,6 +40,6 @@ PY
 )
 
 echo "Running backtest_daily.py --day $DAY"
-python -u scripts/backtest_daily.py --day "$DAY" --x-max 10 5 --alpha 0.05 0.025
+python -u scripts/backtest_daily.py --day "$DAY" --x-max 10 --alpha 0.025
 
 echo "End: $(date)"
