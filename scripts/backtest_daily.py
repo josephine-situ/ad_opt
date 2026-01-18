@@ -214,14 +214,14 @@ def main():
         # Predicted clicks is over the baseline: model(cost=act_cost) or model(cost=opt_cost) - model(cost=0).
         eval_model = fit_click_model(obs, features=features)
         day_m = in_sample_metrics(eval_model, obs, features=features)
-        pred_act = eval_model.predict(obs[features]).sum()
+        pred_act = eval_model.predict(obs[features])
         act_cost = float(obs["Cost"].sum())
         act_clicks = float(obs["Clicks"].sum())
 
         # Calculate baseline clicks with cost=0
         obs_zero_cost = obs.copy()
         obs_zero_cost["Cost"] = 0.0
-        pred_base = eval_model.predict(obs_zero_cost[features]).sum()
+        pred_base = eval_model.predict(obs_zero_cost[features])
 
         # Optimize and Evaluate for each parameter combination
         for xm in x_max_list:
