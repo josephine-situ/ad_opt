@@ -9,55 +9,95 @@ from pathlib import Path
 import numpy as np
 
 def generate_latex_table(summary_df):
-    # summary_df has columns: x_max, alpha, and the metrics
-    # grouping by x_max/alpha or just listing them?
-    # User asked for "Multirows may be helpul here (group all opt, and group all act, group improvement)."
-    
-    # We want a table like:
-    # Config | Opt | | | | Act | | | | Imp |
-    # x | a | Clicks | Cost | C/$ | N Kws | Clicks | Cost | C/$ | N Kws | Clicks % | C/$ %
-    
-    # Let's format the numbers first
     df = summary_df.copy()
+
+    # 1. Format Data (Manually adding \% for LaTeX safety)
+    # We use escape=False later, so we must write \% explicitly here.
+    df['x_max'] = df['x_max'].map('{:g}'.format)
+    df['alpha'] = df['alpha'].map('{:g}'.format)
     
-    mapping = {
-        'avg clicks (opt)': ('Opt', 'Clicks'),
-        'avg cost (opt)': ('Opt', 'Cost'),
-        'clicks/$ (opt)': ('Opt', 'Clicks/$'),
-        'avg n kws (opt)': ('Opt', 'N Kws'),
-        'avg clicks (act)': ('Act', 'Clicks'),
-        'avg cost (act)': ('Act', 'Cost'),
-        'clicks/$ (act)': ('Act', 'Clicks/$'),
-        'avg n kws (act)': ('Act', 'N Kws'),
-        'improvement in clicks': ('Improvement', 'Clicks %'),
-        'improvement in clicks/$': ('Improvement', 'Clicks/$ %')
+    # Format Metrics
+    formatters = {
+        'avg clicks (opt)': '{:,.1f}',
+        'avg cost (opt)': '{:,.2f}',
+        'clicks/$ (opt)': '{:,.3f}',
+        'avg n kws (opt)': '{:,.0f}',
+        'avg clicks (act)': '{:,.1f}',
+        'avg cost (act)': '{:,.2f}',
+        'clicks/$ (act)': '{:,.3f}',
+        'avg n kws (act)': '{:,.0f}',
     }
-    
-    # Rounding and formatting
-    for col in df.columns:
-        if 'clicks (opt)' in col or 'clicks (act)' in col:
-            df[col] = df[col].map('{:,.1f}'.format)
-        elif 'cost' in col:
-            df[col] = df[col].map('{:,.2f}'.format)
-        elif 'n kws' in col:
-            df[col] = df[col].map('{:,.0f}'.format)
-        elif 'clicks/$' in col and 'improvement' not in col:
-            df[col] = df[col].map('{:,.3f}'.format)
-        elif 'improvement' in col:
+    for col, fmt in formatters.items():
+        if col in df.columns:
+            df[col] = df[col].map(fmt.format)
+
+    # Handle Improvements: Multiply by 100 AND add the LaTeX escape slash for %
+    for col in ['improvement in clicks', 'improvement in clicks/$']:
+        if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
-            
-    # create multiindex columns
-    cols = []
-    for c in df.columns:
-        if c in ['x_max', 'alpha']:
-            cols.append((c, ''))
-        else:
-            cols.append(mapping.get(c, (c, '')))
-            
-    df.columns = pd.MultiIndex.from_tuples(cols)
+
+    # 2. restructure Columns for Alignment
+    # We make x_max and alpha regular columns with an empty top header ('').
+    # This forces them to sit on the bottom header row, aligned with metrics.
+    col_mapping = [
+        ('x_max',                   ('', r'$x_{max}$')),
+        ('alpha',                   ('', r'$\alpha$')),  # Greek letter
+        ('avg clicks (opt)',        ('Opt', 'Clicks')),
+        ('avg cost (opt)',          ('Opt', 'Cost')),
+        ('clicks/$ (opt)',          ('Opt', 'Clicks/\$')),    # Escape the $ sign
+        ('avg n kws (opt)',         ('Opt', 'Kws')),
+        ('avg clicks (act)',        ('Act', 'Clicks')),
+        ('avg cost (act)',          ('Act', 'Cost')),
+        ('clicks/$ (act)',          ('Act', 'Clicks/\$')),
+        ('avg n kws (act)',         ('Act', 'Kws')),
+        ('improvement in clicks',   ('Improvement', 'Clicks')),
+        ('improvement in clicks/$', ('Improvement', 'Clicks/\$'))
+    ]
+
+    # Reorder and Rename
+    # Only keep columns that actually exist in your dataframe
+    existing_cols = [old for old, new in col_mapping if old in df.columns]
+    df = df[existing_cols]
+    df.columns = pd.MultiIndex.from_tuples([new for old, new in col_mapping if old in df.columns])
+
+    # 3. Generate LaTeX
+    # index=False removes the side index, treating x_max/alpha as data columns
+    latex_body = df.to_latex(
+        index=False,
+        escape=False,        # vital for $\alpha$ and \% to render as code
+        multicolumn_format='c',
+        column_format='rr' + 'r' * (len(df.columns) - 2) # Right align everything
+    )
+
+    # 4. Inject Custom CMIDRULES
+    # Pandas default rules are often messy. We manually replace the top rule.
+    # We want lines spanning: Opt (cols 3-6), Act (cols 7-10), Imp (cols 11-12)
+    # (Note: LaTeX column count starts at 1)
     
-    latex = df.to_latex(index=False, multirow=True, escape=False, sparklines=True)
-    return latex
+    # We look for the standard rule produced by pandas and replace it
+    # Usually pandas puts \toprule ... \midrule. We want to insert cmidrules before the midrule.
+    
+    # Find the header row end to inject lines underneath
+    # A generic way to find the header row in pandas latex output:
+    header_fix = r'\cmidrule(lr){3-6} \cmidrule(lr){7-10} \cmidrule(lr){11-12}'
+    
+    # Injecting the cmidrules:
+    # We split by the first occurrence of the metric names row
+    split_token = r"& Clicks &" 
+    if split_token in latex_body:
+        # Insert the lines right before the row with "Clicks"
+        parts = latex_body.split(split_token)
+        # We reconstruct the string adding the cmidrules before the second header row
+        # Note: This is a string hack, but effective for fixed table structures
+        latex_body = latex_body.replace(r'\\', r'\\' + '\n' + header_fix, 1)
+
+    # Clean up the empty top header for x_max and alpha (Pandas leaves extra & symbols)
+    # This step is optional but makes the code cleaner
+    
+    # Final Wrap
+    latex_output = "\\resizebox{\\textwidth}{!}{\n" + latex_body + "\n}"
+    
+    return latex_output
 
 def main():
     p = argparse.ArgumentParser()
