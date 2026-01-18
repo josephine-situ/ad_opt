@@ -261,8 +261,12 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, x_max=None, kw_df=None, alpha=1.0):
+def optimize_bids(X, model_path, budget=[408, 80, 24], x_max=None, kw_df=None, alpha=1.0):
     """ Maximize clicks with embedded XGBoost model. 
+
+    budget: list of budgets for each region [USA, A, B]
+    x_max: optional max cost per keyword
+    alpha: optional fraction of budget for new keywords
     
     Formulation:
         max   sum_i  g_i
@@ -279,30 +283,39 @@ def optimize_bids(X, model_path, budget=400, x_max=None, kw_df=None, alpha=1.0):
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X)
 
-    # Objective
-    model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
-
-    # Budget constraint
-    model.addConstr(gp.quicksum(cost_vars) <= budget, name='budget_constraint')
-
-    # Optional: x_max constraint (restrict max cost per keyword)
-    if x_max is not None:
-        model.addConstrs((cost_vars[i] <= x_max for i in range(len(cost_vars))), name='x_max_constraint')
-    
-    # Optional: New keyword budget constraint
     if kw_df is not None:
         X = X.merge(
             kw_df[['Keyword', 'Origin']],
             on='Keyword',
             how='left'
         )
+
+    # Objective
+    model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
+
+    # Budget constraint - split by region
+    for idx, region in enumerate(['USA', 'A', 'B']):
+        region_indices = X.index[X['Region'] == region].tolist()
+        region_budget = budget[idx]
+        model.addConstr(
+            gp.quicksum(cost_vars[i] for i in region_indices) <= region_budget,
+            name=f'budget_constraint_{region}'
+        )
+
+        # Optional: New keyword budget constraint
         if alpha < 1.0:
-            new_kw_indices = X.index[X['Origin'] != 'existing'].tolist()
+            new_kw_indices = X.index[(X['Origin'] != 'existing') & (X['Region'] == region)].tolist()
             if new_kw_indices:
                 model.addConstr(
-                    gp.quicksum(cost_vars[i] for i in new_kw_indices) <= alpha * budget,
-                    name='new_keyword_budget_constraint'
+                    gp.quicksum(cost_vars[i] for i in new_kw_indices) <= alpha * region_budget,
+                    name=f'new_keyword_budget_constraint_{region}'
                 )
+
+    # Optional: x_max constraint (restrict max cost per keyword)
+    if x_max is not None:
+        model.addConstrs((cost_vars[i] <= x_max for i in range(len(cost_vars))), name='x_max_constraint')
+    
+
 
     # Optimize
     model.optimize()

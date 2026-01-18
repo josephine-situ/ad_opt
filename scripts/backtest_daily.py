@@ -125,7 +125,7 @@ def main():
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
-    p.add_argument("--budget", type=float, default=400)
+    p.add_argument("--budget", type=float, default=[408, 80, 24], nargs='+', help="Budgets for regions [USA, A, B]")
     p.add_argument("--x-max", type=float, nargs='+', default=[50])
     p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Max proportion of budget to new keywords")
     p.add_argument("--keywords-n", type=int, default=None)
