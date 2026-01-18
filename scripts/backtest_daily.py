@@ -89,7 +89,7 @@ def select_keywords(kw_df, keywords_n, masked):
 
         # Randomly select some existing keywords to be "new" for testing
         existing_keywords = kw_df["Keyword"].tolist()
-        n_new = round(0.1 * len(existing_keywords))  # For example, 10% as new
+        n_new = round(0.9 * len(existing_keywords))  # For example, 90% as new
         new_keywords = np.random.choice(existing_keywords, size=n_new, replace=False)
         kw_df.loc[kw_df["Keyword"].isin(new_keywords), "Origin"] = "new"
         print(f"Selected {n_new} existing keywords as 'new' for testing. For example: {new_keywords[:5]}")
@@ -149,7 +149,6 @@ def main():
     df["Day"] = pd.to_datetime(df["Day"])
 
     kw_df = pd.read_csv("data/gkp/keywords_classified.csv")
-    kw_df, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
 
     if args.day is not None:
         opt_days = [pd.to_datetime(args.day)]
@@ -193,15 +192,16 @@ def main():
         print(f"\n=== Day {day.date()} ===")
 
         # Select a new set of masked keywords each day
-        kw_df, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
+        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
 
         # Get observed data before filtering out keywords
         obs = df[df["Day"] == day].copy()
 
         # Train model on history up to t-1, excluding new keywords if masked
+        history_source = df
         if masked:
-            df = df[~df['Keyword'].isin(new_keywords)].copy()
-        hist = df[df["Day"] < day].copy()
+            history_source = df[~df['Keyword'].isin(new_keywords)].copy()
+        hist = history_source[history_source["Day"] < day].copy()
         pipe = fit_click_model(hist, features=features)
         hist_m = in_sample_metrics(pipe, hist, features=features)
         model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
@@ -233,7 +233,7 @@ def main():
 
                 # Optimize bids for day t
                 # Copy X_base to avoid modification issues
-                m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=budget, x_max=xm, kw_df=kw_df, alpha=al)
+                m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=budget, x_max=xm, kw_df=kw_df_daily, alpha=al)
                 sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
                 # Optimized cost evaluation
