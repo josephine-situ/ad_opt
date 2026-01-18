@@ -9,96 +9,120 @@ from pathlib import Path
 import numpy as np
 
 def generate_latex_table(summary_df):
+    # --- 0. Sort Data ---
     df = summary_df.copy()
+    df = df.sort_values(by=['x_max', 'alpha'], ascending=[True, True], na_position='last')
 
-    # 1. Format Data (Manually adding \% for LaTeX safety)
-    # We use escape=False later, so we must write \% explicitly here.
-    # If the value is None (or NaN), keep it as is; otherwise format it
-    df['x_max'] = df['x_max'].map(lambda x: '{:g}'.format(x) if x is not None else '-')
-    df['alpha'] = df['alpha'].map('{:g}'.format)
+    # --- 1. Extract Baseline Data for Note ---
+    act_vals = {
+        'clicks': df['avg clicks (act)'].iloc[0],
+        'cost': df['avg cost (act)'].iloc[0],
+        'cpc': df['clicks/$ (act)'].iloc[0],
+        'kws': df['avg n kws (act)'].iloc[0]
+    }
     
-    # Format Metrics
+    # Create the Footer Note String
+    # \footnotesize makes it slightly smaller, \textit puts it in italics (optional)
+    note_text = (
+        r"\multicolumn{8}{l}{\footnotesize \textbf{Actual values:} "
+        f"Clicks: {act_vals['clicks']:,.1f}, "
+        f"Cost: \\${act_vals['cost']:,.2f}, "
+        f"Clicks/\\$: {act_vals['cpc']:.3f}, "
+        f"Kws: {act_vals['kws']:.0f}.}}"
+    )
+
+    # --- 2. Format Data ---
+    x_max_formatted = []
+    previous_val = -99999
+    
+    for val in df['x_max']:
+        if pd.isna(val):
+            current_val = np.inf
+            display_str = r'$\infty$'
+        else:
+            current_val = val
+            display_str = '{:g}'.format(val)
+            
+        if current_val == previous_val and len(x_max_formatted) > 0:
+            x_max_formatted.append('') 
+        else:
+            x_max_formatted.append(display_str)
+            previous_val = current_val
+            
+    df['x_max'] = x_max_formatted
+    df['alpha'] = df['alpha'].map('{:g}'.format)
+
     formatters = {
         'avg clicks (opt)': '{:,.1f}',
         'avg cost (opt)': '{:,.2f}',
         'clicks/$ (opt)': '{:,.3f}',
         'avg n kws (opt)': '{:,.0f}',
-        'avg clicks (act)': '{:,.1f}',
-        'avg cost (act)': '{:,.2f}',
-        'clicks/$ (act)': '{:,.3f}',
-        'avg n kws (act)': '{:,.0f}',
     }
     for col, fmt in formatters.items():
         if col in df.columns:
             df[col] = df[col].map(fmt.format)
 
-    # Handle Improvements: Multiply by 100 AND add the LaTeX escape slash for %
     for col in ['improvement in clicks', 'improvement in clicks/$']:
         if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
 
-    # 2. restructure Columns for Alignment
-    # We make x_max and alpha regular columns with an empty top header ('').
-    # This forces them to sit on the bottom header row, aligned with metrics.
+    # --- 3. Restructure Columns ---
     col_mapping = [
         ('x_max',                   ('', r'$x_{max}$')),
-        ('alpha',                   ('', r'$\alpha$')),  # Greek letter
+        ('alpha',                   ('', r'$\alpha$')),
         ('avg clicks (opt)',        ('Opt', 'Clicks')),
         ('avg cost (opt)',          ('Opt', 'Cost')),
-        ('clicks/$ (opt)',          ('Opt', 'Clicks/\$')),    # Escape the $ sign
+        ('clicks/$ (opt)',          ('Opt', 'Clicks/\$')),
         ('avg n kws (opt)',         ('Opt', 'Kws')),
-        ('avg clicks (act)',        ('Act', 'Clicks')),
-        ('avg cost (act)',          ('Act', 'Cost')),
-        ('clicks/$ (act)',          ('Act', 'Clicks/\$')),
-        ('avg n kws (act)',         ('Act', 'Kws')),
         ('improvement in clicks',   ('Improvement', 'Clicks')),
         ('improvement in clicks/$', ('Improvement', 'Clicks/\$'))
     ]
 
-    # Reorder and Rename
-    # Only keep columns that actually exist in your dataframe
     existing_cols = [old for old, new in col_mapping if old in df.columns]
     df = df[existing_cols]
     df.columns = pd.MultiIndex.from_tuples([new for old, new in col_mapping if old in df.columns])
 
-    # 3. Generate LaTeX
-    # index=False removes the side index, treating x_max/alpha as data columns
+    # --- 4. Generate Raw Tabular Body ---
     latex_body = df.to_latex(
         index=False,
-        escape=False,        # vital for $\alpha$ and \% to render as code
+        escape=False,
         multicolumn_format='c',
-        column_format='rr' + 'r' * (len(df.columns) - 2) # Right align everything
+        column_format='rrccccrr'
     )
 
-    # 4. Inject Custom CMIDRULES
-    # Pandas default rules are often messy. We manually replace the top rule.
-    # We want lines spanning: Opt (cols 3-6), Act (cols 7-10), Imp (cols 11-12)
-    # (Note: LaTeX column count starts at 1)
+    # --- 5. Inject Custom CMIDRULES ---
+    # Add mid-rules for headers
+    target_string = r'\\ \multicolumn{4}{c}{Opt} & \multicolumn{2}{c}{Improvement} \\'
+    replacement = target_string + '\n' + r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}'
     
-    # We look for the standard rule produced by pandas and replace it
-    # Usually pandas puts \toprule ... \midrule. We want to insert cmidrules before the midrule.
-    
-    # Find the header row end to inject lines underneath
-    # A generic way to find the header row in pandas latex output:
-    header_fix = r'\cmidrule(lr){3-6} \cmidrule(lr){7-10} \cmidrule(lr){11-12}'
-    
-    # Injecting the cmidrules:
-    # We split by the first occurrence of the metric names row
-    split_token = r"& Clicks &" 
-    if split_token in latex_body:
-        # Insert the lines right before the row with "Clicks"
-        parts = latex_body.split(split_token)
-        # We reconstruct the string adding the cmidrules before the second header row
-        # Note: This is a string hack, but effective for fixed table structures
-        latex_body = latex_body.replace(r'\\', r'\\' + '\n' + header_fix, 1)
+    if target_string in latex_body:
+        latex_body = latex_body.replace(target_string, replacement)
+    else:
+        # Fallback injection
+        lines = latex_body.split('\n')
+        for i, line in enumerate(lines):
+            if 'Opt' in line and 'Improvement' in line and r'\\' in line:
+                lines.insert(i+1, r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}')
+                break
+        latex_body = '\n'.join(lines)
 
-    # Clean up the empty top header for x_max and alpha (Pandas leaves extra & symbols)
-    # This step is optional but makes the code cleaner
+    # --- 6. Inject Footer Note ---
+    # We insert the note row right after \bottomrule but before \end{tabular}
+    # This keeps it inside the resizebox logic.
+    if r'\bottomrule' in latex_body:
+        latex_body = latex_body.replace(r'\bottomrule', r'\bottomrule' + '\n' + note_text)
+
+    # --- 7. Final Wrap ---
+    final_latex = (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        f"{latex_body}"
+        "}\n"
+        "\\end{table}"
+    )
     
-    # Final Wrap
-    latex_output = "\\resizebox{\\textwidth}{!}{\n" + latex_body + "\n}"
-    
-    return latex_output
+    return final_latex
 
 def main():
 
