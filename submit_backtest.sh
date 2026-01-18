@@ -4,7 +4,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=8
-#SBATCH --array=0-30%2
+#SBATCH --array=0-9%2
 #SBATCH --output=logs/backtest_%A_%a.out
 #SBATCH --error=logs/backtest_%A_%a.err
 
@@ -40,6 +40,6 @@ PY
 )
 
 echo "Running backtest_daily.py --day $DAY"
-python -u scripts/backtest_daily.py --day "$DAY" --x-max 10 --alpha 0.025
+python -u scripts/backtest_daily.py --day "$DAY" --x-max None 10 20 30 --alpha 0 0.25 0.5 0.75 1 --masked
 
 echo "End: $(date)"

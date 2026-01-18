@@ -13,7 +13,11 @@ def generate_latex_table(summary_df):
     df = summary_df.copy()
     df = df.sort_values(by=['x_max', 'alpha'], ascending=[True, True], na_position='last')
 
-    # --- 1. Extract Baseline Data for Note ---
+    # --- 1. Identify "Best" Row (Before Formatting) ---
+    # We identify the index label of the row with the max clicks improvement
+    best_idx = df['improvement in clicks'].idxmax()
+
+    # --- 2. Extract Baseline Data for Note ---
     act_vals = {
         'clicks': df['avg clicks (act)'].iloc[0],
         'cost': df['avg cost (act)'].iloc[0],
@@ -21,37 +25,24 @@ def generate_latex_table(summary_df):
         'kws': df['avg n kws (act)'].iloc[0]
     }
     
-    # Create the Footer Note String
-    # \footnotesize makes it slightly smaller, \textit puts it in italics (optional)
-    note_text = (
-        r"\multicolumn{8}{l}{\footnotesize \textbf{Actual values:} "
+    note_row = (
+        r"\multicolumn{8}{l}{\scriptsize \textbf{Actual values:} "
         f"Clicks: {act_vals['clicks']:,.1f}, "
         f"Cost: \\${act_vals['cost']:,.2f}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
-        f"Kws: {act_vals['kws']:.0f}.}}"
+        f"Kws: {act_vals['kws']:.0f}."
+        "}"
     )
 
-    # --- 2. Format Data ---
-    x_max_formatted = []
-    previous_val = -99999
+    # --- 3. Format Data (Strings, Percentages, Special Chars) ---
+    # It is crucial to do this BEFORE adding \textbf so we don't break formatters
     
-    for val in df['x_max']:
-        if pd.isna(val):
-            current_val = np.inf
-            display_str = r'$\infty$'
-        else:
-            current_val = val
-            display_str = '{:g}'.format(val)
-            
-        if current_val == previous_val and len(x_max_formatted) > 0:
-            x_max_formatted.append('') 
-        else:
-            x_max_formatted.append(display_str)
-            previous_val = current_val
-            
-    df['x_max'] = x_max_formatted
+    # x_max: Infinity handling
+    df['x_max'] = df['x_max'].apply(lambda x: r'$\infty$' if pd.isna(x) else f'{x:g}')
+    # Alpha
     df['alpha'] = df['alpha'].map('{:g}'.format)
 
+    # Numeric Metrics
     formatters = {
         'avg clicks (opt)': '{:,.1f}',
         'avg cost (opt)': '{:,.2f}',
@@ -62,11 +53,20 @@ def generate_latex_table(summary_df):
         if col in df.columns:
             df[col] = df[col].map(fmt.format)
 
+    # Percentage Metrics (escape % manually since we use escape=False later)
     for col in ['improvement in clicks', 'improvement in clicks/$']:
         if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
 
-    # --- 3. Restructure Columns ---
+    # --- 4. Apply Bolding to WHOLE Row ---
+    # We iterate through ALL columns for the identified best index
+    for col in df.columns:
+        # Check if the column exists to be safe
+        if col in df.columns:
+            current_val = df.at[best_idx, col]
+            df.at[best_idx, col] = f"\\textbf{{{current_val}}}"
+
+    # --- 5. Define Columns ---
     col_mapping = [
         ('x_max',                   ('', r'$x_{max}$')),
         ('alpha',                   ('', r'$\alpha$')),
@@ -82,42 +82,36 @@ def generate_latex_table(summary_df):
     df = df[existing_cols]
     df.columns = pd.MultiIndex.from_tuples([new for old, new in col_mapping if old in df.columns])
 
-    # --- 4. Generate Raw Tabular Body ---
-    latex_body = df.to_latex(
+    # --- 6. Generate Raw Tabular Content ---
+    latex_tabular = df.to_latex(
         index=False,
         escape=False,
         multicolumn_format='c',
         column_format='rrccccrr'
     )
 
-    # --- 5. Inject Custom CMIDRULES ---
-    # Add mid-rules for headers
-    target_string = r'\\ \multicolumn{4}{c}{Opt} & \multicolumn{2}{c}{Improvement} \\'
-    replacement = target_string + '\n' + r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}'
+    # --- 7. Inject Header Rules ---
+    target_header = r'\\ \multicolumn{4}{c}{Opt} & \multicolumn{2}{c}{Improvement} \\'
+    header_rules = r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}'
     
-    if target_string in latex_body:
-        latex_body = latex_body.replace(target_string, replacement)
+    if target_header in latex_tabular:
+        latex_tabular = latex_tabular.replace(target_header, target_header + '\n' + header_rules)
     else:
-        # Fallback injection
-        lines = latex_body.split('\n')
-        for i, line in enumerate(lines):
-            if 'Opt' in line and 'Improvement' in line and r'\\' in line:
-                lines.insert(i+1, r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}')
-                break
-        latex_body = '\n'.join(lines)
+        latex_tabular = latex_tabular.replace(r'\\', r'\\' + '\n' + header_rules, 1)
 
-    # --- 6. Inject Footer Note ---
-    # We insert the note row right after \bottomrule but before \end{tabular}
-    # This keeps it inside the resizebox logic.
-    if r'\bottomrule' in latex_body:
-        latex_body = latex_body.replace(r'\bottomrule', r'\bottomrule' + '\n' + note_text)
+    # --- 8. Inject Footer Note ---
+    if r'\bottomrule' in latex_tabular:
+        latex_tabular = latex_tabular.replace(
+            r'\bottomrule', 
+            r'\midrule' + '\n' + note_row + r' \\' + '\n' + r'\bottomrule'
+        )
 
-    # --- 7. Final Wrap ---
+    # --- 9. Final Assembly ---
     final_latex = (
         "\\begin{table}[htbp]\n"
         "\\centering\n"
-        "\\resizebox{\\textwidth}{!}{%\n"
-        f"{latex_body}"
+        "\\resizebox{!}{0.4\\textheight}{%\n"
+        f"{latex_tabular}"
         "}\n"
         "\\end{table}"
     )
