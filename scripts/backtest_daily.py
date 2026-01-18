@@ -121,19 +121,29 @@ def select_keywords(kw_df, keywords_n, masked):
     return kw_df, keywords, new_keywords
 
 def main():
+    def float_or_none(value):
+        """Helper to parse command line args as float or None"""
+        if value.lower() == "none":
+            return None
+        return float(value)
+
     p = argparse.ArgumentParser()
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
     p.add_argument("--budget", type=float, default=[408, 80, 24], nargs='+', help="Budgets for regions [USA, A, B]")
-    p.add_argument("--x-max", type=float, nargs='+', default=[50])
+
+    # Updated this line to use the custom type
+    p.add_argument("--x-max", type=float_or_none, nargs='+', default=[50]) 
+
     p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Max proportion of budget to new keywords")
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
+
     args = p.parse_args()
 
     start_dt, end_dt, budget, x_max_list, alpha_list, masked, keywords_n = args.start, args.end, args.budget, args.x_max, args.alpha, args.masked, args.keywords_n
-
+    
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
     df["Day"] = pd.to_datetime(df["Day"])

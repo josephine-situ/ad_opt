@@ -13,7 +13,8 @@ def generate_latex_table(summary_df):
 
     # 1. Format Data (Manually adding \% for LaTeX safety)
     # We use escape=False later, so we must write \% explicitly here.
-    df['x_max'] = df['x_max'].map('{:g}'.format)
+    # If the value is None (or NaN), keep it as is; otherwise format it
+    df['x_max'] = df['x_max'].map(lambda x: '{:g}'.format(x) if x is not None else '-')
     df['alpha'] = df['alpha'].map('{:g}'.format)
     
     # Format Metrics
@@ -100,9 +101,16 @@ def generate_latex_table(summary_df):
     return latex_output
 
 def main():
+
+    def float_or_none(value):
+        """Helper to parse command line args as float or None"""
+        if value.lower() == "none":
+            return None
+        return float(value)
+
     p = argparse.ArgumentParser()
     # Accept same args to locate folders, though we might iterate all if not provided
-    p.add_argument("--x-max", type=float, nargs='+', default=[50])
+    p.add_argument("--x-max", type=float_or_none, nargs='+', default=[50])
     p.add_argument("--alpha", type=float, nargs='+', default=[1.0])
     args = p.parse_args()
     
