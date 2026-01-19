@@ -41,6 +41,6 @@ PY
 
 EXP_NAME="${1:-backtests}"
 echo "Running backtest_daily.py --day $DAY --exp-name $EXP_NAME"
-python -u scripts/backtest_daily.py --day "$DAY" --exp-name "$EXP_NAME" --x-max None 30 60 90 --alpha 1 --masked
+python -u scripts/backtest_daily.py --day "$DAY" --exp-name "$EXP_NAME" --budget 300 350 400 450 500 550 --masked
 
 echo "End: $(date)"

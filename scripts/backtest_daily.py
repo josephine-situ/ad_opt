@@ -137,19 +137,19 @@ def main():
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
-    p.add_argument("--budget", type=float, default=[348.02], nargs='+', help="Budgets for regions [USA, A, B]")
+    p.add_argument("--budget", type=float, nargs='+', default=[300, 350, 400, 450, 500, 550], help="Total budgets to test")
 
-    # Updated this line to use the custom type
-    p.add_argument("--x-max", type=float_or_none, nargs='+', default=[50]) 
+    # Deprecated/Unused parameters (kept for compatibility or remove if safe)
+    p.add_argument("--x-max", type=float_or_none, nargs='+', default=[None], help="Deprecated")
+    p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Deprecated")
 
-    p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Max proportion of budget to new keywords")
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
 
     args = p.parse_args()
 
-    start_dt, end_dt, budget, x_max_list, alpha_list, masked, keywords_n = args.start, args.end, args.budget, args.x_max, args.alpha, args.masked, args.keywords_n
+    start_dt, end_dt, budget_list, masked, keywords_n = args.start, args.end, args.budget, args.masked, args.keywords_n
     
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
@@ -230,27 +230,26 @@ def main():
         X_base = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
 
         # Optimize for each parameter combination
-        for xm in x_max_list:
-            for al in alpha_list:
-                # Define output directory for this run
-                # Using strings for folder names even if None
-                xm_str = str(xm)
-                run_dir = base_results_dir / f"xmax_{xm_str}_alpha_{al}"
-                bids_dir = run_dir / "bids"
-                bids_dir.mkdir(parents=True, exist_ok=True)
+        for b in budget_list:
+            # Define output directory for this run
+            run_dir = base_results_dir / f"budget_{int(b)}"
+            bids_dir = run_dir / "bids"
+            bids_dir.mkdir(parents=True, exist_ok=True)
 
-                # Check if already optimized
-                opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
-                if opt_path.exists():
-                    print(f"Skipping {day.date()} xmax={xm} alpha={al} - already exists")
-                    continue
+            # Check if already optimized
+            opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
+            if opt_path.exists():
+                print(f"Skipping {day.date()} budget={b} - already exists")
+                continue
 
-                # Optimize bids for day t
-                # Copy X_base to avoid modification issues
-                m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=budget, x_max=xm, kw_df=kw_df_daily, alpha=al)
-                sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
+            # Optimize bids for day t
+            # Copy X_base to avoid modification issues
+            # optimize_bids now only takes budget and kw_df
+            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily)
+            sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
-                # Save optimized costs
+            # Save optimized costs
+            if sol is not None:
                 sol.to_csv(opt_path, index=False)
 
 

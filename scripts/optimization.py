@@ -261,12 +261,10 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=[408, 80, 24], x_max=None, kw_df=None, alpha=1.0):
+def optimize_bids(X, model_path, budget=400, kw_df=None):
     """ Maximize clicks with embedded XGBoost model. 
 
-    budget: list of budgets for each region [USA, A, B]
-    x_max: optional max cost per keyword
-    alpha: optional fraction of budget for new keywords
+    budget: total budget across all regions
     
     Formulation:
         max   sum_i  g_i
@@ -277,7 +275,7 @@ def optimize_bids(X, model_path, budget=[408, 80, 24], x_max=None, kw_df=None, a
     """
 
     model = gp.Model("max_clicks")
-    model.setParam('OutputFlag', 1)
+    # model.setParam('OutputFlag', 1)
     model.setParam('TimeLimit', 300)
     # model.setParam('MIPGap', 0.02)
 
@@ -293,45 +291,31 @@ def optimize_bids(X, model_path, budget=[408, 80, 24], x_max=None, kw_df=None, a
     # Objective
     model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
 
-    if len(budget) == 1:
-        # Single budget constraint
-        model.addConstr(
-            gp.quicksum(cost_vars) <= budget[0],
-            name='budget_constraint_total'
-        )
+    # Create regional budget variables
+    regions = ['USA', 'A', 'B']
+    region_budgets = {}
+    for region in regions:
+        region_budgets[region] = model.addVar(lb=0.0, name=f"Budget_{region}")
 
-        # Optional: New keyword budget constraint
-        if alpha < 1.0:
-            new_kw_indices = X.index[X['Origin'] != 'existing'].tolist()
-            if new_kw_indices:
-                model.addConstr(
-                    gp.quicksum(cost_vars[i] for i in new_kw_indices) <= alpha * budget[0],
-                    name='new_keyword_budget_constraint_total'
-                )
-    else:
-        # Budget constraint - split by region
-        for idx, region in enumerate(['USA', 'A', 'B']):
-            region_indices = X.index[X['Region'] == region].tolist()
-            region_budget = budget[idx]
+    # Total budget constraint: sum(regional_budgets) == budget
+    model.addConstr(
+        gp.quicksum(region_budgets.values()) == budget,
+        name='total_budget_constraint'
+    )
+
+    # Regional budget constraints: sum(costs in region) <= regional_budget
+    for region in regions:
+        region_indices = X.index[X['Region'] == region].tolist()
+        if region_indices:
             model.addConstr(
-                gp.quicksum(cost_vars[i] for i in region_indices) <= region_budget,
+                gp.quicksum(cost_vars[i] for i in region_indices) <= region_budgets[region],
                 name=f'budget_constraint_{region}'
             )
-
-            # Optional: New keyword budget constraint
-            if alpha < 1.0:
-                new_kw_indices = X.index[(X['Origin'] != 'existing') & (X['Region'] == region)].tolist()
-                if new_kw_indices:
-                    model.addConstr(
-                        gp.quicksum(cost_vars[i] for i in new_kw_indices) <= alpha * region_budget,
-                        name=f'new_keyword_budget_constraint_{region}'
-                    )
-
-    # Optional: x_max constraint (restrict max cost per keyword)
-    if x_max is not None:
-        model.addConstrs((cost_vars[i] <= x_max for i in range(len(cost_vars))), name='x_max_constraint')
-    
-
+        else:
+             # If no keywords for a region, its budget technically can be anything if not constrained otherwise,
+             # but to avoid wasting budget, we can say budget >= 0 (implied) and usually 
+             # the logic would just put 0 there if there's no utility.
+             pass
 
     # Optimize
     model.optimize()
