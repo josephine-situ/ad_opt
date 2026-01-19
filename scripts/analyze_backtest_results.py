@@ -13,8 +13,7 @@ def generate_latex_table(summary_df):
     df = summary_df.copy()
     df = df.sort_values(by=['x_max', 'alpha'], ascending=[True, True], na_position='last')
 
-    # --- 1. Identify "Best" Row (Before Formatting) ---
-    # We identify the index label of the row with the max clicks improvement
+    # --- 1. Identify "Best" Row ---
     best_idx = df['improvement in clicks'].idxmax()
 
     # --- 2. Extract Baseline Data for Note ---
@@ -28,38 +27,34 @@ def generate_latex_table(summary_df):
         'se_kws': df.get('se n kws (act)', pd.Series([0]*len(df))).iloc[0],
     }
     
-    # helper for formatting mean +/- se
+    # <--- FIX: Added $ around \pm to prevent "Missing $" error in footer
     def fmt_mse(mean, se, decimals=1, prefix="", suffix=""):
-        return f"{prefix}{mean:,.{decimals}f} \\pm {se:,.{decimals}f}{suffix}"
+        return f"{prefix}{mean:,.{decimals}f} $\\pm$ {se:,.{decimals}f}{suffix}"
 
     note_row = (
         r"\multicolumn{8}{l}{\scriptsize \textbf{Actual values:} "
         f"Clicks: {fmt_mse(act_vals['clicks'], act_vals['se_clicks'])}, "
-        f"Cost: {fmt_mse(act_vals['cost'], act_vals['se_cost'], 2, prefix='\\$')}, "
+        f"Cost: {fmt_mse(act_vals['cost'], act_vals['se_cost'], 2, prefix=r'\$')}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
         f"Kws: {fmt_mse(act_vals['kws'], act_vals['se_kws'], 0)}."
         "}"
     )
 
-    # --- 3. Format Data (Strings, Percentages, Special Chars) ---
-    # It is crucial to do this BEFORE adding \textbf so we don't break formatters
-    
-    # x_max: Infinity handling
-    df['x_max'] = df['x_max'].apply(lambda x: r'$\infty$' if pd.isna(x) else f'{x:g}')
-    # Alpha
+    # --- 3. Format Data ---
+    # Convert to object to handle mixed types (strings + numbers) without warnings
+    df = df.astype(object)
+
+    # Format x_max (handle infinity) and alpha
+    df['x_max'] = df['x_max'].apply(lambda x: r'$\infty$' if pd.isna(x) or str(x).lower() == 'inf' else f'{x:g}')
     df['alpha'] = df['alpha'].map('{:g}'.format)
 
-    # Numeric Metrics
-    # Simple formatters for non-SD columns
-    simple_formatters = {
-        'clicks/$ (opt)': '{:,.3f}',
-    }
+    # Simple numeric formatters
+    simple_formatters = {'clicks/$ (opt)': '{:,.3f}'}
     for col, fmt in simple_formatters.items():
         if col in df.columns:
             df[col] = df[col].map(fmt.format)
 
-    # Combined Mean +/- SE formatters
-    # We construct the string manually using the se columns
+    # Combined Mean +/- SE formatters (Already includes $ around \pm)
     if 'se clicks (opt)' in df.columns:
         df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['se clicks (opt)']:,.1f}", axis=1)
     elif 'avg clicks (opt)' in df.columns:
@@ -75,18 +70,16 @@ def generate_latex_table(summary_df):
     elif 'avg n kws (opt)' in df.columns:
         df['avg n kws (opt)'] = df['avg n kws (opt)'].map('{:,.0f}'.format)
 
-    # Percentage Metrics (escape % manually since we use escape=False later)
+    # Percentage Metrics
     for col in ['improvement in clicks', 'improvement in clicks/$']:
         if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
 
-    # --- 4. Apply Bolding to WHOLE Row ---
-    # We iterate through ALL columns for the identified best index
+    # --- 4. Apply Bolding ---
+    # Iterate columns and apply bold wrapper
     for col in df.columns:
-        # Check if the column exists to be safe
-        if col in df.columns:
-            current_val = df.at[best_idx, col]
-            df.at[best_idx, col] = f"\\textbf{{{current_val}}}"
+        current_val = df.at[best_idx, col]
+        df.at[best_idx, col] = f"\\textbf{{{str(current_val)}}}"
 
     # --- 5. Define Columns ---
     col_mapping = [
@@ -94,12 +87,13 @@ def generate_latex_table(summary_df):
         ('alpha',                   ('', r'$\alpha$')),
         ('avg clicks (opt)',        ('Opt', 'Clicks')),
         ('avg cost (opt)',          ('Opt', 'Cost')),
-        ('clicks/$ (opt)',          ('Opt', 'Clicks/\$')),
+        ('clicks/$ (opt)',          ('Opt', r'Clicks/\$')),
         ('avg n kws (opt)',         ('Opt', 'Kws')),
         ('improvement in clicks',   ('Improvement', 'Clicks')),
-        ('improvement in clicks/$', ('Improvement', 'Clicks/\$'))
+        ('improvement in clicks/$', ('Improvement', r'Clicks/\$'))
     ]
 
+    # Select and rename columns
     existing_cols = [old for old, new in col_mapping if old in df.columns]
     df = df[existing_cols]
     df.columns = pd.MultiIndex.from_tuples([new for old, new in col_mapping if old in df.columns])
@@ -112,27 +106,43 @@ def generate_latex_table(summary_df):
         column_format='rrccccrr'
     )
 
-    # --- 7. Inject Header Rules ---
-    target_header = r'\\ \multicolumn{4}{c}{Opt} & \multicolumn{2}{c}{Improvement} \\'
+    # --- 7. Manual Booktabs Injection ---
+    # Replace default \hline with booktabs commands
+    latex_tabular = latex_tabular.replace(r'\hline', r'\toprule', 1)
+    if latex_tabular.strip().endswith(r'\hline'):
+        latex_tabular = latex_tabular.strip()[:-6] + r'\bottomrule'
+
+    # --- 8. Inject Header Rules ---
+    target_header = r'\multicolumn{2}{c}{} & \multicolumn{4}{c}{Opt} & \multicolumn{2}{c}{Improvement} \\'
     header_rules = r'\cmidrule(lr){3-6} \cmidrule(lr){7-8}'
     
     if target_header in latex_tabular:
         latex_tabular = latex_tabular.replace(target_header, target_header + '\n' + header_rules)
-    else:
-        latex_tabular = latex_tabular.replace(r'\\', r'\\' + '\n' + header_rules, 1)
+    
+    # Inject \midrule after the column names row
+    # We identify the row containing 'Clicks/\$' and appending \midrule
+    lines = latex_tabular.split('\n')
+    new_lines = []
+    header_passed = False
+    for line in lines:
+        new_lines.append(line)
+        if not header_passed and r'Clicks/\$' in line and r'\\' in line:
+            new_lines.append(r'\midrule')
+            header_passed = True
+    latex_tabular = '\n'.join(new_lines)
 
-    # --- 8. Inject Footer Note ---
+    # --- 9. Inject Footer Note ---
     if r'\bottomrule' in latex_tabular:
         latex_tabular = latex_tabular.replace(
             r'\bottomrule', 
             r'\midrule' + '\n' + note_row + r' \\' + '\n' + r'\bottomrule'
         )
 
-    # --- 9. Final Assembly ---
+    # --- 10. Final Assembly ---
     final_latex = (
         "\\begin{table}[htbp]\n"
         "\\centering\n"
-        "\\resizebox{!}{0.4\\textheight}{%\n"
+        "\\resizebox{!}{0.2\\textheight}{%\n"
         f"{latex_tabular}"
         "}\n"
         "\\end{table}"

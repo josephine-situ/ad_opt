@@ -2,9 +2,9 @@
 #SBATCH --job-name=adopt-backtest
 #SBATCH --partition=mit_normal
 #SBATCH --time=12:00:00
-#SBATCH --mem=32G
-#SBATCH --cpus-per-task=8
-#SBATCH --array=0-9%2
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=16
+#SBATCH --array=0-30%2
 #SBATCH --output=logs/backtest_%A_%a.out
 #SBATCH --error=logs/backtest_%A_%a.err
 
@@ -40,6 +40,6 @@ PY
 )
 
 echo "Running backtest_daily.py --day $DAY"
-python -u scripts/backtest_daily.py --day "$DAY" --x-max None 30 60 90 --alpha 0 0.25 0.5 --masked
+python -u scripts/backtest_daily.py --day "$DAY" --x-max None 30 60 90 --alpha 1 --masked
 
 echo "End: $(date)"
