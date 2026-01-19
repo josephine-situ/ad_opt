@@ -89,7 +89,7 @@ def select_keywords(kw_df, keywords_n, masked):
 
         # Randomly select some existing keywords to be "new" for testing
         existing_keywords = kw_df["Keyword"].tolist()
-        n_new = round(0.9 * len(existing_keywords))  # For example, 90% as new
+        n_new = round(0.1 * len(existing_keywords))  # For example, 10% as new
         new_keywords = np.random.choice(existing_keywords, size=n_new, replace=False)
         kw_df.loc[kw_df["Keyword"].isin(new_keywords), "Origin"] = "new"
         print(f"Selected {n_new} existing keywords as 'new' for testing. For example: {new_keywords[:5]}")
