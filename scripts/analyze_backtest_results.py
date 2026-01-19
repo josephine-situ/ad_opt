@@ -43,15 +43,30 @@ def generate_latex_table(summary_df):
     df['alpha'] = df['alpha'].map('{:g}'.format)
 
     # Numeric Metrics
-    formatters = {
-        'avg clicks (opt)': '{:,.1f}',
-        'avg cost (opt)': '{:,.2f}',
+    # Simple formatters for non-SD columns
+    simple_formatters = {
         'clicks/$ (opt)': '{:,.3f}',
-        'avg n kws (opt)': '{:,.0f}',
     }
-    for col, fmt in formatters.items():
+    for col, fmt in simple_formatters.items():
         if col in df.columns:
             df[col] = df[col].map(fmt.format)
+
+    # Combined Mean +/- SD formatters
+    # We construct the string manually using the std columns
+    if 'std clicks (opt)' in df.columns:
+        df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['std clicks (opt)']:,.1f}", axis=1)
+    elif 'avg clicks (opt)' in df.columns:
+        df['avg clicks (opt)'] = df['avg clicks (opt)'].map('{:,.1f}'.format)
+        
+    if 'std cost (opt)' in df.columns:
+        df['avg cost (opt)'] = df.apply(lambda row: f"{row['avg cost (opt)']:,.2f} $\\pm$ {row['std cost (opt)']:,.2f}", axis=1)
+    elif 'avg cost (opt)' in df.columns:
+        df['avg cost (opt)'] = df['avg cost (opt)'].map('{:,.2f}'.format)
+
+    if 'std n kws (opt)' in df.columns:
+        df['avg n kws (opt)'] = df.apply(lambda row: f"{row['avg n kws (opt)']:,.0f} $\\pm$ {row['std n kws (opt)']:,.0f}", axis=1)
+    elif 'avg n kws (opt)' in df.columns:
+        df['avg n kws (opt)'] = df['avg n kws (opt)'].map('{:,.0f}'.format)
 
     # Percentage Metrics (escape % manually since we use escape=False later)
     for col in ['improvement in clicks', 'improvement in clicks/$']:
@@ -164,10 +179,13 @@ def main():
             # Calculate metrics
             # Use pred_opt - pred_opt_base and pred_act - pred_base
             avg_clicks_opt = full_df["t_Clicks_OptCost"].mean()
+            std_clicks_opt = full_df["t_Clicks_OptCost"].std()
             avg_cost_opt = full_df["Opt_Cost"].mean()
+            std_cost_opt = full_df["Opt_Cost"].std()
             # Clicks/$ = Total Clicks / Total Cost
             clicks_per_dollar_opt = full_df["t_Clicks_OptCost"].sum() / full_df["Opt_Cost"].sum() if full_df["Opt_Cost"].sum() > 0 else 0
             avg_n_kws_opt = full_df["N_Opt"].mean()
+            std_n_kws_opt = full_df["N_Opt"].std()
             
             # Use the same model to compare opt vs actual, so use the pred clicks = pred_act - pred_base for the actual costs
             avg_clicks_act = full_df["t_Clicks_ActCost"].mean()
@@ -183,9 +201,12 @@ def main():
                 "x_max": xm,
                 "alpha": al,
                 "avg clicks (opt)": avg_clicks_opt,
+                "std clicks (opt)": std_clicks_opt,
                 "avg cost (opt)": avg_cost_opt,
+                "std cost (opt)": std_cost_opt,
                 "clicks/$ (opt)": clicks_per_dollar_opt,
                 "avg n kws (opt)": avg_n_kws_opt,
+                "std n kws (opt)": std_n_kws_opt,
                 "avg clicks (act)": avg_clicks_act,
                 "avg cost (act)": avg_cost_act,
                 "clicks/$ (act)": clicks_per_dollar_act,

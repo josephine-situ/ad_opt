@@ -81,16 +81,19 @@ def in_sample_metrics(model: Pipeline, df: pd.DataFrame, *, features: list[str])
         "Bias": float((yhat - y).mean()),
     }
 
-def select_keywords(kw_df, keywords_n, masked):
+def select_keywords(kw_df, keywords_n, masked, seed=None):
     """ Select keywords for backtesting, optionally masking some as "new" keywords."""
     
     if masked:
         kw_df = kw_df[kw_df["Origin"] == "existing"].copy()
 
         # Randomly select some existing keywords to be "new" for testing
+        # Use a deterministic seed if provided
+        rng = np.random.default_rng(seed)
+        
         existing_keywords = kw_df["Keyword"].tolist()
         n_new = round(0.1 * len(existing_keywords))  # For example, 10% as new
-        new_keywords = np.random.choice(existing_keywords, size=n_new, replace=False)
+        new_keywords = rng.choice(existing_keywords, size=n_new, replace=False)
         kw_df.loc[kw_df["Keyword"].isin(new_keywords), "Origin"] = "new"
         print(f"Selected {n_new} existing keywords as 'new' for testing. For example: {new_keywords[:5]}")
     else:
@@ -191,8 +194,11 @@ def main():
     for day in opt_days:
         print(f"\n=== Day {day.date()} ===")
 
+        # Create a deterministic seed from the date (YYYYMMDD)
+        seed = int(day.strftime('%Y%m%d'))
+
         # Select a new set of masked keywords each day
-        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked)
+        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, seed=seed)
 
         # Get observed data before filtering out keywords
         obs = df[df["Day"] == day].copy()
