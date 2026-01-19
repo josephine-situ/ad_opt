@@ -134,7 +134,7 @@ def main():
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
-    p.add_argument("--budget", type=float, default=[307.61, 36.65, 18.38], nargs='+', help="Budgets for regions [USA, A, B]")
+    p.add_argument("--budget", type=float, default=[294.68, 35.52, 17.82], nargs='+', help="Budgets for regions [USA, A, B]")
 
     # Updated this line to use the custom type
     p.add_argument("--x-max", type=float_or_none, nargs='+', default=[50]) 
