@@ -3,7 +3,7 @@ Evaluates backtest results.
 Separated from backtest_daily.py to allow re-evaluation and cross-validation.
 
 Example Usage:
-    python scripts/backtest_eval.py --start 2025-12-01 --end 2025-12-31 --exp-name "exp4" --x-max None 30 60 90 --alpha 0 0.5 1 --masked
+    python scripts/backtest_eval.py --start 2025-12-01 --end 2025-12-31 --exp-name "exp5" --x-max None 30 60 90 --alpha 0 0.5 1 --masked
 """
 
 import pandas as pd
@@ -168,31 +168,31 @@ def main():
         for _, row in hm_df.iterrows():
             hist_metrics[row["Day"].date()] = row.to_dict()
     
+    # 1. Train/Get Best Evaluation Model on FULL data
+    eval_model_path = eval_models_dir / "eval_model_full.joblib"
+    eval_metrics_path = eval_models_dir / "eval_metrics_full.joblib"
+    
+    if eval_model_path.exists():
+        print(f"Loading cached full eval model")
+        model = joblib.load(eval_model_path)
+        e_metrics = joblib.load(eval_metrics_path) if eval_metrics_path.exists() else {}
+    else:
+        print(f"Training full eval model...")
+        # Use a fixed date for random state or max date
+        model, params, cv_mse, train_mse, train_r2 = train_best_model(df, features, df["Day"].max().date())
+        joblib.dump(model, eval_model_path)
+        e_metrics = {"CV_MSE": cv_mse, "Train_MSE": train_mse, "Train_R2": train_r2, "Best_Params": params}
+        joblib.dump(e_metrics, eval_metrics_path)
+
     eval_summary_rows = []
     
     for day in opt_days:
         print(f"Evaluating Day: {day.date()}")
         obs = df[df["Day"] == day].copy()
-        
-        # 1. Train/Get Best Evaluation Model on obs data
-        eval_model_path = eval_models_dir / f"eval_model_{day.date()}.joblib"
-        eval_metrics_path = eval_models_dir / f"eval_metrics_{day.date()}.joblib"
-        
-        if eval_model_path.exists():
-            print(f"Loading cached eval model for {day.date()}")
-            model = joblib.load(eval_model_path)
-            e_metrics = joblib.load(eval_metrics_path) if eval_metrics_path.exists() else {}
-        else:
-            print(f"Training eval model for {day.date()}...")
-            model, params, cv_mse, train_mse, train_r2 = train_best_model(obs, features, day.date())
-            joblib.dump(model, eval_model_path)
-            e_metrics = {"CV_MSE": cv_mse, "Train_MSE": train_mse, "Train_R2": train_r2, "Best_Params": params}
-            joblib.dump(e_metrics, eval_metrics_path)
             
         # 2. Evaluate Actuals
         # If we have already evaluated actuals for this day (in a previous run), we shouldn't strictly need to do it again.
         # However, it's fast. 
-        # Calculate incremental clicks for actuals using the evaluation model (Day T)
         obs_zero = obs.copy()
         obs_zero["Cost"] = 0.0
         
@@ -220,19 +220,9 @@ def main():
                 bids_file = bids_dir / f"optimized_costs_{day.date()}.csv"
                 act_file = bids_dir / f"actual_costs_{day.date()}.csv"
                 
-                if not bids_file.exists():
-                    # Handle folder name mismatch for None if simple str(None) didn't match previous logic,
-                    # but backtest_daily uses `str(xm)` so it should match.
-                    continue
-                
                 sol = pd.read_csv(bids_file)
                 
                 # Merge with X_base to get features
-                # Sol contains subsets of keywords (usually cost > 0), but sometimes all if 0 cost kept?
-                # Optimization returns only selected, but let's see. 
-                # Backtest daily: `sol = extract_solution(...)` -> `results_df[filt_opt_cost]` so it filters > 0.
-                
-                # Merge using inner join
                 X_day = X_base.merge(
                     sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
                     on=["Keyword", "Region", "Match type"],
@@ -320,19 +310,6 @@ def main():
     if eval_summary_rows:
         res_df = pd.DataFrame(eval_summary_rows)
         out_path = base_results_dir / "evaluation_results.csv"
-        # If exists, append to it or overwrite?
-        # Overwrite for now as it aggregates all iterated days
-        # But if we run for new days, we might want to append.
-        # However, logic in main iterates days provided.
-        # If we re-run, we overwrite.
-        
-        # If file exists, we could read it, remove rows for these days, and append.
-        if out_path.exists():
-             existing_df = pd.read_csv(out_path)
-             # Filter out (day, xmax, alpha) that we just processed
-             # For simpler logic, just overwrite or let the user manage it.
-             pass
-             
         res_df.to_csv(out_path, index=False)
         print(f"Saved evaluation results to {out_path}")
 
