@@ -39,7 +39,8 @@ print((start + dt.timedelta(days=int("$TASK_ID"))).isoformat())
 PY
 )
 
-echo "Running backtest_daily.py --day $DAY"
-python -u scripts/backtest_daily.py --day "$DAY" --x-max None 30 60 90 --alpha 1 --masked
+EXP_NAME="${1:-backtests}"
+echo "Running backtest_daily.py --day $DAY --exp-name $EXP_NAME"
+python -u scripts/backtest_daily.py --day "$DAY" --exp-name "$EXP_NAME" --x-max None 30 60 90 --alpha 1 --masked
 
 echo "End: $(date)"
