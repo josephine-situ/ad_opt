@@ -20,17 +20,24 @@ def generate_latex_table(summary_df):
     # --- 2. Extract Baseline Data for Note ---
     act_vals = {
         'clicks': df['avg clicks (act)'].iloc[0],
+        'std_clicks': df.get('std clicks (act)', pd.Series([0]*len(df))).iloc[0],
         'cost': df['avg cost (act)'].iloc[0],
+        'std_cost': df.get('std cost (act)', pd.Series([0]*len(df))).iloc[0],
         'cpc': df['clicks/$ (act)'].iloc[0],
-        'kws': df['avg n kws (act)'].iloc[0]
+        'kws': df['avg n kws (act)'].iloc[0],
+        'std_kws': df.get('std n kws (act)', pd.Series([0]*len(df))).iloc[0],
     }
     
+    # helper for formatting mean +/- sd
+    def fmt_msd(mean, sd, decimals=1, prefix="", suffix=""):
+        return f"{prefix}{mean:,.{decimals}f} \\pm {sd:,.{decimals}f}{suffix}"
+
     note_row = (
         r"\multicolumn{8}{l}{\scriptsize \textbf{Actual values:} "
-        f"Clicks: {act_vals['clicks']:,.1f}, "
-        f"Cost: \\${act_vals['cost']:,.2f}, "
+        f"Clicks: {fmt_msd(act_vals['clicks'], act_vals['std_clicks'])}, "
+        f"Cost: {fmt_msd(act_vals['cost'], act_vals['std_cost'], 2, prefix='\\$')}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
-        f"Kws: {act_vals['kws']:.0f}."
+        f"Kws: {fmt_msd(act_vals['kws'], act_vals['std_kws'], 0)}."
         "}"
     )
 
@@ -189,9 +196,12 @@ def main():
             
             # Use the same model to compare opt vs actual, so use the pred clicks = pred_act - pred_base for the actual costs
             avg_clicks_act = full_df["t_Clicks_ActCost"].mean()
+            std_clicks_act = full_df["t_Clicks_ActCost"].std()
             avg_cost_act = full_df["Act_Cost"].mean()
+            std_cost_act = full_df["Act_Cost"].std()
             clicks_per_dollar_act = full_df["t_Clicks_ActCost"].sum() / full_df["Act_Cost"].sum() if full_df["Act_Cost"].sum() > 0 else 0
             avg_n_kws_act = full_df["N_Obs"].mean()
+            std_n_kws_act = full_df["N_Obs"].std()
             
             # Improvement
             imp_clicks = (avg_clicks_opt - avg_clicks_act) / avg_clicks_act if avg_clicks_act > 0 else 0
@@ -208,9 +218,12 @@ def main():
                 "avg n kws (opt)": avg_n_kws_opt,
                 "std n kws (opt)": std_n_kws_opt,
                 "avg clicks (act)": avg_clicks_act,
+                "std clicks (act)": std_clicks_act,
                 "avg cost (act)": avg_cost_act,
+                "std cost (act)": std_cost_act,
                 "clicks/$ (act)": clicks_per_dollar_act,
                 "avg n kws (act)": avg_n_kws_act,
+                "std n kws (act)": std_n_kws_act,
                 "improvement in clicks": imp_clicks,
                 "improvement in clicks/$": imp_c_d
             })
