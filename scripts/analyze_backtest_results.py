@@ -20,24 +20,24 @@ def generate_latex_table(summary_df):
     # --- 2. Extract Baseline Data for Note ---
     act_vals = {
         'clicks': df['avg clicks (act)'].iloc[0],
-        'std_clicks': df.get('std clicks (act)', pd.Series([0]*len(df))).iloc[0],
+        'se_clicks': df.get('se clicks (act)', pd.Series([0]*len(df))).iloc[0],
         'cost': df['avg cost (act)'].iloc[0],
-        'std_cost': df.get('std cost (act)', pd.Series([0]*len(df))).iloc[0],
+        'se_cost': df.get('se cost (act)', pd.Series([0]*len(df))).iloc[0],
         'cpc': df['clicks/$ (act)'].iloc[0],
         'kws': df['avg n kws (act)'].iloc[0],
-        'std_kws': df.get('std n kws (act)', pd.Series([0]*len(df))).iloc[0],
+        'se_kws': df.get('se n kws (act)', pd.Series([0]*len(df))).iloc[0],
     }
     
-    # helper for formatting mean +/- sd
-    def fmt_msd(mean, sd, decimals=1, prefix="", suffix=""):
-        return f"{prefix}{mean:,.{decimals}f} \\pm {sd:,.{decimals}f}{suffix}"
+    # helper for formatting mean +/- se
+    def fmt_mse(mean, se, decimals=1, prefix="", suffix=""):
+        return f"{prefix}{mean:,.{decimals}f} \\pm {se:,.{decimals}f}{suffix}"
 
     note_row = (
         r"\multicolumn{8}{l}{\scriptsize \textbf{Actual values:} "
-        f"Clicks: {fmt_msd(act_vals['clicks'], act_vals['std_clicks'])}, "
-        f"Cost: {fmt_msd(act_vals['cost'], act_vals['std_cost'], 2, prefix='\\$')}, "
+        f"Clicks: {fmt_mse(act_vals['clicks'], act_vals['se_clicks'])}, "
+        f"Cost: {fmt_mse(act_vals['cost'], act_vals['se_cost'], 2, prefix='\\$')}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
-        f"Kws: {fmt_msd(act_vals['kws'], act_vals['std_kws'], 0)}."
+        f"Kws: {fmt_mse(act_vals['kws'], act_vals['se_kws'], 0)}."
         "}"
     )
 
@@ -58,20 +58,20 @@ def generate_latex_table(summary_df):
         if col in df.columns:
             df[col] = df[col].map(fmt.format)
 
-    # Combined Mean +/- SD formatters
-    # We construct the string manually using the std columns
-    if 'std clicks (opt)' in df.columns:
-        df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['std clicks (opt)']:,.1f}", axis=1)
+    # Combined Mean +/- SE formatters
+    # We construct the string manually using the se columns
+    if 'se clicks (opt)' in df.columns:
+        df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['se clicks (opt)']:,.1f}", axis=1)
     elif 'avg clicks (opt)' in df.columns:
         df['avg clicks (opt)'] = df['avg clicks (opt)'].map('{:,.1f}'.format)
         
-    if 'std cost (opt)' in df.columns:
-        df['avg cost (opt)'] = df.apply(lambda row: f"{row['avg cost (opt)']:,.2f} $\\pm$ {row['std cost (opt)']:,.2f}", axis=1)
+    if 'se cost (opt)' in df.columns:
+        df['avg cost (opt)'] = df.apply(lambda row: f"{row['avg cost (opt)']:,.2f} $\\pm$ {row['se cost (opt)']:,.2f}", axis=1)
     elif 'avg cost (opt)' in df.columns:
         df['avg cost (opt)'] = df['avg cost (opt)'].map('{:,.2f}'.format)
 
-    if 'std n kws (opt)' in df.columns:
-        df['avg n kws (opt)'] = df.apply(lambda row: f"{row['avg n kws (opt)']:,.0f} $\\pm$ {row['std n kws (opt)']:,.0f}", axis=1)
+    if 'se n kws (opt)' in df.columns:
+        df['avg n kws (opt)'] = df.apply(lambda row: f"{row['avg n kws (opt)']:,.0f} $\\pm$ {row['se n kws (opt)']:,.0f}", axis=1)
     elif 'avg n kws (opt)' in df.columns:
         df['avg n kws (opt)'] = df['avg n kws (opt)'].map('{:,.0f}'.format)
 
@@ -186,22 +186,22 @@ def main():
             # Calculate metrics
             # Use pred_opt - pred_opt_base and pred_act - pred_base
             avg_clicks_opt = full_df["t_Clicks_OptCost"].mean()
-            std_clicks_opt = full_df["t_Clicks_OptCost"].std()
+            se_clicks_opt = full_df["t_Clicks_OptCost"].sem()
             avg_cost_opt = full_df["Opt_Cost"].mean()
-            std_cost_opt = full_df["Opt_Cost"].std()
+            se_cost_opt = full_df["Opt_Cost"].sem()
             # Clicks/$ = Total Clicks / Total Cost
             clicks_per_dollar_opt = full_df["t_Clicks_OptCost"].sum() / full_df["Opt_Cost"].sum() if full_df["Opt_Cost"].sum() > 0 else 0
             avg_n_kws_opt = full_df["N_Opt"].mean()
-            std_n_kws_opt = full_df["N_Opt"].std()
+            se_n_kws_opt = full_df["N_Opt"].sem()
             
             # Use the same model to compare opt vs actual, so use the pred clicks = pred_act - pred_base for the actual costs
             avg_clicks_act = full_df["t_Clicks_ActCost"].mean()
-            std_clicks_act = full_df["t_Clicks_ActCost"].std()
+            se_clicks_act = full_df["t_Clicks_ActCost"].sem()
             avg_cost_act = full_df["Act_Cost"].mean()
-            std_cost_act = full_df["Act_Cost"].std()
+            se_cost_act = full_df["Act_Cost"].sem()
             clicks_per_dollar_act = full_df["t_Clicks_ActCost"].sum() / full_df["Act_Cost"].sum() if full_df["Act_Cost"].sum() > 0 else 0
             avg_n_kws_act = full_df["N_Obs"].mean()
-            std_n_kws_act = full_df["N_Obs"].std()
+            se_n_kws_act = full_df["N_Obs"].sem()
             
             # Improvement
             imp_clicks = (avg_clicks_opt - avg_clicks_act) / avg_clicks_act if avg_clicks_act > 0 else 0
@@ -211,19 +211,19 @@ def main():
                 "x_max": xm,
                 "alpha": al,
                 "avg clicks (opt)": avg_clicks_opt,
-                "std clicks (opt)": std_clicks_opt,
+                "se clicks (opt)": se_clicks_opt,
                 "avg cost (opt)": avg_cost_opt,
-                "std cost (opt)": std_cost_opt,
+                "se cost (opt)": se_cost_opt,
                 "clicks/$ (opt)": clicks_per_dollar_opt,
                 "avg n kws (opt)": avg_n_kws_opt,
-                "std n kws (opt)": std_n_kws_opt,
+                "se n kws (opt)": se_n_kws_opt,
                 "avg clicks (act)": avg_clicks_act,
-                "std clicks (act)": std_clicks_act,
+                "se clicks (act)": se_clicks_act,
                 "avg cost (act)": avg_cost_act,
-                "std cost (act)": std_cost_act,
+                "se cost (act)": se_cost_act,
                 "clicks/$ (act)": clicks_per_dollar_act,
                 "avg n kws (act)": avg_n_kws_act,
-                "std n kws (act)": std_n_kws_act,
+                "se n kws (act)": se_n_kws_act,
                 "improvement in clicks": imp_clicks,
                 "improvement in clicks/$": imp_c_d
             })
