@@ -1,19 +1,17 @@
-"""Daily backtest: train daily, optimize costs, evaluate yesterday.
+"""Daily backtest - generate optimal solutions.
 
 Example Usage:
-    python scripts/backtest_daily.py --start 2025-12-01 --end 2025-12-05 --exp-name "experiment_v1" --x-max 50 100 --alpha 1.0
+    python scripts/backtest_daily.py --start 2025-12-01 --end 2025-12-31 --exp-name exp1 --masked
 
 For each day t:
-- Train model on data with Day < t
-- Evaluate day t-1 using the newly trained model (model(opt-cost), model(act-cost), actual clicks)
-- Optimize costs for day t
+- Train model on data until t-1.
+- Embed this model and optimize to find (x^t)^*
 """
 
 from pathlib import Path
 import argparse
 import sys
 import hashlib
-import os
 import numpy as np
 
 import joblib
@@ -27,7 +25,7 @@ import xgboost as xgb
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.optimization import create_feature_matrix, extract_solution, optimize_bids
-from scripts.prediction_modeling_tweedie import _to_float32_csr
+from scripts.modeling import _to_float32_csr
 
 
 def fit_click_model(df_train: pd.DataFrame, *, features: list[str]) -> Pipeline:
@@ -198,9 +196,6 @@ def main():
         # Select a new set of masked keywords each day
         kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, seed=seed)
 
-        # Get observed data before filtering out keywords
-        obs = df[df["Day"] == day].copy()
-
         # Train model on history up to t-1, excluding new keywords if masked
         history_source = df
         if masked:
@@ -251,7 +246,6 @@ def main():
             # Save optimized costs
             if sol is not None:
                 sol.to_csv(opt_path, index=False)
-
 
     print(f"\nBacktest complete.")
 

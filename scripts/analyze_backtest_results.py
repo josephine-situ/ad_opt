@@ -1,7 +1,7 @@
 """
-To run: python scripts/analyze_backtest_results.py --exp-name "experiment_v1"
-This script analyzes backtest results from the backtest_daily.py script. It aggregates daily evaluation metrics across different
-(x_max, alpha) parameter combinations, computes average performance metrics, and generates a summary CSV and LaTeX table.
+Example usage: python scripts/analyze_backtest_results.py --exp-name exp1
+Analyzes backtest results from the backtest_eval.py script. Generates a summary csv and LaTeX table of performance metrics
+and regional cost shares across different budget levels.
 """
 from sys import prefix
 import pandas as pd

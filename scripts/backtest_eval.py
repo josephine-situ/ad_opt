@@ -1,9 +1,10 @@
 """
-Evaluates backtest results.
+Evaluates backtest results using the best model trained on full data.
+Outputs an evaluation summary and adds a predicted clicks column to existing optimized costs files.
 Separated from backtest_daily.py to allow re-evaluation and cross-validation.
 
 Example Usage:
-    python scripts/backtest_eval.py --start 2025-12-01 --end 2025-12-31 --exp-name "exp5" --x-max None 30 60 90 --alpha 0 0.5 1 --masked
+    python scripts/backtest_eval.py --exp-name exp1 --masked
 """
 
 import pandas as pd
@@ -20,7 +21,7 @@ from sklearn.pipeline import FunctionTransformer, Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.prediction_modeling_tweedie import _to_float32_csr
+from scripts.modeling import _to_float32_csr
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
 
 def get_args():

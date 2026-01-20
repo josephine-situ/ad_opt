@@ -6,6 +6,7 @@ Handles training, evaluation, and saving of models. Used in backtests.
 from pathlib import Path
 import sys
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import FunctionTransformer, Pipeline
@@ -13,11 +14,22 @@ import xgboost as xgb
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
+import scipy.sparse as sp
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.prediction_modeling_tweedie import _to_float32_csr
 from utils import setup_tee_logging
+
+def _to_float32_csr(X):
+    """Cast matrices to float32; prefer CSR for sparse.
+
+    This avoids a class of XGBoost crashes/slow paths on some HPC builds.
+    """
+
+    if sp is not None and sp.issparse(X):
+        return X.tocsr().astype(np.float32)
+    return np.asarray(X, dtype=np.float32)
+
 
 def evaluate_model(model, X_test, y_test):
     '''Evaluate the model on test data.'''
