@@ -143,11 +143,12 @@ def main():
 
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
+    p.add_argument("--order-budget", action="store_true", help="Use B_{USA} \geq B_{A} \geq B_{B}")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
 
     args = p.parse_args()
 
-    start_dt, end_dt, budget_list, masked, keywords_n = args.start, args.end, args.budget, args.masked, args.keywords_n
+    start_dt, end_dt, budget_list, masked, keywords_n, order_budget = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget
     
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
@@ -240,7 +241,7 @@ def main():
             # Optimize bids for day t
             # Copy X_base to avoid modification issues
             # optimize_bids now only takes budget and kw_df
-            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily)
+            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily, order_budget=order_budget)
             sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
             # Save optimized costs

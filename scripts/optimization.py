@@ -261,7 +261,7 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
@@ -316,6 +316,11 @@ def optimize_bids(X, model_path, budget=400, kw_df=None):
              # but to avoid wasting budget, we can say budget >= 0 (implied) and usually 
              # the logic would just put 0 there if there's no utility.
              pass
+
+    if order_budget:
+        # Add ordering constraints: B_{USA} >= B_{A} >= B_{B}
+        model.addConstr(region_budgets['USA'] >= region_budgets['A'], name='order_budget_USA_A')
+        model.addConstr(region_budgets['A'] >= region_budgets['B'], name='order_budget_A_B')
 
     # Optimize
     model.optimize()
