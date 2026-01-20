@@ -183,8 +183,8 @@ def main():
         *bert_cols,
     ]
 
-    models_dir = Path(f"models/{args.exp_name}")
-    base_results_dir = Path(f"opt_results/{args.exp_name}")
+    models_dir = Path(f"models/backtests/{args.exp_name}")
+    base_results_dir = Path(f"opt_results/backtests/{args.exp_name}")
     cache_dir = base_results_dir / "cache"
     models_dir.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)

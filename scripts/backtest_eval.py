@@ -26,7 +26,7 @@ from scripts.backtest_daily import feature_matrix_cached, select_keywords
 def get_args():
     p = argparse.ArgumentParser()
     p.add_argument("--start", default="2025-12-01")
-    p.add_argument("--end", default="2025-12-03")
+    p.add_argument("--end", default="2025-12-31")
     p.add_argument("--day", default=None)
     
     # Updated to loop over budget instead
@@ -34,7 +34,7 @@ def get_args():
 
     p.add_argument("--exp-name", default="exp4", help="Experiment name")
     p.add_argument("--keywords-n", type=int, default=None)
-    p.add_argument("--masked", default=True, action="store_true", help="Use masked data as new keywords for testing")
+    p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     
     args = p.parse_args()
     return args
@@ -147,7 +147,7 @@ def main():
     models_dir = Path(f"models/{args.exp_name}") # For reading hist metrics
     
     eval_models_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir = Path("opt_results/backtests/cache")
+    cache_dir = base_results_dir / "cache"
     
     # Load Hist Metrics if available
     hist_metrics = {}
@@ -218,7 +218,7 @@ def main():
             X_day = X_base.merge(
                 sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
                 on=["Keyword", "Region", "Match type"],
-                how="inner" 
+                how="right" 
             )
             
             X_day["Cost"] = X_day["Optimal Cost"].fillna(0.0)
