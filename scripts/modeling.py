@@ -111,6 +111,78 @@ def train_xgb_mse(df_train, df_test, features, target, param_grid):
 
     return best_model
 
+
+def train_best_model(df_day, features, day_date):
+    """
+    Train a single best model for the day using GridSearchCV.
+    Returns: pipeline, best_params, cv_score (negative MSE), in_sample_score (MSE), r2, bias
+    """
+    X, y = df_day[features], df_day["Clicks"]
+    cat = list(X.select_dtypes(include=["object", "category", "bool"]).columns)
+    num = [c for c in X.columns if c not in cat]
+
+    pre = ColumnTransformer(
+        [
+            ("num", StandardScaler(with_mean=False), num),
+            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=True), cat),
+        ],
+        remainder="drop",
+    )
+    
+    # Base estimator (same hyperparams range as typically used, but can be searched)
+    xgb_reg = xgb.XGBRegressor(
+        objective="reg:squarederror",
+        random_state=42,
+        subsample=1.0,
+        colsample_bytree=1.0,
+    )
+    
+    pipeline = Pipeline(
+        [
+            ("preprocess", pre),
+            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
+            ("model", xgb_reg),
+        ]
+    )
+
+    # Keep the grid small to reduce overfitting risk on small daily data
+    param_grid = {
+        "model__n_estimators": [5, 10, 20],
+        "model__max_depth": [2, 3, 4],
+        "model__learning_rate": [0.1, 0.3],
+    }
+    
+    # Use deterministic seed based on day
+    if hasattr(day_date, 'strftime'):
+        seed_val = int(day_date.strftime('%Y%m%d'))
+    else:
+        seed_val = 42
+
+    cv = KFold(n_splits=5, shuffle=True, random_state=seed_val)
+    
+    grid_search = GridSearchCV(
+        pipeline, 
+        param_grid, 
+        cv=cv, 
+        scoring='neg_mean_squared_error',
+        n_jobs=-1,
+        verbose=0
+    )
+    
+    grid_search.fit(X, y)
+    
+    best_model = grid_search.best_estimator_
+    best_params = grid_search.best_params_
+    best_cv_score = -grid_search.best_score_ # Convert back to positive MSE
+    
+    # In-sample metrics on full data (best_model is already refitted on X, y)
+    y_pred = best_model.predict(X)
+    in_sample_mse = mean_squared_error(y, y_pred)
+    in_sample_r2 = r2_score(y, y_pred)
+    in_sample_bias = (y_pred - y).mean()
+    
+    return best_model, best_params, best_cv_score, in_sample_mse, in_sample_r2, in_sample_bias
+
 def main():
 
     log_path = setup_tee_logging(
