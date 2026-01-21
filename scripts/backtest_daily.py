@@ -25,40 +25,7 @@ import xgboost as xgb
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.optimization import create_feature_matrix, extract_solution, optimize_bids
-from scripts.modeling import _to_float32_csr
-
-
-def fit_click_model(df_train: pd.DataFrame, *, features: list[str]) -> Pipeline:
-    X, y = df_train[features], df_train["Clicks"]
-    cat = list(X.select_dtypes(include=["object", "category", "bool"]).columns)
-    num = [c for c in X.columns if c not in cat]
-
-    pre = ColumnTransformer(
-        [
-            ("num", StandardScaler(with_mean=False), num),
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=True), cat),
-        ],
-        remainder="drop",
-    )
-    model = xgb.XGBRegressor(
-        objective="reg:squarederror",
-        random_state=42,
-        n_estimators=20,
-        max_depth=4,
-        learning_rate=0.3,
-        subsample=1.0,
-        colsample_bytree=1.0,
-    )
-
-    pipe = Pipeline(
-        [
-            ("preprocess", pre),
-            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
-            ("model", model),
-        ]
-    )
-    pipe.fit(X, y)
-    return pipe
+from scripts.modeling import _to_float32_csr, train_best_model
 
 
 def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path) -> pd.DataFrame:
@@ -73,16 +40,7 @@ def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_
     # return X
 
 
-def in_sample_metrics(model: Pipeline, df: pd.DataFrame, *, features: list[str]) -> dict:
-    y = df["Clicks"]
-    yhat = model.predict(df[features])
-    return {
-        "MSE": float(mean_squared_error(y, yhat)),
-        "R2": float(r2_score(y, yhat)),
-        "Bias": float((yhat - y).mean()),
-    }
-
-def select_keywords(kw_df, keywords_n, masked, seed=None):
+def select_keywords(kw_df, keywords_n, masked, mask_frac=0.1, seed=None):
     """ Select keywords for backtesting, optionally masking some as "new" keywords."""
     
     if masked:
@@ -93,7 +51,7 @@ def select_keywords(kw_df, keywords_n, masked, seed=None):
         rng = np.random.default_rng(seed)
         
         existing_keywords = kw_df["Keyword"].tolist()
-        n_new = round(0.1 * len(existing_keywords))  # For example, 10% as new
+        n_new = round(mask_frac * len(existing_keywords))  # mask_frac as new
         new_keywords = rng.choice(existing_keywords, size=n_new, replace=False)
         kw_df.loc[kw_df["Keyword"].isin(new_keywords), "Origin"] = "new"
         print(f"Selected {n_new} existing keywords as 'new' for testing. For example: {new_keywords[:5]}")
@@ -143,12 +101,13 @@ def main():
 
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
-    p.add_argument("--order-budget", action="store_true", help="Use B_{USA} \geq B_{A} \geq B_{B}")
+    p.add_argument("--mask-frac", type=float, default=0.1, help="Fraction of keywords to mask as new")
+    p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
 
     args = p.parse_args()
 
-    start_dt, end_dt, budget_list, masked, keywords_n, order_budget = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget
+    start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac
     
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
@@ -195,23 +154,26 @@ def main():
         seed = int(day.strftime('%Y%m%d'))
 
         # Select a new set of masked keywords each day
-        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, seed=seed)
+        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, mask_frac=mask_frac, seed=seed)
 
         # Train model on history up to t-1, excluding new keywords if masked
         history_source = df
         if masked:
             history_source = df[~df['Keyword'].isin(new_keywords)].copy()
         hist = history_source[history_source["Day"] < day].copy()
-        pipe = fit_click_model(hist, features=features)
+        
+        # Train best model using CV
+        pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(hist, features=features, day_date=day)
         
         # Calculate and Save Hist Metrics
-        hist_m = in_sample_metrics(pipe, hist, features=features)
         metrics_file = models_dir / "hist_model_metrics.csv"
         metrics_row = pd.DataFrame([{
             "Day": day.date(),
-            "Hist_MSE": hist_m["MSE"],
-            "Hist_R2": hist_m["R2"],
-            "Hist_Bias": hist_m["Bias"]
+            "Hist_MSE": hist_mse,
+            "Hist_R2": hist_r2,
+            "Hist_Bias": hist_bias,
+            "CV_Score": best_cv,
+            "best_params": best_params
         }])
         if not metrics_file.exists():
             metrics_row.to_csv(metrics_file, index=False)

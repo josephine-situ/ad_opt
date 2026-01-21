@@ -21,7 +21,7 @@ from sklearn.pipeline import FunctionTransformer, Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.modeling import _to_float32_csr
+from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
 
 def get_args():
@@ -40,69 +40,6 @@ def get_args():
     args = p.parse_args()
     return args
 
-def train_best_model(df_day, features, day_date):
-    """
-    Train a single best model for the day using GridSearchCV.
-    Returns: pipeline, best_params, cv_score (negative MSE), in_sample_score (MSE), r2
-    """
-    X, y = df_day[features], df_day["Clicks"]
-    cat = list(X.select_dtypes(include=["object", "category", "bool"]).columns)
-    num = [c for c in X.columns if c not in cat]
-
-    pre = ColumnTransformer(
-        [
-            ("num", StandardScaler(with_mean=False), num),
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=True), cat),
-        ],
-        remainder="drop",
-    )
-    
-    # Base estimator (same hyperparams range as typically used, but can be searched)
-    xgb_reg = xgb.XGBRegressor(
-        objective="reg:squarederror",
-        random_state=42,
-        subsample=1.0,
-        colsample_bytree=1.0,
-    )
-    
-    pipeline = Pipeline(
-        [
-            ("preprocess", pre),
-            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
-            ("model", xgb_reg),
-        ]
-    )
-
-    # Keep the grid small to reduce overfitting risk on small daily data
-    param_grid = {
-        "model__n_estimators": [5, 10, 20],
-        "model__max_depth": [2, 3, 4],
-        "model__learning_rate": [0.1, 0.3],
-    }
-    
-    cv = KFold(n_splits=5, shuffle=True, random_state=int(day_date.strftime('%Y%m%d')))
-    
-    grid_search = GridSearchCV(
-        pipeline, 
-        param_grid, 
-        cv=cv, 
-        scoring='neg_mean_squared_error',
-        n_jobs=-1,
-        verbose=0
-    )
-    
-    grid_search.fit(X, y)
-    
-    best_model = grid_search.best_estimator_
-    best_params = grid_search.best_params_
-    best_cv_score = -grid_search.best_score_ # Convert back to positive MSE
-    
-    # In-sample metrics on full data (best_model is already refitted on X, y)
-    y_pred = best_model.predict(X)
-    in_sample_mse = mean_squared_error(y, y_pred)
-    in_sample_r2 = r2_score(y, y_pred)
-    
-    return best_model, best_params, best_cv_score, in_sample_mse, in_sample_r2
 
 def main():
     args = get_args()
@@ -121,6 +58,9 @@ def main():
     df["Day"] = pd.to_datetime(df["Day"])
     
     kw_df_all = pd.read_csv("data/gkp/keywords_classified.csv")
+    
+    # Merge Origin into Main Data (Actuals)
+    df = df.merge(kw_df_all[["Keyword", "Origin"]], on="Keyword", how="left")
     
     bert_cols = [c for c in df.columns if c.startswith("bert_")]
     features = [
@@ -170,7 +110,7 @@ def main():
     else:
         print(f"Training full eval model...")
         # Use a fixed date for random state or max date
-        model, params, cv_mse, train_mse, train_r2 = train_best_model(df, features, df["Day"].max().date())
+        model, params, cv_mse, train_mse, train_r2, _ = train_best_model(df, features, df["Day"].max().date())
         joblib.dump(model, eval_model_path)
         e_metrics = {"CV_MSE": cv_mse, "Train_MSE": train_mse, "Train_R2": train_r2, "Best_Params": params}
         joblib.dump(e_metrics, eval_metrics_path)
@@ -224,6 +164,9 @@ def main():
             
             X_day["Cost"] = X_day["Optimal Cost"].fillna(0.0)
             
+            # Merge Origin into X_day
+            X_day = X_day.merge(kw_df_all[["Keyword", "Origin"]], on="Keyword", how="left")
+
             # Predict Opt
             pred_opt = model.predict(X_day[features])
             
@@ -240,9 +183,19 @@ def main():
             opt_cost_a = X_day[X_day['Region'] == 'A']['Optimal Cost'].sum()
             opt_cost_b = X_day[X_day['Region'] == 'B']['Optimal Cost'].sum()
             
+            # Origin Breakdown
+            opt_cost_new = X_day[X_day['Origin'] == 'new']['Optimal Cost'].sum()
+            opt_cost_existing_searches = X_day[X_day['Origin'] == 'existing searches']['Optimal Cost'].sum()
+            opt_cost_existing = X_day[X_day['Origin'] == 'existing']['Optimal Cost'].sum()
+            
             act_cost_usa = obs[obs['Region'] == 'USA']['Cost'].sum()
             act_cost_a = obs[obs['Region'] == 'A']['Cost'].sum()
             act_cost_b = obs[obs['Region'] == 'B']['Cost'].sum()
+
+            # Origin Breakdown (Actuals)
+            act_cost_new = obs[obs['Origin'] == 'new']['Cost'].sum()
+            act_cost_existing_searches = obs[obs['Origin'] == 'existing searches']['Cost'].sum()
+            act_cost_existing = obs[obs['Origin'] == 'existing']['Cost'].sum()
             
             # Update Bids File with Eval Metric
             # We want to add column `t_Clicks_OptCost` to `optimized_costs_...csv`
@@ -295,9 +248,17 @@ def main():
                 "Opt_Cost_USA": opt_cost_usa,
                 "Opt_Cost_A": opt_cost_a,
                 "Opt_Cost_B": opt_cost_b,
+                "Opt_Cost_new": opt_cost_new,
+                "Opt_Cost_existing": opt_cost_existing,
+                "Opt_Cost_existing_searches": opt_cost_existing_searches,
+                
                 "Act_Cost_USA": act_cost_usa,
                 "Act_Cost_A": act_cost_a,
-                "Act_Cost_B": act_cost_b,                
+                "Act_Cost_B": act_cost_b,  
+                "Act_Cost_new": act_cost_new,
+                "Act_Cost_existing": act_cost_existing,
+                "Act_Cost_existing_searches": act_cost_existing_searches,
+                          
                 "N_Opt": len(X_day),
                 "N_Obs": len(obs),
                 

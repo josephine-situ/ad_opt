@@ -161,31 +161,91 @@ def generate_performance_table(summary_df):
 def generate_regional_table(share_df):
     df = share_df.copy()
     df['Budget'] = df['Budget'].astype(str) # Can sort properly with 'Actual' entry
-    df = df.sort_values(by=['Budget'], ascending=True)
+    
+    # Sort: Actual first, then numeric budgets
+    def sorter(val):
+        if val == "Actual":
+            return -1
+        try:
+            return float(val)
+        except:
+            return 999999
+
+    df['sort_key'] = df['Budget'].apply(sorter)
+    df = df.sort_values(by=['sort_key']).drop(columns=['sort_key'])
+
+    # Rename & Reorder
+    rename_map = {
+        'Share USA': 'USA',
+        'Share A': 'A',
+        'Share B': 'B',
+        'Share Existing': 'Existing',
+        'Share ExSearches': 'ExSearches',
+        'Share New': 'New'
+    }
+    df = df.rename(columns=rename_map)
+    
+    # Define desired order
+    desired_cols = ['Budget', 'USA', 'A', 'B', 'Existing', 'ExSearches', 'New']
+    exist_cols = [c for c in desired_cols if c in df.columns]
+    df = df[exist_cols]
 
     # Format Percentages
-    for col in ['Share USA', 'Share A', 'Share B']:
-        df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
+    for col in df.columns:
+        if col != 'Budget':
+             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
+    
+    # Dynamic column format
+    col_format = 'l' + 'r' * (len(df.columns) - 1)
     
     latex_tabular = df.to_latex(
         index=False,
         escape=False,
-        column_format='lrrr'
+        column_format=col_format
     )
     
     latex_tabular = latex_tabular.replace(r'\hline', r'\toprule', 1)
     if latex_tabular.strip().endswith(r'\hline'):
         latex_tabular = latex_tabular.strip()[:-6] + r'\bottomrule'
 
-    # Add midrule under header
+    # Inject Multicolumn Headers
+    region_cols = [c for c in ['USA', 'A', 'B'] if c in df.columns]
+    origin_cols = [c for c in ['Existing', 'ExSearches', 'New'] if c in df.columns]
+    
     lines = latex_tabular.split('\n')
     new_lines = []
-    header_found = False
+    header_inserted = False
+    
+    # Construct Super Header
+    super_header = r' '
+    cmid_rule = r''
+    
+    # Budget is col 1
+    current_col = 2
+    
+    if region_cols:
+        n_reg = len(region_cols)
+        super_header += fr'& \multicolumn{{{n_reg}}}{{c}}{{Region}} '
+        cmid_rule += fr'\cmidrule(lr){{{current_col}-{current_col + n_reg - 1}}} '
+        current_col += n_reg
+        
+    if origin_cols:
+        n_orig = len(origin_cols)
+        super_header += fr'& \multicolumn{{{n_orig}}}{{c}}{{Origin}} '
+        cmid_rule += fr'\cmidrule(lr){{{current_col}-{current_col + n_orig - 1}}} '
+        current_col += n_orig
+    
+    super_header += r'\\'
+    
     for line in lines:
-        new_lines.append(line)
-        if "Share USA" in line and not header_found:
-             new_lines.append(r'\midrule')
-             header_found = True
+        if "USA" in line and not header_inserted: # Identify the header row (contains "USA" after rename)
+            new_lines.append(super_header)
+            new_lines.append(cmid_rule)
+            new_lines.append(line)
+            new_lines.append(r'\midrule')
+            header_inserted = True
+        else:
+            new_lines.append(line)
     
     lines_joined = '\n'.join(new_lines)
     final_latex = (
@@ -237,12 +297,25 @@ def main():
     act_share_a = act_df["Act_Cost_A"].sum() / total_act_cost if total_act_cost > 0 else 0
     act_share_b = act_df["Act_Cost_B"].sum() / total_act_cost if total_act_cost > 0 else 0
     
+    # Actual Origin Share
+    if "Act_Cost_new" in act_df.columns:
+        act_share_new = act_df["Act_Cost_new"].sum() / total_act_cost if total_act_cost > 0 else 0
+        act_share_existing = act_df["Act_Cost_existing"].sum() / total_act_cost if total_act_cost > 0 else 0
+        act_share_exsearches = act_df["Act_Cost_existing_searches"].sum() / total_act_cost if total_act_cost > 0 else 0
+    else:
+        act_share_new = 0
+        act_share_existing = 0
+        act_share_exsearches = 0
+
     # Add Actual row to regional rows first
     regional_rows.append({
         "Budget": "Actual",
         "Share USA": act_share_usa,
         "Share A": act_share_a,
-        "Share B": act_share_b
+        "Share B": act_share_b,
+        "Share New": act_share_new,
+        "Share Existing": act_share_existing,
+        "Share ExSearches": act_share_exsearches
     })
 
     for budget, df_group in grouped:
@@ -289,11 +362,23 @@ def main():
         share_opt_a = df_group["Opt_Cost_A"].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
         share_opt_b = df_group["Opt_Cost_B"].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
         
+        if "Opt_Cost_new" in df_group.columns:
+            share_opt_new = df_group["Opt_Cost_new"].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
+            share_opt_existing = df_group["Opt_Cost_existing"].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
+            share_opt_exsearches = df_group["Opt_Cost_existing_searches"].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
+        else:
+            share_opt_new = 0
+            share_opt_existing = 0
+            share_opt_exsearches = 0
+
         regional_rows.append({
             "Budget": budget,
             "Share USA": share_opt_usa,
             "Share A": share_opt_a,
-            "Share B": share_opt_b
+            "Share B": share_opt_b,
+            "Share New": share_opt_new,
+            "Share Existing": share_opt_existing,
+            "Share ExSearches": share_opt_exsearches
         })
 
     if not summary_rows:
