@@ -157,15 +157,12 @@ def main():
             
             # Merge with X_base to get features
             X_day = X_base.merge(
-                sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
+                sol[["Keyword", "Region", "Match type", "Origin", "Optimal Cost"]], # Use origin from sol (if masked keyword, will show up as "new")
                 on=["Keyword", "Region", "Match type"],
                 how="right" 
             )
             
-            X_day["Cost"] = X_day["Optimal Cost"].fillna(0.0)
-            
-            # Merge Origin into X_day
-            X_day = X_day.merge(kw_df_all[["Keyword", "Origin"]], on="Keyword", how="left")
+            X_day["Cost"] = X_day["Optimal Cost"]
 
             # Predict Opt
             pred_opt = model.predict(X_day[features])
