@@ -23,6 +23,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
+from utils.data_pipeline import format_keyword_data
 
 def get_args():
     p = argparse.ArgumentParser()
@@ -115,6 +116,19 @@ def main():
         e_metrics = {"CV_MSE": cv_mse, "Train_MSE": train_mse, "Train_R2": train_r2, "Best_Params": params}
         joblib.dump(e_metrics, eval_metrics_path)
 
+    # Get observed clicks, conversion rate by location
+    loc_file = Path("data/reports/Location report.csv")
+    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
+    loc_df = loc_df.groupby(['Location','Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
+
+    # Want to get the columns 'Location', 'Click_prop (of region)', 'Conv_rate'
+    region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+    loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+    loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
+    loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
+    loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
+
     eval_summary_rows = []
     
     for day in opt_days:
@@ -122,8 +136,6 @@ def main():
         obs = df[df["Day"] == day].copy()
             
         # 2. Evaluate Actuals
-        # If we have already evaluated actuals for this day (in a previous run), we shouldn't strictly need to do it again.
-        # However, it's fast. 
         obs_zero = obs.copy()
         obs_zero["Cost"] = 0.0
         
@@ -131,6 +143,10 @@ def main():
         pred_act_base = model.predict(obs_zero[features])
         val_act_diff = pred_act_clicks - pred_act_base
         val_act_clicks = val_act_diff.sum()
+        
+        # Prepare Actuals DF for country breakdown
+        obs_breakdown = obs[["Keyword", "Region", "Origin", "Cost"]].copy()
+        obs_breakdown["t_Clicks_ActCost"] = val_act_diff
         
         act_cost = obs["Cost"].sum()
         real_act_clicks = obs["Clicks"].sum()
@@ -157,7 +173,7 @@ def main():
             
             # Merge with X_base to get features
             X_day = X_base.merge(
-                sol[["Keyword", "Region", "Match type", "Origin", "Optimal Cost"]], # Use origin from sol (if masked keyword, will show up as "new")
+                sol[["Keyword", "Region", "Match type", "Origin", "Optimal Cost"]], 
                 on=["Keyword", "Region", "Match type"],
                 how="right" 
             )
@@ -172,38 +188,48 @@ def main():
             X_day_zero["Cost"] = 0.0
             pred_opt_base = model.predict(X_day_zero[features])
             
-            val_opt_clicks = (pred_opt - pred_opt_base).sum()
+            # Metrics
+            pred_opt_lift = pred_opt - pred_opt_base
+            
+            val_opt_clicks = pred_opt_lift.sum()
             val_opt_cost = X_day["Optimal Cost"].sum()
 
-            # Regional Breakdown
-            opt_cost_usa = X_day[X_day['Region'] == 'USA']['Optimal Cost'].sum()
-            opt_cost_a = X_day[X_day['Region'] == 'A']['Optimal Cost'].sum()
-            opt_cost_b = X_day[X_day['Region'] == 'B']['Optimal Cost'].sum()
+            # --- Calculate Predicted Conversions ---
+            # Add lift to X_day for grouping
+            X_day["t_Clicks_OptCost"] = pred_opt_lift
             
-            # Origin Breakdown
-            opt_cost_new = X_day[X_day['Origin'] == 'new']['Optimal Cost'].sum()
-            opt_cost_existing_searches = X_day[X_day['Origin'] == 'existing searches']['Optimal Cost'].sum()
-            opt_cost_existing = X_day[X_day['Origin'] == 'existing']['Optimal Cost'].sum()
+            # Group clicks/lift by Region
+            opt_clicks_region = X_day.groupby('Region')['t_Clicks_OptCost'].sum().reset_index()
+            act_clicks_region = obs_breakdown.groupby('Region')['t_Clicks_ActCost'].sum().reset_index()
             
-            act_cost_usa = obs[obs['Region'] == 'USA']['Cost'].sum()
-            act_cost_a = obs[obs['Region'] == 'A']['Cost'].sum()
-            act_cost_b = obs[obs['Region'] == 'B']['Cost'].sum()
+            # Merge with loc_df
+            # loc_df: [Location, Region, Click_prop, Conv_rate]
+            
+            opt_country = opt_clicks_region.merge(loc_df, on='Region', how='left')
+            opt_country['Predicted_Conversions'] = opt_country['t_Clicks_OptCost'] * opt_country['Click_prop'] * opt_country['Conv_rate']
+            
+            act_country = act_clicks_region.merge(loc_df, on='Region', how='left')
+            act_country['Predicted_Conversions'] = act_country['t_Clicks_ActCost'] * act_country['Click_prop'] * act_country['Conv_rate']
+            
+            # Save Country breakdown to run_dir
+            # Format: Month-Day, maybe? Or just Day. 
+            # Prompt: "Add a country breakdown for each day to the opt_results/backtests/exp.. folder"
+            # It says "exp.." folder, but usually these go into budget folders? Or a dedicated backtests folder?
+            # Existing structure has `run_dir` as `budget_{int(b)}`. I'll put it there.
+            breakdown_file = run_dir / f"country_breakdown_{day.strftime('%Y-%m-%d')}.csv"
+            opt_country.rename(columns={'Predicted_Conversions': 'Opt_Conversions'})[['Location', 'Region', 'Opt_Conversions']].to_csv(breakdown_file, index=False)
 
-            # Origin Breakdown (Actuals)
-            act_cost_new = obs[obs['Origin'] == 'new']['Cost'].sum()
-            act_cost_existing_searches = obs[obs['Origin'] == 'existing searches']['Cost'].sum()
-            act_cost_existing = obs[obs['Origin'] == 'existing']['Cost'].sum()
+            val_opt_conv = opt_country['Predicted_Conversions'].sum()
+            val_act_conv = act_country['Predicted_Conversions'].sum()
             
             # Update Bids File with Eval Metric
-            # We want to add column `t_Clicks_OptCost` to `optimized_costs_...csv`
             pred_diffs = pd.DataFrame({
                 "Keyword": X_day["Keyword"],
                 "Region": X_day["Region"],
                 "Match type": X_day["Match type"],
-                "t_Clicks_OptCost": pred_opt - pred_opt_base
+                "t_Clicks_OptCost": pred_opt_lift
             })
             
-            # Drop existing col if exists to avoid dupes
             if "t_Clicks_OptCost" in sol.columns:
                 sol = sol.drop(columns=["t_Clicks_OptCost"])
             
@@ -219,11 +245,9 @@ def main():
                     tm1_Clicks_OptCost = 0.0
                     
             # Update Actual File with Eval Metric
-            # If file exists, check if it already has the column
             if act_file.exists():
                 act_df_existing = pd.read_csv(act_file)
                 if "t_Clicks_ActCost" in act_df_existing.columns:
-                        # Skip update
                         pass
                 else:
                         obs_out = obs[["Keyword", "Region", "Match type", "Cost", "Clicks"]].copy()
@@ -233,7 +257,8 @@ def main():
             # Hist metrics
             hm = hist_metrics.get(day.date(), {})
             
-            eval_summary_rows.append({
+            # --- Dynamic Compilation of Summary Row ---
+            row_dict = {
                 "Day": day.date(),
                 "Budget": int(b),
                 "t_Clicks_OptCost": val_opt_clicks, 
@@ -242,20 +267,8 @@ def main():
                 "Actual_Clicks": real_act_clicks,
                 "Opt_Cost": val_opt_cost,
                 "Act_Cost": act_cost,
-                "Opt_Cost_USA": opt_cost_usa,
-                "Opt_Cost_A": opt_cost_a,
-                "Opt_Cost_B": opt_cost_b,
-                "Opt_Cost_new": opt_cost_new,
-                "Opt_Cost_existing": opt_cost_existing,
-                "Opt_Cost_existing_searches": opt_cost_existing_searches,
-                
-                "Act_Cost_USA": act_cost_usa,
-                "Act_Cost_A": act_cost_a,
-                "Act_Cost_B": act_cost_b,  
-                "Act_Cost_new": act_cost_new,
-                "Act_Cost_existing": act_cost_existing,
-                "Act_Cost_existing_searches": act_cost_existing_searches,
-                          
+                "Opt_Conv": val_opt_conv,
+                "Act_Conv": val_act_conv,
                 "N_Opt": len(X_day),
                 "N_Obs": len(obs),
                 
@@ -269,7 +282,25 @@ def main():
                 "Hist_MSE": hm.get("Hist_MSE"),
                 "Hist_R2": hm.get("Hist_R2"),
                 "Hist_Bias": hm.get("Hist_Bias")
-            })
+            }
+            
+            # Add Region/Origin Breakdowns Dynamically
+            # Regions
+            all_regions = set(X_day['Region'].unique()) | set(obs['Region'].unique())
+            for reg in all_regions:
+                row_dict[f"Opt_Cost_Region_{reg}"] = X_day[X_day['Region'] == reg]['Optimal Cost'].sum()
+                row_dict[f"Act_Cost_Region_{reg}"] = obs[obs['Region'] == reg]['Cost'].sum()
+                # Regional Conversions
+                row_dict[f"Opt_Conv_Region_{reg}"] = opt_country[opt_country['Region'] == reg]['Predicted_Conversions'].sum()
+                row_dict[f"Act_Conv_Region_{reg}"] = act_country[act_country['Region'] == reg]['Predicted_Conversions'].sum()
+
+            # Origins
+            all_origins = ['new', 'existing', 'existing searches'] # Enforce standard origins
+            for org in all_origins:
+                row_dict[f"Opt_Cost_Origin_{org}"] = X_day[X_day['Origin'] == org]['Optimal Cost'].sum()
+                row_dict[f"Act_Cost_Origin_{org}"] = obs[obs['Origin'] == org]['Cost'].sum()
+            
+            eval_summary_rows.append(row_dict)
                 
     # Save results
     if eval_summary_rows:

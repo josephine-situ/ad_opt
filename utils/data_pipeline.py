@@ -81,7 +81,7 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     return kw_df
 
 
-def format_keyword_data(kw_df):
+def format_keyword_data(kw_df, regions_only=False):
     """
     Format and clean keyword data (campaigns, regions, keywords).
     
@@ -96,12 +96,16 @@ def format_keyword_data(kw_df):
     kw_df['Campaign'] = kw_df['Campaign'].str.replace(r'\[.*?\]', '', regex=True)
     kw_df['Region'] = kw_df['Campaign'].str.split('-').str[-1].str.strip()
     kw_df['Region'] = kw_df['Region'].replace({'USA and CA': 'USA'})
-    kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
-    kw_df['Day'] = pd.to_datetime(kw_df['Day'])
-    
-    kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Cost', 'Conv. value', 'Clicks']].copy()
-    
-    return kw_df
+
+    if regions_only:
+        return kw_df
+    else:
+        kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
+        kw_df['Day'] = pd.to_datetime(kw_df['Day'])
+        
+        kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Cost', 'Conv. value', 'Clicks']].copy()
+        
+        return kw_df
 
 
 def get_date_features(input_data, course_start_dts, regions=['USA']):
