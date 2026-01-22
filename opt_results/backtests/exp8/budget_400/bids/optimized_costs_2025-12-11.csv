@@ -1,5 +1,5 @@
 Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
-ai course for business leaders,B,Broad match,existing,13.917573532516348,23.396770336427004,22.202248790063173,23.39677,-1.4086791821910086e-07,20.32877
+ai course for business leaders,B,Broad match,existing,13.917573532516348,23.396770336427004,22.202248790063173,23.39677,-1.4086791821910088e-07,20.32877
 ai for business leaders,A,Broad match,existing,0.2606252364970867,1.677002142233,-2.877291580549724e-07,1.6770024,-2.877291580549724e-07,0.0
 applied gen ai for digital transformation mit,B,Broad match,existing,14.417574396831826,25.724089020023,24.899551563987387,31.801228,-6.077138549557077,24.830114
 artificial intelligence short course online,B,Broad match,existing,14.417574396831826,27.087791482227004,24.39110044600264,33.164932,-6.077140768749558,26.808538
