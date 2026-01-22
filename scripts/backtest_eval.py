@@ -202,6 +202,10 @@ def main():
             opt_clicks_region = X_day.groupby('Region')['t_Clicks_OptCost'].sum().reset_index()
             act_clicks_region = obs_breakdown.groupby('Region')['t_Clicks_ActCost'].sum().reset_index()
             
+            # Group cost by Region
+            opt_cost_region = X_day.groupby('Region')['Optimal Cost'].sum().reset_index().rename(columns={'Optimal Cost': 'Opt_Cost_Reg'})
+            act_cost_region = obs_breakdown.groupby('Region')['Cost'].sum().reset_index().rename(columns={'Cost': 'Act_Cost_Reg'})
+
             # Group clicks/lift by Region AND Origin (for detailed conversion calc)
             opt_clicks_reg_org = X_day.groupby(['Region', 'Origin'])['t_Clicks_OptCost'].sum().reset_index()
             act_clicks_reg_org = obs_breakdown.groupby(['Region', 'Origin'])['t_Clicks_ActCost'].sum().reset_index()
@@ -213,8 +217,19 @@ def main():
             df_country = loc_df.merge(opt_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_OptCost': 'Opt_Clicks_Reg'})
             df_country = df_country.merge(act_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_ActCost': 'Act_Clicks_Reg'})
             
+            df_country = df_country.merge(opt_cost_region, on='Region', how='left')
+            df_country = df_country.merge(act_cost_region, on='Region', how='left')
+
+            df_country = df_country.fillna(0) # IMPORTANT for safety
+
             df_country['Opt_Conversions'] = df_country['Opt_Clicks_Reg'] * df_country['Click_prop'] * df_country['Conv_rate']
             df_country['Act_Conversions'] = df_country['Act_Clicks_Reg'] * df_country['Click_prop'] * df_country['Conv_rate']
+
+            df_country['Opt_Clicks'] = df_country['Opt_Clicks_Reg'] * df_country['Click_prop']
+            df_country['Act_Clicks'] = df_country['Act_Clicks_Reg'] * df_country['Click_prop']
+            
+            df_country['Opt_Spend'] = df_country['Opt_Cost_Reg'] * df_country['Click_prop']
+            df_country['Act_Spend'] = df_country['Act_Cost_Reg'] * df_country['Click_prop']
 
             # Calculate Origin Conversions
             # We distribute the Region+Origin clicks to countries in that region
@@ -229,7 +244,7 @@ def main():
             
             # Save Country breakdown to run_dir
             breakdown_file = run_dir / f"country_breakdown_{day.strftime('%Y-%m-%d')}.csv"
-            df_country[['Location', 'Region', 'Opt_Conversions', 'Act_Conversions']].to_csv(breakdown_file, index=False)
+            df_country[['Location', 'Region', 'Opt_Conversions', 'Act_Conversions', 'Opt_Clicks', 'Act_Clicks', 'Opt_Spend', 'Act_Spend']].to_csv(breakdown_file, index=False)
 
             val_opt_conv = df_country['Opt_Conversions'].sum()
             val_act_conv = df_country['Act_Conversions'].sum()

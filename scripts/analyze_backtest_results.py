@@ -384,6 +384,9 @@ def generate_country_table(exp_name, budget, top_n=10):
     for f in country_files:
         try:
             d = pd.read_csv(f)
+            # Ensure columns exist (backwards compatibility or if file is old)
+            for col in ['Opt_Clicks', 'Act_Clicks', 'Opt_Spend', 'Act_Spend']:
+                 if col not in d.columns: d[col] = 0.0
             dfs.append(d)
         except:
             pass
@@ -394,38 +397,103 @@ def generate_country_table(exp_name, budget, top_n=10):
     full_df = pd.concat(dfs)
     
     # Aggregation
-    # Group by Location, Region. Calculate Mean and SE for Act and Opt Conv
     agg_df = full_df.groupby(['Location', 'Region']).agg(
-        Opt_Mean=('Opt_Conversions', 'mean'),
-        Opt_SE=('Opt_Conversions', 'sem'),
-        Act_Mean=('Act_Conversions', 'mean'),
-        Act_SE=('Act_Conversions', 'sem')
+        Opt_Conv_Mean=('Opt_Conversions', 'mean'),
+        Opt_Conv_SE=('Opt_Conversions', 'sem'),
+        Act_Conv_Mean=('Act_Conversions', 'mean'),
+        Act_Conv_SE=('Act_Conversions', 'sem'),
+        
+        Opt_Click_Mean=('Opt_Clicks', 'mean'),
+        Opt_Click_SE=('Opt_Clicks', 'sem'),
+        Act_Click_Mean=('Act_Clicks', 'mean'),
+        Act_Click_SE=('Act_Clicks', 'sem'),
+        
+        Opt_Spend_Mean=('Opt_Spend', 'mean'),
+        Opt_Spend_SE=('Opt_Spend', 'sem'),
+        Act_Spend_Mean=('Act_Spend', 'mean'),
+        Act_Spend_SE=('Act_Spend', 'sem'),
     ).reset_index()
     
-    # Sort by Opt Mean Desc
-    agg_df = agg_df.sort_values(by='Opt_Mean', ascending=False).head(top_n)
+    # Sort by Opt Conv Mean Desc
+    agg_df = agg_df.sort_values(by='Opt_Conv_Mean', ascending=False).head(top_n)
     
-    # Format
-    agg_df['Opt Conv'] = agg_df.apply(lambda r: f"{r['Opt_Mean']:.1f} $\\pm$ {r['Opt_SE']:.1f}", axis=1)
-    agg_df['Act Conv'] = agg_df.apply(lambda r: f"{r['Act_Mean']:.1f} $\\pm$ {r['Act_SE']:.1f}", axis=1)
+    # Format Function
+    def fmt(mean, se, decimals=1):
+        return f"{mean:,.{decimals}f} $\\pm$ {se:,.{decimals}f}"
+
+    # Create formatted columns
+    agg_df[('Opt', 'Spend')] = agg_df.apply(lambda r: fmt(r['Opt_Spend_Mean'], r['Opt_Spend_SE'], 2), axis=1)
+    agg_df[('Opt', 'Clicks')] = agg_df.apply(lambda r: fmt(r['Opt_Click_Mean'], r['Opt_Click_SE'], 1), axis=1)
+    agg_df[('Opt', 'Conv')] = agg_df.apply(lambda r: fmt(r['Opt_Conv_Mean'], r['Opt_Conv_SE'], 1), axis=1)
     
-    out_df = agg_df[['Location', 'Region', 'Opt Conv', 'Act Conv']]
+    agg_df[('Act', 'Spend')] = agg_df.apply(lambda r: fmt(r['Act_Spend_Mean'], r['Act_Spend_SE'], 2), axis=1)
+    agg_df[('Act', 'Clicks')] = agg_df.apply(lambda r: fmt(r['Act_Click_Mean'], r['Act_Click_SE'], 1), axis=1)
+    agg_df[('Act', 'Conv')] = agg_df.apply(lambda r: fmt(r['Act_Conv_Mean'], r['Act_Conv_SE'], 1), axis=1)
+
+    # Select columns
+    cols = [('Opt', 'Spend'), ('Opt', 'Clicks'), ('Opt', 'Conv'), 
+            ('Act', 'Spend'), ('Act', 'Clicks'), ('Act', 'Conv')]
     
-    col_format = 'llcc'
-    latex = out_df.to_latex(index=False, column_format=col_format, escape=False)
+    # We need Location and Region too
+    # For MultiIndex, we can handle index differently or flatten.
+    # Let's clean up dataframe for export
+    
+    # Create a clean DF with MultiIndex Columns
+    out_df = agg_df.set_index(['Location', 'Region'])[cols]
+    out_df.columns = pd.MultiIndex.from_tuples(cols)
+    out_df = out_df.reset_index()
+    
+    # The columns are now (Location, ''), (Region, ''), (Opt, Spend), ...
+    # Wait, reset_index flattens or makes it weird with existing MultiIndex columns.
+    # Better approach: construct tuples for all columns.
+    
+    final_cols = []
+    final_cols.append(('', 'Location'))
+    final_cols.append(('', 'Region'))
+    final_cols.extend(cols)
+    
+    out_df.columns = pd.MultiIndex.from_tuples(final_cols)
+    
+    col_format = 'll' + 'c'*6
+    latex = out_df.to_latex(index=False, column_format=col_format, multicolumn_format='c', escape=False)
     latex = latex.replace(r'\hline', r'\toprule', 1)
     if latex.strip().endswith(r'\hline'):
         latex = latex.strip()[:-6] + r'\bottomrule'
         
+    # Inject Cmidrules
+    lines = latex.split('\n')
+    new_lines = []
+    header_idx = -1
+    
+    for i, line in enumerate(lines):
+        if "multicolumn" in line:
+            header_idx = i
+            break
+            
+    if header_idx != -1:
+        # Columns: Loc(1), Reg(2), Opt(3-5), Act(6-8)
+        cmid_str = r"\cmidrule(lr){3-5} \cmidrule(lr){6-8}"
+        
+        for i, line in enumerate(lines):
+            new_lines.append(line)
+            if i == header_idx:
+                new_lines.append(cmid_str)
+    else:
+        new_lines = lines
+        
+    lines_joined = '\n'.join(new_lines)
+        
+    caption_budget = f"{budget}" if budget != 'Actual' else "Actual"
+    
     final_latex = (
         "\\begin{table}[htbp]\n"
         "\\centering\n"
         "\\caption{Top %d Countries by Predicted Conversions (Budget %s)}\n"
         "\\resizebox{\\textwidth}{!}{%%\n"
-        f"{latex}"
+        f"{lines_joined}"
         "}\n"
         "\\end{table}"
-    ) % (top_n, budget)
+    ) % (top_n, caption_budget)
     
     return final_latex
 
