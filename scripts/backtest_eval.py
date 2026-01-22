@@ -202,25 +202,37 @@ def main():
             opt_clicks_region = X_day.groupby('Region')['t_Clicks_OptCost'].sum().reset_index()
             act_clicks_region = obs_breakdown.groupby('Region')['t_Clicks_ActCost'].sum().reset_index()
             
+            # Group clicks/lift by Region AND Origin (for detailed conversion calc)
+            opt_clicks_reg_org = X_day.groupby(['Region', 'Origin'])['t_Clicks_OptCost'].sum().reset_index()
+            act_clicks_reg_org = obs_breakdown.groupby(['Region', 'Origin'])['t_Clicks_ActCost'].sum().reset_index()
+            
             # Merge with loc_df
             # loc_df: [Location, Region, Click_prop, Conv_rate]
             
-            opt_country = opt_clicks_region.merge(loc_df, on='Region', how='left')
-            opt_country['Predicted_Conversions'] = opt_country['t_Clicks_OptCost'] * opt_country['Click_prop'] * opt_country['Conv_rate']
+            # Use loc_df as base to ensure all locations are present
+            df_country = loc_df.merge(opt_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_OptCost': 'Opt_Clicks_Reg'})
+            df_country = df_country.merge(act_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_ActCost': 'Act_Clicks_Reg'})
             
-            act_country = act_clicks_region.merge(loc_df, on='Region', how='left')
-            act_country['Predicted_Conversions'] = act_country['t_Clicks_ActCost'] * act_country['Click_prop'] * act_country['Conv_rate']
+            df_country['Opt_Conversions'] = df_country['Opt_Clicks_Reg'] * df_country['Click_prop'] * df_country['Conv_rate']
+            df_country['Act_Conversions'] = df_country['Act_Clicks_Reg'] * df_country['Click_prop'] * df_country['Conv_rate']
+
+            # Calculate Origin Conversions
+            # We distribute the Region+Origin clicks to countries in that region
+            def calc_origin_conversions(clicks_df, click_col):
+                 # clicks_df: [Region, Origin, click_col]
+                 m = clicks_df.merge(loc_df, on='Region', how='left')
+                 m['Predicted_Conv'] = m[click_col] * m['Click_prop'] * m['Conv_rate']
+                 return m.groupby('Origin')['Predicted_Conv'].sum().to_dict()
+            
+            opt_conv_origin_map = calc_origin_conversions(opt_clicks_reg_org, 't_Clicks_OptCost')
+            act_conv_origin_map = calc_origin_conversions(act_clicks_reg_org, 't_Clicks_ActCost')
             
             # Save Country breakdown to run_dir
-            # Format: Month-Day, maybe? Or just Day. 
-            # Prompt: "Add a country breakdown for each day to the opt_results/backtests/exp.. folder"
-            # It says "exp.." folder, but usually these go into budget folders? Or a dedicated backtests folder?
-            # Existing structure has `run_dir` as `budget_{int(b)}`. I'll put it there.
             breakdown_file = run_dir / f"country_breakdown_{day.strftime('%Y-%m-%d')}.csv"
-            opt_country.rename(columns={'Predicted_Conversions': 'Opt_Conversions'})[['Location', 'Region', 'Opt_Conversions']].to_csv(breakdown_file, index=False)
+            df_country[['Location', 'Region', 'Opt_Conversions', 'Act_Conversions']].to_csv(breakdown_file, index=False)
 
-            val_opt_conv = opt_country['Predicted_Conversions'].sum()
-            val_act_conv = act_country['Predicted_Conversions'].sum()
+            val_opt_conv = df_country['Opt_Conversions'].sum()
+            val_act_conv = df_country['Act_Conversions'].sum()
             
             # Update Bids File with Eval Metric
             pred_diffs = pd.DataFrame({
@@ -290,15 +302,29 @@ def main():
             for reg in all_regions:
                 row_dict[f"Opt_Cost_Region_{reg}"] = X_day[X_day['Region'] == reg]['Optimal Cost'].sum()
                 row_dict[f"Act_Cost_Region_{reg}"] = obs[obs['Region'] == reg]['Cost'].sum()
+
+                # Clicks (Lift)
+                row_dict[f"Opt_Clicks_Region_{reg}"] = X_day[X_day['Region'] == reg]['t_Clicks_OptCost'].sum()
+                row_dict[f"Act_Clicks_Region_{reg}"] = obs_breakdown[obs_breakdown['Region'] == reg]['t_Clicks_ActCost'].sum()
+
                 # Regional Conversions
-                row_dict[f"Opt_Conv_Region_{reg}"] = opt_country[opt_country['Region'] == reg]['Predicted_Conversions'].sum()
-                row_dict[f"Act_Conv_Region_{reg}"] = act_country[act_country['Region'] == reg]['Predicted_Conversions'].sum()
+                row_dict[f"Opt_Conv_Region_{reg}"] = df_country[df_country['Region'] == reg]['Opt_Conversions'].sum()
+                row_dict[f"Act_Conv_Region_{reg}"] = df_country[df_country['Region'] == reg]['Act_Conversions'].sum()
 
             # Origins
             all_origins = ['new', 'existing', 'existing searches'] # Enforce standard origins
             for org in all_origins:
+                # Cost
                 row_dict[f"Opt_Cost_Origin_{org}"] = X_day[X_day['Origin'] == org]['Optimal Cost'].sum()
                 row_dict[f"Act_Cost_Origin_{org}"] = obs[obs['Origin'] == org]['Cost'].sum()
+                
+                # Clicks (Lift)
+                row_dict[f"Opt_Clicks_Origin_{org}"] = X_day[X_day['Origin'] == org]['t_Clicks_OptCost'].sum()
+                row_dict[f"Act_Clicks_Origin_{org}"] = obs_breakdown[obs_breakdown['Origin'] == org]['t_Clicks_ActCost'].sum()
+                
+                # Conversions (Calculated above)
+                row_dict[f"Opt_Conv_Origin_{org}"] = opt_conv_origin_map.get(org, 0.0)
+                row_dict[f"Act_Conv_Origin_{org}"] = act_conv_origin_map.get(org, 0.0)
             
             eval_summary_rows.append(row_dict)
                 

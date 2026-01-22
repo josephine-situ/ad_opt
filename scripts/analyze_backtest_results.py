@@ -175,12 +175,11 @@ def generate_regional_table(share_df):
     df['sort_key'] = df['Budget'].apply(sorter)
     df = df.sort_values(by=['sort_key']).drop(columns=['sort_key'])
 
-    # Columns are like "Spend USA", "Conv USA" etc.
-    # desired order per region
     regions = ['USA', 'A', 'B']
     col_order = ['Budget']
     for r in regions:
         col_order.append(f'Spend {r}')
+        col_order.append(f'Clicks {r}')
         col_order.append(f'Conv {r}')
         
     df = df[[c for c in col_order if c in df.columns]]
@@ -191,12 +190,13 @@ def generate_regional_table(share_df):
              df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
              
     # Create MultiIndex for LaTeX
+    # Tuples: (Region, Metric)
     tuples = []
     for c in df.columns:
         if c == 'Budget': 
             tuples.append(('', 'Budget'))
         else:
-            # c is "Spend USA" -> Type=Spend, Reg=USA
+            # c is "Spend USA" -> Type=Spend, Reg=USA. We want Reg on top.
             parts = c.split(' ')
             tuples.append((parts[1], parts[0])) # (Region, Type)
             
@@ -214,7 +214,55 @@ def generate_regional_table(share_df):
     if latex.strip().endswith(r'\hline'):
         latex = latex.strip()[:-6] + r'\bottomrule'
         
-    return latex
+    # Inject Cmidrules
+    lines = latex.split('\n')
+    new_lines = []
+    header_idx = -1
+    
+    # Locate header row with multicolumns (regions)
+    for i, line in enumerate(lines):
+        if "USA" in line and "multicolumn" in line:
+            header_idx = i
+            break
+            
+    if header_idx != -1:
+        # Construct cmidrules
+        # Budget is col 1. Regions start at 2.
+        # Assuming fixed 3 cols per region if present, but we should count.
+        # df.columns is MultiIndex. 
+        # Level 0 is Region.
+        level0 = df.columns.get_level_values(0)
+        unique_regions = [x for x in level0.unique() if x != '']
+        
+        cmid_str = ""
+        current_col = 2 # 1-based index, Budget is 1
+        
+        for reg in unique_regions:
+            count = sum(1 for x in level0 if x == reg)
+            end_col = current_col + count - 1
+            cmid_str += fr"\cmidrule(lr){{{current_col}-{end_col}}} "
+            current_col += count
+        
+        # Insert cmid_str after the header line
+        for i, line in enumerate(lines):
+            new_lines.append(line)
+            if i == header_idx:
+                new_lines.append(cmid_str)
+    else:
+        new_lines = lines
+
+    lines_joined = '\n'.join(new_lines)
+    
+    final_latex = (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        f"{lines_joined}"
+        "}\n"
+        "\\end{table}"
+    )
+        
+    return final_latex
 
 def generate_origin_table(share_df):
     df = share_df.copy()
@@ -228,31 +276,158 @@ def generate_origin_table(share_df):
     df['sort_key'] = df['Budget'].apply(sorter)
     df = df.sort_values(by=['sort_key']).drop(columns=['sort_key'])
     
-    # Rename columns to shorten
-    rename_map = {
-        'Share New': 'New',
-        'Share Existing': 'Existing',
-        'Share ExSearches': 'ExSearches'
-    }
-    df = df.rename(columns=rename_map)
+    # Clean column names to ensure they look like "Spend New", "Clicks New" etc.
+    # We used "Spend {org_key.capitalize()}" previously (e.g., Spend New, Spend Existing).
+    # map old generic names if any remain? No, we changed the generator.
     
-    col_order = ['Budget', 'Existing', 'ExSearches', 'New']
+    origins = ['New', 'Existing', 'Existing searches'] # Capitalized as per generator
+    # Note: generator uses org_key.capitalize(). 'existing searches' -> 'Existing searches'
+    
+    col_order = ['Budget']
+    for original_org in ['new', 'existing', 'existing searches']:
+        org = original_org.capitalize()
+        col_order.append(f'Spend {org}')
+        col_order.append(f'Clicks {org}')
+        col_order.append(f'Conv {org}')
+    
     df = df[[c for c in col_order if c in df.columns]]
+    
+    # Renaming for display if needed? 'Existing searches' is long.
+    # Maybe rename 'Existing searches' -> 'ExSearches' in columns?
+    new_cols = []
+    for c in df.columns:
+        if 'Existing searches' in c:
+            new_cols.append(c.replace('Existing searches', 'ExSearches'))
+        else:
+            new_cols.append(c)
+    df.columns = new_cols
     
     for col in df.columns:
         if col != 'Budget':
              df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
 
-    # Basic header
+    # MultiIndex
+    tuples = []
+    for c in df.columns:
+        if c == 'Budget': 
+            tuples.append(('', 'Budget'))
+        else:
+            # c is "Spend New" -> Type=Spend, Org=New. We want Org on top.
+            parts = c.split(' ') # ['Spend', 'New']
+            metric = parts[0]
+            org = " ".join(parts[1:]) 
+            tuples.append((org, metric))
+            
+    df.columns = pd.MultiIndex.from_tuples(tuples)
+
     col_format = 'l' + 'c' * (len(df.columns) - 1)
-    latex = df.to_latex(index=False, column_format=col_format, escape=False)
+    
+    latex = df.to_latex(index=False, column_format=col_format, multicolumn_format='c', escape=False)
     latex = latex.replace(r'\hline', r'\toprule', 1)
     if latex.strip().endswith(r'\hline'):
         latex = latex.strip()[:-6] + r'\bottomrule'
     
-    # Add Origin super-header if needed, but the columns are already origins. 
-    # Just standard table.
-    return latex
+    # Inject Cmidrules
+    lines = latex.split('\n')
+    new_lines = []
+    header_idx = -1
+    
+    # Locate header row with multicolumns
+    for i, line in enumerate(lines):
+        if "multicolumn" in line:
+            header_idx = i
+            break
+            
+    if header_idx != -1:
+        level0 = df.columns.get_level_values(0)
+        unique_orgs = [x for x in level0.unique() if x != '']
+        
+        cmid_str = ""
+        current_col = 2
+        
+        for org in unique_orgs:
+            count = sum(1 for x in level0 if x == org)
+            end_col = current_col + count - 1
+            cmid_str += fr"\cmidrule(lr){{{current_col}-{end_col}}} "
+            current_col += count
+            
+        for i, line in enumerate(lines):
+            new_lines.append(line)
+            if i == header_idx:
+                new_lines.append(cmid_str)
+    else:
+        new_lines = lines # fallback
+
+    lines_joined = '\n'.join(new_lines)
+    
+    final_latex = (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        f"{lines_joined}"
+        "}\n"
+        "\\end{table}"
+    )
+    return final_latex
+
+def generate_country_table(exp_name, budget, top_n=10):
+    # Load all daily country files for this budget
+    run_dir = Path(f"opt_results/backtests/{exp_name}/budget_{budget}")
+    if not run_dir.exists():
+        return None
+        
+    country_files = list(run_dir.glob("country_breakdown_*.csv"))
+    if not country_files:
+        return None
+        
+    dfs = []
+    for f in country_files:
+        try:
+            d = pd.read_csv(f)
+            dfs.append(d)
+        except:
+            pass
+            
+    if not dfs:
+        return None
+        
+    full_df = pd.concat(dfs)
+    
+    # Aggregation
+    # Group by Location, Region. Calculate Mean and SE for Act and Opt Conv
+    agg_df = full_df.groupby(['Location', 'Region']).agg(
+        Opt_Mean=('Opt_Conversions', 'mean'),
+        Opt_SE=('Opt_Conversions', 'sem'),
+        Act_Mean=('Act_Conversions', 'mean'),
+        Act_SE=('Act_Conversions', 'sem')
+    ).reset_index()
+    
+    # Sort by Opt Mean Desc
+    agg_df = agg_df.sort_values(by='Opt_Mean', ascending=False).head(top_n)
+    
+    # Format
+    agg_df['Opt Conv'] = agg_df.apply(lambda r: f"{r['Opt_Mean']:.1f} $\\pm$ {r['Opt_SE']:.1f}", axis=1)
+    agg_df['Act Conv'] = agg_df.apply(lambda r: f"{r['Act_Mean']:.1f} $\\pm$ {r['Act_SE']:.1f}", axis=1)
+    
+    out_df = agg_df[['Location', 'Region', 'Opt Conv', 'Act Conv']]
+    
+    col_format = 'llcc'
+    latex = out_df.to_latex(index=False, column_format=col_format, escape=False)
+    latex = latex.replace(r'\hline', r'\toprule', 1)
+    if latex.strip().endswith(r'\hline'):
+        latex = latex.strip()[:-6] + r'\bottomrule'
+        
+    final_latex = (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Top %d Countries by Predicted Conversions (Budget %s)}\n"
+        "\\resizebox{\\textwidth}{!}{%%\n"
+        f"{latex}"
+        "}\n"
+        "\\end{table}"
+    ) % (top_n, budget)
+    
+    return final_latex
 
 def main():
 
@@ -290,18 +465,20 @@ def main():
 
     clicks_per_dollar_act = act_df["t_Clicks_ActCost"].sum() / act_df["Act_Cost"].sum() if act_df["Act_Cost"].sum() > 0 else 0
     
-    # Actual Regional Share (Spend & Conv)
+    # Actual Regional Share (Spend & Conv & Clicks)
     total_act_cost = act_df["Act_Cost"].sum()
     total_act_conv = act_df["Act_Conv"].sum() if "Act_Conv" in act_df.columns else 0
+    # Clicks are sum of t_Clicks_ActCost (Lift)
+    total_act_clicks = act_df["t_Clicks_ActCost"].sum()
     
     act_reg_row = {"Budget": "Actual"}
     for reg in ['USA', 'A', 'B']:
         # Support both old and new column naming for robustness
-        # Old: Act_Cost_USA. New: Act_Cost_Region_USA
         col_cost = f"Act_Cost_Region_{reg}"
         if col_cost not in act_df.columns: col_cost = f"Act_Cost_{reg}"
         
         col_conv = f"Act_Conv_Region_{reg}" # Only new schema has this
+        col_click = f"Act_Clicks_Region_{reg}"
         
         # Spend Share
         if col_cost in act_df.columns:
@@ -314,6 +491,12 @@ def main():
             act_reg_row[f"Conv {reg}"] = act_df[col_conv].sum() / total_act_conv if total_act_conv > 0 else 0
         else:
              act_reg_row[f"Conv {reg}"] = 0
+             
+        # Clicks Share
+        if col_click in act_df.columns:
+             act_reg_row[f"Clicks {reg}"] = act_df[col_click].sum() / total_act_clicks if total_act_clicks > 0 else 0
+        else:
+             act_reg_row[f"Clicks {reg}"] = 0
 
     regional_rows.append(act_reg_row)
     
@@ -322,15 +505,29 @@ def main():
     # Map origins to readable names
     origin_map = {'new': 'Share New', 'existing': 'Share Existing', 'existing searches': 'Share ExSearches'}
     for org_key, org_col in origin_map.items():
-        # Old: Act_Cost_new. New: Act_Cost_Origin_new
-        col = f"Act_Cost_Origin_{org_key}"
-        if col not in act_df.columns: col = f"Act_Cost_{org_key}" # heuristic fallback to old if consistent
-        if col not in act_df.columns and org_key == 'existing searches': col = "Act_Cost_existing_searches"
+        # Cost
+        col_cost = f"Act_Cost_Origin_{org_key}"
+        if col_cost not in act_df.columns: col_cost = f"Act_Cost_{org_key}" # heuristic
+        if col_cost not in act_df.columns and org_key == 'existing searches': col_cost = "Act_Cost_existing_searches"
         
-        if col in act_df.columns:
-            act_orig_row[org_col] = act_df[col].sum() / total_act_cost if total_act_cost > 0 else 0
+        # Clicks & Conv (New)
+        col_click = f"Act_Clicks_Origin_{org_key}"
+        col_conv = f"Act_Conv_Origin_{org_key}"
+
+        if col_cost in act_df.columns:
+            act_orig_row[f"Spend {org_key.capitalize()}"] = act_df[col_cost].sum() / total_act_cost if total_act_cost > 0 else 0
         else:
-            act_orig_row[org_col] = 0
+             act_orig_row[f"Spend {org_key.capitalize()}"] = 0
+             
+        if col_click in act_df.columns:
+             act_orig_row[f"Clicks {org_key.capitalize()}"] = act_df[col_click].sum() / total_act_clicks if total_act_clicks > 0 else 0
+        else:
+             act_orig_row[f"Clicks {org_key.capitalize()}"] = 0
+             
+        if col_conv in act_df.columns:
+             act_orig_row[f"Conv {org_key.capitalize()}"] = act_df[col_conv].sum() / total_act_conv if total_act_conv > 0 else 0
+        else:
+             act_orig_row[f"Conv {org_key.capitalize()}"] = 0
             
     origin_rows.append(act_orig_row)
 
@@ -382,6 +579,7 @@ def main():
         # 2. Regional Share Metrics
         total_opt_cost_grp = df_group["Opt_Cost"].sum()
         total_opt_conv_grp = df_group["Opt_Conv"].sum() if "Opt_Conv" in df_group.columns else 0
+        total_opt_clicks_grp = df_group["t_Clicks_OptCost"].sum()
         
         reg_row = {"Budget": budget}
         
@@ -390,6 +588,7 @@ def main():
             if col_cost not in df_group.columns: col_cost = f"Opt_Cost_{reg}"
             
             col_conv = f"Opt_Conv_Region_{reg}"
+            col_click = f"Opt_Clicks_Region_{reg}"
             
             # Spend
             if col_cost in df_group.columns:
@@ -403,19 +602,40 @@ def main():
             else:
                 reg_row[f"Conv {reg}"] = 0
                 
+            # Clicks
+            if col_click in df_group.columns:
+                reg_row[f"Clicks {reg}"] = df_group[col_click].sum() / total_opt_clicks_grp if total_opt_clicks_grp > 0 else 0
+            else:
+                reg_row[f"Clicks {reg}"] = 0
+                
         regional_rows.append(reg_row)
         
         # 3. Origin Share Metrics
         orig_row = {"Budget": budget}
         for org_key, org_col in origin_map.items():
-            col = f"Opt_Cost_Origin_{org_key}"
-            if col not in df_group.columns: col = f"Opt_Cost_{org_key}"
-            if col not in df_group.columns and org_key == 'existing searches': col = "Opt_Cost_existing_searches"
+            # Cost
+            col_cost = f"Opt_Cost_Origin_{org_key}"
+            if col_cost not in df_group.columns: col_cost = f"Opt_Cost_{org_key}"
+            if col_cost not in df_group.columns and org_key == 'existing searches': col_cost = "Opt_Cost_existing_searches"
+            
+            # Clicks & Conv
+            col_click = f"Opt_Clicks_Origin_{org_key}"
+            col_conv = f"Opt_Conv_Origin_{org_key}"
 
-            if col in df_group.columns:
-                orig_row[org_col] = df_group[col].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
+            if col_cost in df_group.columns:
+                orig_row[f"Spend {org_key.capitalize()}"] = df_group[col_cost].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
             else:
-                orig_row[org_col] = 0
+                 orig_row[f"Spend {org_key.capitalize()}"] = 0
+            
+            if col_click in df_group.columns:
+                 orig_row[f"Clicks {org_key.capitalize()}"] = df_group[col_click].sum() / total_opt_clicks_grp if total_opt_clicks_grp > 0 else 0
+            else:
+                 orig_row[f"Clicks {org_key.capitalize()}"] = 0
+                 
+            if col_conv in df_group.columns:
+                 orig_row[f"Conv {org_key.capitalize()}"] = df_group[col_conv].sum() / total_opt_conv_grp if total_opt_conv_grp > 0 else 0
+            else:
+                 orig_row[f"Conv {org_key.capitalize()}"] = 0
         
         origin_rows.append(orig_row)
 
@@ -458,6 +678,22 @@ def main():
         f.write(latex_orig)
     print(f"\nOrigin Table saved to {out_orig_tex}")
     print(latex_orig)
+
+    # --- Output Country Table (Best Budget) ---
+    # Find best budget based on clicks improvement
+    if 'improvement in clicks' in summary_df.columns:
+         best_row = summary_df.loc[summary_df['improvement in clicks'].idxmax()]
+         best_budget = best_row['Budget']
+         
+         latex_country = generate_country_table(args.exp_name, int(best_budget))
+         if latex_country:
+             out_country_tex = base_results_dir / "country_breakdown.tex"
+             with open(out_country_tex, "w") as f:
+                 f.write(latex_country)
+             print(f"\nCountry Table (Budget {best_budget}) saved to {out_country_tex}")
+             print(latex_country)
+         else:
+             print("\nCould not generate country table (files missing?)")
 
 if __name__ == "__main__":
     main()
