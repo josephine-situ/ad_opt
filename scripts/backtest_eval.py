@@ -12,6 +12,7 @@ import argparse
 import sys
 import os
 import joblib
+import numpy as np
 from pathlib import Path
 from sklearn.model_selection import GridSearchCV, KFold
 import xgboost as xgb
@@ -194,6 +195,51 @@ def main():
             val_opt_clicks = pred_opt_lift.sum()
             val_opt_cost = X_day["Optimal Cost"].sum()
 
+            # --- New Metrics: Stability & Turnover ---
+            prev_day = day - pd.Timedelta(days=1)
+            prev_bids_file = bids_dir / f"optimized_costs_{prev_day.date()}.csv"
+            
+            avg_cost_change = np.nan
+            pct_new_keywords = np.nan
+            
+            if prev_bids_file.exists():
+                prev_sol = pd.read_csv(prev_bids_file)
+                
+                # Identify "active" keywords (Cost > 0)
+                # Assuming "Optimal Cost" is the column
+                curr_active = sol[sol["Optimal Cost"] > 1e-6].copy()
+                prev_active = prev_sol[prev_sol["Optimal Cost"] > 1e-6].copy()
+                
+                # Set of active keys: Keyword, Region, Match type
+                key_cols = ["Keyword", "Region", "Match type"]
+                
+                # Create set of tuples for easy set operations
+                curr_keys = set(curr_active[key_cols].itertuples(index=False, name=None))
+                prev_keys = set(prev_active[key_cols].itertuples(index=False, name=None))
+                
+                # % New Keywords: Present at t, but not t-1
+                if len(curr_keys) > 0:
+                    new_keys = curr_keys - prev_keys
+                    pct_new_keywords = len(new_keys) / len(curr_keys)
+                else:
+                    pct_new_keywords = 0.0 # or np.nan if no active keywords
+                    
+                # % Change in Cost for keywords present at t-1
+                # We need to join prev_active with sol (current costs, even if 0)
+                # But strict interpretation "present at t-1" means we take all from prev_active
+                # and look at their cost in current sol.
+                
+                # Rename cols for merge
+                prev_active_sub = prev_active[key_cols + ["Optimal Cost"]].rename(columns={"Optimal Cost": "Prev_Cost"})
+                curr_sub = sol[key_cols + ["Optimal Cost"]].rename(columns={"Optimal Cost": "Curr_Cost"})
+                
+                merged_cost = prev_active_sub.merge(curr_sub, on=key_cols, how="inner")
+                
+                # absolute cost change
+                if len(merged_cost) > 0:
+                    merged_cost["pct_change"] = abs((merged_cost["Curr_Cost"] - merged_cost["Prev_Cost"]) / merged_cost["Prev_Cost"])
+                    avg_cost_change = merged_cost["pct_change"].mean()
+
             # --- Calculate Predicted Conversions ---
             # Add lift to X_day for grouping
             X_day["t_Clicks_OptCost"] = pred_opt_lift
@@ -298,6 +344,8 @@ def main():
                 "Act_Conv": val_act_conv,
                 "N_Opt": len(X_day),
                 "N_Obs": len(obs),
+                "Avg_Cost_Change": avg_cost_change,
+                "Pct_New_Keywords": pct_new_keywords,
                 
                 # Eval Model Metrics
                 "Eval_CV_MSE": e_metrics.get("CV_MSE"),

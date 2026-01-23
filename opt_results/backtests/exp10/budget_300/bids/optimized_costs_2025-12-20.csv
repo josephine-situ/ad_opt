@@ -1,6 +1,6 @@
 Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
 course deep learning specialization,A,Broad match,existing searches,20.50690739185621,22.39414592796,20.77289386802348,22.394144,1.8697324613015096e-06,14.465585
-cursos inteligencia artificial,A,Broad match,existing searches,20.50690739185616,20.28485125586,18.675650897469197,20.28485,2.088989884185821e-06,13.22642
+cursos inteligencia artificial,A,Broad match,existing searches,20.50690739185616,20.28485125586,18.6756508974692,20.28485,2.088989884185821e-06,13.22642
 deeplearning specialization,USA,Broad match,existing searches,20.50690739185621,21.73468688267,20.250581176455096,21.734686,9.848428526026964e-07,14.088068
 deeplearning specialization,A,Broad match,existing searches,20.5069073918562,22.49830914996,20.86957813761564,22.498308,9.68197305439844e-07,14.399387
 generating ai course,B,Broad match,new,15.766907175600217,32.82762066109,31.035202777217016,38.69207,-5.864449346234217,30.73912

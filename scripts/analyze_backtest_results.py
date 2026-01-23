@@ -497,6 +497,44 @@ def generate_country_table(exp_name, budget, top_n=10):
     
     return final_latex
 
+def generate_stability_table(stability_df):
+    df = stability_df.copy()
+    
+    # Sort by Budget
+    df['Budget'] = df['Budget'].apply(lambda x: f"{float(x):.0f}")
+    df['sort_key'] = df['Budget'].astype(float)
+    df = df.sort_values('sort_key').drop(columns=['sort_key'])
+    
+    # Format Function
+    def fmt(mean, se, decimals=1, suffix=""):
+        # Handle percent scaling if needed (input is fraction or percent?)
+        # Scripts output: "pct_change" is fraction. "pct_new_keywords" is fraction.
+        # So we mul by 100 for display.
+        mean_pct = mean * 100
+        se_pct = se * 100
+        return f"{mean_pct:,.{decimals}f}{suffix} $\\pm$ {se_pct:,.{decimals}f}{suffix}"
+        
+    df['Avg Cost Change'] = df.apply(lambda r: fmt(r['avg_cost_change'], r['se_cost_change'], 1, r'\%'), axis=1)
+    df['New Keywords'] = df.apply(lambda r: fmt(r['avg_new_kws'], r['se_new_kws'], 1, r'\%'), axis=1)
+    
+    # Select columns
+    out_df = df[['Budget', 'Avg Cost Change', 'New Keywords']].copy()
+    
+    # LaTeX
+    latex = out_df.to_latex(index=False, column_format='lcc', escape=False)
+    latex = latex.replace(r'\hline', r'\toprule', 1)
+    if latex.strip().endswith(r'\hline'):
+        latex = latex.strip()[:-6] + r'\bottomrule'
+        
+    final_latex = (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Keywords Stability Metrics (Avg $\\pm$ SE)}\n"
+        f"{latex}"
+        "\\end{table}"
+    )
+    return final_latex
+
 def main():
 
     p = argparse.ArgumentParser()
@@ -515,6 +553,7 @@ def main():
     summary_rows = []
     regional_rows = []
     origin_rows = []
+    stability_rows = []
     
     grouped = full_results.groupby('Budget', dropna=False)
 
@@ -611,6 +650,27 @@ def main():
 
         avg_kws_opt = df_group["N_Opt"].mean()
         se_kws_opt = df_group["N_Opt"].sem()
+        
+        # Stability Metrics
+        if "Avg_Cost_Change" in df_group.columns:
+            avg_cost_change = df_group["Avg_Cost_Change"].mean()
+            se_cost_change = df_group["Avg_Cost_Change"].sem()
+        else:
+            avg_cost_change, se_cost_change = 0, 0
+            
+        if "Pct_New_Keywords" in df_group.columns:
+            avg_new_kws = df_group["Pct_New_Keywords"].mean()
+            se_new_kws = df_group["Pct_New_Keywords"].sem()
+        else:
+            avg_new_kws, se_new_kws = 0, 0
+            
+        stability_rows.append({
+            "Budget": budget,
+            "avg_cost_change": avg_cost_change,
+            "se_cost_change": se_cost_change,
+            "avg_new_kws": avg_new_kws,
+            "se_new_kws": se_new_kws
+        })
         
         clicks_per_dollar_opt = df_group["t_Clicks_OptCost"].sum() / df_group["Opt_Cost"].sum() if df_group["Opt_Cost"].sum() > 0 else 0
         
@@ -715,6 +775,16 @@ def main():
     summary_df = pd.DataFrame(summary_rows)
     out_csv = base_results_dir / "backtest_summary.csv"
     summary_df.to_csv(out_csv, index=False)
+    
+    # --- Output Stability Table ---
+    if stability_rows and any(r['avg_cost_change'] != 0 for r in stability_rows):
+        stability_df = pd.DataFrame(stability_rows)
+        out_stab_tex = base_results_dir / "stability_metrics.tex"
+        latex_stab = generate_stability_table(stability_df)
+        with open(out_stab_tex, "w") as f:
+            f.write(latex_stab)
+        print(f"\nStability Table saved to {out_stab_tex}")
+        print(latex_stab)
     
     latex_perf = generate_performance_table(summary_df)
     out_tex = base_results_dir / "backtest_summary.tex"
