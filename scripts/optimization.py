@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data
+from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES
 from tidy_get_data import load_or_cache
 
@@ -261,7 +261,7 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_conv=False):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
@@ -289,7 +289,18 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False):
         )
 
     # Objective
-    model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
+    if max_conv:
+        # Maximize conversions
+        conv_rates = get_conversion_rates(by_reg=True)
+        X = X.merge(
+            conv_rates,
+            on='Region',
+            how='left'
+        )
+        model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Conv_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
+    else:
+        # Maximize clicks
+        model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
 
     # Create regional budget variables
     regions = ['USA', 'A', 'B']

@@ -37,7 +37,7 @@ from .data_pipeline import (
     add_embeddings,
     prepare_train_test_split,
     save_outputs,
-    load_embeddings,
+    get_conversion_rates,
 )
 
 from .tee_logging import (
@@ -68,7 +68,7 @@ __all__ = [
     'add_embeddings',
     'prepare_train_test_split',
     'save_outputs',
-    'load_embeddings',
+    'get_conversion_rates',
     # Logging
     'setup_tee_logging',
 ]

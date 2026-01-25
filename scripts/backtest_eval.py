@@ -24,7 +24,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
-from utils.data_pipeline import format_keyword_data
+from utils.data_pipeline import format_keyword_data, get_conversion_rates
 
 def get_args():
     p = argparse.ArgumentParser()
@@ -118,17 +118,7 @@ def main():
         joblib.dump(e_metrics, eval_metrics_path)
 
     # Get observed clicks, conversion rate by location
-    loc_file = Path("data/reports/Location report.csv")
-    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
-    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
-    loc_df = loc_df.groupby(['Location','Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
-
-    # Want to get the columns 'Location', 'Click_prop (of region)', 'Conv_rate'
-    region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
-    loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
-    loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
-    loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
-    loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
+    loc_df = get_conversion_rates()
 
     eval_summary_rows = []
     

@@ -18,7 +18,7 @@ from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 from .keyword_matching import fuzzy_fill_from_gkp
 
 
-def load_and_combine_keyword_data(data_dir="data/reports"):
+def load_and_combine_keyword_data(data_dir=None):
     """
     Load keyword performance data from the consolidated report export.
     
@@ -29,6 +29,9 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     - kw_df (pd.DataFrame): Raw keyword data with consistent columns.
     """
     print("[Step 1] Loading and combining keyword data...")
+
+    if data_dir is None:
+        data_dir = Path(__file__).resolve().parents[1] / "data/reports"
 
     report_path = Path(data_dir) / "Search keyword - raw input to models.csv"
     if not report_path.exists():
@@ -170,7 +173,7 @@ def filter_data_by_date(kw_df, min_date='2024-11-03'):
     return kw_df
 
 
-def get_gkp_data(gkp_dir='data/gkp'):
+def get_gkp_data(gkp_dir=None):
     """
     Load and tidy Google Keyword Planner data from saved keywords stats file.
     
@@ -187,6 +190,9 @@ def get_gkp_data(gkp_dir='data/gkp'):
     """
     print("[Step 5] Loading Google Keyword Planner data...")
     
+    if gkp_dir is None:
+        gkp_dir = Path(__file__).resolve().parents[1] / "data/gkp"
+        
     gkp_path = Path(gkp_dir)
     
     # Find the most recent "Saved Keywords Stats" file
@@ -662,7 +668,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     return df_train, df_test
 
 
-def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='data/clean'):
+def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None):
     """
     Save processed data to CSV files, including unique keyword embeddings.
     
@@ -673,6 +679,9 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='dat
     - embedding_method (str): 'tfidf' or 'bert' (for naming).
     - output_dir (str): Output directory.
     """
+    if output_dir is None:
+        output_dir = Path(__file__).resolve().parents[1] / "data/clean"
+
     print(f"[Step 10] Saving outputs to {output_dir}/...")
     
     output_path = Path(output_dir)
@@ -709,39 +718,29 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='dat
         print(f"  Warning: No embedding columns found for method '{embedding_method}'")
 
 
-def load_embeddings(embeddings_file, embedding_method='bert', keywords=None):
-    """
-    Load embeddings from file.
-    
-    Args:
-    - embeddings_file (str or Path): Path to CSV with keyword embeddings.
-    - embedding_method (str): 'tfidf' or 'bert'.
-    - keywords (list, optional): If provided, filter to only these keywords.
-    
-    Returns:
-    - embeddings_df (pd.DataFrame): DataFrame with columns ['Keyword', 'embedding_0', ...]
-                                   without any NaN values in embedding columns.
-    """
-    embeddings_file = Path(embeddings_file)
-    
-    if not embeddings_file.exists():
-        raise FileNotFoundError(f"Embeddings file not found: {embeddings_file}")
-    
-    print(f"Loading embeddings from {embeddings_file}...")
-    df = pd.read_csv(embeddings_file)
-    
-    # Get embedding column names (those starting with 'tfidf_' or 'bert_')
-    embedding_prefix = embedding_method.lower()
-    embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
-    
-    # Drop rows with NaN in embedding columns
-    df_clean = df.dropna(subset=embedding_cols).reset_index(drop=True)
-    print(f"  Loaded {len(df_clean)} rows with complete embeddings")
-    
-    # Filter by keywords if provided
-    if keywords is not None:
-        keywords_set = set(keywords)
-        df_clean = df_clean[df_clean['Keyword'].isin(keywords_set)].reset_index(drop=True)
-        print(f"  Filtered to {len(df_clean)} keywords")
-    
-    return df_clean
+def get_conversion_rates(by_reg=False):
+
+    # Use path relative to the project root
+    project_root = Path(__file__).resolve().parents[1]
+    loc_file = project_root / "data/reports/Location report.csv"
+    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
+
+    if by_reg:
+        # Aggregate to region level
+        loc_df = loc_df.groupby(['Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
+        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
+        loc_df = loc_df[['Region', 'Conv_rate']].copy()
+
+    else:
+        # Aggregate to location level
+        loc_df = loc_df.groupby(['Location','Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
+
+        # Want to get the columns 'Location', 'Click_prop (of region)', 'Conv_rate'
+        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
+        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
+        loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
+
+    return loc_df

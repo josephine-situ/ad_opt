@@ -95,19 +95,16 @@ def main():
     p.add_argument("--day", default=None)
     p.add_argument("--budget", type=float, nargs='+', default=[300, 350, 400, 450, 500, 550], help="Total budgets to test")
 
-    # Deprecated/Unused parameters (kept for compatibility or remove if safe)
-    p.add_argument("--x-max", type=float_or_none, nargs='+', default=[None], help="Deprecated")
-    p.add_argument("--alpha", type=float, nargs='+', default=[1.0], help="Deprecated")
-
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     p.add_argument("--mask-frac", type=float, default=0.1, help="Fraction of keywords to mask as new")
     p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
+    p.add_argument("--max-conv", action="store_true", help="Use max conversions objective instead of clicks")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
 
     args = p.parse_args()
 
-    start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac
+    start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_conv = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_conv
     
     df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
@@ -203,7 +200,7 @@ def main():
             # Optimize bids for day t
             # Copy X_base to avoid modification issues
             # optimize_bids now only takes budget and kw_df
-            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily, order_budget=order_budget)
+            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily, order_budget=order_budget, max_conv=max_conv)
             sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
             # Save optimized costs
