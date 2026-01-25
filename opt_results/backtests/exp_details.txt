@@ -1,0 +1,10 @@
+Exp1: grid search on masked existing kws over xmax and alpha
+Exp2: masked existing kws, comparing full budget w/ reduced
+Exp4: grid search on masked existing kws with reduced budget, higher xmax
+Exp5: flexible budget per region, existing kws
+Exp6: grid search over total budget, flexible budget per region, existing kws
+Exp7: grid search over total budget, flexible budget per region, new kws
+Exp8: grid search over total budget, flexible budget per region w/ ordered budget constraint, existing kws
+Exp9: 90% masking (not used)
+Exp10 (current best): grid search over total budget, flexible budget per region w/ ordered budget constraint, new kws
+Exp11: Only optimize once per week (not used)
