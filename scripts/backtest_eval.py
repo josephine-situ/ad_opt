@@ -25,9 +25,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
 from utils.data_pipeline import format_keyword_data, get_conversion_rates
+from utils.date_features import COURSE_START_DATES_MAP
 
 def get_args():
     p = argparse.ArgumentParser()
+    p.add_argument("--course", default="gen_ai", help="Course name")
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-31")
     p.add_argument("--day", default=None)
@@ -46,6 +48,8 @@ def get_args():
 def main():
     args = get_args()
     
+    base_dir = Path(f"data/{args.course}")
+
     start_dt = pd.to_datetime(args.start)
     end_dt = pd.to_datetime(args.end)
     
@@ -55,11 +59,11 @@ def main():
         opt_days = list(pd.date_range(start=start_dt, end=end_dt, freq="D"))
 
     # Load Base Data
-    df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
+    df = pd.read_csv(base_dir / "clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy() 
     df["Day"] = pd.to_datetime(df["Day"])
     
-    kw_df_all = pd.read_csv("data/gkp/keywords_classified.csv")
+    kw_df_all = pd.read_csv(base_dir / "gkp/keywords_classified.csv")
     
     # Merge Origin into Main Data (Actuals)
     df = df.merge(kw_df_all[["Keyword", "Origin"]], on="Keyword", how="left")
@@ -85,9 +89,9 @@ def main():
         *bert_cols,
     ]
     
-    base_results_dir = Path(f"opt_results/backtests/{args.exp_name}")
-    eval_models_dir = Path("opt_results/eval_models")
-    models_dir = Path(f"models/{args.exp_name}") # For reading hist metrics
+    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
+    eval_models_dir = Path(f"opt_results/{args.course}/eval_models")
+    models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}") # For reading hist metrics
     
     eval_models_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = base_results_dir / "cache"
@@ -147,7 +151,13 @@ def main():
         kw_df_daily, keywords, new_keywords = select_keywords(kw_df_all, args.keywords_n, args.masked, seed=seed)
         
         # Reconstruct feature matrix for this day/seed
-        X_base = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
+        X_base = feature_matrix_cached(
+            keywords=keywords, 
+            opt_date=day, 
+            cache_dir=cache_dir,
+            base_dir=base_dir,
+            course_start_dts=COURSE_START_DATES_MAP.get(args.course, [])
+        )
         
         for b in args.budget:
                 

@@ -5,6 +5,7 @@ Handles training, evaluation, and saving of models. Used in backtests.
 
 from pathlib import Path
 import sys
+import argparse
 import joblib
 import numpy as np
 import pandas as pd
@@ -184,18 +185,23 @@ def train_best_model(df_day, features, day_date):
     return best_model, best_params, best_cv_score, in_sample_mse, in_sample_r2, in_sample_bias
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+    args = parser.parse_args()
 
     log_path = setup_tee_logging(
         log_file=None,
         default_log_dir='logs',
-        default_log_prefix='modeling',
+        default_log_prefix=f'modeling_{args.course}',
     )
 
     print(f"[Logging] Tee output to {log_path}")
+    print(f"Course: {args.course}")
 
     # Load processed training and test data
-    df_train = pd.read_csv('data/clean/train_bert.csv')
-    df_test = pd.read_csv('data/clean/test_bert.csv')
+    base_dir = Path(f'data/{args.course}')
+    df_train = pd.read_csv(base_dir / 'clean/train_bert.csv')
+    df_test = pd.read_csv(base_dir / 'clean/test_bert.csv')
     print(f"Loaded training data: {df_train.shape}, test data: {df_test.shape}")
 
     # Features
@@ -226,7 +232,8 @@ def main():
     best_model = train_xgb_mse(df_train, df_test, features, target, param_grid)
 
     # Save the best model
-    xgb_path = Path('models/xgb_clicks_model.joblib')
+    # Use course-specific model name
+    xgb_path = Path(f'models/{args.course}_xgb_clicks_model.joblib')
     joblib.dump(best_model, xgb_path)
     print(f"Saved best model to {xgb_path}")
 

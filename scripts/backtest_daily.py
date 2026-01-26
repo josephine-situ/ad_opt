@@ -26,14 +26,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.optimization import create_feature_matrix, extract_solution, optimize_bids
 from scripts.modeling import _to_float32_csr, train_best_model
+from utils.date_features import COURSE_START_DATES_MAP
 
 
-def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path) -> pd.DataFrame:
+def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path, base_dir: Path, course_start_dts: list) -> pd.DataFrame:
     kw_hash = hashlib.md5("|".join(sorted(keywords)).encode("utf-8")).hexdigest()[:10]
     p = cache_dir / f"feature_matrix_{kw_hash}_{opt_date.date()}.parquet"
     if p.exists():
         return pd.read_parquet(p)
-    X = create_feature_matrix(keywords, opt_date=opt_date)
+    X = create_feature_matrix(keywords, opt_date=opt_date, course_start_dts=course_start_dts, base_dir=base_dir)
     p.parent.mkdir(parents=True, exist_ok=True)
     X.to_parquet(p)
     return X
@@ -101,16 +102,19 @@ def main():
     p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
     p.add_argument("--max-conv", action="store_true", help="Use max conversions objective instead of clicks")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
+    p.add_argument("--course", default="gen_ai", help="Course name")
 
     args = p.parse_args()
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_conv = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_conv
     
-    df = pd.read_csv("data/clean/ad_opt_data_bert.csv")
+    base_dir = Path(f"data/{args.course}")
+
+    df = pd.read_csv(base_dir / "clean/ad_opt_data_bert.csv")
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
     df["Day"] = pd.to_datetime(df["Day"])
 
-    kw_df = pd.read_csv("data/gkp/keywords_classified.csv")
+    kw_df = pd.read_csv(base_dir / "gkp/keywords_classified.csv")
 
     if args.day is not None:
         opt_days = [pd.to_datetime(args.day)]
@@ -138,8 +142,8 @@ def main():
         *bert_cols,
     ]
 
-    models_dir = Path(f"models/backtests/{args.exp_name}")
-    base_results_dir = Path(f"opt_results/backtests/{args.exp_name}")
+    models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}")
+    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
     cache_dir = base_results_dir / "cache"
     models_dir.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -182,7 +186,13 @@ def main():
         joblib.dump(pipe, model_path)
 
         # Precompute feature matrix (shared across parameters)
-        X_base = feature_matrix_cached(keywords=keywords, opt_date=day, cache_dir=cache_dir)
+        X_base = feature_matrix_cached(
+            keywords=keywords, 
+            opt_date=day, 
+            cache_dir=cache_dir, 
+            base_dir=base_dir, 
+            course_start_dts=COURSE_START_DATES_MAP.get(args.course, [])
+        )
 
         # Optimize for each parameter combination
         for b in budget_list:

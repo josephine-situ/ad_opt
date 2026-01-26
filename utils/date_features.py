@@ -11,6 +11,12 @@ import datetime
 # Course start dates (fixed)
 COURSE_START_DATES = ['2024-10-15', '2025-02-10', '2025-09-29', '2026-02-09']
 
+COURSE_START_DATES_MAP = {
+    'gen_ai': COURSE_START_DATES,
+    'ml': [],
+    'sys_eng': [],
+}
+
 
 def _region_to_country_code(r):
     """

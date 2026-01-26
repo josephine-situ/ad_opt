@@ -3,6 +3,7 @@
 Interpret XGBoost clicks model using variable importance and SHAP values.
 """
 
+import argparse
 import sys
 from pathlib import Path
 import pandas as pd
@@ -15,12 +16,17 @@ import joblib
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Configuration
-MODEL_PATH = Path(__file__).parent.parent / 'models' / 'xgb_clicks_model.joblib'
-OUTPUT_DIR = Path(__file__).parent.parent / 'model_interpretability'
-OUTPUT_DIR.mkdir(exist_ok=True)
+parser = argparse.ArgumentParser()
+parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+args = parser.parse_args()
+
+base_dir = Path(f'data/{args.course}')
+MODEL_PATH = Path(f'models/{args.course}_xgb_clicks_model.joblib')
+OUTPUT_DIR = Path('model_interpretability') / args.course
+OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
 print("=" * 70)
-print("XGBoost Clicks Model Interpretation")
+print(f"XGBoost Clicks Model Interpretation ({args.course})")
 print("=" * 70)
 
 # ============================================================================
@@ -29,7 +35,7 @@ print("=" * 70)
 print("\n1. Loading test data...")
 
 embedding_choice = 'bert'
-test_file = Path(__file__).parent.parent / 'data' / 'clean' / f'test_{embedding_choice}.csv'
+test_file = base_dir / 'clean' / f'test_{embedding_choice}.csv'
 
 X_test = pd.read_csv(test_file)
 

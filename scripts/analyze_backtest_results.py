@@ -539,9 +539,10 @@ def main():
 
     p = argparse.ArgumentParser()
     p.add_argument("--exp-name", default="backtests", help="Experiment name")
+    p.add_argument("--course", default="gen_ai", help="Course name")
     args = p.parse_args()
     
-    base_results_dir = Path(f"opt_results/backtests/{args.exp_name}")
+    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
     eval_csv = base_results_dir / "evaluation_results.csv"
 
     if not eval_csv.exists():
