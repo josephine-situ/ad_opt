@@ -8,6 +8,7 @@ Maximize clicks fora single day of data, based on a pre-trained XGB model.
 from datetime import datetime
 import pickle
 import sys
+import argparse
 import joblib
 import joblib
 import pandas as pd
@@ -23,14 +24,14 @@ from tqdm import tqdm
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data, get_conversion_rates
-from utils.date_features import COURSE_START_DATES
+from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
 from tidy_get_data import load_or_cache
 
-def check_embeddings(embedding_df):
+def check_embeddings(embedding_df, base_dir=Path('data/gen_ai')):
     '''Test consistency of embeddings'''
 
     # Load saved embeddings
-    saved_emb = pd.read_csv('data/clean/unique_keyword_embeddings_bert.csv')
+    saved_emb = pd.read_csv(base_dir / 'clean/unique_keyword_embeddings_bert.csv')
 
     # 1. Ensure both are indexed by Keyword for easy alignment
     df1 = embedding_df.set_index('Keyword').sort_index()
@@ -52,10 +53,10 @@ def check_embeddings(embedding_df):
         print(f"❌ Consistency Check Failed: Mean Absolute Difference is {diff}")
 
 
-def get_emb_from_pipeline(keywords):
+def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
 
     # Read possible keywords and create embeddings for them
-    emb_pipe_file = 'data/clean/bert_pipeline_50d.pkl'
+    emb_pipe_file = base_dir / 'clean/bert_pipeline_50d.pkl'
     with open(emb_pipe_file, 'rb') as f:
         emb_pipeline = pickle.load(f)
 
@@ -78,12 +79,12 @@ def get_emb_from_pipeline(keywords):
     embedding_df = pd.DataFrame(embeddings, columns=embedding_cols)
     embedding_df['Keyword'] = keywords
 
-    check_embeddings(embedding_df)
+    check_embeddings(embedding_df, base_dir)
 
     return embedding_df
     
 
-def create_feature_matrix(keywords, opt_date=None):
+def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai')):
     
     # Get all keyword combinations
     regions = ['USA', 'A', 'B'] # Removed region 'C' since low EPC
@@ -96,16 +97,19 @@ def create_feature_matrix(keywords, opt_date=None):
     # Use today's date if not provided
     if opt_date is None:
         opt_date = datetime.now()
+    if course_start_dts is None:
+        course_start_dts = COURSE_START_DATES
+        
     X['Day'] = opt_date
-    X = get_date_features(X, COURSE_START_DATES)
+    X = get_date_features(X, course_start_dts)
     
     # Get keyword stats from GKP
-    gkp_df = get_gkp_data()
+    gkp_df = get_gkp_data(gkp_dir=base_dir / 'gkp')
     gkp_df = impute_missing_data(gkp_df)
     X = merge_with_ads_data(X, gkp_df)
 
     # Get keyword embeddings
-    emb_df = get_emb_from_pipeline(keywords)
+    emb_df = get_emb_from_pipeline(keywords, base_dir)
     X = X.merge(emb_df, on='Keyword', how='left')
 
     # Features (and Keyword)
@@ -423,28 +427,38 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     return results_df
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+    args = parser.parse_args()
+
+    print(f"Optimizing bids for course: {args.course}")
+
+    base_dir = Path(f'data/{args.course}')
     
     # Step 1: Create feature matrix with caching
-    kw_df = pd.read_csv('data/gkp/keywords_classified.csv')
+    kw_df = pd.read_csv(base_dir / 'gkp/keywords_classified.csv')
     keywords = kw_df['Keyword'].tolist()
     
-    cache_dir = Path('opt_results/cache')
+    cache_dir = Path(f'opt_results/{args.course}/cache')
     cache_dir.mkdir(parents=True, exist_ok=True)
     
-    res_dir = Path('opt_results/bids')
+    res_dir = Path(f'opt_results/{args.course}/bids')
     res_dir.mkdir(parents=True, exist_ok=True)
     
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
         False,  # force_reload
-        keywords
+        keywords,
+        None, # opt_date (defaults to now)
+        COURSE_START_DATES_MAP.get(args.course, []),
+        base_dir
     )
 
     X = X[X['Region'] != 'C'][:10000]  # Filter out region C due to low EPC
     
     # Optimize bids using Gurobi
-    model_path = 'models/xgb_clicks_model.joblib'
+    model_path = f'models/{args.course}_xgb_clicks_model.joblib'
     X = X[:10]  # For testing with a smaller subset
     model, cost_vars, pred_vars, X = optimize_bids(X, model_path, kw_df=kw_df)
 
@@ -452,7 +466,7 @@ def main():
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X)
     if results_df is not None:
         results_df.to_csv(res_dir / 'optimized_costs.csv', index=False)
-        print("[Info] Optimization results saved to 'opt_results/bids/optimized_costs.csv'.")
+        print(f"[Info] Optimization results saved to '{res_dir}/optimized_costs.csv'.")
 
 
 if __name__ == '__main__':

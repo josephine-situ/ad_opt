@@ -30,7 +30,7 @@ from utils import (
     save_outputs,
     setup_tee_logging,
 )
-from utils.date_features import COURSE_START_DATES
+from utils.date_features import COURSE_START_DATES_MAP
 
 
 def load_or_cache(func, cache_path, force_reload=False, *args, **kwargs):
@@ -84,14 +84,14 @@ def main():
     parser.add_argument(
         '--output-dir',
         type=str,
-        default='data/clean',
-        help='Output directory for processed data (default: data/clean)'
+        default=None,
+        help='Output directory for processed data (default: data/{course}/clean)'
     )
     parser.add_argument(
         '--data-dir',
         type=str,
-        default='data/reports',
-        help='Input data directory (default: data/reports)'
+        default=None,
+        help='Input data directory (default: data/{course}/reports)'
     )
     parser.add_argument(
         '--force-reload',
@@ -107,14 +107,27 @@ def main():
             "Set to empty string '' to disable file logging."
         ),
     )
+    parser.add_argument(
+        '--course',
+        type=str,
+        default='gen_ai',
+        help='Course name (default: gen_ai)'
+    )
     
     args = parser.parse_args()
+
+    # Determine paths based on course
+    base_dir = Path(f'data/{args.course}')
+    if args.output_dir is None:
+        args.output_dir = str(base_dir / 'clean')
+    if args.data_dir is None:
+        args.data_dir = str(base_dir / 'reports')
 
     # Tee stdout/stderr to a log file (plus console).
     log_path = setup_tee_logging(
         log_file=args.log_file,
         default_log_dir='logs',
-        default_log_prefix='tidy_get_data',
+        default_log_prefix=f'tidy_get_data_{args.course}',
     )
     if log_path is not None:
         print(f"[Logging] Tee output to {log_path}")
@@ -122,6 +135,7 @@ def main():
     print("=" * 70)
     print("Data Preparation Pipeline for Ad Optimization")
     print("=" * 70)
+    print(f"Course: {args.course}")
     print(f"Embedding method: {args.embedding_method}")
     print(f"N components: {args.n_components}")
     print(f"Force reload: {args.force_reload}")
@@ -131,7 +145,7 @@ def main():
         output_path = Path(args.output_dir)
         output_path.mkdir(exist_ok=True, parents=True)
         
-        cache_path = Path('data/cache')
+        cache_path = base_dir / 'cache'
         cache_path.mkdir(exist_ok=True, parents=True)
         
         # Pipeline with automatic caching at each time-consuming step
@@ -152,7 +166,7 @@ def main():
             cache_path / 'step3_features.parquet',
             args.force_reload,
             kw_df,
-            COURSE_START_DATES
+            COURSE_START_DATES_MAP.get(args.course, [])
         )
         
         print("\n[Step 4] Filter data by date...")
@@ -164,7 +178,7 @@ def main():
         )
         
         print("\n[Step 5] Load GKP data...")
-        gkp_df = get_gkp_data()
+        gkp_df = get_gkp_data(gkp_dir=base_dir / 'gkp')
         
         print("\n[Step 5.5] Impute missing data...")
         kw_df = impute_missing_data(kw_df)
