@@ -1,125 +1,8 @@
 Keyword,Origin
-''mit mbse certificate'',existing
-''mit model based systems engineering'',existing
-''mit systems architecture'',existing
-+aeronautical +engineering +degree,existing
-+aerospace +engineering +courses +online,existing
-+aerospace +engineering +online +courses,existing
-+best +online +engineering +courses,existing
-+best +schools +system +engineering,existing
-+best +university +system +engineering,existing
-+college of +engineering,existing
-+complex +systems +modeling,existing
-+computer +systems +engineering,existing
-+distance +learning +system +engineering,existing
-+electrical +engineering +courses,existing
-+electrical +engineering +phd,existing
-+engineer +phd,existing
-+engineering +certificate,existing
-+engineering +certificate +programs,existing
-+engineering +certification,existing
-+engineering +classes +online,existing
-+engineering +course +online,existing
-+engineering +courses,existing
-+engineering +courses +online,existing
-+engineering +degree +programs,existing
-+engineering +masters +programs,existing
-+engineering +online +classes,existing
-+engineering +online +courses,existing
-+engineering +school,existing
-+engineering +study,existing
-+engineering +training +courses,existing
-+engineering +universities,existing
-+engineering+based,existing
-+graduate +engineering +programs,existing
-+masters +degree +engineering,existing
-+masters +degree in +engineering,existing
-+masters in +systems +engineering +online,existing
-+mbse,existing
-+mbse +certificate,existing
-+mbse +course,existing
-+mbse +tools,existing
-+mbse +training,existing
-+mit +mbse,existing
-+mit +mbse +certificate,existing
-+mit +model +based +systems +engineering,existing
-+mit +model +based +systems +engineering +certification,existing
-+mit +online +courses,existing
-+mit +system +engineering,existing
-+mit +system +engineering +certificate,existing
-+mit +systems +architecture,existing
-+mit +systems +engineering,existing
-+mit +xpro +systems +engineering,existing
-+mitx +systems +engineering,existing
-+model +based +system,existing
-+model +based +system +engineering,existing
-+model +based +systems +engineering,existing
-+model+based+engineering,existing
-+model+based+system+engineering,existing
-+model+based+systems+engineering,existing
-+model+based+systems+engineering+mbse,existing
-+model+based+systems+engineering+tools,existing
-+modeling in+engineering,existing
-+modeling+engineering+systems,existing
-+online +aerospace +engineering +courses,existing
-+online +certificate +courses +engineering,existing
-+online +certification +courses +engineering,existing
-+online +classes +engineering,existing
-+online +computer +engineering +degree,existing
-+online +courses +engineering,existing
-+online +courses in +engineering,existing
-+online +degree +engineering,existing
-+online +engineering +classes,existing
-+online +engineering +courses,existing
-+online +engineering +courses +uk,existing
-+online +engineering +degree,existing
-+online +engineering +degree +courses,existing
-+online +engineering +degrees,existing
-+online +engineering +masters +degree,existing
-+online +engineering +programs,existing
-+online +engineering +study,existing
-+online +masters +systems +engineering,existing
-+online +systems +engineering +degree,existing
-+online +systems +engineering +masters,existing
-+power +engineering +course,existing
-+software +engineer +institute,existing
-+system +architecture,existing
-+system +engineer,existing
-+system +engineering,existing
-+system +engineering +courses,existing
-+system +engineering +degree,existing
-+system +engineering +education,existing
-+system +engineering +schools,existing
-+system +engineering +training,existing
-+system +engineering +training +course,existing
-+system +integration,existing
-+system +integration +engineer,existing
-+system +modeling and +simulation,existing
-+systems +engineer +education,existing
-+systems +engineering,existing
-+systems +engineering +certificate,existing
-+systems +engineering +certificate +online,existing
-+systems +engineering +certification,existing
-+systems +engineering +course,existing
-+systems +engineering +course +online,existing
-+systems +engineering +degree +online,existing
-+systems +engineering +masters +online,existing
-+systems +engineering +online,existing
-+systems +engineering +online +course,existing
-+systems +engineering +online +degree,existing
-+systems +engineering +short +courses,existing
-+systems +engineering +tools,existing
-+systems +engineering +training +online,existing
-+systems +modeling,existing
-+systems+engineering+approach,existing
-+systems+engineering+models,existing
-+university +engineering +courses,existing
-.mit courses,existing
 1 year masters degree programs,existing
 1 year phd programs online,existing
 1999 microsoft certified system engineer courses,new
 5 day gen ai intensive course with google kaggle,existing searches
-__smart_targeting__,existing
 a mechanical engineer,existing searches
 abb online courses,existing searches
 accelerated phd programs,existing
@@ -147,6 +30,7 @@ aeronautical engineering apprenticeships,existing searches
 aeronautical engineering course,existing
 aeronautical engineering courses,existing
 aeronautical engineering courses online,existing searches
+aeronautical engineering degree,existing
 aeronautical engineering degree online,existing
 aeronautical engineering degree uk,existing
 aeronautical engineering in bangalore,existing searches
@@ -308,7 +192,7 @@ associate systems engineering professional,existing searches
 associate systems engineering professional asep,existing searches
 associate systems engineering professional certification course,new
 associate systems engineering professional certification courses in california,new
-associate's degree cad drafting,existing searches
+associates degree cad drafting,existing searches
 associates in civil engineering,existing searches
 asu masters systems engineering courses,new
 asu online undergraduate certificates,existing searches
@@ -318,7 +202,7 @@ asu polytechic human systems engineering phd program course list,new
 asu polytechnic human system engineering course description,new
 asu polytechnic human systems engineering phd course list,new
 asu systems engineering courses,new
-auburn university's control systems engineering pe exam review course notes,new
+auburn universitys control systems engineering pe exam review course notes,new
 australia online courses,existing searches
 autocad course,existing searches
 autocad courses,existing searches
@@ -417,6 +301,7 @@ best online systems engineering masters,existing
 best online university courses,existing searches
 best robotics courses in the world,existing searches
 best school for engineering,existing searches
+best schools system engineering,existing
 best software architecture certification,existing searches
 best system design course,existing searches
 best system design courses,existing searches
@@ -428,6 +313,7 @@ best systems engineering programs,existing
 best systems engineering schools,existing
 best universities for ms in control systems,existing searches
 best universities in australia for computer engineering,existing searches
+best university system engineering,existing
 bi system architecture,existing searches
 bim training courses,existing searches
 bioengineering,existing searches
@@ -463,6 +349,7 @@ business degree online,existing searches
 business engineering course,existing searches
 bwsi mit,existing searches
 bytebytego,existing searches
+c course mit,existing searches
 cad course,existing searches
 cad mit,existing searches
 cadence system verilog course,existing searches
@@ -570,6 +457,7 @@ cognitive systems engineering,existing searches
 cognitive systems engineering course,new
 college courses online,existing searches
 college engineering courses,existing
+college of engineering,existing
 college of technology,existing searches
 colleges in alberta,existing searches
 columbia engineering online degrees,existing searches
@@ -886,7 +774,7 @@ electrical engineering certificate online,existing
 electrical engineering certifications,existing searches
 electrical engineering control systems courses,new
 electrical engineering course online,existing searches
-electrical engineering courses,existing searches
+electrical engineering courses,existing
 electrical engineering degree,existing
 electrical engineering degree online,existing searches
 electrical engineering distance learning,existing searches
@@ -895,6 +783,7 @@ electrical engineering experience certificate,existing searches
 electrical engineering fundamentals,existing searches
 electrical engineering online,existing
 electrical engineering online courses fall 2019 stony brook control systems,new
+electrical engineering phd,existing
 electrical engineering power systems,existing
 electrical engineering program,existing
 electrical engineering programs,existing
@@ -928,6 +817,7 @@ electronics courses,existing searches
 electronics full course,existing searches
 electronics learnership,existing searches
 elv course,existing searches
+embedded c,existing searches
 embedded computing,existing
 embedded development course,existing searches
 embedded engineering,existing
@@ -988,6 +878,7 @@ engineer course online,existing searches
 engineer diploma,existing searches
 engineer masters,existing
 engineer pdh,existing
+engineer phd,existing
 engineer school,existing searches
 engineer work,existing searches
 engineered systems,existing
@@ -998,13 +889,14 @@ engineering and architecture employment sydney,existing searches
 engineering and architecture vacancies australia,existing searches
 engineering and computer science,existing searches
 engineering bursaries online application,existing searches
-engineering certificate,existing searches
+engineering certificate,existing
 engineering certificate courses,existing
 engineering certificate online,existing
 engineering certificate programs,existing
 engineering certificate programs online,existing
 engineering certificates,existing searches
 engineering certificates online,existing searches
+engineering certification,existing
 engineering certification courses,existing searches
 engineering certification programs,existing searches
 engineering certifications,existing searches
@@ -1030,7 +922,7 @@ engineering degree courses,existing
 engineering degree melbourne,existing
 engineering degree online,existing
 engineering degree online australia,existing
-engineering degree programs,existing searches
+engineering degree programs,existing
 engineering degrees,existing searches
 engineering degrees online,existing searches
 engineering design certificate,existing searches
@@ -1053,6 +945,7 @@ engineering managment,existing searches
 engineering master degree online,existing searches
 engineering master online,existing
 engineering master programs,existing
+engineering masters programs,existing
 engineering masters uk,existing
 engineering mathematics,existing searches
 engineering models,existing searches
@@ -1080,6 +973,7 @@ engineering programs online,existing
 engineering qualifications,existing
 engineering refresher courses,existing searches
 engineering requirements,existing
+engineering school,existing
 engineering school online,existing searches
 engineering short courses,existing searches
 engineering study,existing
@@ -1100,8 +994,10 @@ engineering training,existing
 engineering training courses,existing
 engineering training online,existing
 engineering undergraduate degree,existing
+engineering universities,existing
 engineering university courses,existing
 engineering webinar with certificate,existing searches
+engineeringbased,existing
 enterprise architect,existing searches
 enterprise architect mbse course for systems engineering,new
 enterprise architecture,existing
@@ -1270,6 +1166,7 @@ graduate certificate programs,existing
 graduate degree programs,existing
 graduate degrees,existing
 graduate engineering,existing
+graduate engineering programs,existing
 graduate online programs,existing
 graduate systems engineer,existing
 grants for online college,existing searches
@@ -1589,18 +1486,14 @@ master of systems engineering online,existing searches
 master of systems engineering unsw,existing searches
 master system,existing
 master systems engineering,existing searches
-master's degree in systems engineering,existing searches
-master's degree programs,existing
-master's degree systems engineering,existing
-master's degrees,existing
-master's in systems engineering,existing searches
-master's in systems engineering online,existing searches
 masters architecture,existing
 masters computer engineering,existing searches
 masters degree courses,existing
 masters degree education online,existing
+masters degree engineering,existing
 masters degree in,existing
 masters degree in educational technology,existing
+masters degree in engineering,existing
 masters degree in it,existing
 masters degree in systems engineering,existing
 masters degree mechanical engineering,existing searches
@@ -1608,6 +1501,8 @@ masters degree programs,existing
 masters degree programs in education,existing
 masters degree programs online,existing
 masters degree requirements,existing
+masters degree systems engineering,existing
+masters degrees,existing
 masters degrees online,existing searches
 masters engineering,existing
 masters for professionals,existing searches
@@ -1681,7 +1576,7 @@ mbse software,existing searches
 mbse solutions,existing searches
 mbse textbook,existing searches
 mbse togaf,existing searches
-mbse tools,existing searches
+mbse tools,existing
 mbse training,existing
 mbse training courses,existing searches
 mcmaster software engineering embedded systems courses,new
@@ -1829,6 +1724,7 @@ mit boeing,existing searches
 mit bootcamp,existing searches
 mit bootcamps,existing searches
 mit business school,existing searches
+mit c course,existing searches
 mit certificate courses,existing searches
 mit certificate programs,existing
 mit certificate programs online,existing searches
@@ -2205,7 +2101,6 @@ mit xpro system thinking,existing searches
 mit xpro systems engineering,existing
 mit xpro systems engineering reddit,existing searches
 mit xpro systems thinking,existing searches
-mit's opencourseware,existing searches
 mitchell institute of aerospace studies,existing searches
 mitcourse ware,existing searches
 mites mit,existing searches
@@ -2221,6 +2116,7 @@ mitowc,existing searches
 mitpro,existing searches
 mitprofessionaled,existing searches
 mitprox,existing searches
+mits opencourseware,existing searches
 mitx,existing searches
 mitx certificate,existing searches
 mitx certification,existing searches
@@ -2296,13 +2192,20 @@ model based systems engineering training,existing
 model based systems engineering tutorial,existing searches
 model of system,existing
 model probiblstic systems engineering online course,new
+modelbasedengineering,existing
+modelbasedsystemengineering,existing
+modelbasedsystemsengineering,existing
+modelbasedsystemsengineeringmbse,existing
+modelbasedsystemsengineeringtools,existing
 modeling a system,existing
 modeling and simulation engineer,existing searches
 modeling and simulation online course,existing searches
 modeling complex systems,existing
 modeling engineering systems,existing
 modeling in engineering,existing
+modeling inengineering,existing
 modeling of complex systems,existing
+modelingengineeringsystems,existing
 models in engineering,existing searches
 modern application architecture patterns,existing searches
 modern enterprise architecture,existing
@@ -2370,7 +2273,7 @@ on line courses mit,existing searches
 on line programs,existing searches
 one year masters degree,existing
 online aeronautical engineering degree,existing
-online aerospace engineering bachelor's degree,existing
+online aerospace engineering bachelors degree,existing
 online aerospace engineering courses,existing
 online aerospace engineering degree,existing
 online aerospace engineering programs,existing
@@ -2396,12 +2299,14 @@ online certificate courses in aerospace engineering,existing searches
 online certificate courses in engineering,existing
 online certificate programs,existing searches
 online certification courses,existing
+online certification courses engineering,existing
 online certification courses for civil engineers,existing searches
 online certification courses for embedded system,existing searches
 online certification courses for engineering,existing
 online certification courses for engineering students,existing
 online certification courses for structural engineering,existing searches
 online class programs,existing searches
+online classes engineering,existing
 online classes for architecture,existing searches
 online classes for engineering,existing
 online college certificate programs,existing searches
@@ -2496,6 +2401,7 @@ online engineering classes,existing
 online engineering colleges,existing searches
 online engineering courses,existing
 online engineering courses for credit,existing
+online engineering courses uk,existing
 online engineering courses with certificates,existing
 online engineering degree,existing
 online engineering degree canada,existing searches
@@ -2507,6 +2413,7 @@ online engineering degrees,existing
 online engineering education,existing
 online engineering masters,existing searches
 online engineering masters canada,existing searches
+online engineering masters degree,existing
 online engineering phd programs,existing
 online engineering programs,existing
 online engineering schools,existing
@@ -2537,8 +2444,8 @@ online master mit,existing searches
 online master of engineering,existing
 online master of public health,existing searches
 online master software engineering,existing searches
-online master's degree mechanical engineering,existing searches
 online masters computer,existing searches
+online masters degree mechanical engineering,existing searches
 online masters engineering,existing searches
 online masters engineering management,existing searches
 online masters in electrical and computer engineering,existing searches
@@ -2581,7 +2488,7 @@ online professional development courses for engineers,existing searches
 online professional engineering courses,existing
 online programs,existing searches
 online project guidance for engineering students,existing searches
-online psychology bachelor's degree programs,existing searches
+online psychology bachelors degree programs,existing searches
 online python course from mit,existing searches
 online python course mit,existing searches
 online red hat system engineer training course,new
@@ -2687,6 +2594,7 @@ post graduate certificate programs,existing
 post graduate degree programs,existing
 post graduate robotics programs,existing searches
 power engineering,existing
+power engineering course,existing
 power engineering journal,existing searches
 power system engineer course,new
 power system engineering course,new
@@ -3117,9 +3025,10 @@ system engineering v model,existing searches
 system engineering zertifizierung,existing searches
 system enginnering,existing searches
 system identification course,existing searches
+system integration,existing
 system integration companies,existing
 system integration course,existing searches
-system integration engineer,existing searches
+system integration engineer,existing
 system integration engineering,existing searches
 system integration it,existing
 system integration training,existing searches
@@ -3221,7 +3130,7 @@ systems engineering course map uiuc,new
 systems engineering course mavris georgia tech,new
 systems engineering course melbourne,new
 systems engineering course mit,existing searches
-systems engineering course online,existing searches
+systems engineering course online,existing
 systems engineering course philippines,new
 systems engineering course projects,new
 systems engineering course requirements,new
@@ -3298,9 +3207,6 @@ systems engineering management course,new
 systems engineering management plan pdf,existing searches
 systems engineering manager,existing
 systems engineering master,existing searches
-systems engineering master's degree,existing searches
-systems engineering master's online,existing searches
-systems engineering master's programs,existing searches
 systems engineering masters,existing
 systems engineering masters courses,new
 systems engineering masters degree,existing
@@ -3397,6 +3303,8 @@ systems thinking course harvard,existing searches
 systems thinking for product managers,existing searches
 systems thinking mit,existing searches
 systems thinking mit xpro,existing searches
+systemsengineeringapproach,existing
+systemsengineeringmodels,existing
 systemverilog course,existing searches
 tata certification courses,existing searches
 teaching degrees online,existing searches
