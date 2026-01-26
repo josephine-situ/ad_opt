@@ -210,7 +210,15 @@ def main():
             # Optimize bids for day t
             # Copy X_base to avoid modification issues
             # optimize_bids now only takes budget and kw_df
-            m, cost_vars, pred_vars, X_opt = optimize_bids(X_base.copy(), str(model_path), budget=b, kw_df=kw_df_daily, order_budget=order_budget, max_conv=max_conv)
+            m, cost_vars, pred_vars, X_opt = optimize_bids(
+                X_base.copy(), 
+                str(model_path), 
+                budget=b, 
+                kw_df=kw_df_daily, 
+                order_budget=order_budget, 
+                max_conv=max_conv, 
+                base_dir=base_dir
+            )
             sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
             # Save optimized costs

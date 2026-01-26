@@ -4,7 +4,7 @@ Outputs an evaluation summary and adds a predicted clicks column to existing opt
 Separated from backtest_daily.py to allow re-evaluation and cross-validation.
 
 Example Usage:
-    python scripts/backtest_eval.py --exp-name exp1 --masked
+    python scripts/backtest_eval.py --course gen_ai --exp-name exp1 --masked
 """
 
 import pandas as pd
@@ -122,7 +122,7 @@ def main():
         joblib.dump(e_metrics, eval_metrics_path)
 
     # Get observed clicks, conversion rate by location
-    loc_df = get_conversion_rates()
+    loc_df = get_conversion_rates(base_dir=base_dir)
 
     eval_summary_rows = []
     

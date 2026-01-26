@@ -52,6 +52,9 @@ def clean_keyword(kw):
         return None
     
     kw = str(kw).strip()
+
+    # Remove double quotes, single quotes, and + signs
+    kw = kw.replace("'", "").replace('"', "").replace("+", "")
     
     # Remove [...] patterns
     kw = re.sub(r'\[.*?\]', '', kw).strip()
@@ -307,7 +310,10 @@ def main():
         existing_kws_cleaned = []
         existing_filtered_len = []
         for kw in existing_kws_raw:
-            kw_s = ' '.join(str(kw).split())
+            cleaned_basic = clean_keyword(kw)
+            if cleaned_basic is None:
+                continue
+            kw_s = ' '.join(str(cleaned_basic).split())
             if not _passes_len_filters(kw_s):
                 existing_filtered_len.append(kw_s)
                 continue

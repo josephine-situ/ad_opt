@@ -714,11 +714,15 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
         print(f"  Warning: No embedding columns found for method '{embedding_method}'")
 
 
-def get_conversion_rates(by_reg=False):
+def get_conversion_rates(by_reg=False, base_dir=None):
 
     # Use path relative to the project root
-    project_root = Path(__file__).resolve().parents[1]
-    loc_file = project_root / "data/reports/Location report.csv"
+    if base_dir is None:
+        project_root = Path(__file__).resolve().parents[1]
+        loc_file = project_root / "data/reports/Location report.csv"
+    else:
+        loc_file = Path(base_dir) / "reports/Location report.csv"
+        
     loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
     loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
 

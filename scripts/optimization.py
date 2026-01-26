@@ -265,7 +265,7 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_conv=False):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_conv=False, base_dir=None):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
@@ -295,7 +295,7 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
     # Objective
     if max_conv:
         # Maximize conversions
-        conv_rates = get_conversion_rates(by_reg=True)
+        conv_rates = get_conversion_rates(by_reg=True, base_dir=base_dir)
         X = X.merge(
             conv_rates,
             on='Region',
@@ -460,7 +460,7 @@ def main():
     # Optimize bids using Gurobi
     model_path = f'models/{args.course}_xgb_clicks_model.joblib'
     X = X[:10]  # For testing with a smaller subset
-    model, cost_vars, pred_vars, X = optimize_bids(X, model_path, kw_df=kw_df)
+    model, cost_vars, pred_vars, X = optimize_bids(X, model_path, kw_df=kw_df, base_dir=base_dir)
 
     # Extract solution and validate predictions
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X)
