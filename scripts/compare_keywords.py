@@ -12,8 +12,7 @@ This script:
 7. Prints summary statistics (tee-logged)
 
 Usage:
-    python scripts/compare_keywords.py
-    python scripts/compare_keywords.py --input data/gkp/semrush_new_kws.csv --output data/gkp/keywords_classified.csv
+    python scripts/compare_keywords.py --course gen_ai
 """
 
 import argparse

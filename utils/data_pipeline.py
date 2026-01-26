@@ -51,7 +51,7 @@ def load_and_combine_keyword_data(data_dir=None):
     }
     kw_df = kw_df.rename(columns={k: v for k, v in rename_map.items() if k in kw_df.columns})
 
-    required_cols = {'Day', 'Keyword', 'Match type', 'Campaign', 'Clicks', 'Avg. CPC'}
+    required_cols = {'Day', 'Keyword', 'Match type', 'Campaign', 'Clicks', 'Cost'}
     missing = sorted(required_cols - set(kw_df.columns))
     if missing:
         raise ValueError(
@@ -63,13 +63,12 @@ def load_and_combine_keyword_data(data_dir=None):
     kw_df = kw_df.dropna(subset=['Day'])
 
     # Ensure numeric types (some exports may include currency formatting)
-    for col in ['Clicks', 'Avg. CPC', 'Cost']:
+    for col in ['Clicks', 'Cost']:
         if kw_df[col].dtype == 'object':
             kw_df[col] = kw_df[col].astype(str).apply(clean_currency)
         kw_df[col] = pd.to_numeric(kw_df[col], errors='coerce')
 
     kw_df['Clicks'] = kw_df['Clicks'].fillna(0)
-    kw_df['Avg. CPC'] = kw_df['Avg. CPC'].fillna(0)
     kw_df['Cost'] = kw_df['Cost'].fillna(0)
 
     # Keep only rows where Clicks > 0
@@ -103,7 +102,7 @@ def format_keyword_data(kw_df, regions_only=False):
         kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
         kw_df['Day'] = pd.to_datetime(kw_df['Day'])
         
-        kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Cost', 'Clicks']].copy()
+        kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Cost', 'Clicks']].copy()
         
         return kw_df
 
@@ -636,7 +635,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
         'last_month_searches', 'three_month_avg', 'six_month_avg',
         'mom_change', 'search_trend',
         'Competition (indexed value)', 
-        'Top of page bid (low range)', 'Top of page bid (high range)', 'Avg. CPC', 'Cost'
+        'Top of page bid (low range)', 'Top of page bid (high range)', 'Cost'
     ] + embedding_cols
     
     # Check for missing required columns
