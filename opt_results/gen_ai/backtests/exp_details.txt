@@ -1,0 +1,11 @@
+1: grid search on masked existing kws over xmax and alpha
+2: masked existing kws, comparing full budget w/ reduced
+4: grid search on masked existing kws with reduced budget, higher xmax
+5: flexible budget per region, existing kws
+6: grid search over total budget, flexible budget per region, existing kws
+7: grid search over total budget, flexible budget per region, new kws
+8: grid search over total budget, flexible budget per region w/ ordered budget constraint, existing kws
+9: 90% masking (not used)
+10 (current best): grid search over total budget, flexible budget per region w/ ordered budget constraint, new kws
+11: Only optimize once per week (not used)
+12: max conv, new kws
