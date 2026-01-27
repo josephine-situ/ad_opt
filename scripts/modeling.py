@@ -108,7 +108,7 @@ def train_xgb_mse(df_train, df_test, features, target, param_grid):
     train_metrics = evaluate_model(best_model, X_train, y_train)
     print(f"Training metrics: {train_metrics}")
     test_metrics = evaluate_model(best_model, X_test, y_test)
-    print(f"Evaluation metrics: {test_metrics}")
+    print(f"Test metrics: {test_metrics}")
 
     return best_model
 

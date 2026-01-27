@@ -26,6 +26,7 @@ from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
 from utils.data_pipeline import format_keyword_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES_MAP
+from config import COURSE_CONFIG
 
 def get_args():
     p = argparse.ArgumentParser()
@@ -35,13 +36,15 @@ def get_args():
     p.add_argument("--day", default=None)
     
     # Updated to loop over budget instead
-    p.add_argument("--budget", type=float, nargs='+', default=[300, 350, 400, 450, 500, 550])
+    p.add_argument("--budget", type=float, nargs='+', default=None)
 
     p.add_argument("--exp-name", default="exp4", help="Experiment name")
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     
     args = p.parse_args()
+    if args.budget is None:
+        args.budget = COURSE_CONFIG[args.course]['budgets']
     return args
 
 

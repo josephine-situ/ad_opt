@@ -2,7 +2,7 @@
 #SBATCH --job-name=adopt-backtest
 #SBATCH --partition=mit_normal
 #SBATCH --time=12:00:00
-#SBATCH --mem=16G
+#SBATCH --mem=128G
 #SBATCH --cpus-per-task=16
 #SBATCH --array=0-30%2
 #SBATCH --output=logs/backtest_%A_%a.out
@@ -41,6 +41,6 @@ PY
 
 EXP_NAME="${1:-backtests}"
 echo "Running backtest_daily.py --day $DAY --exp-name $EXP_NAME"
-python -u scripts/backtest_daily.py --day "$DAY" --exp-name "$EXP_NAME" --budget 300 350 400 450 500 550 --masked
+python -u scripts/backtest_daily.py --day "$DAY" --order-budget --course gen_ai --exp-name "$EXP_NAME"
 
 echo "End: $(date)"

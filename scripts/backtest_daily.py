@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.optimization import create_feature_matrix, extract_solution, optimize_bids
 from scripts.modeling import _to_float32_csr, train_best_model
 from utils.date_features import COURSE_START_DATES_MAP
+from config import COURSE_CONFIG
 
 
 def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path, base_dir: Path, course_start_dts: list) -> pd.DataFrame:
@@ -94,7 +95,7 @@ def main():
     p.add_argument("--start", default="2025-12-01")
     p.add_argument("--end", default="2025-12-03")
     p.add_argument("--day", default=None)
-    p.add_argument("--budget", type=float, nargs='+', default=[300, 350, 400, 450, 500, 550], help="Total budgets to test")
+    p.add_argument("--budget", type=float, nargs='+', default=None, help="Total budgets to test")
 
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
@@ -105,6 +106,9 @@ def main():
     p.add_argument("--course", default="gen_ai", help="Course name")
 
     args = p.parse_args()
+
+    if args.budget is None:
+        args.budget = COURSE_CONFIG[args.course]['budgets']
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_conv = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_conv
     

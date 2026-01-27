@@ -80,6 +80,20 @@ def load_and_combine_keyword_data(data_dir=None):
     return kw_df
 
 
+def _extract_region_from_campaign(campaign):
+    if pd.isna(campaign):
+        return None
+    parts = [p.strip() for p in str(campaign).split('-')]
+    for part in parts:
+        if ('USA' in part) or ('US' in part) or (part == 'US'):
+            return 'USA'
+        for region in ['A', 'B', 'C']:
+            if part == region or part.startswith(f"{region} ") or \
+               part.startswith(f"{region}/") or part.startswith(f"{region}("):
+                return region
+    return None
+
+
 def format_keyword_data(kw_df, regions_only=False):
     """
     Format and clean keyword data (campaigns, regions, keywords).
@@ -93,8 +107,11 @@ def format_keyword_data(kw_df, regions_only=False):
     print("[Step 2] Formatting keyword data...")
     
     kw_df['Campaign'] = kw_df['Campaign'].str.replace(r'\[.*?\]', '', regex=True)
-    kw_df['Region'] = kw_df['Campaign'].str.split('-').str[-1].str.strip()
-    kw_df['Region'] = kw_df['Region'].replace({'USA and CA': 'USA'})
+    kw_df['Region'] = kw_df['Campaign'].apply(_extract_region_from_campaign)
+
+    # Print unique regions
+    unique_regions = kw_df['Region'].unique().tolist()
+    print(f"  Found {len(unique_regions)} unique regions: {unique_regions}")
 
     if regions_only:
         return kw_df

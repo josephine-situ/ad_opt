@@ -7,16 +7,17 @@ import numpy as np
 import holidays
 import datetime
 
+try:
+    from config import COURSE_CONFIG
+except ImportError:
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent))
+    from config import COURSE_CONFIG
 
-# Course start dates (fixed)
-COURSE_START_DATES = ['2024-10-15', '2025-02-10', '2025-09-29', '2026-02-09']
-
-COURSE_START_DATES_MAP = {
-    'gen_ai': COURSE_START_DATES,
-    'ml': [],
-    'sys_eng': [],
-}
-
+COURSE_START_DATES_MAP = {k: v['start_dates'] for k, v in COURSE_CONFIG.items()}
+COURSE_MIN_DATES = {k: v['min_date'] for k, v in COURSE_CONFIG.items()}
+COURSE_START_DATES = COURSE_START_DATES_MAP['gen_ai']
 
 def _region_to_country_code(r):
     """

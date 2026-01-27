@@ -30,7 +30,7 @@ from utils import (
     save_outputs,
     setup_tee_logging,
 )
-from utils.date_features import COURSE_START_DATES_MAP
+from utils.date_features import COURSE_START_DATES_MAP, COURSE_MIN_DATES
 
 
 def load_or_cache(func, cache_path, force_reload=False, *args, **kwargs):
@@ -174,7 +174,8 @@ def main():
             filter_data_by_date,
             cache_path / 'step4_filtered.parquet',
             args.force_reload,
-            kw_df
+            kw_df,
+            COURSE_MIN_DATES.get(args.course, '2024-11-03')
         )
         
         print("\n[Step 5] Load GKP data...")
@@ -198,7 +199,7 @@ def main():
         
         print("\n[Step 6.5] Remove outlier rows...")
         cleaned_df = load_or_cache(
-            lambda df: df[df['Avg. CPC'] < 50],  # Example: remove rows with CPC >= 10,000
+            lambda df: df[df['Avg. CPC'] < 50] if 'Avg. CPC' in df.columns else df,  # Example: remove rows with CPC >= 10,000
             cache_path / 'step6_5_cleaned.parquet',
             args.force_reload,
             merged_df

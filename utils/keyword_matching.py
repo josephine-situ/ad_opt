@@ -89,8 +89,12 @@ def normalize_kw_similar_words(keyword: str) -> str:
     """
     kw = normalize_kw_basic(keyword)
 
-    # Keep letters/numbers/spaces/apostrophes; turn other punctuation into spaces.
-    kw = re.sub(r"[^a-z0-9\s']+", ' ', kw)
+    # Remove + from keywords (e.g. +machine +learning -> machine learning)
+    kw = kw.replace('+', '')
+
+    # Keep letters/numbers/spaces; turn other punctuation (including ') into spaces.
+    # This handles ''boosting machine learning'' -> boosting machine learning
+    kw = re.sub(r"[^a-z0-9\s]+", ' ', kw)
     tokens = [t for t in kw.split() if t]
 
     # Phrase normalization: artificial intelligence -> ai
@@ -99,6 +103,10 @@ def normalize_kw_similar_words(keyword: str) -> str:
     while i < len(tokens):
         if i + 1 < len(tokens) and tokens[i] == 'artificial' and tokens[i + 1] == 'intelligence':
             out.append('ai')
+            i += 2
+            continue
+        if i + 1 < len(tokens) and tokens[i] == 'machine' and tokens[i + 1] == 'learning':
+            out.append('ml')
             i += 2
             continue
         out.append(tokens[i])

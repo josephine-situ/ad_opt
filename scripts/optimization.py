@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
 from tidy_get_data import load_or_cache
+from scripts.modeling import _to_float32_csr # necessary to read model correctly
 
 def check_embeddings(embedding_df, base_dir=Path('data/gen_ai')):
     '''Test consistency of embeddings'''

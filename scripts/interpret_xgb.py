@@ -15,6 +15,8 @@ import joblib
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from scripts.modeling import _to_float32_csr
+
 # Configuration
 parser = argparse.ArgumentParser()
 parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
