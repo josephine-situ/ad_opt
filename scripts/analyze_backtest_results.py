@@ -370,9 +370,9 @@ def generate_origin_table(share_df):
     )
     return final_latex
 
-def generate_country_table(exp_name, budget, top_n=10):
+def generate_country_table(exp_name, budget, course="gen_ai", top_n=10):
     # Load all daily country files for this budget
-    run_dir = Path(f"opt_results/backtests/{exp_name}/budget_{budget}")
+    run_dir = Path(f"opt_results/{course}/backtests/{exp_name}/budget_{budget}")
     if not run_dir.exists():
         return None
         
@@ -824,7 +824,7 @@ def main():
          best_row = summary_df.loc[summary_df['improvement in clicks'].idxmax()]
          best_budget = best_row['Budget']
          
-         latex_country = generate_country_table(args.exp_name, int(best_budget))
+         latex_country = generate_country_table(args.exp_name, int(best_budget), args.course)
          if latex_country:
              out_country_tex = base_results_dir / "country_breakdown.tex"
              with open(out_country_tex, "w") as f:
