@@ -5,17 +5,18 @@
 This project implements a machine learning pipeline for optimizing daily spend per keyword, region, and match type in Google Ads. It includes data preprocessing, model training, and bid optimization using linear programming.
 
 ## Steps
-1. Get report from Google Ads (Search keyword - raw input to models.csv)
+1. Get reports from Google Ads (Search keyword - raw input to models.csv (saved), Search keyword - search terms (saved), and Location report (from Audiences, keywords and content > Locations)). Get Semrush keywords (Semrush > SEO > Keyword Magic Tool).
 2. Run compare_keywords.py to combine new and existing keywords and search terms.
 3. Copy and paste these keywords into Google Keyword Planner (change to Google and search partners) to get historical search popularity and competitiveness indices.
-4. Run `python scripts/tidy_get_data.py --force-reload`
-5. Run `modeling.py`
-6. Run `optimization.py` (through `submit_bid_optimization_job.sh`)
+4. Adjust the course start dates and course min dates in `date_features.py`.
+5. Run `python scripts/tidy_get_data.py --course gen_ai --force-reload`
+6. Run `modeling.py`. Here, you can run `python scripts/interpret_xgb.py --course gen_ai` to make sure the model makes sense.
+7. Run `optimization.py` (through `submit_bid_optimization_job.sh` or do a small run)
 
-For the backtest, after step 4:
-5. Run `backtest_daily.py` (through `submit_backtest.sh`)
-6. Run `backtest_eval.py`
-7. Run `analyze_backtest_results.py`
+For the backtest, after step 5:
+6. Run `backtest_daily.py` (through `submit_backtest.sh`)
+7. Run `backtest_eval.py`
+8. Run `analyze_backtest_results.py`
 
 ## Quick Start
 
