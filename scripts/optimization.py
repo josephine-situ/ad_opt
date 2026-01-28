@@ -281,8 +281,8 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
 
     model = gp.Model("max_clicks")
     # model.setParam('OutputFlag', 1)
-    model.setParam('TimeLimit', 300)
-    # model.setParam('MIPGap', 0.02)
+    model.setParam('TimeLimit', 600)
+    model.setParam('MIPGap', 0.01)
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X)
 
