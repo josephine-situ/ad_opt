@@ -142,6 +142,7 @@ def main():
         
         pred_act_clicks = model.predict(obs[features])
         pred_act_base = model.predict(obs_zero[features])
+        print(f"  Actual Clicks Prediction: {pred_act_clicks.sum():.2f}, Base Prediction: {pred_act_base.sum():.2f}, Observed: {obs['Clicks'].sum():.2f}")
         val_act_diff = pred_act_clicks - pred_act_base
         val_act_clicks = val_act_diff.sum()
         
@@ -194,6 +195,7 @@ def main():
             X_day_zero = X_day.copy()
             X_day_zero["Cost"] = 0.0
             pred_opt_base = model.predict(X_day_zero[features])
+            print(f"  Budget {b}: Opt Clicks Prediction: {pred_opt.sum():.2f}, Base Prediction: {pred_opt_base.sum():.2f}")
             
             # Metrics
             pred_opt_lift = pred_opt - pred_opt_base
