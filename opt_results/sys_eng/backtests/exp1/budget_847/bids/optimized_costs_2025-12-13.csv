@@ -1,0 +1,7 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+capcprc,USA,Phrase match,existing searches,160.49561251607184,172.37430084310003,169.10210860333868,172.37431,-1.2511392156966394e-05
+capcprc,B,Phrase match,existing searches,0.9856184940884023,3.4948222765800003,0.04375101422038119,3.4948227,-4.6397480923943135e-07
+maintenance and reliability engineering online course,USA,Exact match,existing searches,1.8856184303467196,1.2919954106000007,0.31700557915239935,1.2919955,-1.1476010675082193e-07
+protection and control engineer career,USA,Phrase match,existing searches,223.91561107834218,395.3109845303,394.3922011040152,395.31097,1.0409206254280434e-05
+protection and control engineer career,A,Phrase match,existing searches,223.9156110783422,419.25563901500004,418.07846110896367,419.25565,-6.73695308250899e-06
+protection and control engineer career,B,Phrase match,existing searches,223.9156110783422,421.00810923000006,419.63569118400244,421.00812,-8.445781190857815e-06

@@ -1,0 +1,5 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+capcprc,B,Phrase match,existing searches,127.57564800254441,172.751211925864,169.89197234761693,172.75119,2.174031712343094e-05
+distance training courses,USA,Phrase match,existing searches,223.9256483039418,378.639533850151,377.31268164773553,378.63953,7.482963496840966e-06
+distance training courses,A,Exact match,existing searches,223.9256483039418,378.25716959565096,377.11955522625857,378.25717,-2.035208410688938e-06
+professional engineer certification usa,USA,Broad match,existing searches,223.9256483039418,370.75187084261404,368.99695143286215,370.7519,-2.1247229710752435e-05
