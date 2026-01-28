@@ -559,6 +559,20 @@ def main():
 
     full_results = pd.read_csv(eval_csv)
     
+    # Handle different evaluation formats
+    if 'Budget' not in full_results.columns:
+        print(f"Available columns: {list(full_results.columns)}")
+        # Check for old format with x_max/alpha columns
+        if 'x_max' in full_results.columns or 'alpha' in full_results.columns:
+            print("Detected old evaluation format with x_max/alpha columns.")
+            print("Please re-run backtest_eval.py to generate the new format with Budget column.")
+            print("The new format includes regional breakdowns, conversions, and purchases.")
+            return
+        else:
+            print("Warning: 'Budget' column not found. Assuming single budget scenario.")
+            # If there's no Budget column, assume a single budget scenario
+            full_results['Budget'] = 'N/A'
+    
     summary_rows = []
     regional_rows = []
     origin_rows = []
