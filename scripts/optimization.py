@@ -163,6 +163,24 @@ def embed_xgb(model, model_path, X, budget=400):
     cost_idx = list(feature_names).index('num__Cost')
     cost_scale = preprocessor.named_transformers_['num'].scale_[cost_idx]
 
+    # Check for NaN values in X_proc which would break tree traversal
+    if hasattr(X_proc, 'toarray'):
+        X_proc_dense = X_proc.toarray()
+    else:
+        X_proc_dense = X_proc
+    nan_mask = np.isnan(X_proc_dense)
+    if nan_mask.any():
+        nan_rows = np.where(nan_mask.any(axis=1))[0]
+        nan_cols = np.where(nan_mask.any(axis=0))[0]
+        print(f"[Warning] Found NaN values in {len(nan_rows)} rows, columns: {[feature_names[c] for c in nan_cols[:10]]}")
+        # Remove rows with NaN values
+        valid_rows = ~nan_mask.any(axis=1)
+        X_proc = X_proc_dense[valid_rows]
+        X = X[valid_rows].reset_index(drop=True)
+        # Also update valid_indices to reflect removed rows
+        valid_indices = [valid_indices[i] for i in range(len(valid_rows)) if valid_rows[i]]
+        print(f"[Info] Removed {(~valid_rows).sum()} rows with NaN values. {len(X)} rows remaining.")
+
     # 4. Parse Tree Structure
     def parse_single_tree(node, current_conds):
         """Helper to extract paths. Standard recursive parsing."""
@@ -202,6 +220,7 @@ def embed_xgb(model, model_path, X, budget=400):
     # 5. Build Gurobi Constraints
     cost_vars = [] 
     pred_vars = [] 
+    row_indices = []  # Track which rows are actually added
     
     MAX_LHS = (budget / cost_scale) * 1.05 
     MIN_LHS = 0.0
@@ -210,10 +229,55 @@ def embed_xgb(model, model_path, X, budget=400):
     K = len(X_proc)
 
     for i in tqdm(range(K), desc="Embedding Rows"):
+        
+        # Pre-scan: collect Cost bounds from trees with only one feasible leaf
+        # These bounds will be hard constraints (not Big-M relaxable)
+        hard_lower_bound = MIN_LHS
+        hard_upper_bound = MAX_LHS
+        row_feasible = True
+        
+        for t_idx, paths in enumerate(tree_paths):
+            feasible_leaves = []
+            
+            for leaf_idx, (conds, leaf_val) in enumerate(paths):
+                is_feasible = True
+                dynamic_conds = []
+                
+                for feat_idx, op, thr in conds:
+                    if feat_idx == cost_idx:
+                        dynamic_conds.append((op, thr))
+                    else:
+                        val = X_proc[i, feat_idx]
+                        if op == 'lt' and not (val < thr): 
+                            is_feasible = False; break
+                        elif op == 'ge' and not (val >= thr): 
+                            is_feasible = False; break
+                
+                if is_feasible:
+                    feasible_leaves.append((leaf_idx, leaf_val, dynamic_conds))
+            
+            # If only one leaf is feasible, its Cost conditions become hard constraints
+            if len(feasible_leaves) == 1:
+                _, _, dynamic_conds = feasible_leaves[0]
+                for op, thr in dynamic_conds:
+                    if op == 'lt':
+                        hard_upper_bound = min(hard_upper_bound, thr - margin)
+                    elif op == 'ge':
+                        hard_lower_bound = max(hard_lower_bound, thr + margin)
+            
+            if len(feasible_leaves) == 0:
+                row_feasible = False
+                break
+        
+        # Check if hard bounds are compatible
+        if not row_feasible or hard_lower_bound > hard_upper_bound:
+            # Skip this row - infeasible Cost bounds
+            continue
 
         # A. Decision Variable 'x' (Cost)
         current_cost = model.addVar(lb=0.0, name=f"Cost_{i}")
         cost_vars.append(current_cost)
+        row_indices.append(i)
 
         # B. Prediction Variable
         pred_var = model.addVar(lb=-GRB.INFINITY, name=f"pred_{i}")
@@ -260,10 +324,15 @@ def embed_xgb(model, model_path, X, budget=400):
                             M = bound - MIN_LHS
                             model.addConstr(lhs >= bound - M * (1 - z))
 
-            # Tree Aggregation
-            if leaf_vars:
-                model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
-                tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
+            # Tree Aggregation - every tree must have at least one feasible leaf
+            if not leaf_vars:
+                raise ValueError(
+                    f"Row {i}, Tree {t_idx}: No feasible leaves found. "
+                    f"This likely indicates NaN values in features that weren't caught earlier. "
+                    f"Check row data: {X.iloc[i].to_dict()}"
+                )
+            model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
+            tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
 
         # Prediction Constraint
         model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
@@ -277,6 +346,14 @@ def embed_xgb(model, model_path, X, budget=400):
             pred_var - base_pred <= np.expm1(historical_searches),
             name=f"search_volume_cap_{i}"
         )
+    
+    # Report rows skipped due to infeasible Cost bounds
+    skipped_rows = K - len(row_indices)
+    if skipped_rows > 0:
+        print(f"[Info] Skipped {skipped_rows} rows due to infeasible Cost bounds from conflicting tree constraints.")
+    
+    # Filter X to only include feasible rows
+    X = X.iloc[row_indices].reset_index(drop=True)
     
     model.update()
     return cost_vars, pred_vars, X
