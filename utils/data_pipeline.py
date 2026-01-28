@@ -761,3 +761,84 @@ def get_conversion_rates(by_reg=False, base_dir=None):
         loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
 
     return loc_df
+
+
+def get_purchase_conversion_rate(by_reg=False, base_dir=None):
+    """
+    Calculate purchase conversion rate (purchases / clicks) by region.
+    
+    Uses the Purchase report to get purchase counts and the historic data to get total clicks.
+    
+    Args:
+        by_reg (bool): If True, return region-level rates. If False, return location-level rates.
+        base_dir (Path): Base directory for data files.
+        
+    Returns:
+        pd.DataFrame: DataFrame with Region and Purch_rate columns (if by_reg=True),
+                      or Location, Region, Click_prop, Purch_rate columns (if by_reg=False).
+    """
+    if base_dir is None:
+        project_root = Path(__file__).resolve().parents[1]
+        base_dir = project_root / "data"
+    else:
+        base_dir = Path(base_dir)
+    
+    # Load purchase report (skipping first 2 rows which are title and date range)
+    purch_file = base_dir / "reports/Purchase report.csv"
+    if not purch_file.exists():
+        print(f"[Warning] Purchase report not found at {purch_file}. Returning empty rates.")
+        if by_reg:
+            return pd.DataFrame(columns=['Region', 'Purch_rate'])
+        else:
+            return pd.DataFrame(columns=['Location', 'Region', 'Click_prop', 'Purch_rate'])
+    
+    purch_df = pd.read_csv(purch_file, skiprows=2)
+    purch_df.columns = purch_df.columns.str.strip()
+    
+    # Extract region from campaign name
+    purch_df['Region'] = purch_df['Campaign'].apply(_extract_region_from_campaign)
+    
+    # Convert Conversions to numeric (handle potential formatting)
+    purch_df['Conversions'] = pd.to_numeric(purch_df['Conversions'], errors='coerce').fillna(0)
+    
+    # Aggregate purchases by region
+    purch_by_region = purch_df.groupby('Region')['Conversions'].sum().reset_index()
+    purch_by_region = purch_by_region.rename(columns={'Conversions': 'Purchases'})
+    
+    # Load historic data to get total clicks by region
+    hist_file = base_dir / "clean/ad_opt_data_bert.csv"
+    if not hist_file.exists():
+        # Fallback to raw data
+        print(f"[Warning] Historic data not found at {hist_file}. Using location report for clicks.")
+        loc_file = base_dir / "reports/Location report.csv"
+        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
+        clicks_by_region = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+    else:
+        hist_df = pd.read_csv(hist_file)
+        clicks_by_region = hist_df.groupby('Region')['Clicks'].sum().reset_index()
+    
+    # Merge purchases with clicks
+    rate_df = purch_by_region.merge(clicks_by_region, on='Region', how='outer').fillna(0)
+    rate_df['Purch_rate'] = rate_df['Purchases'] / rate_df['Clicks'].replace(0, np.nan)
+    rate_df['Purch_rate'] = rate_df['Purch_rate'].fillna(0)
+    
+    if by_reg:
+        return rate_df[['Region', 'Purch_rate']].copy()
+    else:
+        # For location-level, we need to merge with location data
+        loc_file = base_dir / "reports/Location report.csv"
+        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
+        
+        # Calculate click proportion within each region
+        loc_df = loc_df.groupby(['Location', 'Region'])['Clicks'].sum().reset_index()
+        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
+        
+        # Merge with purchase rates
+        loc_df = loc_df.merge(rate_df[['Region', 'Purch_rate']], on='Region', how='left')
+        loc_df['Purch_rate'] = loc_df['Purch_rate'].fillna(0)
+        
+        return loc_df[['Location', 'Region', 'Click_prop', 'Purch_rate']].copy()

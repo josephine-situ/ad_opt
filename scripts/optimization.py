@@ -266,7 +266,7 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_conv=False, base_dir=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_conv=False, max_purch=False, base_dir=None):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
@@ -294,7 +294,18 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         )
 
     # Objective
-    if max_conv:
+    if max_purch:
+        # Maximize purchases
+        from utils.data_pipeline import get_purchase_conversion_rate
+        purch_rates = get_purchase_conversion_rate(by_reg=True, base_dir=base_dir)
+        X = X.merge(
+            purch_rates,
+            on='Region',
+            how='left'
+        )
+        X['Purch_rate'] = X['Purch_rate'].fillna(0)
+        model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Purch_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
+    elif max_conv:
         # Maximize conversions
         conv_rates = get_conversion_rates(by_reg=True, base_dir=base_dir)
         X = X.merge(

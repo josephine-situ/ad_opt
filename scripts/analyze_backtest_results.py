@@ -22,11 +22,12 @@ def generate_performance_table(summary_df):
     
     df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['se clicks (opt)']:,.1f}", axis=1)
     df['avg conv (opt)'] = df.apply(lambda row: f"{row['avg conv (opt)']:,.1f} $\\pm$ {row['se conv (opt)']:,.1f}", axis=1)
+    df['avg purch (opt)'] = df.apply(lambda row: f"{row['avg purch (opt)']:,.2f} $\\pm$ {row['se purch (opt)']:,.2f}", axis=1)
     df['avg cost (opt)'] = df.apply(lambda row: f"{row['avg cost (opt)']:,.2f} $\\pm$ {row['se cost (opt)']:,.2f}", axis=1)
     df['avg kws (opt)'] = df.apply(lambda row: f"{row['avg kws (opt)']:,.0f} $\\pm$ {row['se kws (opt)']:,.0f}", axis=1)
 
     # Percentage Metrics
-    for col in ['improvement in clicks', 'improvement in clicks/$', 'improvement in conv']:
+    for col in ['improvement in clicks', 'improvement in clicks/$', 'improvement in conv', 'improvement in purch']:
         if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
             
@@ -46,16 +47,18 @@ def generate_performance_table(summary_df):
             df.at[best_idx, col] = f"\\textbf{{{str(current_val)}}}"
 
     # --- COLUMN MAPPING ---
-    # Note: Added Conversions
+    # Note: Added Conversions and Purchases
     col_mapping = [
         ('Budget',                  ('', 'Budget')),
         ('avg clicks (opt)',        ('Opt', 'Clicks')),
         ('avg conv (opt)',          ('Opt', 'Conv')),
+        ('avg purch (opt)',         ('Opt', 'Purch')),
         ('avg cost (opt)',          ('Opt', 'Cost')),
         ('clicks/$ (opt)',          ('Opt', r'Clicks/\$')),
         ('avg kws (opt)',           ('Opt', 'Kws')),
         ('improvement in clicks',   ('Improvement', 'Clicks')),
         ('improvement in conv',     ('Improvement', 'Conv')),
+        ('improvement in purch',    ('Improvement', 'Purch')),
         ('improvement in clicks/$', ('Improvement', r'Clicks/\$'))
     ]
 
@@ -98,6 +101,8 @@ def generate_performance_table(summary_df):
         'se_clicks': summary_df['se clicks (act)'].iloc[0],
         'conv': summary_df['avg conv (act)'].iloc[0],
         'se_conv': summary_df['se conv (act)'].iloc[0],
+        'purch': summary_df['avg purch (act)'].iloc[0] if 'avg purch (act)' in summary_df.columns else 0,
+        'se_purch': summary_df['se purch (act)'].iloc[0] if 'se purch (act)' in summary_df.columns else 0,
         'cost': summary_df['avg cost (act)'].iloc[0],
         'se_cost': summary_df['se cost (act)'].iloc[0],
         'cpc': summary_df['clicks/$ (act)'].iloc[0],
@@ -109,6 +114,7 @@ def generate_performance_table(summary_df):
         fr"\multicolumn{{{total_cols}}}{{l}}{{\scriptsize \textbf{{Actual values:}} "
         f"Clicks: {fmt_mse(act_vals['clicks'], act_vals['se_clicks'])}, "
         f"Conv: {fmt_mse(act_vals['conv'], act_vals['se_conv'])}, "
+        f"Purch: {fmt_mse(act_vals['purch'], act_vals['se_purch'], 2)}, "
         f"Cost: {fmt_mse(act_vals['cost'], act_vals['se_cost'], 2, prefix=dollar_prefix)}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
         f"Kws: {fmt_mse(act_vals['kws'], act_vals['se_kws'], 0)}."
@@ -181,6 +187,7 @@ def generate_regional_table(share_df):
         col_order.append(f'Spend {r}')
         col_order.append(f'Clicks {r}')
         col_order.append(f'Conv {r}')
+        col_order.append(f'Purch {r}')
         
     df = df[[c for c in col_order if c in df.columns]]
 
@@ -289,6 +296,7 @@ def generate_origin_table(share_df):
         col_order.append(f'Spend {org}')
         col_order.append(f'Clicks {org}')
         col_order.append(f'Conv {org}')
+        col_order.append(f'Purch {org}')
     
     df = df[[c for c in col_order if c in df.columns]]
     
@@ -565,6 +573,8 @@ def main():
     se_clicks_act = act_df["t_Clicks_ActCost"].sem()
     avg_conv_act = act_df["Act_Conv"].mean()
     se_conv_act = act_df["Act_Conv"].sem()
+    avg_purch_act = act_df["Act_Purch"].mean() if "Act_Purch" in act_df.columns else 0
+    se_purch_act = act_df["Act_Purch"].sem() if "Act_Purch" in act_df.columns else 0
     avg_cost_act = act_df["Act_Cost"].mean()
     se_cost_act = act_df["Act_Cost"].sem()
 
@@ -573,9 +583,10 @@ def main():
 
     clicks_per_dollar_act = act_df["t_Clicks_ActCost"].sum() / act_df["Act_Cost"].sum() if act_df["Act_Cost"].sum() > 0 else 0
     
-    # Actual Regional Share (Spend & Conv & Clicks)
+    # Actual Regional Share (Spend & Conv & Clicks & Purch)
     total_act_cost = act_df["Act_Cost"].sum()
     total_act_conv = act_df["Act_Conv"].sum() if "Act_Conv" in act_df.columns else 0
+    total_act_purch = act_df["Act_Purch"].sum() if "Act_Purch" in act_df.columns else 0
     # Clicks are sum of t_Clicks_ActCost (Lift)
     total_act_clicks = act_df["t_Clicks_ActCost"].sum()
     
@@ -587,6 +598,7 @@ def main():
         
         col_conv = f"Act_Conv_Region_{reg}" # Only new schema has this
         col_click = f"Act_Clicks_Region_{reg}"
+        col_purch = f"Act_Purch_Region_{reg}"
         
         # Spend Share
         if col_cost in act_df.columns:
@@ -605,6 +617,12 @@ def main():
              act_reg_row[f"Clicks {reg}"] = act_df[col_click].sum() / total_act_clicks if total_act_clicks > 0 else 0
         else:
              act_reg_row[f"Clicks {reg}"] = 0
+             
+        # Purch Share
+        if col_purch in act_df.columns:
+             act_reg_row[f"Purch {reg}"] = act_df[col_purch].sum() / total_act_purch if total_act_purch > 0 else 0
+        else:
+             act_reg_row[f"Purch {reg}"] = 0
 
     regional_rows.append(act_reg_row)
     
@@ -621,6 +639,7 @@ def main():
         # Clicks & Conv (New)
         col_click = f"Act_Clicks_Origin_{org_key}"
         col_conv = f"Act_Conv_Origin_{org_key}"
+        col_purch = f"Act_Purch_Origin_{org_key}"
 
         if col_cost in act_df.columns:
             act_orig_row[f"Spend {org_key.capitalize()}"] = act_df[col_cost].sum() / total_act_cost if total_act_cost > 0 else 0
@@ -636,6 +655,11 @@ def main():
              act_orig_row[f"Conv {org_key.capitalize()}"] = act_df[col_conv].sum() / total_act_conv if total_act_conv > 0 else 0
         else:
              act_orig_row[f"Conv {org_key.capitalize()}"] = 0
+             
+        if col_purch in act_df.columns:
+             act_orig_row[f"Purch {org_key.capitalize()}"] = act_df[col_purch].sum() / total_act_purch if total_act_purch > 0 else 0
+        else:
+             act_orig_row[f"Purch {org_key.capitalize()}"] = 0
             
     origin_rows.append(act_orig_row)
 
@@ -648,6 +672,8 @@ def main():
         se_cost_opt = df_group["Opt_Cost"].sem()
         avg_conv_opt = df_group['Opt_Conv'].mean()
         se_conv_opt = df_group['Opt_Conv'].sem()
+        avg_purch_opt = df_group['Opt_Purch'].mean() if 'Opt_Purch' in df_group.columns else 0
+        se_purch_opt = df_group['Opt_Purch'].sem() if 'Opt_Purch' in df_group.columns else 0
 
         avg_kws_opt = df_group["N_Opt"].mean()
         se_kws_opt = df_group["N_Opt"].sem()
@@ -679,6 +705,7 @@ def main():
         imp_clicks = (avg_clicks_opt - avg_clicks_act) / avg_clicks_act if avg_clicks_act > 0 else 0
         imp_c_d = (clicks_per_dollar_opt - clicks_per_dollar_act) / clicks_per_dollar_act if clicks_per_dollar_act > 0 else 0
         imp_conv = (avg_conv_opt - avg_conv_act) / avg_conv_act if avg_conv_act > 0 else 0
+        imp_purch = (avg_purch_opt - avg_purch_act) / avg_purch_act if avg_purch_act > 0 else 0
 
         summary_rows.append({
             "Budget": budget,
@@ -688,18 +715,23 @@ def main():
             "se cost (opt)": se_cost_opt,
             "avg conv (opt)": avg_conv_opt,
             "se conv (opt)": se_conv_opt,
+            "avg purch (opt)": avg_purch_opt,
+            "se purch (opt)": se_purch_opt,
             "clicks/$ (opt)": clicks_per_dollar_opt,
             "avg kws (opt)": avg_kws_opt,
             "se kws (opt)": se_kws_opt,
             "improvement in clicks": imp_clicks,
             "improvement in clicks/$": imp_c_d,
             "improvement in conv": imp_conv,
+            "improvement in purch": imp_purch,
             "avg clicks (act)": avg_clicks_act,
             "se clicks (act)": se_clicks_act,
             "avg cost (act)": avg_cost_act,
             "se cost (act)": se_cost_act,
             "avg conv (act)": avg_conv_act,
             "se conv (act)": se_conv_act,
+            "avg purch (act)": avg_purch_act,
+            "se purch (act)": se_purch_act,
             "clicks/$ (act)": clicks_per_dollar_act,
             "avg n kws (act)": avg_kws_act,
             "se n kws (act)": se_kws_act
@@ -708,6 +740,7 @@ def main():
         # 2. Regional Share Metrics
         total_opt_cost_grp = df_group["Opt_Cost"].sum()
         total_opt_conv_grp = df_group["Opt_Conv"].sum() if "Opt_Conv" in df_group.columns else 0
+        total_opt_purch_grp = df_group["Opt_Purch"].sum() if "Opt_Purch" in df_group.columns else 0
         total_opt_clicks_grp = df_group["t_Clicks_OptCost"].sum()
         
         reg_row = {"Budget": budget}
@@ -718,6 +751,7 @@ def main():
             
             col_conv = f"Opt_Conv_Region_{reg}"
             col_click = f"Opt_Clicks_Region_{reg}"
+            col_purch = f"Opt_Purch_Region_{reg}"
             
             # Spend
             if col_cost in df_group.columns:
@@ -737,6 +771,12 @@ def main():
             else:
                 reg_row[f"Clicks {reg}"] = 0
                 
+            # Purch
+            if col_purch in df_group.columns:
+                reg_row[f"Purch {reg}"] = df_group[col_purch].sum() / total_opt_purch_grp if total_opt_purch_grp > 0 else 0
+            else:
+                reg_row[f"Purch {reg}"] = 0
+                
         regional_rows.append(reg_row)
         
         # 3. Origin Share Metrics
@@ -747,9 +787,10 @@ def main():
             if col_cost not in df_group.columns: col_cost = f"Opt_Cost_{org_key}"
             if col_cost not in df_group.columns and org_key == 'existing searches': col_cost = "Opt_Cost_existing_searches"
             
-            # Clicks & Conv
+            # Clicks & Conv & Purch
             col_click = f"Opt_Clicks_Origin_{org_key}"
             col_conv = f"Opt_Conv_Origin_{org_key}"
+            col_purch = f"Opt_Purch_Origin_{org_key}"
 
             if col_cost in df_group.columns:
                 orig_row[f"Spend {org_key.capitalize()}"] = df_group[col_cost].sum() / total_opt_cost_grp if total_opt_cost_grp > 0 else 0
@@ -765,6 +806,11 @@ def main():
                  orig_row[f"Conv {org_key.capitalize()}"] = df_group[col_conv].sum() / total_opt_conv_grp if total_opt_conv_grp > 0 else 0
             else:
                  orig_row[f"Conv {org_key.capitalize()}"] = 0
+                 
+            if col_purch in df_group.columns:
+                 orig_row[f"Purch {org_key.capitalize()}"] = df_group[col_purch].sum() / total_opt_purch_grp if total_opt_purch_grp > 0 else 0
+            else:
+                 orig_row[f"Purch {org_key.capitalize()}"] = 0
         
         origin_rows.append(orig_row)
 
