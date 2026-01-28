@@ -1,8 +1,8 @@
-Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
-courses for engineering students,USA,Phrase match,existing,1.5956266613312096,1.6021635886400003,0.24981335365464874,1.6021639,-3.2222578338902963e-07
-engineering courses at university,A,Phrase match,existing,6.785626836724045,6.326303766180001,4.658464835096321,6.326305,-1.1463871381067747e-06
-mit fundamentals of systems engineering,USA,Phrase match,existing searches,223.9156321685485,366.4971230604,365.7627963997669,366.4971,2.2230321860661206e-05
-mit fundamentals of systems engineering,USA,Broad match,existing searches,223.91563216854848,366.4971230604,365.4865633823223,366.4971,2.2230321860661206e-05
-modeling and simulation engineer,A,Phrase match,existing searches,6.785626836724045,4.02061846028,3.1546501732888803,4.020619,-4.5527786163290784e-07
-professional engineer certification usa,USA,Phrase match,existing searches,160.50563340792738,172.58686692771,171.80935396012347,172.58687,-1.3584228213403549e-06
-professional engineer certification usa,USA,Broad match,existing searches,223.91563216854848,366.6213734077,365.66048591599696,366.62134,3.5517074991275877e-05
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
+courses for engineering students,USA,Phrase match,existing,1.5956266613312096,1.6021635886400003,0.2498133536546487,1.6021639,-3.222257833890297e-07,0.0
+engineering courses at university,A,Phrase match,existing,6.785626836724045,6.326303766180001,4.658464835096321,6.326305,-1.1463871381067747e-06,3.841052
+mit fundamentals of systems engineering,USA,Phrase match,existing searches,223.9156321685485,366.4971230604,365.7627963997669,366.4971,2.223032186066121e-05,344.0735
+mit fundamentals of systems engineering,USA,Broad match,existing searches,223.91563216854848,366.4971230604,365.4865633823223,366.4971,2.223032186066121e-05,344.63586
+modeling and simulation engineer,A,Phrase match,existing searches,6.785626836724045,4.02061846028,3.1546501732888803,4.020619,-4.552778616329079e-07,2.6481514
+professional engineer certification usa,USA,Phrase match,existing searches,160.50563340792738,172.58686692771,171.80935396012347,172.58687,-1.3584228213403549e-06,173.21097
+professional engineer certification usa,USA,Broad match,existing searches,223.91563216854848,366.6213734077,365.66048591599696,366.62134,3.551707499127588e-05,377.81918
