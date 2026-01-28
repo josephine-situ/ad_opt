@@ -1,0 +1,9 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+mining engineering at tvet colleges,USA,Phrase match,existing searches,0.6514799384821544,1.40562542522,-3.73120434549179e-08,1.4056255,-3.73120434549179e-08
+mit opencourseware optimization methods,USA,Exact match,existing searches,221.68550159852776,302.16723727332004,301.6725662265862,302.16724,9.451950404582021e-07
+professional engineer certification usa,USA,Exact match,existing searches,221.68550159852776,302.91506281702,302.27274182645755,302.91507,-6.763058138403721e-06
+professional engineer certification usa,USA,Phrase match,existing searches,221.68550159852776,302.91506281702,302.02065119354205,302.91507,-6.763058138403721e-06
+protection and control engineer career,USA,Phrase match,existing searches,51.0655060492243,14.732911940920001,13.891918953764087,14.732912,-1.2267863169768134e-07
+protection and control engineer career,USA,Broad match,existing searches,126.29549928673944,80.79831377282001,79.89038822665073,80.79831,4.446648134148745e-06
+university undergraduate courses,USA,Exact match,existing,2.195504964985389,1.88988208114,0.6501262122282567,1.8898821,-6.56751963923341e-09
+university undergraduate courses,USA,Phrase match,existing,2.195504964985389,2.1679411693400006,0.43433256586252256,2.1679409,3.1431375546731033e-07

@@ -1,0 +1,8 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+access to engineering course,USA,Exact match,existing,2.195499350519857,1.1541233112400004,0.40290505190543624,1.154123,3.625934550388621e-07
+courses for engineering students,USA,Broad match,existing,6.285499387859608,3.2533761738400004,2.19203059660001,3.253376,1.6675992231540704e-07
+mit engineering courses,A,Broad match,existing searches,15.225499642539198,9.041374067269999,7.5770298041932165,9.041374,-1.392729700455675e-07
+mit fundamentals of systems engineering,USA,Exact match,existing searches,221.48549817096966,260.50701337313,259.58008002495114,260.50702,-5.669838742505817e-06
+mit fundamentals of systems engineering,USA,Phrase match,existing searches,221.48549817096966,261.62711008612996,260.6913671714533,261.6271,4.373239335109247e-06
+professional engineer certification usa,USA,Exact match,existing searches,221.48549817096966,259.26238770739997,258.23909886138404,259.2624,-2.4293187834700802e-06
+protection and control engineer career,USA,Broad match,existing searches,158.55550037796343,110.6629357457,109.57474113701164,110.66294,-5.233303909335518e-06
