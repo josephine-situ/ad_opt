@@ -1,0 +1,4 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+1 year course machine learning,USA,Phrase match,new,102.99746191559235,17.366884297800002,16.611892766427932,17.366884,6.623261938898395e-08
+1 year course machine learning,USA,Broad match,new,102.99746191559235,43.501918274000005,42.79661305530341,43.501923,-4.333421870228449e-06
+184 applied machine learning course description,USA,Exact match,new,102.99746191559235,11.942522463400001,11.303914782602424,11.942522,4.144498060298929e-07
