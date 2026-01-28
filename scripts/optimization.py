@@ -109,6 +109,12 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
     gkp_df = impute_missing_data(gkp_df)
     X = merge_with_ads_data(X, gkp_df)
 
+    # Filter out keywords with 0 historical searches
+    rows_before = len(X)
+    X = X[X['last_month_searches'] > 0].reset_index(drop=True) # np.log1p(0) = 0
+    rows_removed = rows_before - len(X)
+    print(f"[Info] Removed {rows_removed} rows with 0 historical searches ({rows_removed/rows_before*100:.2f}% of data).")
+
     # Get keyword embeddings
     emb_df = get_emb_from_pipeline(keywords, base_dir)
     X = X.merge(emb_df, on='Keyword', how='left')
@@ -261,7 +267,16 @@ def embed_xgb(model, model_path, X, budget=400):
 
         # Prediction Constraint
         model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
-        pred_vars.append(pred_var) 
+        pred_vars.append(pred_var)
+
+        # Constraint: pred_opt - pred_base < historical_searches. Preds are on clicks scale, last_month_searches is log1p.
+        # This ensures predicted incremental clicks don't exceed search volume
+        historical_searches = X.iloc[i]['last_month_searches']
+        base_pred = pred_clicks_cost0[valid_indices[i]]
+        model.addConstr(
+            pred_var - base_pred <= np.expm1(historical_searches),
+            name=f"search_volume_cap_{i}"
+        )
     
     model.update()
     return cost_vars, pred_vars, X
