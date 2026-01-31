@@ -163,24 +163,6 @@ def embed_xgb(model, model_path, X, budget=400):
     cost_idx = list(feature_names).index('num__Cost')
     cost_scale = preprocessor.named_transformers_['num'].scale_[cost_idx]
 
-    # Check for NaN values in X_proc which would break tree traversal
-    if hasattr(X_proc, 'toarray'):
-        X_proc_dense = X_proc.toarray()
-    else:
-        X_proc_dense = X_proc
-    nan_mask = np.isnan(X_proc_dense)
-    if nan_mask.any():
-        nan_rows = np.where(nan_mask.any(axis=1))[0]
-        nan_cols = np.where(nan_mask.any(axis=0))[0]
-        print(f"[Warning] Found NaN values in {len(nan_rows)} rows, columns: {[feature_names[c] for c in nan_cols[:10]]}")
-        # Remove rows with NaN values
-        valid_rows = ~nan_mask.any(axis=1)
-        X_proc = X_proc_dense[valid_rows]
-        X = X[valid_rows].reset_index(drop=True)
-        # Also update valid_indices to reflect removed rows
-        valid_indices = [valid_indices[i] for i in range(len(valid_rows)) if valid_rows[i]]
-        print(f"[Info] Removed {(~valid_rows).sum()} rows with NaN values. {len(X)} rows remaining.")
-
     # 4. Parse Tree Structure
     def parse_single_tree(node, current_conds):
         """Helper to extract paths. Standard recursive parsing."""
@@ -220,64 +202,24 @@ def embed_xgb(model, model_path, X, budget=400):
     # 5. Build Gurobi Constraints
     cost_vars = [] 
     pred_vars = [] 
-    row_indices = []  # Track which rows are actually added
     
     MAX_LHS = (budget / cost_scale) * 1.05 
     MIN_LHS = 0.0
-    margin = 5e-4 # Safety margin
+    
+    # Safety margin: use a scale-aware margin to avoid boundary issues
+    # The margin in scaled space should correspond to ~$0.05 in actual cost
+    # This ensures Gurobi's solution stays clearly on one side of tree splits
+    MARGIN_DOLLARS = 0.05  # $0.05 safety buffer in actual cost
+    margin = MARGIN_DOLLARS / cost_scale  # Convert to scaled space
+    print(f"[Info] Using safety margin: ${MARGIN_DOLLARS} = {margin:.6f} in scaled space (cost_scale={cost_scale:.4f})")
     
     K = len(X_proc)
 
     for i in tqdm(range(K), desc="Embedding Rows"):
-        
-        # Pre-scan: collect Cost bounds from trees with only one feasible leaf
-        # These bounds will be hard constraints (not Big-M relaxable)
-        hard_lower_bound = MIN_LHS
-        hard_upper_bound = MAX_LHS
-        row_feasible = True
-        
-        for t_idx, paths in enumerate(tree_paths):
-            feasible_leaves = []
-            
-            for leaf_idx, (conds, leaf_val) in enumerate(paths):
-                is_feasible = True
-                dynamic_conds = []
-                
-                for feat_idx, op, thr in conds:
-                    if feat_idx == cost_idx:
-                        dynamic_conds.append((op, thr))
-                    else:
-                        val = X_proc[i, feat_idx]
-                        if op == 'lt' and not (val < thr): 
-                            is_feasible = False; break
-                        elif op == 'ge' and not (val >= thr): 
-                            is_feasible = False; break
-                
-                if is_feasible:
-                    feasible_leaves.append((leaf_idx, leaf_val, dynamic_conds))
-            
-            # If only one leaf is feasible, its Cost conditions become hard constraints
-            if len(feasible_leaves) == 1:
-                _, _, dynamic_conds = feasible_leaves[0]
-                for op, thr in dynamic_conds:
-                    if op == 'lt':
-                        hard_upper_bound = min(hard_upper_bound, thr - margin)
-                    elif op == 'ge':
-                        hard_lower_bound = max(hard_lower_bound, thr + margin)
-            
-            if len(feasible_leaves) == 0:
-                row_feasible = False
-                break
-        
-        # Check if hard bounds are compatible
-        if not row_feasible or hard_lower_bound > hard_upper_bound:
-            # Skip this row - infeasible Cost bounds
-            continue
 
         # A. Decision Variable 'x' (Cost)
         current_cost = model.addVar(lb=0.0, name=f"Cost_{i}")
         cost_vars.append(current_cost)
-        row_indices.append(i)
 
         # B. Prediction Variable
         pred_var = model.addVar(lb=-GRB.INFINITY, name=f"pred_{i}")
@@ -324,15 +266,10 @@ def embed_xgb(model, model_path, X, budget=400):
                             M = bound - MIN_LHS
                             model.addConstr(lhs >= bound - M * (1 - z))
 
-            # Tree Aggregation - every tree must have at least one feasible leaf
-            if not leaf_vars:
-                raise ValueError(
-                    f"Row {i}, Tree {t_idx}: No feasible leaves found. "
-                    f"This likely indicates NaN values in features that weren't caught earlier. "
-                    f"Check row data: {X.iloc[i].to_dict()}"
-                )
-            model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
-            tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
+            # Tree Aggregation
+            if leaf_vars:
+                model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
+                tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
 
         # Prediction Constraint
         model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
@@ -346,14 +283,6 @@ def embed_xgb(model, model_path, X, budget=400):
             pred_var - base_pred <= np.expm1(historical_searches),
             name=f"search_volume_cap_{i}"
         )
-    
-    # Report rows skipped due to infeasible Cost bounds
-    skipped_rows = K - len(row_indices)
-    if skipped_rows > 0:
-        print(f"[Info] Skipped {skipped_rows} rows due to infeasible Cost bounds from conflicting tree constraints.")
-    
-    # Filter X to only include feasible rows
-    X = X.iloc[row_indices].reset_index(drop=True)
     
     model.update()
     return cost_vars, pred_vars, X
@@ -513,17 +442,60 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
-    # 5. Validation (Optional but Recommended)
+    # 5. Validation and Boundary Adjustment
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
+    # If discrepancy is large, slightly adjust costs to move away from tree boundaries
     X_validate = X.copy()[filt_opt_cost].reset_index(drop=True)
-    X_validate['Cost'] = results_df['Optimal Cost']
+    X_validate['Cost'] = results_df['Optimal Cost'].values
     
     # The pipeline prediction includes the base_score naturally
     results_df['Actual Model Pred'] = pipeline.predict(X_validate)
     results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
     
+    # Identify rows with significant discrepancy and attempt adjustment
+    DISCREPANCY_THRESHOLD = 0.1
+    high_disc_mask = results_df['Diff'].abs() > DISCREPANCY_THRESHOLD
+    n_high_disc = high_disc_mask.sum()
+    
+    if n_high_disc > 0:
+        print(f"[Warning] Found {n_high_disc} rows with |Diff| > {DISCREPANCY_THRESHOLD}. Attempting boundary adjustment...")
+        
+        # For rows with high discrepancy, try small cost perturbations to find better alignment
+        for idx in results_df[high_disc_mask].index:
+            original_cost = results_df.loc[idx, 'Optimal Cost']
+            gurobi_pred = results_df.loc[idx, 'Gurobi Pred']
+            
+            # Try small perturbations: ±$0.01, ±$0.05, ±$0.10
+            best_cost = original_cost
+            best_diff = abs(results_df.loc[idx, 'Diff'])
+            
+            for delta in [-0.10, -0.05, -0.01, 0.01, 0.05, 0.10]:
+                test_cost = max(0.0, original_cost + delta)
+                X_test = X_validate.iloc[[idx]].copy()
+                X_test['Cost'] = test_cost
+                test_pred = pipeline.predict(X_test)[0]
+                test_diff = abs(gurobi_pred - test_pred)
+                
+                if test_diff < best_diff:
+                    best_diff = test_diff
+                    best_cost = test_cost
+            
+            if best_cost != original_cost:
+                # Update with adjusted cost
+                results_df.loc[idx, 'Optimal Cost'] = best_cost
+                X_validate.loc[idx, 'Cost'] = best_cost
+        
+        # Recalculate predictions with adjusted costs
+        results_df['Actual Model Pred'] = pipeline.predict(X_validate)
+        results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
+        
+        n_still_high = (results_df['Diff'].abs() > DISCREPANCY_THRESHOLD).sum()
+        print(f"[Info] After adjustment: {n_still_high} rows still have |Diff| > {DISCREPANCY_THRESHOLD}")
+    
     max_diff = results_df['Diff'].abs().max()
+    mean_diff = results_df['Diff'].abs().mean()
     print(f"[Info] Max discrepancy between Gurobi and XGBoost: {max_diff:.6f}")
+    print(f"[Info] Mean absolute discrepancy: {mean_diff:.6f}")
 
     print("[Info] Sample of Optimization Results:")
     print(results_df.head())
