@@ -140,9 +140,11 @@ def embed_xgb(model, model_path, X, budget=400):
     Embed XGBoost model into Gurobi.
     """
 
-    # 1. Load Model and Preprocessor
+    # 1. Load Model and Pipeline
     pipeline = joblib.load(model_path)
     booster = pipeline.named_steps['model'].get_booster()
+    
+    # Access the preprocessor specifically for metadata (names/scaling)
     preprocessor = pipeline.named_steps['preprocess']
 
     # Get Base Score
@@ -150,18 +152,31 @@ def embed_xgb(model, model_path, X, budget=400):
     base_score = float(config['learner']['learner_model_param']['base_score'])
 
     # 2. Filter Logic
+    # We set Cost=0 to check the intercept (base validity)
     X['Cost'] = 0.0
-    X_cost0 = X.copy()
-    pred_clicks_cost0 = pipeline.predict(X_cost0)
+    
+    # Use the full pipeline to predict (handles float32 cast automatically)
+    pred_clicks_cost0 = pipeline.predict(X)
+    
     valid_indices = [i for i, pred in enumerate(pred_clicks_cost0) if pred >= 0]
     print(f"[Info] Pruned {len(X) - len(valid_indices)} rows with negative predicted clicks at Cost=0.")
     X = X.iloc[valid_indices].reset_index(drop=True)
 
-    # 3. Preprocess X
-    X_proc = preprocessor.transform(X)
+    # 3. Preprocess X (CRITICAL CHANGE)
+    # We use pipeline[:-1] to run everything UP TO the model (Preprocessor + Float32 Cast)
+    # This ensures X_proc is Float32 and matches the tree splits exactly.
+    X_proc = pipeline[:-1].transform(X)
+
+    # 4. Extract Metadata
+    # We use the preprocessor step to get names/scales since the caster step might not store them
     feature_names = preprocessor.get_feature_names_out()
     cost_idx = list(feature_names).index('num__Cost')
-    cost_scale = preprocessor.named_transformers_['num'].scale_[cost_idx]
+    
+    # Retrieve the scale for the Cost variable
+    # Note: This assumes 'num' is the name of your numerical transformer in ColumnTransformer
+    cost_scale = preprocessor.named_transformers_['num'].scale_[
+        list(preprocessor.named_transformers_['num'].feature_names_in_).index('Cost')
+    ]
 
     # 4. Parse Tree Structure
     def parse_single_tree(node, current_conds):
@@ -206,12 +221,10 @@ def embed_xgb(model, model_path, X, budget=400):
     MAX_LHS = (budget / cost_scale) * 1.05 
     MIN_LHS = 0.0
     
-    # Safety margin: use a scale-aware margin to avoid boundary issues
-    # The margin in scaled space should correspond to ~$0.05 in actual cost
-    # This ensures Gurobi's solution stays clearly on one side of tree splits
-    MARGIN_DOLLARS = 0.05  # $0.05 safety buffer in actual cost
-    margin = MARGIN_DOLLARS / cost_scale  # Convert to scaled space
-    print(f"[Info] Using safety margin: ${MARGIN_DOLLARS} = {margin:.6f} in scaled space (cost_scale={cost_scale:.4f})")
+    # Safety margin: Use a tiny epsilon ONLY for strict inequalities (<)
+    # This prevents 'Dead Zones' where Gurobi can't find a valid path
+    EPSILON = 1e-5 
+    print(f"[Info] Using one-sided epsilon: {EPSILON} to handle strict inequalities.")
     
     K = len(X_proc)
 
@@ -252,19 +265,27 @@ def embed_xgb(model, model_path, X, budget=400):
                     leaf_vars.append(z)
                     leaf_vals.append(leaf_val)
                     
-                    # Big-M Constraints for Cost (with Safety Margins)
+                    # Big-M Constraints for Cost (with One-Sided Epsilon)
                     for op, thr in dynamic_conds:
                         lhs = current_cost / cost_scale
+                        
                         if op == "lt":
-                            # Cost <= Threshold - Margin
-                            bound = thr - margin
+                            # Logic: Cost < Threshold
+                            # Gurobi Implementation: Cost <= Threshold - Epsilon
+                            # Safe bound prevents negative values if thr is near zero
+                            bound = max(0.0, thr - EPSILON)
+                            
                             M = MAX_LHS - bound
-                            model.addConstr(lhs <= bound + M * (1 - z))
+                            model.addConstr(lhs <= bound + M * (1 - z), name=f"split_lt_{i}_{t_idx}")
+
                         elif op == "ge":
-                            # Cost >= Threshold + Margin
-                            bound = thr + margin
+                            # Logic: Cost >= Threshold
+                            # Gurobi Implementation: Cost >= Threshold (Exact Match)
+                            # No margin needed because XGBoost is inclusive for >=
+                            bound = thr
+                            
                             M = bound - MIN_LHS
-                            model.addConstr(lhs >= bound - M * (1 - z))
+                            model.addConstr(lhs >= bound - M * (1 - z), name=f"split_ge_{i}_{t_idx}")
 
             # Tree Aggregation
             if leaf_vars:
@@ -305,7 +326,7 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
     model.setParam('TimeLimit', 600)
     model.setParam('MIPGap', 0.01)
 
-    cost_vars, pred_vars, X = embed_xgb(model, model_path, X)
+    cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)
 
     if kw_df is not None:
         X = X.merge(
@@ -458,39 +479,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     n_high_disc = high_disc_mask.sum()
     
     if n_high_disc > 0:
-        print(f"[Warning] Found {n_high_disc} rows with |Diff| > {DISCREPANCY_THRESHOLD}. Attempting boundary adjustment...")
-        
-        # For rows with high discrepancy, try small cost perturbations to find better alignment
-        for idx in results_df[high_disc_mask].index:
-            original_cost = results_df.loc[idx, 'Optimal Cost']
-            gurobi_pred = results_df.loc[idx, 'Gurobi Pred']
-            
-            # Try small perturbations: ±$0.01, ±$0.05, ±$0.10
-            best_cost = original_cost
-            best_diff = abs(results_df.loc[idx, 'Diff'])
-            
-            for delta in [-0.10, -0.05, -0.01, 0.01, 0.05, 0.10]:
-                test_cost = max(0.0, original_cost + delta)
-                X_test = X_validate.iloc[[idx]].copy()
-                X_test['Cost'] = test_cost
-                test_pred = pipeline.predict(X_test)[0]
-                test_diff = abs(gurobi_pred - test_pred)
-                
-                if test_diff < best_diff:
-                    best_diff = test_diff
-                    best_cost = test_cost
-            
-            if best_cost != original_cost:
-                # Update with adjusted cost
-                results_df.loc[idx, 'Optimal Cost'] = best_cost
-                X_validate.loc[idx, 'Cost'] = best_cost
-        
-        # Recalculate predictions with adjusted costs
-        results_df['Actual Model Pred'] = pipeline.predict(X_validate)
-        results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
-        
-        n_still_high = (results_df['Diff'].abs() > DISCREPANCY_THRESHOLD).sum()
-        print(f"[Info] After adjustment: {n_still_high} rows still have |Diff| > {DISCREPANCY_THRESHOLD}")
+        print(f"[Warning] Found {n_high_disc} rows with |Diff| > {DISCREPANCY_THRESHOLD}.")
     
     max_diff = results_df['Diff'].abs().max()
     mean_diff = results_df['Diff'].abs().mean()
@@ -504,7 +493,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+    parser.add_argument('--course', default='sys_eng', help='Course name (default: gen_ai)')
     args = parser.parse_args()
 
     print(f"Optimizing bids for course: {args.course}")
