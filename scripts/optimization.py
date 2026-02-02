@@ -6,6 +6,7 @@ Maximize clicks fora single day of data, based on a pre-trained XGB model.
 """
 
 from datetime import datetime
+import os
 import pickle
 import sys
 import argparse
@@ -325,6 +326,12 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
     # model.setParam('OutputFlag', 1)
     model.setParam('TimeLimit', 600)
     model.setParam('MIPGap', 0.01)
+
+    # Adjustments for speed
+    model.setParam('CutPasses', 5) # Stop cutting planes early and start branching
+    model.setParam('MIPFocus', 1) # Focus on finding feasible solutions quickly
+    threads = int(os.environ.get('SLURM_CPUS_PER_TASK', 16)) # Align Gurobi with SLURM threads
+    model.setParam('Threads', threads)
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)
 
