@@ -1,0 +1,43 @@
+Region,Targeted location,Clicks,Conversions,ConversionRate,AvgConversionRate,BidAdjustment,BidAdjustmentPct,GoogleAdsFormat
+A,France,1028,2.0,0.0019455252918287938,0.00031062331745703044,5.263294422827497,526.3294422827497,+526%
+B,South Africa,1128,1.0,0.0008865248226950354,0.00025150905432595576,2.5248226950354606,252.48226950354606,+252%
+A,Germany,1067,0.0,0.0,0.00031062331745703044,-0.9,-90.0,-90%
+A,Israel,1242,0.0,0.0,0.00031062331745703044,-0.9,-90.0,-90%
+A,Spain,1139,0.0,0.0,0.00031062331745703044,-0.9,-90.0,-90%
+A,Mexico,2975,0.0,0.0,0.00031062331745703044,-0.9,-90.0,-90%
+B,Turkiye,1722,0.0,0.0,0.00025150905432595576,-0.9,-90.0,-90%
+B,Egypt,10325,2.0,0.0001937046004842615,0.00025150905432595576,-0.22983050847457642,-22.98305084745764,-23%
+USA,United States,45306,26.0,0.0005738754248885358,0.0005725989384896602,0.0022292853043746064,0.22292853043746064,+0%
+C,India,17124,0.0,0.0,0.0,0.0,0.0,+0%
+A,Australia,271,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Belgium,305,1.0,0.003278688524590164,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Canada,426,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Denmark,220,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Ireland,50,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Italy,186,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Japan,348,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Netherlands,104,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Norway,32,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Sweden,40,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,Switzerland,75,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+A,United Kingdom,150,0.0,0.0,0.00031062331745703044,,,No adjustment (insufficient data)
+B,Austria,15,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Chile,208,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,China,517,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Colombia,495,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Hong Kong,158,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Hungary,122,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Poland,67,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Portugal,53,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Romania,223,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Saudi Arabia,340,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Singapore,155,1.0,0.0064516129032258064,0.00025150905432595576,,,No adjustment (insufficient data)
+B,Taiwan,136,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+B,United Arab Emirates,240,0.0,0.0,0.00025150905432595576,,,No adjustment (insufficient data)
+C,Brazil,440,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,"Alberta, Canada",3,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)
+USA,"British Columbia, Canada",14,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)
+USA,"Manitoba, Canada",2,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)
+USA,"Ontario, Canada",60,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)
+USA,"Quebec, Canada",22,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)
+USA,"Saskatchewan, Canada",0,0.0,0.0,0.0005725989384896602,,,No adjustment (insufficient data)

@@ -1,0 +1,90 @@
+Device report
+1 June 2022 - 2 February 2026
+Campaign,Conversion action,Hour of the day,Conversions
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,1,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,1,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,1,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,2,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,2,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,3,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,3,3.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,3,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,4,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,4,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,4,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,4,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,5,2.98
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,5,0.70
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,5,1.50
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,5,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,6,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,6,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,6,1.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,6,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,7,1.82
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,7,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,7,0.02
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,7,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,7,2.00
+Program - SysEng - Run 24 - Search - Remarketing - A,Purchase,7,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,8,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,8,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,8,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,8,2.40
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,9,4.50
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,9,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,9,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,9,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,9,7.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,10,4.83
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,10,1.44
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,10,0.83
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,10,2.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,11,6.40
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,11,1.67
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,11,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,11,0.78
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,12,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,12,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,12,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,12,0.25
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,13,2.18
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,13,3.33
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,13,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,13,0.33
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,13,2.75
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,13,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,14,6.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,14,1.33
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,14,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,14,2.58
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,15,6.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,15,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,15,0.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,15,0.20
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,15,0.96
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,16,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,16,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,16,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,16,1.50
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,17,6.50
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,17,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,17,3.29
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,17,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,18,3.93
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,18,0.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,18,1.00
+Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,18,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,19,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,19,0.50
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,19,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,19,0.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,20,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,20,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,20,0.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,21,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,21,0.92
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,22,3.50
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,22,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,22,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,23,0.50

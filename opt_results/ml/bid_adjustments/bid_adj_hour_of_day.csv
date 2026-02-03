@@ -1,0 +1,97 @@
+Region,Hour of the day,Clicks,Conversions,ConversionRate,AvgConversionRate,BidAdjustment,BidAdjustmentPct,GoogleAdsFormat
+A,0,239,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,1,216,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,2,223,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,3,205,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,4,178,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,5,173,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,6,161,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,7,161,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,8,206,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,9,229,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,10,286,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,11,220,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,12,217,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,13,210,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,14,221,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,15,191,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,16,221,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,17,221,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,18,210,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,19,194,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,20,208,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,21,195,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,22,148,0.0,0.0,0.0,,,No adjustment (insufficient data)
+A,23,138,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,0,275,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,1,291,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,2,308,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,3,303,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,4,358,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,5,377,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,6,438,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,7,449,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,8,452,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,9,458,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,10,447,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,11,422,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,12,403,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,13,380,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,14,382,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,15,356,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,16,400,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,17,420,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,18,372,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,19,343,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,20,325,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,21,253,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,22,159,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,23,121,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,0,515,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,1,459,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,2,333,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,3,216,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,4,185,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,5,165,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,6,216,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,7,250,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,8,365,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,9,484,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,10,674,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,11,638,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,12,656,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,13,644,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,14,668,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,15,665,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,16,627,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,17,585,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,18,574,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,19,604,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,20,652,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,21,554,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,22,431,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,23,271,0.0,0.0,0.0,,,No adjustment (insufficient data)
+Unknown,0,3914,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,1,3322,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,2,3523,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,3,3184,1.0,0.000314070351758794,0.0003865938795863734,-0.1875961613907965,-18.75961613907965,-19%
+Unknown,4,2942,0.5,0.0001699524133242692,0.0003865938795863734,-0.5603851423977391,-56.0385142397739,-56%
+Unknown,5,2847,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,6,2826,1.78,0.0006298655343241331,0.0003865938795863734,0.6292692864099199,62.92692864099199,+63%
+Unknown,7,3053,1.0,0.00032754667540124465,0.0003865938795863734,-0.15273703827982188,-15.273703827982189,-15%
+Unknown,8,3501,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,9,4042,1.5,0.0003711034141514102,0.0003865938795863734,-0.04006909124256419,-4.006909124256419,-4%
+Unknown,10,4374,2.0,0.0004572473708276177,0.0003865938795863734,0.18275894930576309,18.275894930576307,+18%
+Unknown,11,4267,1.0,0.00023435669088352472,0.0003865938795863734,-0.3937909955163572,-39.37909955163572,-39%
+Unknown,12,3560,3.68,0.0010337078651685393,0.0003865938795863734,1.673885748720413,167.38857487204132,+167%
+Unknown,13,3459,1.5,0.0004336513443191674,0.0003865938795863734,0.12172325330949874,12.172325330949874,+12%
+Unknown,14,3424,2.5,0.0007301401869158878,0.0003865938795863734,0.8886491107854146,88.86491107854147,+89%
+Unknown,15,3345,7.0,0.0020926756352765323,0.0003865938795863734,4.413111137495346,441.31111374953457,+441%
+Unknown,16,3204,1.0,0.00031210986267166043,0.0003865938795863734,-0.1926673464008415,-19.26673464008415,-19%
+Unknown,17,3006,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,18,2817,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,19,2494,0.0,0.0,0.0003865938795863734,-0.9,-90.0,-90%
+Unknown,20,2529,1.0,0.00039541320680110717,0.0003865938795863734,0.022812899221709815,2.2812899221709815,+2%
+Unknown,21,2516,1.0,0.000397456279809221,0.0003865938795863734,0.028097703549961883,2.8097703549961883,+3%
+Unknown,22,2142,1.0,0.00046685340802987864,0.0003865938795863734,0.20760682639201877,20.760682639201878,+21%
+Unknown,23,1913,2.0,0.0010454783063251437,0.0003865938795863734,1.7043322761439663,170.43322761439663,+170%

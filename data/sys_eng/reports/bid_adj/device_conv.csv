@@ -1,0 +1,28 @@
+Device report
+1 June 2022 - 2 February 2026
+Campaign,Conversion action,Device,Conversions
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,"Computers
+",14.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,"Computers
+",10.67
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Tablets,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Mobile phones,8.93
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Mobile phones,6.00
+Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,Mobile phones,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,"Computers
+",49.51
+Program - SysEng - Run 24 - Search - Remarketing - A,Purchase,Mobile phones,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,"Computers
+",4.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,Mobile phones,1.93
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,"Computers
+",1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,"Computers
+",28.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,Mobile phones,9.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,"Computers
+",2.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,Mobile phones,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,"Computers
+",22.17
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Mobile phones,1.90

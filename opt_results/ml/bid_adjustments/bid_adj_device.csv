@@ -1,0 +1,13 @@
+Region,Device,Clicks,Conversions,ConversionRate,AvgConversionRate,BidAdjustment,BidAdjustmentPct,GoogleAdsFormat
+A,Computers,2857,0.0,0.0,0.0,0.0,0.0,+0%
+A,Mobile phones,1939,0.0,0.0,0.0,0.0,0.0,+0%
+A,Tablets,75,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,Computers,2867,0.0,0.0,0.0,0.0,0.0,+0%
+B,Mobile phones,5544,0.0,0.0,0.0,0.0,0.0,+0%
+B,Tablets,81,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,Computers,7784,0.0,0.0,0.0,0.0,0.0,+0%
+USA,Mobile phones,3538,0.0,0.0,0.0,0.0,0.0,+0%
+USA,Tablets,109,0.0,0.0,0.0,,,No adjustment (insufficient data)
+Unknown,Computers,47272,27.46,0.0005808935522084955,0.0003865938795863734,0.5025937628138557,50.25937628138557,+50%
+Unknown,Mobile phones,28197,2.0,7.092953151044438e-05,0.0003865938795863734,-0.8165270190352375,-81.65270190352375,-82%
+Unknown,Tablets,735,0.0,0.0,0.0003865938795863734,,,No adjustment (insufficient data)
