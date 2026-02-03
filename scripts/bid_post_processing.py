@@ -52,6 +52,16 @@ def clean_string_column(series: pd.Series) -> pd.Series:
     return series
 
 
+def group_hours(hour: int) -> str:
+    """Group hours into 3-hour bins: 0-2, 3-5, 6-8, etc."""
+    if pd.isna(hour):
+        return None
+    hour = int(hour)
+    start = (hour // 3) * 3
+    end = start + 2
+    return f"{start} - {end}"
+
+
 def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str) -> pd.DataFrame:
     """
     Load and merge clicks and conversions reports.
@@ -115,6 +125,13 @@ def calculate_bid_adjustments(
     # Extract region from campaign name using utility function
     df = df.copy()
     df['Region'] = df['Campaign'].apply(_extract_region_from_campaign)
+
+    # Filter out region C
+    df = df[df['Region'] != 'C'].copy()
+
+    if category == 'location':
+        # Don't calculate USA (since not split by state)
+        df = df[df['Region'] != 'USA'].copy()
     
     # Aggregate by Region and Segment
     agg_df = df.groupby(['Region', segment_col]).agg({
@@ -206,14 +223,21 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     
     results = {}
     
-    # Hour of Day
+    # Hour of Day (grouped into 3-hour bins)
     hod_clicks = bid_adj_dir / 'hod_clicks.csv'
     hod_conv = bid_adj_dir / 'hod_conv.csv'
     if hod_clicks.exists() and hod_conv.exists():
-        print("  Processing Hour of Day adjustments...")
+        print("  Processing Hour of Day adjustments (grouped 0-2, 3-5, etc.)...")
         df = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
+        # Group hours into 3-hour bins
+        df['Hour Group'] = df['Hour of the day'].apply(group_hours)
+        # Aggregate by the new hour groups
+        df = df.groupby(['Campaign', 'Hour Group']).agg({
+            'Clicks': 'sum',
+            'Conversions': 'sum'
+        }).reset_index()
         results['hour_of_day'] = calculate_bid_adjustments(
-            df, 'Hour of the day', 'hour', min_clicks
+            df, 'Hour Group', 'hour', min_clicks
         )
     
     # Device
@@ -257,6 +281,123 @@ def save_bid_adjustments(results: dict, output_dir: Path):
         output_file = output_dir / f'bid_adj_{segment_type}.csv'
         df.to_csv(output_file, index=False)
         print(f"  Saved {segment_type} adjustments to {output_file}")
+
+
+def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_n: int = 10):
+    """
+    Generate a LaTeX table showing top increases and decreases in bid adjustments.
+    
+    Args:
+        results: Dictionary with bid adjustments for each segment type
+        output_file: Path to save the LaTeX table
+        min_clicks: Minimum clicks threshold used
+        top_n: Number of top increases/decreases to show
+    """
+    # Map segment types to display names
+    segment_display_names = {
+        'hour_of_day': 'Hour of Day',
+        'device': 'Device',
+        'location': 'Location',
+        'age': 'Age'
+    }
+    
+    # Get the segment column name for each type
+    segment_col_names = {
+        'hour_of_day': 'Hour Group',
+        'device': 'Device',
+        'location': 'Targeted location',
+        'age': 'Age'
+    }
+    
+    # Combine all results into one DataFrame
+    all_rows = []
+    for segment_type, df in results.items():
+        if df is None or df.empty:
+            continue
+        
+        segment_col = segment_col_names.get(segment_type, segment_type)
+        display_name = segment_display_names.get(segment_type, segment_type)
+        
+        # Only include rows with valid bid adjustments
+        valid_df = df[df['BidAdjustment'].notna()].copy()
+        
+        for _, row in valid_df.iterrows():
+            all_rows.append({
+                'Region': row['Region'],
+                'Segment': display_name,
+                'Value': row[segment_col],
+                'Clicks': row['Clicks'],
+                'Conversions': row['Conversions'],
+                'BidAdjustment': row['BidAdjustment']
+            })
+    
+    if not all_rows:
+        print("  No valid bid adjustments to generate LaTeX table")
+        return
+    
+    combined_df = pd.DataFrame(all_rows)
+    
+    # Count non-zero adjustments
+    non_zero_count = (abs(combined_df['BidAdjustment']) >= 1e-6).sum()
+    
+    # Sort for top increases and decreases
+    sorted_df = combined_df.sort_values('BidAdjustment', ascending=False)
+    top_increases = sorted_df.head(top_n)
+    top_decreases = sorted_df.tail(top_n).iloc[::-1]  # Reverse to show most negative first
+    
+    def format_row(row):
+        """Format a single row for LaTeX."""
+        region = row['Region']
+        segment = row['Segment']
+        value = str(row['Value'])
+        clicks = f"{int(row['Clicks']):,}"
+        conversions = f"{row['Conversions']:.1f}"
+        adj_pct = row['BidAdjustment'] * 100
+        if adj_pct >= 0:
+            adj_str = f"+{adj_pct:.0f}\\%"
+        else:
+            adj_str = f"{adj_pct:.0f}\\%"
+        return f"{region} & {segment} & {value} & {clicks} & {conversions} & {adj_str} \\\\"
+    
+    # Build LaTeX table
+    latex_lines = [
+        r"\begin{table}[h!]",
+        r"\centering",
+        r"\tiny % Sets text size small for single-slide fit",
+        r"\begin{tabular}{lllrrr}",
+        r"\toprule",
+        r"\textbf{Region} & \textbf{Segment} & \textbf{Value} & \textbf{Clicks} & \textbf{Purchases} & \textbf{Bid Adjustment} \\",
+        r"\midrule",
+        r"\multicolumn{6}{c}{\textit{\textbf{Top " + str(top_n) + r" Increases}}} \\",
+        r"\midrule",
+    ]
+    
+    for _, row in top_increases.iterrows():
+        latex_lines.append(format_row(row))
+    
+    latex_lines.extend([
+        r"\midrule",
+        r"\multicolumn{6}{c}{\textit{\textbf{Top " + str(top_n) + r" Decreases}}} \\",
+        r"\midrule",
+    ])
+    
+    for _, row in top_decreases.iterrows():
+        latex_lines.append(format_row(row))
+    
+    latex_lines.extend([
+        r"\bottomrule",
+        r"\multicolumn{6}{l}{\textit{Note: total of " + str(non_zero_count) + r" non-zero bid adjustments.}} \\",
+        r"\multicolumn{6}{l}{\textit{Bid adjustments are only calculated where we have more than " + f"{min_clicks:,}" + r" clicks.}} \\",
+        r"\end{tabular}",
+        r"\end{table}",
+    ])
+    
+    # Write to file
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, 'w') as f:
+        f.write('\n'.join(latex_lines))
+    
+    print(f"  Saved LaTeX table to {output_file}")
 
 
 def add_bid_column_to_file(
@@ -309,31 +450,38 @@ def add_bid_column_to_file(
     return df
 
 
-def process_bids_directory(
-    bids_dir: Path, 
+def process_bids(
+    bids_path: Path, 
     bid_multiplier: float = 1.3,
     output_dir: Path = None
 ):
     """
-    Process all bids files in a directory, adding the Bid column.
+    Process bids file(s) - can be a single file or a directory.
     
     Args:
-        bids_dir: Directory containing bids CSV files
+        bids_path: Path to a bids CSV file or directory containing them
         bid_multiplier: Multiplier for bid calculation
         output_dir: Output directory (if None, overwrites original files)
     """
-    if not bids_dir.exists():
-        print(f"Warning: Bids directory not found: {bids_dir}")
+    if not bids_path.exists():
+        print(f"Warning: Bids path not found: {bids_path}")
+        return
+
+    if bids_path.is_file():
+        # Process single file
+        print(f"  Processing single bids file: {bids_path.name}")
+        add_bid_column_to_file(bids_path, bid_multiplier, output_dir)
         return
     
+    # It's a directory
     # Find all bids files
-    bids_files = list(bids_dir.glob("optimized_costs*.csv"))
+    bids_files = list(bids_path.rglob("optimized_costs*.csv"))
     
     if not bids_files:
-        print(f"  No optimized_costs*.csv files found in {bids_dir}")
+        print(f"  No optimized_costs*.csv files found in {bids_path}")
         return
     
-    print(f"  Found {len(bids_files)} bids file(s) to process")
+    print(f"  Found {len(bids_files)} bids file(s) to process in {bids_path}")
     
     for file_path in bids_files:
         add_bid_column_to_file(file_path, bid_multiplier, output_dir)
@@ -344,21 +492,25 @@ def main():
         description="Post-processing for bid optimization: calculate bid adjustments and add bid column.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-    # Calculate bid adjustments for gen_ai course
-    python bid_post_processing.py --course gen_ai
-    
-    # Calculate with custom minimum clicks threshold
-    python bid_post_processing.py --course ml --min-clicks 500
-    
-    # Process all courses
-    python bid_post_processing.py --all-courses
-    
-    # Only add bid column to bids files with custom multiplier
-    python bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
-    
-    # Only calculate bid adjustments (skip adding bid column)
-    python bid_post_processing.py --course gen_ai --skip-bids
+        Examples:
+            # Calculate bid adjustments for gen_ai course
+            python scripts/bid_post_processing.py --course gen_ai
+            
+            # Calculate with custom minimum clicks threshold
+            python scripts/bid_post_processing.py --course ml --min-clicks 500
+            
+            # Process all courses
+            python scripts/bid_post_processing.py --all-courses
+            
+            # Only add bid column to bids files with custom multiplier
+            python scripts/bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
+            
+            # Process a specific file or directory
+            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
+            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
+
+            # Only calculate bid adjustments (skip adding bid column)
+            python scripts/bid_post_processing.py --course gen_ai --skip-bids
         """
     )
     
@@ -375,8 +527,8 @@ Examples:
     parser.add_argument(
         '--min-clicks',
         type=int,
-        default=1000,
-        help='Minimum clicks threshold for bid adjustment (default: 1000)'
+        default=5000,
+        help='Minimum clicks threshold for bid adjustment (default: 5000)'
     )
     parser.add_argument(
         '--bid-multiplier',
@@ -396,9 +548,9 @@ Examples:
         help='Output directory for bid adjustments (default: opt_results/<course>/bid_adjustments)'
     )
     parser.add_argument(
-        '--bids-dir',
+        '--bids-path',
         type=str,
-        help='Custom bids directory to process (default: opt_results/<course>/bids)'
+        help='Custom bids file or directory to process (default: opt_results/<course>/bids)'
     )
     parser.add_argument(
         '--skip-adjustments',
@@ -451,6 +603,10 @@ Examples:
                         # Save results
                         save_bid_adjustments(results, output_dir)
                         
+                        # Generate LaTeX table
+                        latex_file = output_dir / 'bid_adjustments_table.tex'
+                        generate_latex_table(results, latex_file, args.min_clicks)
+                        
                         # Print summary
                         print(f"\n  --- Bid Adjustments Summary ---")
                         for segment_type, df in results.items():
@@ -467,13 +623,13 @@ Examples:
         
         # --- Add Bid Column to Bids Files ---
         if not args.skip_bids:
-            if args.bids_dir:
-                bids_dir = Path(args.bids_dir)
+            if args.bids_path:
+                bids_path = Path(args.bids_path)
             else:
-                bids_dir = project_root / 'opt_results' / course / 'bids'
+                bids_path = project_root / 'opt_results' / course / 'bids'
             
             print(f"\n  --- Processing Bids Files (multiplier={args.bid_multiplier}) ---")
-            process_bids_directory(bids_dir, args.bid_multiplier)
+            process_bids(bids_path, args.bid_multiplier)
     
     print("\nDone!")
 
