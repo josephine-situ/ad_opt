@@ -29,6 +29,13 @@ bert = [
     "transformers>=4.35.2",
 ]
 
+llm = [
+    "transformers>=4.35.2",
+    "accelerate>=0.24.0",
+    "bitsandbytes>=0.41.0",
+    "sentencepiece>=0.1.99",
+]
+
 tabpfn = [
     "tabpfn-client",
 ]

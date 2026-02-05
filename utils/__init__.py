@@ -26,6 +26,13 @@ from .embeddings import (
     get_bert_embedding,
 )
 
+from .llm_scoring import (
+    get_llm_keyword_scores,
+    get_relevance_prompt,
+    add_llm_scores_to_df,
+    COURSE_NAME_MAP,
+)
+
 from .data_pipeline import (
     load_and_combine_keyword_data,
     format_keyword_data,
@@ -57,6 +64,11 @@ __all__ = [
     'get_tfidf_embeddings',
     'get_bert_embeddings_pipeline',
     'get_bert_embedding',
+    # LLM scoring
+    'get_llm_keyword_scores',
+    'get_relevance_prompt',
+    'add_llm_scores_to_df',
+    'COURSE_NAME_MAP',
     # Data pipeline
     'load_and_combine_keyword_data',
     'format_keyword_data',

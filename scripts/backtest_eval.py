@@ -41,6 +41,7 @@ def get_args():
     p.add_argument("--exp-name", default="exp4", help="Experiment name")
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
+    p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
     
     args = p.parse_args()
     if args.budget is None:
@@ -61,8 +62,10 @@ def main():
     else:
         opt_days = list(pd.date_range(start=start_dt, end=end_dt, freq="D"))
 
-    # Load Base Data
-    df = pd.read_csv(base_dir / "clean/ad_opt_data_bert.csv")
+    # Load Base Data based on embedding method
+    embedding_method = args.embedding_method
+    data_file = base_dir / f"clean/ad_opt_data_{embedding_method}.csv"
+    df = pd.read_csv(data_file)
 
     # Filter out Region C, except if course is sys_eng
     if args.course != "sys_eng":
@@ -74,7 +77,12 @@ def main():
     # Merge Origin into Main Data (Actuals)
     df = df.merge(kw_df_all[["Keyword", "Origin"]], on="Keyword", how="left")
     
-    bert_cols = [c for c in df.columns if c.startswith("bert_")]
+    # Determine feature columns based on embedding method
+    if embedding_method == "llm":
+        embedding_cols = ["llm_relevance_score"] if "llm_relevance_score" in df.columns else []
+    else:
+        embedding_cols = [c for c in df.columns if c.startswith("bert_")]
+    
     features = [
         "Match type",
         "Region",
@@ -92,7 +100,7 @@ def main():
         "Top of page bid (low range)",
         "Top of page bid (high range)",
         "Cost",
-        *bert_cols,
+        *embedding_cols,
     ]
     
     base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")

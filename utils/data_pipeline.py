@@ -16,6 +16,7 @@ from .date_features import (
 )
 from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 from .keyword_matching import fuzzy_fill_from_gkp
+from .llm_scoring import get_llm_keyword_scores
 
 
 def load_and_combine_keyword_data(data_dir=None):
@@ -558,24 +559,34 @@ def merge_with_ads_data(
     return merged_df
 
 
-def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_models=False, model_dir='models'):
+def add_embeddings(
+    cleaned_df,
+    embedding_method='bert',
+    n_components=50,
+    save_models=False,
+    model_dir='models',
+    course='gen_ai',
+    cache_dir=None,
+):
     """
-    Add keyword embeddings (TF-IDF or BERT).
+    Add keyword embeddings or LLM relevance scores.
     
     Args:
     - cleaned_df (pd.DataFrame): Data with keywords.
-    - embedding_method (str): 'tfidf' or 'bert'.
-    - n_components (int): Target embedding dimensionality.
+    - embedding_method (str): 'tfidf', 'bert', or 'llm'.
+    - n_components (int): Target embedding dimensionality (for tfidf/bert only).
     - save_models (bool): If True, save vectorizer/SVD/normalizer for later use.
     - model_dir (str): Directory to save models. Default 'models'.
+    - course (str): Course identifier for LLM scoring. Default 'gen_ai'.
+    - cache_dir (str): Directory for caching LLM scores. Default None.
     
     Returns:
-    - df (pd.DataFrame): Data with embedding columns added.
+    - df (pd.DataFrame): Data with embedding/score columns added.
     """
     import pickle
     from pathlib import Path
     
-    print(f"[Step 8] Computing {embedding_method.upper()} embeddings...")
+    print(f"[Step 8] Computing {embedding_method.upper()} {'scores' if embedding_method == 'llm' else 'embeddings'}...")
     
     unique_keywords = cleaned_df['Keyword'].unique()
     print(f"  Processing {len(unique_keywords)} unique keywords...")
@@ -615,13 +626,35 @@ def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_mo
             with open(model_path, 'wb') as f:
                 pickle.dump(bert_models, f)
             print(f"  Saved BERT pipeline to {model_path}")
+            
+    elif embedding_method.lower() == 'llm':
+        # Use LLM-based relevance scoring instead of embeddings
+        llm_cache_path = None
+        if cache_dir:
+            llm_cache_path = Path(cache_dir) / f'llm_scores_{course}.csv'
+        
+        embedding_df, llm_info = get_llm_keyword_scores(
+            unique_keywords,
+            course=course,
+            model_name="prometheus-eval/prometheus-7b-v2.0",
+            batch_size=1,
+            cache_path=llm_cache_path,
+            return_model=True,
+        )
+        
+        if save_models:
+            model_path = Path(model_dir) / f'llm_pipeline_{course}.pkl'
+            model_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(model_path, 'wb') as f:
+                pickle.dump(llm_info, f)
+            print(f"  Saved LLM info to {model_path}")
     else:
         raise ValueError(f"Unknown embedding method: {embedding_method}")
     
-    # Merge embeddings back
+    # Merge embeddings/scores back
     df = cleaned_df.merge(embedding_df, on='Keyword', how='left')
     
-    print(f"  Embeddings added with shape: {len(embedding_df)} x {len(embedding_df.columns)}")
+    print(f"  {'Scores' if embedding_method == 'llm' else 'Embeddings'} added with shape: {len(embedding_df)} x {len(embedding_df.columns)}")
     
     return df
 
@@ -641,8 +674,12 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     """
     print("[Step 9] Preparing train-test split...")
     
-    # Identify embedding columns
+    # Identify embedding columns (tfidf, bert, or llm score)
     embedding_cols = [col for col in df.columns if 'tfidf' in col or 'bert' in col]
+    
+    # Check for LLM relevance score column
+    llm_cols = [col for col in df.columns if col == 'llm_relevance_score']
+    embedding_cols.extend(llm_cols)
     
     # Feature and target columns
     # Use new time series statistics columns (from merge_with_ads_data)
@@ -714,12 +751,20 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
     print(f"  Saved: {train_output}")
     print(f"  Saved: {test_output}")
     
-    # Extract and save unique keyword embeddings without NAs in embedding columns
+    # Extract and save unique keyword embeddings/scores without NAs
     embedding_prefix = embedding_method.lower()
-    embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
+    
+    # Handle different column naming for LLM vs embedding methods
+    if embedding_method.lower() == 'llm':
+        embedding_cols = ['llm_relevance_score']
+    else:
+        embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
+    
+    # Filter to columns that exist
+    embedding_cols = [col for col in embedding_cols if col in df.columns]
     
     if embedding_cols:
-        # Get unique keywords with their embeddings, dropping rows with NaN in embedding columns
+        # Get unique keywords with their embeddings/scores, dropping rows with NaN
         # Keep rows even if they have NAs in other columns
         unique_kw_embeddings = df[['Keyword'] + embedding_cols].drop_duplicates(subset=['Keyword'])
         unique_kw_embeddings = unique_kw_embeddings.dropna(subset=embedding_cols).reset_index(drop=True)
@@ -728,7 +773,7 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
         unique_kw_embeddings.to_csv(embeddings_output, index=False)
         print(f"  Saved: {embeddings_output} ({len(unique_kw_embeddings)} rows)")
     else:
-        print(f"  Warning: No embedding columns found for method '{embedding_method}'")
+        print(f"  Warning: No embedding/score columns found for method '{embedding_method}'")
 
 
 def get_conversion_rates(by_reg=False, base_dir=None):

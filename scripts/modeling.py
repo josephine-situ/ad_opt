@@ -187,21 +187,24 @@ def train_best_model(df_day, features, day_date):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+    parser.add_argument('--embedding-method', default='bert', choices=['bert', 'llm'], help='Embedding method: bert or llm (default: bert)')
     args = parser.parse_args()
 
     log_path = setup_tee_logging(
         log_file=None,
         default_log_dir='logs',
-        default_log_prefix=f'modeling_{args.course}',
+        default_log_prefix=f'modeling_{args.course}_{args.embedding_method}',
     )
 
     print(f"[Logging] Tee output to {log_path}")
     print(f"Course: {args.course}")
+    print(f"Embedding method: {args.embedding_method}")
 
     # Load processed training and test data
     base_dir = Path(f'data/{args.course}')
-    df_train = pd.read_csv(base_dir / 'clean/train_bert.csv')
-    df_test = pd.read_csv(base_dir / 'clean/test_bert.csv')
+    embedding_method = args.embedding_method
+    df_train = pd.read_csv(base_dir / f'clean/train_{embedding_method}.csv')
+    df_test = pd.read_csv(base_dir / f'clean/test_{embedding_method}.csv')
     print(f"Loaded training data: {df_train.shape}, test data: {df_test.shape}")
 
     # Features
@@ -212,8 +215,15 @@ def main():
         'Competition (indexed value)', 'Top of page bid (low range)',
         'Top of page bid (high range)', 'Cost'
     ]
-    bert_cols = [col for col in df_train.columns if col.startswith('bert_')]
-    features.extend(bert_cols)
+    
+    # Add embedding-specific columns
+    if embedding_method == 'llm':
+        if 'llm_relevance_score' in df_train.columns:
+            features.append('llm_relevance_score')
+    else:
+        bert_cols = [col for col in df_train.columns if col.startswith('bert_')]
+        features.extend(bert_cols)
+    
     target = 'Clicks'
 
     print(f"Using target: {target}")
@@ -232,8 +242,8 @@ def main():
     best_model = train_xgb_mse(df_train, df_test, features, target, param_grid)
 
     # Save the best model
-    # Use course-specific model name
-    xgb_path = Path(f'models/{args.course}_xgb_clicks_model.joblib')
+    # Use course-specific and embedding-specific model name
+    xgb_path = Path(f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib')
     joblib.dump(best_model, xgb_path)
     print(f"Saved best model to {xgb_path}")
 

@@ -72,8 +72,8 @@ def main():
         '--embedding-method',
         type=str,
         default='bert',
-        choices=['tfidf', 'bert'],
-        help='Embedding method: tfidf or bert (default: bert)'
+        choices=['tfidf', 'bert', 'llm'],
+        help='Embedding method: tfidf, bert, or llm (default: bert). LLM uses Prometheus for relevance scoring.'
     )
     parser.add_argument(
         '--n-components',
@@ -205,7 +205,7 @@ def main():
             merged_df
         )  
         
-        print(f"\n[Step 7] Add {args.embedding_method.upper()} embeddings...")
+        print(f"\n[Step 7] Add {args.embedding_method.upper()} {'scores' if args.embedding_method == 'llm' else 'embeddings'}...")
         df = load_or_cache(
             add_embeddings,
             cache_path / f'step8_embeddings_{args.embedding_method}.parquet',
@@ -214,7 +214,9 @@ def main():
             args.embedding_method,
             args.n_components,
             True,  # save_models=True
-            args.output_dir  # model_dir
+            args.output_dir,  # model_dir
+            args.course,  # course for LLM scoring
+            str(cache_path),  # cache_dir for LLM scores
         )
         
         # Remove rows with NaN values before splitting

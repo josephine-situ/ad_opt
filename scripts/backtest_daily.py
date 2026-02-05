@@ -105,6 +105,7 @@ def main():
     p.add_argument("--max-purch", action="store_true", help="Use max purchases objective instead of clicks")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
+    p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
 
     args = p.parse_args()
 
@@ -112,10 +113,13 @@ def main():
         args.budget = COURSE_CONFIG[args.course]['budgets']
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_conv, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_conv, args.max_purch
+    embedding_method = args.embedding_method
     
     base_dir = Path(f"data/{args.course}")
 
-    df = pd.read_csv(base_dir / "clean/ad_opt_data_bert.csv")
+    # Load data based on embedding method
+    data_file = base_dir / f"clean/ad_opt_data_{embedding_method}.csv"
+    df = pd.read_csv(data_file)
     df = df[df["Region"] != "C"].copy()  # remove region C since no budget allocated to it
     df["Day"] = pd.to_datetime(df["Day"])
 
@@ -126,7 +130,12 @@ def main():
     else:
         opt_days = list(pd.date_range(start=start_dt, end=end_dt, freq="D"))
 
-    bert_cols = [c for c in df.columns if c.startswith("bert_")]
+    # Determine feature columns based on embedding method
+    if embedding_method == "llm":
+        embedding_cols = ["llm_relevance_score"] if "llm_relevance_score" in df.columns else []
+    else:
+        embedding_cols = [c for c in df.columns if c.startswith("bert_")]
+    
     features = [
         "Match type",
         "Region",
@@ -144,7 +153,7 @@ def main():
         "Top of page bid (low range)",
         "Top of page bid (high range)",
         "Cost",
-        *bert_cols,
+        *embedding_cols,
     ]
 
     models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}")
