@@ -42,9 +42,9 @@ Calculate a relevance score (1-5) for the search keyword: "{keyword}"
 Scoring Rules:
 - Start with Base Score = 3
 - Subtract 1 if: keyword contains "free", "cheap", "youtube", "login", or is unrelated to {course_name.lower()}
-- Subtract 1 if: keyword is purely informational (definitions, "what is", news)
-- Add 1 if: keyword implies learning intent ("course", "training", "tutorial", "education")
-- Add 1 if: keyword implies high purchase intent ("certification", "bootcamp", "university", "MIT", "executive", "paid")
+- Subtract 1 if: keyword is purely informational (e.g., definitions, "what is", news)
+- Add 1 if: keyword implies learning intent (e.g., "course", "training", "tutorial", "education")
+- Add 1 if: keyword implies high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid")
 
 Apply all applicable modifiers cumulatively. Minimum score is 1, maximum is 5.
 
