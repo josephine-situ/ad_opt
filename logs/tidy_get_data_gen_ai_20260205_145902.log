@@ -1,0 +1,953 @@
+[Logging] Tee output to logs/tidy_get_data_gen_ai_20260205_145902.log
+======================================================================
+Data Preparation Pipeline for Ad Optimization
+======================================================================
+Course: gen_ai
+Embedding method: llm
+N components: 50
+Force reload: False
+======================================================================
+
+[Step 1] Load and combine keyword data...
+  [Cache] Loading from step1_combined.parquet
+
+[Step 2] Format keyword data...
+[Step 2] Formatting keyword data...
+  Found 4 unique regions: ['USA', 'A', 'B', 'C']
+
+[Step 3] Extract date features...
+  [Cache] Loading from step3_features.parquet
+
+[Step 4] Filter data by date...
+  [Cache] Loading from step4_filtered.parquet
+
+[Step 5] Load GKP data...
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  Loaded 1749 rows from Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  After cleaning: 1747 rows with unique keywords
+
+[Step 5.5] Impute missing data...
+[Step 5.5] Imputing missing data...
+  Total: Imputed 0 missing values (0.00% of total data)
+[Step 5.5] Imputing missing data...
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  searches_2024_07                        26.73% numeric (0)               (n=467)
+  searches_2024_08                        26.73% numeric (0)               (n=467)
+  searches_2024_09                        26.73% numeric (0)               (n=467)
+  searches_2024_10                        26.73% numeric (0)               (n=467)
+  searches_2024_11                        26.73% numeric (0)               (n=467)
+  searches_2024_12                        26.73% numeric (0)               (n=467)
+  searches_2025_01                        26.73% numeric (0)               (n=467)
+  searches_2025_02                        26.73% numeric (0)               (n=467)
+  searches_2025_03                        26.73% numeric (0)               (n=467)
+  searches_2025_04                        26.73% numeric (0)               (n=467)
+  searches_2025_05                        26.73% numeric (0)               (n=467)
+  searches_2025_06                        26.73% numeric (0)               (n=467)
+  searches_2025_07                        26.73% numeric (0)               (n=467)
+  searches_2025_08                        26.73% numeric (0)               (n=467)
+  searches_2025_09                        26.73% numeric (0)               (n=467)
+  searches_2025_10                        26.73% numeric (0)               (n=467)
+  searches_2025_11                        26.73% numeric (0)               (n=467)
+  Competition                             38.12% categorical (Missing)     (n=666)
+  Competition (indexed value)             38.12% numeric (0)               (n=666)
+  Top of page bid (low range)             54.26% numeric (0)               (n=948)
+  Top of page bid (high range)            54.26% numeric (0)               (n=948)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 11167 missing values (29.06% of total data)
+
+[Step 6] Merge with GKP data and calculate search stats...
+  [Cache] Loading from step6_merged.parquet
+
+[Step 6.5] Remove outlier rows...
+  [Cache] Loading from step6_5_cleaned.parquet
+
+[Step 7] Add LLM scores...
+  [Computing] Running add_embeddings...
+[Step 8] Computing LLM scores...
+  Processing 154 unique keywords...
+  Scoring 154 keywords with Prometheus LLM...
+  Course: Generative AI
+  Loading Prometheus model: prometheus-eval/prometheus-7b-v2.0
+  Using device: cuda
+tokenizer_config.json: 0.00B [00:00, ?B/s]tokenizer_config.json: 2.13kB [00:00, 15.1MB/s]
+tokenizer.model:   0%|          | 0.00/493k [00:00<?, ?B/s]tokenizer.model: 100%|##########| 493k/493k [00:00<00:00, 2.60MB/s]tokenizer.model: 100%|##########| 493k/493k [00:00<00:00, 2.60MB/s]
+tokenizer.json: 0.00B [00:00, ?B/s]tokenizer.json: 1.80MB [00:00, 22.1MB/s]
+special_tokens_map.json:   0%|          | 0.00/551 [00:00<?, ?B/s]special_tokens_map.json: 100%|##########| 551/551 [00:00<00:00, 9.32MB/s]
+config.json:   0%|          | 0.00/653 [00:00<?, ?B/s]config.json: 100%|##########| 653/653 [00:00<00:00, 10.5MB/s]
+`torch_dtype` is deprecated! Use `dtype` instead!
+model.safetensors.index.json: 0.00B [00:00, ?B/s]model.safetensors.index.json: 22.8kB [00:00, 174MB/s]
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]
+model-00007-of-00008.safetensors:   0%|          | 0.00/1.95G [00:00<?, ?B/s][A
+
+model-00004-of-00008.safetensors:   0%|          | 0.00/1.98G [00:00<?, ?B/s][A[A
+
+
+model-00008-of-00008.safetensors:   0%|          | 0.00/789M [00:00<?, ?B/s][A[A[A
+
+
+
+model-00005-of-00008.safetensors:   0%|          | 0.00/1.95G [00:00<?, ?B/s][A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:   0%|          | 0.00/1.95G [00:00<?, ?B/s][A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:   0%|          | 0.00/1.97G [00:00<?, ?B/s][A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:   0%|          | 0.00/1.92G [00:00<?, ?B/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:   0%|          | 0.00/1.98G [00:00<?, ?B/s][A[A[A[A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:   0%|          | 574k/1.95G [00:01<1:03:34, 510kB/s][A[A[A[A[A
+model-00007-of-00008.safetensors:   0%|          | 732k/1.95G [00:01<51:25, 630kB/s][A
+
+
+model-00008-of-00008.safetensors:   6%|6         | 50.9M/789M [00:06<01:32, 7.94MB/s][A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:   3%|3         | 67.6M/1.95G [00:08<03:45, 8.33MB/s][A[A[A[A[A
+model-00007-of-00008.safetensors:   3%|3         | 67.8M/1.95G [00:08<03:48, 8.23MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  17%|#7        | 336M/1.95G [00:08<00:29, 54.7MB/s] [A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:   0%|          | 332k/1.97G [00:09<15:31:40, 35.3kB/s][A[A[A[A[A[A
+model-00007-of-00008.safetensors:   7%|6         | 135M/1.95G [00:09<01:52, 16.0MB/s] [A
+
+
+
+
+model-00002-of-00008.safetensors:  24%|##4       | 470M/1.95G [00:09<00:22, 65.4MB/s][A[A[A[A[A
+model-00007-of-00008.safetensors:  17%|#7        | 336M/1.95G [00:11<00:35, 45.9MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  31%|###1      | 604M/1.95G [00:11<00:18, 73.7MB/s][A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:   3%|3         | 67.3M/1.97G [00:12<04:27, 7.13MB/s]  [A[A[A[A[A[A
+model-00007-of-00008.safetensors:  28%|##7       | 537M/1.95G [00:12<00:20, 67.9MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  38%|###8      | 740M/1.95G [00:12<00:15, 79.9MB/s][A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  45%|####4     | 874M/1.95G [00:13<00:09, 109MB/s] [A[A[A[A[A
+
+
+model-00008-of-00008.safetensors:  15%|#4        | 118M/789M [00:13<01:13, 9.13MB/s] [A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  48%|####8     | 941M/1.95G [00:13<00:07, 128MB/s][A[A[A[A[A
+
+
+model-00008-of-00008.safetensors:  23%|##3       | 185M/789M [00:13<00:35, 17.2MB/s][A[A[A
+
+
+model-00008-of-00008.safetensors:  32%|###1      | 252M/789M [00:13<00:19, 28.0MB/s][A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:   7%|6         | 134M/1.97G [00:13<02:10, 14.1MB/s] [A[A[A[A[A[A
+
+
+model-00008-of-00008.safetensors:  40%|####      | 319M/789M [00:14<00:11, 39.9MB/s][A[A[A
+model-00007-of-00008.safetensors:  38%|###7      | 738M/1.95G [00:14<00:13, 87.1MB/s][A
+
+
+model-00008-of-00008.safetensors:  49%|####8     | 386M/789M [00:14<00:07, 52.9MB/s][A[A[A
+
+
+model-00008-of-00008.safetensors:  57%|#####7    | 453M/789M [00:14<00:04, 68.3MB/s][A[A[A
+
+
+model-00008-of-00008.safetensors:  66%|######5   | 520M/789M [00:15<00:03, 82.0MB/s][A[A[A
+model-00007-of-00008.safetensors:  41%|####1     | 806M/1.95G [00:15<00:14, 77.3MB/s][A
+
+
+model-00008-of-00008.safetensors:  74%|#######4  | 587M/789M [00:15<00:01, 101MB/s] [A[A[A
+
+
+model-00008-of-00008.safetensors:  83%|########2 | 654M/789M [00:16<00:01, 114MB/s][A[A[A
+
+
+model-00008-of-00008.safetensors:  91%|#########1| 721M/789M [00:17<00:00, 80.1MB/s][A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  10%|#         | 201M/1.97G [00:17<01:59, 14.8MB/s][A[A[A[A[A[A
+model-00007-of-00008.safetensors:  55%|#####5    | 1.07G/1.95G [00:18<00:10, 86.3MB/s][A
+
+
+
+model-00005-of-00008.safetensors:   3%|3         | 67.0M/1.95G [00:18<08:37, 3.63MB/s][A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  52%|#####1    | 1.01G/1.95G [00:18<00:21, 42.7MB/s][A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:   3%|3         | 67.1M/1.92G [00:18<08:36, 3.59MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  14%|#3        | 269M/1.97G [00:18<01:19, 21.4MB/s][A[A[A[A[A[A
+model-00007-of-00008.safetensors:  59%|#####8    | 1.14G/1.95G [00:19<00:09, 82.4MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  55%|#####5    | 1.07G/1.95G [00:19<00:18, 48.0MB/s][A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:   7%|6         | 134M/1.92G [00:19<03:39, 8.15MB/s] [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:   3%|3         | 67.1M/1.98G [00:19<09:22, 3.40MB/s][A[A[A[A[A[A[A[A
+
+
+model-00008-of-00008.safetensors: 100%|##########| 789M/789M [00:19<00:00, 51.8MB/s][A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  17%|#7        | 336M/1.97G [00:19<00:56, 28.9MB/s][A[A[A[A[A[Amodel-00008-of-00008.safetensors: 100%|##########| 789M/789M [00:20<00:00, 39.4MB/s]
+
+
+model-00004-of-00008.safetensors:   3%|3         | 67.1M/1.98G [00:20<09:35, 3.32MB/s][A[A
+model-00007-of-00008.safetensors:  66%|######5   | 1.28G/1.95G [00:20<00:07, 86.2MB/s][A
+
+
+
+model-00005-of-00008.safetensors:   7%|6         | 134M/1.95G [00:20<04:03, 7.45MB/s] [A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:   7%|6         | 134M/1.98G [00:22<04:33, 6.74MB/s] [A[A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  20%|##        | 403M/1.97G [00:23<01:03, 24.8MB/s][A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:   7%|6         | 134M/1.98G [00:25<05:12, 5.91MB/s] [A[A
+model-00007-of-00008.safetensors:  69%|######8   | 1.34G/1.95G [00:26<00:14, 41.2MB/s][A
+
+
+
+model-00005-of-00008.safetensors:  10%|#         | 202M/1.95G [00:26<03:09, 9.20MB/s][A[A[A[A
+model-00007-of-00008.safetensors:  72%|#######2  | 1.41G/1.95G [00:26<00:11, 47.7MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  59%|#####8    | 1.14G/1.95G [00:26<00:34, 23.6MB/s][A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  11%|#         | 202M/1.92G [00:26<03:16, 8.75MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  10%|#         | 201M/1.98G [00:27<03:15, 9.11MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  24%|##3       | 470M/1.97G [00:27<01:08, 21.8MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  21%|##        | 403M/1.92G [00:28<01:06, 23.0MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  17%|#6        | 335M/1.98G [00:28<01:27, 18.7MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  14%|#3        | 269M/1.95G [00:29<02:18, 12.1MB/s][A[A[A[A
+model-00007-of-00008.safetensors:  76%|#######5  | 1.48G/1.95G [00:29<00:11, 39.5MB/s][A
+
+
+
+
+model-00002-of-00008.safetensors:  62%|######2   | 1.21G/1.95G [00:29<00:30, 23.8MB/s][A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  27%|##7       | 537M/1.97G [00:30<01:05, 21.8MB/s][A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  10%|#         | 201M/1.98G [00:30<03:43, 7.94MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  21%|##        | 403M/1.95G [00:30<01:09, 22.1MB/s][A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  69%|######9   | 1.34G/1.95G [00:30<00:16, 35.5MB/s][A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  24%|##4       | 470M/1.92G [00:31<01:03, 23.0MB/s][A[A[A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  72%|#######2  | 1.41G/1.95G [00:32<00:15, 35.1MB/s][A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  76%|#######5  | 1.48G/1.95G [00:33<00:11, 41.3MB/s][A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  24%|##3       | 470M/1.98G [00:33<01:09, 21.7MB/s][A[A[A[A[A[A[A[A
+model-00007-of-00008.safetensors:  79%|#######9  | 1.54G/1.95G [00:33<00:13, 29.5MB/s][A
+
+
+
+
+
+model-00003-of-00008.safetensors:  31%|###       | 604M/1.97G [00:34<01:08, 20.1MB/s][A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  20%|##        | 402M/1.98G [00:34<01:28, 17.8MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  24%|##4       | 470M/1.95G [00:34<01:13, 20.2MB/s][A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  34%|###3      | 671M/1.98G [00:34<00:35, 37.3MB/s][A[A[A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  24%|##3       | 469M/1.98G [00:35<01:08, 21.9MB/s][A[A
+
+
+
+
+model-00002-of-00008.safetensors:  79%|#######9  | 1.54G/1.95G [00:35<00:09, 40.4MB/s][A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  28%|##7       | 537M/1.95G [00:35<00:55, 25.5MB/s][A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  83%|########2 | 1.61G/1.95G [00:35<00:06, 50.1MB/s][A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  35%|###4      | 671M/1.92G [00:35<00:42, 29.7MB/s][A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  31%|###1      | 604M/1.95G [00:36<00:41, 32.3MB/s][A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  34%|###4      | 671M/1.97G [00:36<00:57, 22.7MB/s][A[A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  86%|########6 | 1.68G/1.95G [00:36<00:05, 51.7MB/s][A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  38%|###7      | 738M/1.95G [00:37<00:24, 49.5MB/s][A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  38%|###8      | 738M/1.92G [00:37<00:36, 32.3MB/s][A[A[A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  90%|########9 | 1.75G/1.95G [00:37<00:03, 61.5MB/s][A[A[A[A[A
+
+model-00004-of-00008.safetensors:  27%|##7       | 537M/1.98G [00:37<01:01, 23.5MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  41%|####1     | 807M/1.95G [00:38<00:21, 54.0MB/s][A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  93%|#########3| 1.81G/1.95G [00:38<00:01, 67.7MB/s][A[A[A[A[A
+
+model-00004-of-00008.safetensors:  30%|###       | 604M/1.98G [00:38<00:46, 29.3MB/s][A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  37%|###7      | 738M/1.97G [00:38<00:49, 25.2MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  37%|###7      | 738M/1.98G [00:38<00:39, 31.5MB/s][A[A[A[A[A[A[A[A
+model-00007-of-00008.safetensors:  83%|########2 | 1.61G/1.95G [00:38<00:15, 22.0MB/s][A
+model-00007-of-00008.safetensors:  90%|########9 | 1.75G/1.95G [00:39<00:05, 36.2MB/s][A
+
+model-00004-of-00008.safetensors:  34%|###3      | 671M/1.98G [00:39<00:37, 34.8MB/s][A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  41%|####      | 805M/1.97G [00:39<00:37, 30.8MB/s][A[A[A[A[A[A
+
+
+
+
+model-00002-of-00008.safetensors:  97%|#########6| 1.88G/1.95G [00:39<00:01, 63.5MB/s][A[A[A[A[A
+
+model-00004-of-00008.safetensors:  37%|###7      | 738M/1.98G [00:40<00:30, 41.0MB/s][A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  41%|####      | 805M/1.98G [00:40<00:36, 31.9MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  42%|####1     | 806M/1.92G [00:41<00:41, 27.1MB/s][A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  45%|####4     | 874M/1.95G [00:41<00:27, 39.6MB/s][A[A[A[A
+model-00007-of-00008.safetensors:  93%|#########3| 1.81G/1.95G [00:41<00:04, 33.0MB/s][A
+
+
+
+
+
+model-00003-of-00008.safetensors:  44%|####4     | 872M/1.97G [00:41<00:37, 29.3MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  44%|####4     | 873M/1.98G [00:42<00:35, 31.6MB/s][A[A[A[A[A[A[A[A
+model-00007-of-00008.safetensors: 100%|##########| 1.95G/1.95G [00:44<00:00, 39.0MB/s][Amodel-00007-of-00008.safetensors: 100%|##########| 1.95G/1.95G [00:44<00:00, 43.6MB/s]
+
+
+model-00004-of-00008.safetensors:  44%|####4     | 873M/1.98G [00:45<00:32, 33.8MB/s][A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  48%|####7     | 940M/1.97G [00:45<00:39, 25.9MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  47%|####7     | 940M/1.98G [00:46<00:38, 26.9MB/s][A[A[A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  47%|####7     | 940M/1.98G [00:46<00:29, 35.1MB/s][A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  45%|####5     | 873M/1.92G [00:47<00:51, 20.3MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  51%|#####     | 1.01G/1.98G [00:47<00:30, 32.1MB/s][A[A[A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  58%|#####7    | 1.14G/1.98G [00:47<00:13, 62.7MB/s][A[A
+
+
+
+
+model-00002-of-00008.safetensors: 100%|##########| 1.95G/1.95G [00:47<00:00, 21.2MB/s][A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  54%|#####4    | 1.07G/1.97G [00:47<00:26, 34.1MB/s][A[A[A[A[A[Amodel-00002-of-00008.safetensors: 100%|##########| 1.95G/1.95G [00:47<00:00, 40.8MB/s]
+
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  56%|#####5    | 1.11G/1.98G [00:47<00:19, 44.1MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  48%|####8     | 941M/1.95G [00:48<00:47, 21.4MB/s][A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  58%|#####7    | 1.14G/1.97G [00:48<00:20, 39.7MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  49%|####8     | 940M/1.92G [00:48<00:42, 23.2MB/s][A[A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  61%|######1   | 1.21G/1.98G [00:49<00:14, 54.1MB/s][A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  68%|######8   | 1.34G/1.97G [00:49<00:09, 68.1MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  59%|#####9    | 1.18G/1.98G [00:49<00:19, 41.5MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  52%|#####1    | 1.01G/1.95G [00:50<00:40, 23.4MB/s][A[A[A[A
+
+model-00004-of-00008.safetensors:  63%|######2   | 1.24G/1.98G [00:51<00:18, 40.1MB/s][A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  71%|#######1  | 1.41G/1.97G [00:52<00:11, 50.1MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  56%|#####5    | 1.07G/1.92G [00:52<00:30, 27.8MB/s][A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  55%|#####5    | 1.08G/1.95G [00:52<00:34, 25.4MB/s][A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  66%|######6   | 1.31G/1.98G [00:52<00:15, 44.1MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  76%|#######6  | 1.50G/1.97G [00:52<00:07, 61.0MB/s][A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  59%|#####8    | 1.14G/1.95G [00:52<00:24, 33.0MB/s][A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  70%|######9   | 1.38G/1.98G [00:53<00:11, 50.3MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  66%|######6   | 1.28G/1.92G [00:53<00:14, 44.9MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  80%|#######9  | 1.57G/1.97G [00:53<00:06, 62.4MB/s][A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  83%|########3 | 1.64G/1.97G [00:54<00:04, 78.1MB/s][A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  66%|######6   | 1.31G/1.98G [00:54<00:19, 34.7MB/s][A[A
+
+model-00004-of-00008.safetensors:  70%|######9   | 1.38G/1.98G [00:54<00:13, 46.0MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  62%|######2   | 1.21G/1.95G [00:54<00:22, 33.3MB/s][A[A[A[A
+
+model-00004-of-00008.safetensors:  73%|#######2  | 1.44G/1.98G [00:55<00:09, 55.3MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  66%|######5   | 1.28G/1.95G [00:55<00:16, 41.4MB/s][A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  70%|######9   | 1.34G/1.92G [00:55<00:14, 41.5MB/s][A[A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  76%|#######6  | 1.51G/1.98G [00:56<00:07, 58.7MB/s][A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  76%|#######6  | 1.51G/1.98G [00:56<00:09, 48.3MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  80%|#######9  | 1.58G/1.98G [00:56<00:07, 55.2MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  69%|######9   | 1.34G/1.95G [00:56<00:13, 44.1MB/s][A[A[A[A
+
+model-00004-of-00008.safetensors:  80%|#######9  | 1.58G/1.98G [00:57<00:06, 59.9MB/s][A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  83%|########3 | 1.65G/1.98G [00:57<00:05, 62.5MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  86%|########6 | 1.71G/1.97G [00:57<00:06, 44.4MB/s][A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  90%|########9 | 1.77G/1.97G [00:57<00:03, 59.0MB/s][A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  72%|#######2  | 1.41G/1.95G [00:57<00:10, 50.3MB/s][A[A[A[A
+
+model-00004-of-00008.safetensors:  83%|########3 | 1.64G/1.98G [00:57<00:04, 68.2MB/s][A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  73%|#######3  | 1.41G/1.92G [00:57<00:13, 38.7MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  77%|#######6  | 1.48G/1.92G [00:58<00:09, 49.3MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  80%|########  | 1.54G/1.92G [00:58<00:06, 60.5MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  93%|#########3| 1.84G/1.97G [00:58<00:02, 61.3MB/s][A[A[A[A[A[A
+
+model-00004-of-00008.safetensors:  86%|########6 | 1.71G/1.98G [00:58<00:03, 67.6MB/s][A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  86%|########6 | 1.71G/1.98G [00:59<00:04, 55.9MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  90%|########9 | 1.78G/1.98G [00:59<00:02, 70.4MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  76%|#######5  | 1.48G/1.95G [00:59<00:10, 46.5MB/s][A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors:  97%|#########6| 1.91G/1.97G [01:00<00:01, 55.9MB/s][A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  84%|########3 | 1.61G/1.92G [01:00<00:05, 52.8MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  86%|########6 | 1.66G/1.92G [01:00<00:04, 64.2MB/s][A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  83%|########2 | 1.61G/1.95G [01:00<00:05, 64.9MB/s][A[A[A[A
+
+model-00004-of-00008.safetensors:  90%|########9 | 1.78G/1.98G [01:00<00:03, 51.2MB/s][A[A
+
+
+
+model-00005-of-00008.safetensors:  90%|########9 | 1.75G/1.95G [01:01<00:02, 94.6MB/s][A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  93%|#########3| 1.81G/1.95G [01:01<00:01, 114MB/s] [A[A[A[A
+
+model-00004-of-00008.safetensors:  93%|#########3| 1.85G/1.98G [01:01<00:02, 64.4MB/s][A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  90%|########9 | 1.72G/1.92G [01:01<00:03, 61.0MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  93%|#########3| 1.85G/1.98G [01:01<00:02, 50.8MB/s][A[A[A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors:  97%|#########6| 1.88G/1.95G [01:01<00:00, 114MB/s][A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors:  93%|#########3| 1.79G/1.92G [01:01<00:01, 76.7MB/s][A[A[A[A[A[A[A
+
+
+
+
+
+
+model-00006-of-00008.safetensors: 100%|##########| 1.92G/1.92G [01:02<00:00, 131MB/s] [A[A[A[A[A[A[Amodel-00006-of-00008.safetensors: 100%|##########| 1.92G/1.92G [01:02<00:00, 31.0MB/s]
+
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors:  97%|#########6| 1.91G/1.98G [01:02<00:01, 60.4MB/s][A[A[A[A[A[A[A[A
+
+
+
+
+
+model-00003-of-00008.safetensors: 100%|##########| 1.97G/1.97G [01:02<00:00, 45.1MB/s][A[A[A[A[A[A
+
+
+
+model-00005-of-00008.safetensors: 100%|##########| 1.95G/1.95G [01:02<00:00, 113MB/s][A[A[A[Amodel-00003-of-00008.safetensors: 100%|##########| 1.97G/1.97G [01:02<00:00, 31.6MB/s]
+model-00005-of-00008.safetensors: 100%|##########| 1.95G/1.95G [01:02<00:00, 31.2MB/s]
+
+
+
+
+
+
+
+
+model-00001-of-00008.safetensors: 100%|##########| 1.98G/1.98G [01:02<00:00, 77.9MB/s][A[A[A[A[A[A[A[Amodel-00001-of-00008.safetensors: 100%|##########| 1.98G/1.98G [01:02<00:00, 31.7MB/s]
+Fetching 8 files:  12%|#2        | 1/8 [01:02<07:18, 62.59s/it]
+
+model-00004-of-00008.safetensors: 100%|##########| 1.98G/1.98G [01:02<00:00, 80.8MB/s][A[Amodel-00004-of-00008.safetensors: 100%|##########| 1.98G/1.98G [01:02<00:00, 31.6MB/s]
+Fetching 8 files: 100%|##########| 8/8 [01:02<00:00,  7.83s/it]
+Loading checkpoint shards:   0%|          | 0/8 [00:00<?, ?it/s]Loading checkpoint shards:  12%|#2        | 1/8 [00:02<00:15,  2.24s/it]Loading checkpoint shards:  25%|##5       | 2/8 [00:04<00:14,  2.43s/it]Loading checkpoint shards:  38%|###7      | 3/8 [00:06<00:11,  2.30s/it]Loading checkpoint shards:  50%|#####     | 4/8 [00:09<00:09,  2.29s/it]Loading checkpoint shards:  62%|######2   | 5/8 [00:11<00:07,  2.37s/it]Loading checkpoint shards:  75%|#######5  | 6/8 [00:13<00:04,  2.31s/it]Loading checkpoint shards:  88%|########7 | 7/8 [00:16<00:02,  2.46s/it]Loading checkpoint shards: 100%|##########| 8/8 [00:18<00:00,  2.11s/it]Loading checkpoint shards: 100%|##########| 8/8 [00:18<00:00,  2.26s/it]
+Scoring keywords:   0%|          | 0/154 [00:00<?, ?it/s]Scoring keywords:   1%|          | 1/154 [00:01<04:54,  1.93s/it]Scoring keywords:   1%|1         | 2/154 [00:02<02:22,  1.07it/s]Scoring keywords:   2%|1         | 3/154 [00:02<01:33,  1.62it/s]Scoring keywords:   3%|2         | 4/154 [00:02<01:10,  2.13it/s]Scoring keywords:   3%|3         | 5/154 [00:02<00:57,  2.59it/s]Scoring keywords:   4%|3         | 6/154 [00:03<00:49,  2.97it/s]Scoring keywords:   5%|4         | 7/154 [00:03<00:44,  3.27it/s]Scoring keywords:   5%|5         | 8/154 [00:03<00:41,  3.51it/s]Scoring keywords:   6%|5         | 9/154 [00:03<00:39,  3.69it/s]Scoring keywords:   6%|6         | 10/154 [00:04<00:37,  3.81it/s]Scoring keywords:   7%|7         | 11/154 [00:04<00:36,  3.91it/s]Scoring keywords:   8%|7         | 12/154 [00:04<00:35,  3.98it/s]Scoring keywords:   8%|8         | 13/154 [00:04<00:34,  4.03it/s]Scoring keywords:   9%|9         | 14/154 [00:05<00:34,  4.07it/s]Scoring keywords:  10%|9         | 15/154 [00:05<00:33,  4.10it/s]Scoring keywords:  10%|#         | 16/154 [00:05<00:33,  4.11it/s]Scoring keywords:  11%|#1        | 17/154 [00:05<00:33,  4.12it/s]Scoring keywords:  12%|#1        | 18/154 [00:06<00:32,  4.13it/s]Scoring keywords:  12%|#2        | 19/154 [00:06<00:32,  4.14it/s]Scoring keywords:  13%|#2        | 20/154 [00:06<00:32,  4.15it/s]Scoring keywords:  14%|#3        | 21/154 [00:06<00:32,  4.15it/s]Scoring keywords:  14%|#4        | 22/154 [00:06<00:31,  4.14it/s]Scoring keywords:  15%|#4        | 23/154 [00:07<00:31,  4.15it/s]Scoring keywords:  16%|#5        | 24/154 [00:07<00:31,  4.15it/s]Scoring keywords:  16%|#6        | 25/154 [00:07<00:31,  4.15it/s]Scoring keywords:  17%|#6        | 26/154 [00:07<00:30,  4.16it/s]Scoring keywords:  18%|#7        | 27/154 [00:08<00:30,  4.16it/s]Scoring keywords:  18%|#8        | 28/154 [00:08<00:30,  4.16it/s]Scoring keywords:  19%|#8        | 29/154 [00:08<00:30,  4.16it/s]Scoring keywords:  19%|#9        | 30/154 [00:08<00:29,  4.16it/s]Scoring keywords:  20%|##        | 31/154 [00:09<00:29,  4.16it/s]Scoring keywords:  21%|##        | 32/154 [00:09<00:29,  4.16it/s]Scoring keywords:  21%|##1       | 33/154 [00:09<00:29,  4.16it/s]Scoring keywords:  22%|##2       | 34/154 [00:09<00:28,  4.16it/s]Scoring keywords:  23%|##2       | 35/154 [00:10<00:28,  4.16it/s]Scoring keywords:  23%|##3       | 36/154 [00:10<00:28,  4.16it/s]Scoring keywords:  24%|##4       | 37/154 [00:10<00:28,  4.16it/s]Scoring keywords:  25%|##4       | 38/154 [00:10<00:27,  4.16it/s]Scoring keywords:  25%|##5       | 39/154 [00:11<00:27,  4.15it/s]Scoring keywords:  26%|##5       | 40/154 [00:11<00:27,  4.16it/s]Scoring keywords:  27%|##6       | 41/154 [00:11<00:27,  4.16it/s]Scoring keywords:  27%|##7       | 42/154 [00:11<00:26,  4.16it/s]Scoring keywords:  28%|##7       | 43/154 [00:12<00:26,  4.16it/s]Scoring keywords:  29%|##8       | 44/154 [00:12<00:26,  4.16it/s]Scoring keywords:  29%|##9       | 45/154 [00:12<00:26,  4.16it/s]Scoring keywords:  30%|##9       | 46/154 [00:12<00:25,  4.16it/s]Scoring keywords:  31%|###       | 47/154 [00:12<00:25,  4.16it/s]Scoring keywords:  31%|###1      | 48/154 [00:13<00:25,  4.16it/s]Scoring keywords:  32%|###1      | 49/154 [00:13<00:25,  4.16it/s]Scoring keywords:  32%|###2      | 50/154 [00:13<00:25,  4.16it/s]Scoring keywords:  33%|###3      | 51/154 [00:13<00:24,  4.16it/s]Scoring keywords:  34%|###3      | 52/154 [00:14<00:24,  4.16it/s]Scoring keywords:  34%|###4      | 53/154 [00:14<00:24,  4.16it/s]Scoring keywords:  35%|###5      | 54/154 [00:14<00:24,  4.16it/s]Scoring keywords:  36%|###5      | 55/154 [00:14<00:23,  4.16it/s]Scoring keywords:  36%|###6      | 56/154 [00:15<00:23,  4.16it/s]Scoring keywords:  37%|###7      | 57/154 [00:15<00:23,  4.16it/s]Scoring keywords:  38%|###7      | 58/154 [00:15<00:23,  4.16it/s]Scoring keywords:  38%|###8      | 59/154 [00:15<00:22,  4.16it/s]Scoring keywords:  39%|###8      | 60/154 [00:16<00:22,  4.16it/s]Scoring keywords:  40%|###9      | 61/154 [00:16<00:22,  4.16it/s]Scoring keywords:  40%|####      | 62/154 [00:16<00:22,  4.16it/s]Scoring keywords:  41%|####      | 63/154 [00:16<00:21,  4.16it/s]Scoring keywords:  42%|####1     | 64/154 [00:17<00:21,  4.16it/s]Scoring keywords:  42%|####2     | 65/154 [00:17<00:21,  4.16it/s]Scoring keywords:  43%|####2     | 66/154 [00:17<00:21,  4.16it/s]Scoring keywords:  44%|####3     | 67/154 [00:17<00:20,  4.16it/s]Scoring keywords:  44%|####4     | 68/154 [00:18<00:20,  4.16it/s]Scoring keywords:  45%|####4     | 69/154 [00:18<00:20,  4.16it/s]Scoring keywords:  45%|####5     | 70/154 [00:18<00:20,  4.16it/s]Scoring keywords:  46%|####6     | 71/154 [00:18<00:19,  4.16it/s]Scoring keywords:  47%|####6     | 72/154 [00:19<00:19,  4.16it/s]Scoring keywords:  47%|####7     | 73/154 [00:19<00:19,  4.16it/s]Scoring keywords:  48%|####8     | 74/154 [00:19<00:19,  4.16it/s]Scoring keywords:  49%|####8     | 75/154 [00:19<00:18,  4.16it/s]Scoring keywords:  49%|####9     | 76/154 [00:19<00:18,  4.16it/s]Scoring keywords:  50%|#####     | 77/154 [00:20<00:18,  4.16it/s]Scoring keywords:  51%|#####     | 78/154 [00:20<00:18,  4.16it/s]Scoring keywords:  51%|#####1    | 79/154 [00:20<00:18,  4.16it/s]Scoring keywords:  52%|#####1    | 80/154 [00:20<00:17,  4.16it/s]Scoring keywords:  53%|#####2    | 81/154 [00:21<00:17,  4.16it/s]Scoring keywords:  53%|#####3    | 82/154 [00:21<00:17,  4.16it/s]Scoring keywords:  54%|#####3    | 83/154 [00:21<00:17,  4.16it/s]Scoring keywords:  55%|#####4    | 84/154 [00:21<00:16,  4.16it/s]Scoring keywords:  55%|#####5    | 85/154 [00:22<00:16,  4.16it/s]Scoring keywords:  56%|#####5    | 86/154 [00:22<00:16,  4.16it/s]Scoring keywords:  56%|#####6    | 87/154 [00:22<00:16,  4.16it/s]Scoring keywords:  57%|#####7    | 88/154 [00:22<00:15,  4.16it/s]Scoring keywords:  58%|#####7    | 89/154 [00:23<00:15,  4.16it/s]Scoring keywords:  58%|#####8    | 90/154 [00:23<00:15,  4.16it/s]Scoring keywords:  59%|#####9    | 91/154 [00:23<00:15,  4.16it/s]Scoring keywords:  60%|#####9    | 92/154 [00:23<00:14,  4.16it/s]Scoring keywords:  60%|######    | 93/154 [00:24<00:14,  4.16it/s]Scoring keywords:  61%|######1   | 94/154 [00:24<00:14,  4.16it/s]Scoring keywords:  62%|######1   | 95/154 [00:24<00:14,  4.16it/s]Scoring keywords:  62%|######2   | 96/154 [00:24<00:13,  4.16it/s]Scoring keywords:  63%|######2   | 97/154 [00:25<00:13,  4.16it/s]Scoring keywords:  64%|######3   | 98/154 [00:25<00:13,  4.16it/s]Scoring keywords:  64%|######4   | 99/154 [00:25<00:13,  4.16it/s]Scoring keywords:  65%|######4   | 100/154 [00:25<00:12,  4.16it/s]Scoring keywords:  66%|######5   | 101/154 [00:25<00:12,  4.16it/s]Scoring keywords:  66%|######6   | 102/154 [00:26<00:12,  4.16it/s]Scoring keywords:  67%|######6   | 103/154 [00:26<00:12,  4.16it/s]Scoring keywords:  68%|######7   | 104/154 [00:26<00:12,  4.16it/s]Scoring keywords:  68%|######8   | 105/154 [00:26<00:11,  4.16it/s]Scoring keywords:  69%|######8   | 106/154 [00:27<00:11,  4.16it/s]Scoring keywords:  69%|######9   | 107/154 [00:27<00:11,  4.16it/s]Scoring keywords:  70%|#######   | 108/154 [00:27<00:11,  4.16it/s]Scoring keywords:  71%|#######   | 109/154 [00:27<00:10,  4.16it/s]Scoring keywords:  71%|#######1  | 110/154 [00:28<00:10,  4.16it/s]Scoring keywords:  72%|#######2  | 111/154 [00:28<00:10,  4.16it/s]Scoring keywords:  73%|#######2  | 112/154 [00:28<00:10,  4.16it/s]Scoring keywords:  73%|#######3  | 113/154 [00:28<00:09,  4.16it/s]Scoring keywords:  74%|#######4  | 114/154 [00:29<00:09,  4.16it/s]Scoring keywords:  75%|#######4  | 115/154 [00:29<00:09,  4.16it/s]Scoring keywords:  75%|#######5  | 116/154 [00:29<00:09,  4.16it/s]Scoring keywords:  76%|#######5  | 117/154 [00:29<00:08,  4.16it/s]Scoring keywords:  77%|#######6  | 118/154 [00:30<00:08,  4.16it/s]Scoring keywords:  77%|#######7  | 119/154 [00:30<00:08,  4.16it/s]Scoring keywords:  78%|#######7  | 120/154 [00:30<00:08,  4.16it/s]Scoring keywords:  79%|#######8  | 121/154 [00:30<00:07,  4.16it/s]Scoring keywords:  79%|#######9  | 122/154 [00:31<00:07,  4.16it/s]Scoring keywords:  80%|#######9  | 123/154 [00:31<00:07,  4.16it/s]Scoring keywords:  81%|########  | 124/154 [00:31<00:07,  4.16it/s]Scoring keywords:  81%|########1 | 125/154 [00:31<00:06,  4.16it/s]Scoring keywords:  82%|########1 | 126/154 [00:31<00:06,  4.16it/s]Scoring keywords:  82%|########2 | 127/154 [00:32<00:06,  4.16it/s]Scoring keywords:  83%|########3 | 128/154 [00:32<00:06,  4.16it/s]Scoring keywords:  84%|########3 | 129/154 [00:32<00:06,  4.16it/s]Scoring keywords:  84%|########4 | 130/154 [00:32<00:05,  4.16it/s]Scoring keywords:  85%|########5 | 131/154 [00:33<00:05,  4.16it/s]Scoring keywords:  86%|########5 | 132/154 [00:33<00:05,  4.16it/s]Scoring keywords:  86%|########6 | 133/154 [00:33<00:05,  4.16it/s]Scoring keywords:  87%|########7 | 134/154 [00:33<00:04,  4.16it/s]Scoring keywords:  88%|########7 | 135/154 [00:34<00:04,  4.16it/s]Scoring keywords:  88%|########8 | 136/154 [00:34<00:04,  4.16it/s]Scoring keywords:  89%|########8 | 137/154 [00:34<00:04,  4.16it/s]Scoring keywords:  90%|########9 | 138/154 [00:34<00:03,  4.16it/s]Scoring keywords:  90%|######### | 139/154 [00:35<00:03,  4.16it/s]Scoring keywords:  91%|######### | 140/154 [00:35<00:03,  4.16it/s]Scoring keywords:  92%|#########1| 141/154 [00:35<00:03,  4.16it/s]Scoring keywords:  92%|#########2| 142/154 [00:35<00:02,  4.16it/s]Scoring keywords:  93%|#########2| 143/154 [00:36<00:02,  4.16it/s]Scoring keywords:  94%|#########3| 144/154 [00:36<00:02,  4.16it/s]Scoring keywords:  94%|#########4| 145/154 [00:36<00:02,  4.16it/s]Scoring keywords:  95%|#########4| 146/154 [00:36<00:01,  4.16it/s]Scoring keywords:  95%|#########5| 147/154 [00:37<00:01,  4.16it/s]Scoring keywords:  96%|#########6| 148/154 [00:37<00:01,  4.16it/s]Scoring keywords:  97%|#########6| 149/154 [00:37<00:01,  4.16it/s]Scoring keywords:  97%|#########7| 150/154 [00:37<00:00,  4.16it/s]Scoring keywords:  98%|#########8| 151/154 [00:37<00:00,  4.16it/s]Scoring keywords:  99%|#########8| 152/154 [00:38<00:00,  4.16it/s]Scoring keywords:  99%|#########9| 153/154 [00:38<00:00,  4.16it/s]Scoring keywords: 100%|##########| 154/154 [00:38<00:00,  4.16it/s]Scoring keywords: 100%|##########| 154/154 [00:38<00:00,  3.98it/s]
+  Saved LLM scores cache to data/gen_ai/cache/llm_scores_gen_ai.csv
+  Saved LLM info to data/gen_ai/clean/llm_pipeline_gen_ai.pkl
+  Scores added with shape: 154 x 2
+  [Saved] Cached to step8_embeddings_llm.parquet
+
+[Step 8] Removing rows with NaN values...
+  Data after NaN removal: 18798 rows
+
+[Step 9] Preparing train-test split and saving outputs...
+[Step 9] Preparing train-test split...
+  Train set: 14098 rows
+  Test set: 4700 rows
+[Step 10] Saving outputs to data/gen_ai/clean/...
+  Saved: data/gen_ai/clean/ad_opt_data_llm.csv
+  Saved: data/gen_ai/clean/train_llm.csv
+  Saved: data/gen_ai/clean/test_llm.csv
+  Saved: data/gen_ai/clean/unique_keyword_embeddings_llm.csv (154 rows)
+======================================================================
+✓ Pipeline completed successfully!
+======================================================================
