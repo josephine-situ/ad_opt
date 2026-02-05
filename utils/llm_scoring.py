@@ -34,56 +34,75 @@ def get_relevance_prompt(keyword: str, course_name: str) -> str:
     Returns:
         The formatted prompt string.
     """
-    prompt = f"""Role: You are a Digital Marketing Specialist for a paid MIT {course_name} course.
-Task: Calculate a relevance score (1-5) for the keyword below.
-Scoring Logic:
+    # Use a clearer, more structured prompt that works better with LLMs
+    prompt = f"""You are a Digital Marketing Specialist for a paid MIT {course_name} course.
 
-Start with a Base Score of 3.
-Apply Modifiers (Cumulative):
--1 points: Keyword contains "free", "cheap", "youtube", "login", or is unrelated to {course_name.lower()}.
--1 point: Keyword is purely informational (definitions, "what is", news).
-+1 point: Keyword implies learning intent ("course", "training", "tutorial", "education").
-+1 points: Keyword implies high purchase intent ("certification", "bootcamp", "university", "MIT", "executive", "paid").
+Calculate a relevance score (1-5) for the search keyword: "{keyword}"
 
-Keyword: {keyword}
-Output: Output ONLY the final calculated score number."""
+Scoring Rules:
+- Start with Base Score = 3
+- Subtract 1 if: keyword contains "free", "cheap", "youtube", "login", or is unrelated to {course_name.lower()}
+- Subtract 1 if: keyword is purely informational (definitions, "what is", news)
+- Add 1 if: keyword implies learning intent ("course", "training", "tutorial", "education")
+- Add 1 if: keyword implies high purchase intent ("certification", "bootcamp", "university", "MIT", "executive", "paid")
+
+Apply all applicable modifiers cumulatively. Minimum score is 1, maximum is 5.
+
+Score:"""
     return prompt
 
 
-def parse_llm_score(response: str) -> int:
+def parse_llm_score(response: str, debug: bool = True) -> int:
     """
     Parse the LLM response to extract the numeric score.
     
     Args:
         response: The raw LLM response text.
+        debug: If True, print debug info when parsing fails.
     
     Returns:
-        Integer score between 1 and 5, or 3 as default if parsing fails.
+        Integer score between 1 and 5, or None if parsing fails.
     """
     # Clean the response
     response = response.strip()
     
+    if debug and response:
+        print(f"    [DEBUG] Raw response: '{response[:100]}'")
+    
     # Try to extract a number from the response
-    # First, try direct conversion
+    # First, try direct conversion of first character or word
+    first_word = response.split()[0] if response.split() else ""
     try:
-        score = int(response)
-        return max(1, min(5, score))  # Clamp to 1-5
+        score = int(first_word)
+        if 1 <= score <= 5:
+            return score
     except ValueError:
         pass
     
-    # Try to find a number in the response
+    # Try direct conversion
+    try:
+        score = int(response)
+        if 1 <= score <= 5:
+            return score
+    except ValueError:
+        pass
+    
+    # Try to find a number 1-5 in the response
     numbers = re.findall(r'\b([1-5])\b', response)
     if numbers:
         return int(numbers[0])
     
-    # Last resort: look for any digit
-    digits = re.findall(r'\d', response)
+    # Look for any single digit
+    digits = re.findall(r'(\d)', response)
     if digits:
         score = int(digits[0])
         return max(1, min(5, score))
     
-    # Default to neutral score
-    return 3
+    if debug:
+        print(f"    [DEBUG] Failed to parse score from: '{response[:100]}'")
+    
+    # Return None to indicate parsing failure (caller decides default)
+    return None
 
 
 def load_prometheus_model(model_name: str = "prometheus-eval/prometheus-7b-v2.0"):
@@ -137,6 +156,7 @@ def score_keyword_batch(
     course_name: str,
     batch_size: int = 1,
     max_new_tokens: int = 10,
+    debug: bool = True,
 ) -> list:
     """
     Score a batch of keywords using the Prometheus model.
@@ -149,6 +169,7 @@ def score_keyword_batch(
         course_name: The course name for the rubric.
         batch_size: Number of keywords to process at once.
         max_new_tokens: Maximum tokens to generate for response.
+        debug: If True, print debug information.
     
     Returns:
         List of integer scores (1-5).
@@ -156,6 +177,7 @@ def score_keyword_batch(
     import torch
     
     scores = []
+    parse_failures = 0
     
     for i in tqdm(range(0, len(keywords), batch_size), desc="Scoring keywords"):
         batch = keywords[i:i + batch_size]
@@ -180,6 +202,7 @@ def score_keyword_batch(
                 max_new_tokens=max_new_tokens,
                 do_sample=False,  # Greedy decoding for consistency
                 pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
             )
         
         # Decode responses
@@ -188,8 +211,18 @@ def score_keyword_batch(
             prompt_length = inputs['input_ids'][j].shape[0]
             generated_tokens = output[prompt_length:]
             response = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-            score = parse_llm_score(response)
+            
+            # Parse with debug info for first few
+            show_debug = debug or (i == 0 and j < 3)
+            score = parse_llm_score(response, debug=show_debug)
+            
+            if score is None:
+                parse_failures += 1
+            
             scores.append(score)
+    
+    if parse_failures > 0:
+        print(f"  [Warning] {parse_failures}/{len(keywords)} keywords used fallback scoring")
     
     return scores
 
@@ -201,6 +234,7 @@ def get_llm_keyword_scores(
     batch_size: int = 1,
     cache_path: str = None,
     return_model: bool = False,
+    debug: bool = True,
 ) -> pd.DataFrame:
     """
     Generate LLM-based relevance scores for keywords.
@@ -214,6 +248,7 @@ def get_llm_keyword_scores(
         batch_size: Batch size for inference.
         cache_path: Optional path to cache results.
         return_model: If True, return tuple (df, model_info).
+        debug: If True, print debug information.
     
     Returns:
         pd.DataFrame with columns ['Keyword', 'llm_relevance_score'].
@@ -246,13 +281,12 @@ def get_llm_keyword_scores(
             print(f"  Found {len(new_keywords)} new keywords not in cache")
             unique_texts = new_keywords
     
-    print(f"  Scoring {len(unique_texts)} keywords with Prometheus LLM...")
+    print(f"  Scoring {len(unique_texts)} keywords...")
     print(f"  Course: {course_name}")
     
-    # Load model
+    # Load model and score with LLM
     model, tokenizer, device = load_prometheus_model(model_name)
     
-    # Score keywords
     scores = score_keyword_batch(
         unique_texts,
         model,
@@ -260,6 +294,7 @@ def get_llm_keyword_scores(
         device,
         course_name,
         batch_size=batch_size,
+        debug=debug,
     )
     
     # Create DataFrame
@@ -267,6 +302,12 @@ def get_llm_keyword_scores(
         'Keyword': unique_texts,
         'llm_relevance_score': scores,
     })
+    
+    # Print score distribution
+    score_dist = result_df['llm_relevance_score'].value_counts().sort_index()
+    print(f"  Score distribution:")
+    for score_val, count in score_dist.items():
+        print(f"    Score {score_val}: {count} keywords ({100*count/len(result_df):.1f}%)")
     
     # Merge with cached results if any
     if cache_path:

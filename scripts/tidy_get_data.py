@@ -8,6 +8,10 @@ Usage:
     python scripts/tidy_get_data.py --embedding-method tfidf
     python scripts/tidy_get_data.py --embedding-method bert
     python scripts/tidy_get_data.py --force-reload # Force full recompute if you updated source data
+
+LLMs:
+    request gpus with salloc -p pi_dbertsim --gpus=1
+    python scripts/tidy_get_data.py --embedding-method llm # Use LLM-based relevance scoring (Prometheus)
 """
 
 import argparse
