@@ -35,7 +35,7 @@ def get_relevance_prompt(keyword: str, course_name: str) -> str:
         The formatted prompt string.
     """
     # Use Qwen3 recommended format with \boxed{} for standardized output
-    prompt = f"""You are a Digital Marketing Specialist for a paid MIT {course_name} course.
+    prompt = f"""You are a Digital Marketing Specialist.
 
 Calculate a relevance score (1-5) for the search keyword: "{keyword}"
 
