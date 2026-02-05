@@ -16,7 +16,7 @@ from .date_features import (
 )
 from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 from .keyword_matching import fuzzy_fill_from_gkp
-from .llm_scoring import get_llm_keyword_scores
+from .llm_scoring import get_llm_scores_cached
 
 
 def load_and_combine_keyword_data(data_dir=None):
@@ -631,9 +631,9 @@ def add_embeddings(
         # Use LLM-based relevance scoring instead of embeddings
         llm_cache_path = None
         if cache_dir:
-            llm_cache_path = Path(cache_dir) / f'llm_scores_{course}.csv'
+            llm_cache_path = str(Path(cache_dir) / f'llm_scores_{course}.csv')
         
-        embedding_df, llm_info = get_llm_keyword_scores(
+        embedding_df, llm_info = get_llm_scores_cached(
             unique_keywords,
             course=course,
             model_name="Qwen/Qwen3-8B",

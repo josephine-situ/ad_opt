@@ -307,6 +307,7 @@ def get_llm_scores_cached(
     model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
     debug: bool = True,
+    return_model: bool = False,
 ) -> pd.DataFrame:
     """
     Get LLM relevance scores for keywords, using cached scores where available.
@@ -321,9 +322,11 @@ def get_llm_scores_cached(
         model_name: HuggingFace model name for Qwen3.
         batch_size: Batch size for inference.
         debug: If True, print debug information.
+        return_model: If True, return tuple (df, model_info).
     
     Returns:
         DataFrame with columns ['Keyword', 'llm_relevance_score'].
+        Optionally returns tuple (df, model_info) if return_model=True.
     """
     # Convert to list if needed
     if not isinstance(keywords, list):
@@ -379,7 +382,12 @@ def get_llm_scores_cached(
         result_df = cached_df
     
     # Return only the requested keywords
-    return result_df[result_df['Keyword'].isin(keywords)].copy()
+    filtered_df = result_df[result_df['Keyword'].isin(keywords)].copy()
+    
+    if return_model:
+        return filtered_df, {'model_name': model_name, 'course': course}
+    return filtered_df
+
 
 def add_llm_scores_to_df(
     df: pd.DataFrame,
