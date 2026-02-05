@@ -1,5 +1,5 @@
 """
-LLM-based keyword relevance scoring using Prometheus.
+LLM-based keyword relevance scoring using Qwen3.
 
 This module provides functions to evaluate keyword relevance using a large language model
 instead of BERT embeddings. The LLM scores keywords on a 1-5 scale based on their
@@ -105,20 +105,20 @@ def parse_llm_score(response: str, debug: bool = True) -> int:
     return None
 
 
-def load_prometheus_model(model_name: str = "prometheus-eval/prometheus-7b-v2.0"):
+def load_qwen_model(model_name: str = "Qwen/Qwen3-8B"):
     """
-    Load the Prometheus model and tokenizer.
+    Load the Qwen3 model and tokenizer.
     
     Args:
-        model_name: HuggingFace model identifier for Prometheus.
+        model_name: HuggingFace model identifier for Qwen3.
     
     Returns:
-        Tuple of (model, tokenizer).
+        Tuple of (model, tokenizer, device).
     """
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
     
-    print(f"  Loading Prometheus model: {model_name}")
+    print(f"  Loading Qwen3 model: {model_name}")
     
     # Determine device
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -159,11 +159,11 @@ def score_keyword_batch(
     debug: bool = True,
 ) -> list:
     """
-    Score a batch of keywords using the Prometheus model.
+    Score a batch of keywords using the Qwen3 model.
     
     Args:
         keywords: List of keywords to score.
-        model: The loaded Prometheus model.
+        model: The loaded Qwen3 model.
         tokenizer: The tokenizer.
         device: The device ('cuda' or 'cpu').
         course_name: The course name for the rubric.
@@ -172,7 +172,7 @@ def score_keyword_batch(
         debug: If True, print debug information.
     
     Returns:
-        List of integer scores (1-5).
+        List of integer scores (1-5) or None for parse failures.
     """
     import torch
     
@@ -222,7 +222,7 @@ def score_keyword_batch(
             scores.append(score)
     
     if parse_failures > 0:
-        print(f"  [Warning] {parse_failures}/{len(keywords)} keywords used fallback scoring")
+        print(f"  [Warning] {parse_failures}/{len(keywords)} keywords failed to parse (returned None)")
     
     return scores
 
@@ -230,7 +230,7 @@ def score_keyword_batch(
 def get_llm_keyword_scores(
     unique_texts: list,
     course: str = 'gen_ai',
-    model_name: str = "prometheus-eval/prometheus-7b-v2.0",
+    model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
     cache_path: str = None,
     return_model: bool = False,
@@ -244,7 +244,7 @@ def get_llm_keyword_scores(
     Args:
         unique_texts: List of unique keyword strings.
         course: Course identifier ('gen_ai', 'ml', 'sys_eng').
-        model_name: HuggingFace model name for Prometheus.
+        model_name: HuggingFace model name for Qwen3.
         batch_size: Batch size for inference.
         cache_path: Optional path to cache results.
         return_model: If True, return tuple (df, model_info).
@@ -285,7 +285,7 @@ def get_llm_keyword_scores(
     print(f"  Course: {course_name}")
     
     # Load model and score with LLM
-    model, tokenizer, device = load_prometheus_model(model_name)
+    model, tokenizer, device = load_qwen_model(model_name)
     
     scores = score_keyword_batch(
         unique_texts,
@@ -335,7 +335,7 @@ def get_llm_keyword_scores(
 def add_llm_scores_to_df(
     df: pd.DataFrame,
     course: str = 'gen_ai',
-    model_name: str = "prometheus-eval/prometheus-7b-v2.0",
+    model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
     cache_dir: str = None,
 ) -> pd.DataFrame:
@@ -345,7 +345,7 @@ def add_llm_scores_to_df(
     Args:
         df: DataFrame with a 'Keyword' column.
         course: Course identifier.
-        model_name: Prometheus model name.
+        model_name: Qwen3 model name.
         batch_size: Batch size for inference.
         cache_dir: Directory for caching LLM scores.
     

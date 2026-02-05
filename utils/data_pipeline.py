@@ -636,7 +636,7 @@ def add_embeddings(
         embedding_df, llm_info = get_llm_keyword_scores(
             unique_keywords,
             course=course,
-            model_name="prometheus-eval/prometheus-7b-v2.0",
+            model_name="Qwen/Qwen3-8B",
             batch_size=1,
             cache_path=llm_cache_path,
             return_model=True,
