@@ -42,9 +42,9 @@ Calculate a relevance score (1-5) for the search keyword: "{keyword}"
 Scoring Rules:
 - Start with Base Score = 3
 - Subtract 1 if: keyword contains "free", "cheap", "youtube", "login", or is unrelated to {course_name.lower()}
-- Subtract 1 if: keyword is purely informational (e.g., definitions, "what is", news)
-- Add 1 if: keyword implies learning intent (e.g., "course", "training", "tutorial", "education")
-- Add 1 if: keyword implies high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid")
+- Subtract 1 if: keyword is purely informational (e.g., definitions, "what is", news, etc.)
+- Add 1 if: keyword implies learning intent (e.g., "course", "training", "tutorial", "education", etc.)
+- Add 1 if: keyword implies high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)
 
 Apply all applicable modifiers cumulatively. Minimum score is 1, maximum is 5.
 
@@ -61,7 +61,7 @@ def parse_llm_score(response: str, debug: bool = True) -> int:
         debug: If True, print debug info when parsing fails.
     
     Returns:
-        Integer score between 1 and 5, or None if parsing fails.
+        Integer score between 1 and 5, or 3 if parsing fails.
     """
     # Clean the response
     response = response.strip()
@@ -117,8 +117,7 @@ def parse_llm_score(response: str, debug: bool = True) -> int:
     if debug:
         print(f"    [DEBUG] Failed to parse score from: '{response}'")
     
-    # Return None to indicate parsing failure (caller decides default)
-    return None
+    return 3
 
 
 def load_qwen_model(model_name: str = "Qwen/Qwen3-8B"):
@@ -171,7 +170,7 @@ def score_keyword_batch(
     device: str,
     course_name: str,
     batch_size: int = 1,
-    max_new_tokens: int = 1500,
+    max_new_tokens: int = 5000,
     debug: bool = True,
 ) -> list:
     """
