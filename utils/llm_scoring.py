@@ -34,7 +34,7 @@ def get_relevance_prompt(keyword: str, course_name: str) -> str:
     Returns:
         The formatted prompt string.
     """
-    # Use a clearer, more structured prompt that works better with LLMs
+    # Use Qwen3 recommended format with \boxed{} for standardized output
     prompt = f"""You are a Digital Marketing Specialist for a paid MIT {course_name} course.
 
 Calculate a relevance score (1-5) for the search keyword: "{keyword}"
@@ -48,7 +48,7 @@ Scoring Rules:
 
 Apply all applicable modifiers cumulatively. Minimum score is 1, maximum is 5.
 
-Score:"""
+Please reason step by step, and put your final score within \\boxed{{}}."""
     return prompt
 
 
@@ -67,7 +67,21 @@ def parse_llm_score(response: str, debug: bool = True) -> int:
     response = response.strip()
     
     if debug and response:
-        print(f"    [DEBUG] Raw response: '{response[:100]}'")
+        print(f"    [DEBUG] Raw response: '{response}'")
+    
+    # First, try to extract from \boxed{N} format (Qwen3 recommended format)
+    boxed_match = re.search(r'\\boxed\{(\d)\}', response)
+    if boxed_match:
+        score = int(boxed_match.group(1))
+        if 1 <= score <= 5:
+            return score
+    
+    # Also try without backslash: boxed{N}
+    boxed_match = re.search(r'boxed\{(\d)\}', response)
+    if boxed_match:
+        score = int(boxed_match.group(1))
+        if 1 <= score <= 5:
+            return score
     
     # Try to extract a number from the response
     # First, try direct conversion of first character or word
@@ -87,19 +101,21 @@ def parse_llm_score(response: str, debug: bool = True) -> int:
     except ValueError:
         pass
     
-    # Try to find a number 1-5 in the response
-    numbers = re.findall(r'\b([1-5])\b', response)
-    if numbers:
-        return int(numbers[0])
-    
-    # Look for any single digit
-    digits = re.findall(r'(\d)', response)
-    if digits:
-        score = int(digits[0])
-        return max(1, min(5, score))
+    # Try to find a standalone number 1-5 in the response (not part of "1-5" range)
+    # Look for patterns like "score is 4" or "= 4" or just "4" at end
+    score_patterns = [
+        r'score[:\s]+([1-5])\b',
+        r'=\s*([1-5])\b',
+        r'\b([1-5])\s*$',  # number at end of string
+        r'^([1-5])\b',     # number at start of string
+    ]
+    for pattern in score_patterns:
+        match = re.search(pattern, response, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
     
     if debug:
-        print(f"    [DEBUG] Failed to parse score from: '{response[:100]}'")
+        print(f"    [DEBUG] Failed to parse score from: '{response}'")
     
     # Return None to indicate parsing failure (caller decides default)
     return None
@@ -155,7 +171,7 @@ def score_keyword_batch(
     device: str,
     course_name: str,
     batch_size: int = 1,
-    max_new_tokens: int = 10,
+    max_new_tokens: int = 1500,
     debug: bool = True,
 ) -> list:
     """
@@ -168,7 +184,7 @@ def score_keyword_batch(
         device: The device ('cuda' or 'cpu').
         course_name: The course name for the rubric.
         batch_size: Number of keywords to process at once.
-        max_new_tokens: Maximum tokens to generate for response.
+        max_new_tokens: Maximum tokens to generate for response (needs to be higher for step-by-step reasoning).
         debug: If True, print debug information.
     
     Returns:
