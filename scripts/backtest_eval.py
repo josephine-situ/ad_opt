@@ -63,7 +63,10 @@ def main():
 
     # Load Base Data
     df = pd.read_csv(base_dir / "clean/ad_opt_data_bert.csv")
-    df = df[df["Region"] != "C"].copy() 
+
+    # Filter out Region C, except if course is sys_eng
+    if args.course != "sys_eng":
+        df = df[df["Region"] != "C"].copy() 
     df["Day"] = pd.to_datetime(df["Day"])
     
     kw_df_all = pd.read_csv(base_dir / "gkp/keywords_classified.csv")
