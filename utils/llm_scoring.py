@@ -211,7 +211,7 @@ def score_keyword_batch(
         # Move to device
         inputs = {k: v.to(device) for k, v in inputs.items()}
         
-        # Generate
+        # Generate with stop string to halt after \boxed{} is complete
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
@@ -219,6 +219,8 @@ def score_keyword_batch(
                 do_sample=False,  # Greedy decoding for consistency
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
+                stop_strings=["\\boxed{1}", "\\boxed{2}", "\\boxed{3}", "\\boxed{4}", "\\boxed{5}"],
+                tokenizer=tokenizer,
             )
         
         # Decode responses
