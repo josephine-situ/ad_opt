@@ -25,6 +25,7 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
+from utils.llm_scoring import get_llm_scores_cached
 from tidy_get_data import load_or_cache
 from scripts.modeling import _to_float32_csr # necessary to read model correctly
 
@@ -85,8 +86,21 @@ def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
     return embedding_df
     
 
-def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai')):
+def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai'):
+    """
+    Create feature matrix for optimization.
     
+    Args:
+        keywords: List of keywords to create features for.
+        opt_date: Optimization date (defaults to today).
+        course_start_dts: List of course start dates.
+        base_dir: Base directory for data files.
+        embedding_method: 'bert' for BERT embeddings or 'llm' for LLM relevance scores.
+        course: Course identifier ('gen_ai', 'ml', 'sys_eng') - used for LLM scoring.
+    
+    Returns:
+        DataFrame with all features for optimization.
+    """
     # Get all keyword combinations
     regions = ['USA', 'A', 'B'] # Removed region 'C' since low EPC
     match_types = ['Exact match', 'Phrase match', 'Broad match']
@@ -115,9 +129,20 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
     rows_removed = rows_before - len(X)
     print(f"[Info] Removed {rows_removed} rows with 0 historical searches ({rows_removed/rows_before*100:.2f}% of data).")
 
-    # Get keyword embeddings
-    emb_df = get_emb_from_pipeline(keywords, base_dir)
-    X = X.merge(emb_df, on='Keyword', how='left')
+    # Get keyword embeddings or LLM scores based on method
+    if embedding_method == 'llm':
+        print(f"[Info] Using LLM relevance scores")
+        cache_path = str(base_dir / 'clean/unique_keyword_embeddings_llm.csv')
+        llm_df = get_llm_scores_cached(keywords, course=course, cache_path=cache_path)
+        X = X.merge(llm_df, on='Keyword', how='left')
+        # Fill missing scores with neutral value (3)
+        X['llm_relevance_score'] = X['llm_relevance_score'].fillna(3)
+        embedding_cols = ['llm_relevance_score']
+    else:
+        print(f"[Info] Using BERT embeddings")
+        emb_df = get_emb_from_pipeline(keywords, base_dir)
+        X = X.merge(emb_df, on='Keyword', how='left')
+        embedding_cols = [col for col in X.columns if col.startswith('bert_')]
 
     # Features (and Keyword)
     features = [
@@ -128,8 +153,7 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         'Competition (indexed value)', 'Top of page bid (low range)',
         'Top of page bid (high range)'
     ]
-    bert_cols = [col for col in X.columns if col.startswith('bert_')]
-    features.extend(bert_cols)
+    features.extend(embedding_cols)
 
     X = X[features]
 

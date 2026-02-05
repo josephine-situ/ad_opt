@@ -27,7 +27,6 @@ from .embeddings import (
 )
 
 from .llm_scoring import (
-    get_llm_keyword_scores,
     get_relevance_prompt,
     add_llm_scores_to_df,
     COURSE_NAME_MAP,
@@ -65,7 +64,6 @@ __all__ = [
     'get_bert_embeddings_pipeline',
     'get_bert_embedding',
     # LLM scoring
-    'get_llm_keyword_scores',
     'get_relevance_prompt',
     'add_llm_scores_to_df',
     'COURSE_NAME_MAP',

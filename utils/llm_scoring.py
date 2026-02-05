@@ -245,68 +245,39 @@ def score_keyword_batch(
     return scores
 
 
-def get_llm_keyword_scores(
-    unique_texts: list,
+def _score_keywords_with_llm(
+    keywords: list,
     course: str = 'gen_ai',
     model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
-    cache_path: str = None,
-    return_model: bool = False,
     debug: bool = True,
 ) -> pd.DataFrame:
     """
-    Generate LLM-based relevance scores for keywords.
-    
-    This replaces BERT embeddings with a single relevance score (1-5) for each keyword.
+    Internal function to score keywords using the LLM (no caching).
     
     Args:
-        unique_texts: List of unique keyword strings.
+        keywords: List of keyword strings to score.
         course: Course identifier ('gen_ai', 'ml', 'sys_eng').
         model_name: HuggingFace model name for Qwen3.
         batch_size: Batch size for inference.
-        cache_path: Optional path to cache results.
-        return_model: If True, return tuple (df, model_info).
         debug: If True, print debug information.
     
     Returns:
         pd.DataFrame with columns ['Keyword', 'llm_relevance_score'].
-        Optionally returns tuple (df, model_info) if return_model=True.
     """
-    # Convert to list if needed
-    if not isinstance(unique_texts, list):
-        unique_texts = list(unique_texts)
+    if not keywords:
+        return pd.DataFrame(columns=['Keyword', 'llm_relevance_score'])
     
     course_name = COURSE_NAME_MAP.get(course, course)
     
-    # Check for cached results
-    if cache_path:
-        cache_file = Path(cache_path)
-        if cache_file.exists():
-            print(f"  [Cache] Loading LLM scores from {cache_file.name}")
-            cached_df = pd.read_csv(cache_file)
-            
-            # Find keywords not in cache
-            cached_keywords = set(cached_df['Keyword'].tolist())
-            new_keywords = [kw for kw in unique_texts if kw not in cached_keywords]
-            
-            if not new_keywords:
-                print(f"  All {len(unique_texts)} keywords found in cache")
-                result_df = cached_df[cached_df['Keyword'].isin(unique_texts)].copy()
-                if return_model:
-                    return result_df, {'model_name': model_name, 'course': course}
-                return result_df
-            
-            print(f"  Found {len(new_keywords)} new keywords not in cache")
-            unique_texts = new_keywords
-    
-    print(f"  Scoring {len(unique_texts)} keywords...")
+    print(f"  Scoring {len(keywords)} keywords...")
     print(f"  Course: {course_name}")
     
     # Load model and score with LLM
     model, tokenizer, device = load_qwen_model(model_name)
     
     scores = score_keyword_batch(
-        unique_texts,
+        keywords,
         model,
         tokenizer,
         device,
@@ -317,7 +288,7 @@ def get_llm_keyword_scores(
     
     # Create DataFrame
     result_df = pd.DataFrame({
-        'Keyword': unique_texts,
+        'Keyword': keywords,
         'llm_relevance_score': scores,
     })
     
@@ -327,28 +298,89 @@ def get_llm_keyword_scores(
     for score_val, count in score_dist.items():
         print(f"    Score {score_val}: {count} keywords ({100*count/len(result_df):.1f}%)")
     
-    # Merge with cached results if any
+    return result_df
+
+
+def get_llm_scores_cached(
+    keywords: list,
+    course: str = 'gen_ai',
+    cache_path: str = None,
+    model_name: str = "Qwen/Qwen3-8B",
+    batch_size: int = 1,
+    debug: bool = True,
+) -> pd.DataFrame:
+    """
+    Get LLM relevance scores for keywords, using cached scores where available.
+    
+    This is the main interface for getting LLM scores. It loads cached scores
+    when available and only generates new scores for uncached keywords.
+    
+    Args:
+        keywords: List of keywords to get scores for.
+        course: Course identifier ('gen_ai', 'ml', 'sys_eng').
+        cache_path: Path to cache file. If None, no caching is performed.
+        model_name: HuggingFace model name for Qwen3.
+        batch_size: Batch size for inference.
+        debug: If True, print debug information.
+    
+    Returns:
+        DataFrame with columns ['Keyword', 'llm_relevance_score'].
+    """
+    # Convert to list if needed
+    if not isinstance(keywords, list):
+        keywords = list(keywords)
+    
+    if not keywords:
+        return pd.DataFrame(columns=['Keyword', 'llm_relevance_score'])
+    
+    cached_df = pd.DataFrame(columns=['Keyword', 'llm_relevance_score'])
+    new_keywords = keywords
+    
+    # Load cached scores if cache_path provided and file exists
     if cache_path:
         cache_file = Path(cache_path)
         if cache_file.exists():
+            print(f"  [Cache] Loading LLM scores from {cache_file.name}")
             cached_df = pd.read_csv(cache_file)
-            result_df = pd.concat([cached_df, result_df], ignore_index=True)
-            result_df = result_df.drop_duplicates(subset=['Keyword'], keep='last')
+            cached_keywords = set(cached_df['Keyword'].tolist())
+            new_keywords = [kw for kw in keywords if kw not in cached_keywords]
+            
+            if not new_keywords:
+                print(f"  All {len(keywords)} keywords found in cache")
+                return cached_df[cached_df['Keyword'].isin(keywords)].copy()
+            
+            print(f"  Found {len(new_keywords)} new keywords not in cache")
+        else:
+            print(f"  No cache found at {cache_file}, generating LLM scores for all keywords")
+    
+    # Generate scores for new keywords
+    if new_keywords:
+        new_scores_df = _score_keywords_with_llm(
+            new_keywords,
+            course=course,
+            model_name=model_name,
+            batch_size=batch_size,
+            debug=debug,
+        )
         
-        # Save updated cache
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
-        result_df.to_csv(cache_file, index=False)
-        print(f"  Saved LLM scores cache to {cache_file}")
+        # Merge with cached results
+        if not cached_df.empty:
+            result_df = pd.concat([cached_df, new_scores_df], ignore_index=True)
+            result_df = result_df.drop_duplicates(subset=['Keyword'], keep='last')
+        else:
+            result_df = new_scores_df
+        
+        # Save updated cache if cache_path provided
+        if cache_path:
+            cache_file = Path(cache_path)
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            result_df.to_csv(cache_file, index=False)
+            print(f"  Saved LLM scores cache to {cache_file}")
+    else:
+        result_df = cached_df
     
-    # Filter to requested keywords
-    all_keywords = set(unique_texts)
-    result_df = result_df[result_df['Keyword'].isin(all_keywords)].copy()
-    
-    if return_model:
-        return result_df, {'model_name': model_name, 'course': course}
-    
-    return result_df
-
+    # Return only the requested keywords
+    return result_df[result_df['Keyword'].isin(keywords)].copy()
 
 def add_llm_scores_to_df(
     df: pd.DataFrame,
@@ -374,14 +406,14 @@ def add_llm_scores_to_df(
     
     cache_path = None
     if cache_dir:
-        cache_path = Path(cache_dir) / f'llm_scores_{course}.csv'
+        cache_path = str(Path(cache_dir) / f'llm_scores_{course}.csv')
     
-    scores_df = get_llm_keyword_scores(
+    scores_df = get_llm_scores_cached(
         unique_keywords,
         course=course,
+        cache_path=cache_path,
         model_name=model_name,
         batch_size=batch_size,
-        cache_path=cache_path,
     )
     
     # Merge scores into original DataFrame

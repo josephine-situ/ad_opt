@@ -30,16 +30,37 @@ from utils.date_features import COURSE_START_DATES_MAP
 from config import COURSE_CONFIG
 
 
-def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path, base_dir: Path, course_start_dts: list) -> pd.DataFrame:
+def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path, base_dir: Path, course_start_dts: list, embedding_method: str = 'bert', course: str = 'gen_ai') -> pd.DataFrame:
+    """
+    Create or load cached feature matrix.
+    
+    Args:
+        keywords: List of keywords to create features for.
+        opt_date: Optimization date.
+        cache_dir: Directory for caching feature matrices.
+        base_dir: Base directory for data files.
+        course_start_dts: List of course start dates.
+        embedding_method: 'bert' for BERT embeddings or 'llm' for LLM relevance scores.
+        course: Course identifier ('gen_ai', 'ml', 'sys_eng') - used for LLM scoring.
+    
+    Returns:
+        DataFrame with all features for optimization.
+    """
     kw_hash = hashlib.md5("|".join(sorted(keywords)).encode("utf-8")).hexdigest()[:10]
-    p = cache_dir / f"feature_matrix_{kw_hash}_{opt_date.date()}.parquet"
+    p = cache_dir / f"feature_matrix_{embedding_method}_{kw_hash}_{opt_date.date()}.parquet"
     if p.exists():
         return pd.read_parquet(p)
-    X = create_feature_matrix(keywords, opt_date=opt_date, course_start_dts=course_start_dts, base_dir=base_dir)
+    X = create_feature_matrix(
+        keywords, 
+        opt_date=opt_date, 
+        course_start_dts=course_start_dts, 
+        base_dir=base_dir,
+        embedding_method=embedding_method,
+        course=course
+    )
     p.parent.mkdir(parents=True, exist_ok=True)
     X.to_parquet(p)
     return X
-    # return X
 
 
 def select_keywords(kw_df, keywords_n, masked, mask_frac=0.1, seed=None):
@@ -205,7 +226,9 @@ def main():
             opt_date=day, 
             cache_dir=cache_dir, 
             base_dir=base_dir, 
-            course_start_dts=COURSE_START_DATES_MAP.get(args.course, [])
+            course_start_dts=COURSE_START_DATES_MAP.get(args.course, []),
+            embedding_method=embedding_method,
+            course=args.course
         )
 
         # Optimize for each parameter combination
