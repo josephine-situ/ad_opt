@@ -1,0 +1,8 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
+1 year masters degree programs,USA,Exact match,existing,0.7669321953271435,0.6331737469790004,1.6204095110161634e-07,0.6331736,1.6204095110161634e-07,0.0
+courses for engineering students,USA,Broad match,existing,1.1455119810389789,1.4397774849290002,0.0883248958939659,1.4397776,-1.277571570756919e-07,0.0
+mining engineering at tvet colleges,USA,Exact match,existing searches,221.6855120597167,241.75084199279,241.00483645766428,241.75087,-2.7758186547544028e-05,297.48483
+mining engineering at tvet colleges,USA,Phrase match,existing searches,221.6855120597167,244.23136763579,243.20423977381336,244.2314,-3.190034283306886e-05,298.95422
+mining engineering at tvet colleges,USA,Broad match,existing searches,105.13550992027244,68.61720158149001,67.69086189557311,68.6172,-1.177299054688774e-06,43.101566
+professional engineer certification usa,USA,Phrase match,existing searches,75.35550972421137,29.976268413139,28.784213426185264,29.976265,3.459525718341183e-06,25.447086
+professional engineer certification usa,USA,Broad match,existing searches,221.6855120597167,242.79280840041903,241.5457078087595,242.79283,-2.3020479403612623e-05,298.7772

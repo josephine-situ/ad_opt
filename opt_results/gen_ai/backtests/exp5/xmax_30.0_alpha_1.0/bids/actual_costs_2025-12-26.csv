@@ -1,0 +1,40 @@
+Keyword,Region,Match type,Cost,Clicks,t_Clicks_ActCost
+mit professional development,USA,Broad match,118.4,80,75.1295
+generative ai course,USA,Broad match,5.13,3,0.5357163
+generative ai online course,USA,Broad match,2.76,1,1.0730423
+online ai and ml courses,USA,Phrase match,47.32,28,25.588785
+mit xpro ai,USA,Broad match,58.75999999999999,52,51.261074
+mit artificial intelligence course,USA,Phrase match,13.36,8,7.542317
+generative ai certificate course,USA,Broad match,1.58,1,0.4171567
+generative ai fundamentals course,USA,Broad match,6.6000000000000005,5,4.4539185
+generative ai online course,USA,Broad match,6.88,8,7.3646646
+generative ai online program,USA,Broad match,6.56,4,2.0827296
+generative ai certificate program,USA,Broad match,1.56,2,0.4171567
+generative ai foundations course,USA,Broad match,12.87,13,11.469318
+mit generative ai certificate,USA,Broad match,5.28,4,2.3580632
+online course generative ai,USA,Broad match,1.2,1,0.41715664
+mit xpro ai course,USA,Phrase match,2.23,1,1.0730423
+prompt engineering course,USA,Phrase match,0.87,1,0.41715655
+mit professional development,A,Broad match,12.24,6,3.9198482
+generative ai courses,A,Broad match,2.4,2,1.3343647
+online ai and ml courses,A,Phrase match,3.64,4,2.7109814
+mit xpro ai,A,Broad match,0.96,1,0.41715652
+mit artificial intelligence course,A,Phrase match,0.43,1,0.41715652
+generative ai fundamentals course,A,Broad match,0.81,1,0.41715652
+generative ai online course,A,Broad match,1.6,1,0.4171567
+generative ai online program,A,Broad match,4.760000000000001,7,3.5627677
+generative ai foundations course,A,Broad match,6.04,4,2.674955
+professional certificate in ai,A,Phrase match,0.84,2,0.4171567
+mit professional development,B,Broad match,2.8000000000000003,7,4.9871697
+generative ai course,B,Broad match,2.04,6,2.5109
+generative ai online course,B,Broad match,1.86,6,3.1714792
+online ai and ml courses,B,Phrase match,3.6,9,6.218587
+mit artificial intelligence course,B,Phrase match,0.18,1,0.0
+generative ai online course,B,Broad match,0.25,1,0.0
+generative ai online program,B,Broad match,5.49,9,5.9733257
+mit generative ai certificate,B,Broad match,1.17,3,0.5510447
+generative ai certification online,B,Broad match,0.8699999999999999,3,0.5510447
+online course generative ai,B,Broad match,0.4,2,0.5510447
+generative ai fundamentals,B,Exact match,0.47,1,0.30894554
+mit ai course,USA,Phrase match,6.550000000000001,5,2.9395475
+generative ai course mit,USA,Exact match,1.81,1,0.41715655

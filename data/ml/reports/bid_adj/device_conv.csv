@@ -1,0 +1,17 @@
+Device report
+1 January 2022 - 2 February 2026
+Campaign,Conversion action,Device,Conversions
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,"Computers
+",13.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,"Computers
+",4.78
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,Mobile phones,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,"Computers
+",2.34
+Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,"Computers
+",4.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Mobile phones,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,"Computers
+",1.34
+Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,"Computers
+",2.00

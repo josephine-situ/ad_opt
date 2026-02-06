@@ -1,0 +1,2 @@
+Day,Hist_MSE,Hist_R2,Hist_Bias,CV_Score,best_params
+2025-12-01,4.579192638397217,0.8970770239830017,-0.00043035428745939215,8.67937879562378,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"

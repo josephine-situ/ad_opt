@@ -1,0 +1,39 @@
+Feature,Mean_Abs_SHAP
+num__Cost,3.2369313
+cat__Region_USA,1.2986466
+cat__Region_C,0.9084072
+cat__Match type_Exact match,0.38426548
+cat__Region_B,0.32782272
+num__Top of page bid (low range),0.16326441
+num__Competition (indexed value),0.15839544
+num__last_month_searches,0.123292655
+cat__Match type_Broad match,0.12326445
+num__six_month_avg,0.11444706
+num__Top of page bid (high range),0.08072511
+cat__Region_A,0.06693673
+num__days_to_next_course_start,0.051687133
+num__three_month_avg,0.03365539
+num__search_trend,0.029618513
+num__llm_relevance_score,0.021699069
+num__mom_change,0.014974881
+cat__month_Feb,0.01125262
+cat__month_Sep,0.011039642
+cat__month_Jan,0.0013328631
+cat__month_Dec,0.0007741632
+cat__day_of_week_Tuesday,0.00075319386
+cat__day_of_week_Wednesday,0.00022924016
+num__is_public_holiday,0.0
+num__is_weekend,0.0
+cat__Match type_Phrase match,0.0
+cat__day_of_week_Monday,0.0
+cat__day_of_week_Friday,0.0
+cat__day_of_week_Thursday,0.0
+cat__day_of_week_Saturday,0.0
+cat__month_Aug,0.0
+cat__month_Apr,0.0
+cat__day_of_week_Sunday,0.0
+cat__month_Jul,0.0
+cat__month_Jun,0.0
+cat__month_Mar,0.0
+cat__month_Nov,0.0
+cat__month_Oct,0.0

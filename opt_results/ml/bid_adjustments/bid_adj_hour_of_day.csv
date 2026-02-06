@@ -1,0 +1,25 @@
+Region,Hour Group,Clicks,Conversions,ConversionRate,AvgConversionRate,BidAdjustment,BidAdjustmentPct,GoogleAdsFormat
+USA,15 - 17,5942,8.0,0.0013463480309660047,0.000607350963693411,1.2167545808746545,121.67545808746544,+122%
+USA,12 - 14,6554,7.68,0.0011718034787915777,0.000607350963693411,0.9293679418332177,92.93679418332177,+93%
+USA,9 - 11,6693,3.0,0.00044822949350067237,0.000607350963693411,-0.26199261992619916,-26.199261992619917,-26%
+B,6 - 8,6434,0.0,0.0,0.0,0.0,0.0,+0%
+B,3 - 5,5915,0.0,0.0,0.0,0.0,0.0,+0%
+B,0 - 2,6457,0.0,0.0,0.0,0.0,0.0,+0%
+B,9 - 11,6214,0.0,0.0,0.0,0.0,0.0,+0%
+A,0 - 2,3512,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+A,12 - 14,3050,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+A,15 - 17,3108,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+A,18 - 20,2658,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+A,21 - 23,1963,2.0,0.0010188487009679063,0.00031779747559331726,,,No adjustment (insufficient data)
+A,3 - 5,3474,1.5,0.0004317789291882556,0.00031779747559331726,,,No adjustment (insufficient data)
+A,6 - 8,3082,2.7800000000000002,0.0009020116807268009,0.00031779747559331726,,,No adjustment (insufficient data)
+A,9 - 11,3634,1.5,0.0004127682993946065,0.00031779747559331726,,,No adjustment (insufficient data)
+B,12 - 14,4620,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,15 - 17,4191,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,18 - 20,3892,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,21 - 23,3098,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,0 - 2,3649,0.0,0.0,0.000607350963693411,,,No adjustment (insufficient data)
+USA,18 - 20,4772,1.0,0.00020955574182732607,0.000607350963693411,,,No adjustment (insufficient data)
+USA,21 - 23,3780,2.0,0.0005291005291005291,0.000607350963693411,,,No adjustment (insufficient data)
+USA,3 - 5,1744,0.0,0.0,0.000607350963693411,,,No adjustment (insufficient data)
+USA,6 - 8,2562,0.0,0.0,0.000607350963693411,,,No adjustment (insufficient data)

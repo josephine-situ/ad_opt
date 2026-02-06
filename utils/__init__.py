@@ -26,10 +26,16 @@ from .embeddings import (
     get_bert_embedding,
 )
 
+from .llm_scoring import (
+    get_relevance_prompt,
+    add_llm_scores_to_df,
+    COURSE_NAME_MAP,
+)
+
 from .data_pipeline import (
     load_and_combine_keyword_data,
     format_keyword_data,
-    extract_date_features,
+    get_date_features,
     filter_data_by_date,
     get_gkp_data,
     impute_missing_data,
@@ -37,7 +43,7 @@ from .data_pipeline import (
     add_embeddings,
     prepare_train_test_split,
     save_outputs,
-    load_embeddings,
+    get_conversion_rates,
 )
 
 from .tee_logging import (
@@ -57,10 +63,14 @@ __all__ = [
     'get_tfidf_embeddings',
     'get_bert_embeddings_pipeline',
     'get_bert_embedding',
+    # LLM scoring
+    'get_relevance_prompt',
+    'add_llm_scores_to_df',
+    'COURSE_NAME_MAP',
     # Data pipeline
     'load_and_combine_keyword_data',
     'format_keyword_data',
-    'extract_date_features',
+    'get_date_features',
     'filter_data_by_date',
     'get_gkp_data',
     'impute_missing_data',
@@ -68,7 +78,7 @@ __all__ = [
     'add_embeddings',
     'prepare_train_test_split',
     'save_outputs',
-    'load_embeddings',
+    'get_conversion_rates',
     # Logging
     'setup_tee_logging',
 ]

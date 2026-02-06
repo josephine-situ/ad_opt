@@ -1,0 +1,29 @@
+Region,Age,Clicks,Conversions,ConversionRate,AvgConversionRate,BidAdjustment,BidAdjustmentPct,GoogleAdsFormat
+USA,35 - 44,5374,5.5,0.0010234462225530332,0.000607350963693411,0.6850985406020791,68.50985406020791,+69%
+USA,25 - 34,9078,3.0,0.00033046926635822867,0.000607350963693411,-0.45588418210685744,-45.588418210685745,-46%
+USA,18 - 24,5633,2.0,0.0003550505947097461,0.000607350963693411,-0.4154111610350969,-41.54111610350969,-42%
+A,25 - 34,7964,1.78,0.00022350577599196384,0.00031779747559331726,-0.29670374009520994,-29.670374009520994,-30%
+USA,Unknown,9066,5.0,0.0005515111405250386,0.000607350963693411,-0.09193995977021308,-9.193995977021308,-9%
+A,Unknown,5794,2.0,0.00034518467380048324,0.00031779747559331726,0.08617814901152054,8.617814901152055,+9%
+B,Unknown,12722,0.0,0.0,0.0,0.0,0.0,+0%
+B,18 - 24,7284,0.0,0.0,0.0,0.0,0.0,+0%
+B,25 - 34,13076,0.0,0.0,0.0,0.0,0.0,+0%
+A,18 - 24,4655,1.0,0.00021482277121374866,0.00031779747559331726,,,No adjustment (insufficient data)
+A,35 - 44,3120,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+A,45 - 54,1936,2.0,0.0010330578512396695,0.00031779747559331726,,,No adjustment (insufficient data)
+A,55 - 64,541,1.0,0.0018484288354898336,0.00031779747559331726,,,No adjustment (insufficient data)
+A,65+,471,0.0,0.0,0.00031779747559331726,,,No adjustment (insufficient data)
+B,35 - 44,4448,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,45 - 54,2318,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,55 - 64,599,0.0,0.0,0.0,,,No adjustment (insufficient data)
+B,65+,374,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,18 - 24,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,25 - 34,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,35 - 44,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,45 - 54,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,55 - 64,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,65+,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+C,Unknown,0,0.0,0.0,0.0,,,No adjustment (insufficient data)
+USA,45 - 54,3623,4.68,0.0012917471708528843,0.000607350963693411,,,No adjustment (insufficient data)
+USA,55 - 64,1571,0.0,0.0,0.000607350963693411,,,No adjustment (insufficient data)
+USA,65+,1351,1.5,0.0011102886750555144,0.000607350963693411,,,No adjustment (insufficient data)

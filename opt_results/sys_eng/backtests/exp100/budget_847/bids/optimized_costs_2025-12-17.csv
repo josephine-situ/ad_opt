@@ -1,0 +1,9 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
+civil engineering course,A,Phrase match,existing searches,6.775589529544634,6.12730974188,3.779723110105097,6.12731,-5.7314336388003546e-08,3.4213264
+find your next course,A,Phrase match,existing searches,6.775589529544634,5.939716800699999,3.97767256165581,5.9397173,-4.920856451207101e-07,3.5433724
+mining engineering at tvet colleges,USA,Exact match,existing searches,223.5855960348133,311.56210223261,310.1585481506932,311.5621,-1.0388743589828664e-06,297.48483
+mit opencourseware optimization methods,USA,Exact match,existing searches,1.295589299655859,0.6672749091799997,0.0426498820002816,0.6672746,3.148730538526934e-07,0.12590265
+mit opencourseware optimization methods,USA,Broad match,existing searches,1.295589299655859,0.9340097598599996,0.0426498941945638,0.93400943,3.270673361033261e-07,0.12590241
+professional engineer certification usa,USA,Exact match,existing searches,223.5855960348133,311.382413905,310.0693219116681,311.38242,-1.866484353740816e-06,297.49698
+protection and control engineer career,USA,Phrase match,existing searches,160.1555907979875,102.7363959433,101.79349665655302,102.73639,6.783143746247333e-06,95.539314
+protection and control engineer career,USA,Broad match,existing searches,223.5855960348133,313.62055403150003,312.7332054392187,313.62057,-2.0919671840147203e-05,302.76422

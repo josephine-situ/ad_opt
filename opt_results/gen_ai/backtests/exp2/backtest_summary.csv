@@ -1,0 +1,2 @@
+x_max,alpha,avg clicks (opt),se clicks (opt),avg cost (opt),se cost (opt),clicks/$ (opt),avg n kws (opt),se n kws (opt),avg clicks (act),se clicks (act),avg cost (act),se cost (act),clicks/$ (act),avg n kws (act),se n kws (act),improvement in clicks,improvement in clicks/$
+30.0,0.25,187.44232140000003,13.481695315654193,362.05062809448395,0.1511072189208886,0.5177240608213595,42.8,5.460565701260061,202.48666999999998,5.051804366569104,362.63100000000003,9.628934341636956,0.5583821294925143,35.1,0.7218802609235904,-0.07429797033058992,-0.07281405783545927

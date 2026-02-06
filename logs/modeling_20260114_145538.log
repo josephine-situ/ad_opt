@@ -1,0 +1,9 @@
+[Logging] Tee output to logs\modeling_20260114_145538.log
+Loaded training data: (14098, 70), test data: (4700, 70)
+Using target: Clicks
+Using 66 features for modeling.
+Fitting 3 folds for each of 18 candidates, totalling 54 fits
+Best hyperparameters: {'model__colsample_bytree': 1.0, 'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20, 'model__subsample': 1.0}
+Training metrics: {'MSE': 7.870076656341553, 'R2': 0.9419507384300232, 'Bias': -0.0009025151881375183, 'Lift': 5.288697991185912}
+Evaluation metrics: {'MSE': 10.452315330505371, 'R2': 0.9309406876564026, 'Bias': -0.028554671689511296, 'Lift': 5.486764967134483}
+Saved best model to models\xgb_clicks_model.joblib

@@ -12,8 +12,7 @@ This script:
 7. Prints summary statistics (tee-logged)
 
 Usage:
-    python scripts/compare_keywords.py
-    python scripts/compare_keywords.py --input data/gkp/semrush_new_kws.csv --output data/gkp/keywords_classified.csv
+    python scripts/compare_keywords.py --course gen_ai
 """
 
 import argparse
@@ -53,6 +52,9 @@ def clean_keyword(kw):
         return None
     
     kw = str(kw).strip()
+
+    # Remove double quotes, single quotes, and + signs
+    kw = kw.replace("'", "").replace('"', "").replace("+", "")
     
     # Remove [...] patterns
     kw = re.sub(r'\[.*?\]', '', kw).strip()
@@ -96,7 +98,7 @@ def clean_and_filter_keyword(kw) -> Optional[str]:
     return cleaned
 
 
-def _find_csv_header_row(path: Path, header_prefix: str = "Day,") -> int:
+def _find_csv_header_row(path: Path, header_prefix: str = "Search keyword,") -> int:
     """Return the 0-based row index where the real CSV header starts.
 
     Google Ads exports often include a title line and date range line before the header.
@@ -115,7 +117,7 @@ def _find_csv_header_row(path: Path, header_prefix: str = "Day,") -> int:
 
 
 def load_search_terms_report(path: Path) -> pd.DataFrame:
-    header_idx = _find_csv_header_row(path, header_prefix="Day,")
+    header_idx = _find_csv_header_row(path, header_prefix="Search keyword,")
     return pd.read_csv(path, skiprows=header_idx, encoding="utf-8-sig")
 
 
@@ -126,26 +128,26 @@ def main():
     parser.add_argument(
         '--input',
         type=str,
-        default='data/gkp/semrush_new_kws.csv',
-        help='Input CSV file with new keywords (default: data/gkp/semrush_new_kws.csv)'
+        default=None,
+        help='Input CSV file with new keywords (default: data/{course}/gkp/semrush_new_kws.csv)'
     )
     parser.add_argument(
         '--search-terms',
         type=str,
-        default='data/reports/Search keyword - search terms.csv',
-        help='Google Ads export of search terms (default: data/reports/Search keyword - search terms.csv)'
+        default=None,
+        help='Google Ads export of search terms (default: data/{course}/reports/Search keyword - search terms.csv)'
     )
     parser.add_argument(
         '--output',
         type=str,
-        default='data/gkp/keywords_classified.csv',
-        help='Output CSV file with classified keywords (default: data/gkp/keywords_classified.csv)'
+        default=None,
+        help='Output CSV file with classified keywords (default: data/{course}/gkp/keywords_classified.csv)'
     )
     parser.add_argument(
         '--data-dir',
         type=str,
-        default='data/reports',
-        help='Directory containing keyword reports (default: data/reports)'
+        default=None,
+        help='Directory containing keyword reports (default: data/{course}/reports)'
     )
     parser.add_argument(
         '--log-file',
@@ -156,8 +158,26 @@ def main():
             "Set to empty string '' to disable file logging."
         ),
     )
+    parser.add_argument(
+        '--course',
+        type=str,
+        default='gen_ai',
+        help='Course name (default: gen_ai)'
+    )
     
     args = parser.parse_args()
+
+    # Construct base path based on course
+    base_dir = Path(f"data/{args.course}")
+    
+    if args.input is None:
+        args.input = str(base_dir / "gkp/semrush_new_kws.csv")
+    if args.search_terms is None:
+        args.search_terms = str(base_dir / "reports/Search keyword - search terms.csv")
+    if args.output is None:
+        args.output = str(base_dir / "gkp/keywords_classified.csv")
+    if args.data_dir is None:
+        args.data_dir = str(base_dir / "reports")
 
     log_path = setup_tee_logging(
         log_file=args.log_file,
@@ -290,7 +310,10 @@ def main():
         existing_kws_cleaned = []
         existing_filtered_len = []
         for kw in existing_kws_raw:
-            kw_s = ' '.join(str(kw).split())
+            cleaned_basic = clean_keyword(kw)
+            if cleaned_basic is None:
+                continue
+            kw_s = ' '.join(str(cleaned_basic).split())
             if not _passes_len_filters(kw_s):
                 existing_filtered_len.append(kw_s)
                 continue

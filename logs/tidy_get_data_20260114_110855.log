@@ -1,0 +1,99 @@
+[Logging] Tee output to logs\tidy_get_data_20260114_110855.log
+======================================================================
+Data Preparation Pipeline for Ad Optimization
+======================================================================
+Embedding method: bert
+N components: 50
+Force reload: False
+======================================================================
+
+[Step 1] Load and combine keyword data...
+  [Cache] Loading from step1_combined.parquet
+
+[Step 2] Format keyword data...
+[Step 2] Formatting keyword data...
+
+[Step 3] Extract date features...
+  [Cache] Loading from step3_features.parquet
+
+[Step 4] Filter data by date...
+  [Cache] Loading from step4_filtered.parquet
+
+[Step 5] Load GKP data...
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  Loaded 1749 rows from Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  After cleaning: 1747 rows with unique keywords
+
+[Step 5.5] Impute missing data...
+[Step 5.5] Imputing missing data...
+  Total: Imputed 0 missing values (0.00% of total data)
+[Step 5.5] Imputing missing data...
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  searches_2024_07                        26.73% numeric (0)               (n=467)
+  searches_2024_08                        26.73% numeric (0)               (n=467)
+  searches_2024_09                        26.73% numeric (0)               (n=467)
+  searches_2024_10                        26.73% numeric (0)               (n=467)
+  searches_2024_11                        26.73% numeric (0)               (n=467)
+  searches_2024_12                        26.73% numeric (0)               (n=467)
+  searches_2025_01                        26.73% numeric (0)               (n=467)
+  searches_2025_02                        26.73% numeric (0)               (n=467)
+  searches_2025_03                        26.73% numeric (0)               (n=467)
+  searches_2025_04                        26.73% numeric (0)               (n=467)
+  searches_2025_05                        26.73% numeric (0)               (n=467)
+  searches_2025_06                        26.73% numeric (0)               (n=467)
+  searches_2025_07                        26.73% numeric (0)               (n=467)
+  searches_2025_08                        26.73% numeric (0)               (n=467)
+  searches_2025_09                        26.73% numeric (0)               (n=467)
+  searches_2025_10                        26.73% numeric (0)               (n=467)
+  searches_2025_11                        26.73% numeric (0)               (n=467)
+  Competition                             38.12% categorical (Missing)     (n=666)
+  Competition (indexed value)             38.12% numeric (0)               (n=666)
+  Top of page bid (low range)             54.26% numeric (0)               (n=948)
+  Top of page bid (high range)            54.26% numeric (0)               (n=948)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 11167 missing values (29.06% of total data)
+
+[Step 6] Merge with GKP data and calculate search stats...
+  [Cache] Loading from step6_merged.parquet
+
+[Step 6.5] Remove outlier rows...
+  [Computing] Running <lambda>...
+  [Saved] Cached to step6_5_cleaned.parquet
+
+[Step 7] Add BERT embeddings...
+  [Computing] Running add_embeddings...
+[Step 8] Computing BERT embeddings...
+  Processing 154 unique keywords...
+c:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+c:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+c:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+c:\Users\jsitu\anaconda3\lib\site-packages\huggingface_hub\file_download.py:945: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+c:\Users\jsitu\anaconda3\lib\site-packages\transformers\utils\generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+Batches:   0%|                                                                                                                              | 0/5 [00:00<?, ?it/s]Batches:  20%|#######################6                                                                                              | 1/5 [00:03<00:15,  3.76s/it]Batches:  40%|###############################################2                                                                      | 2/5 [00:03<00:04,  1.61s/it]Batches:  60%|######################################################################8                                               | 3/5 [00:03<00:01,  1.08it/s]Batches:  80%|##############################################################################################4                       | 4/5 [00:04<00:00,  1.67it/s]Batches: 100%|######################################################################################################################| 5/5 [00:04<00:00,  1.21it/s]
+  Saved BERT pipeline to data\clean\bert_pipeline_50d.pkl
+  Embeddings added with shape: 154 x 51
+  [Saved] Cached to step8_embeddings_bert.parquet
+
+[Step 8] Removing rows with NaN values...
+  Data after NaN removal: 18798 rows
+
+[Step 9] Preparing train-test split and saving outputs...
+[Step 9] Preparing train-test split...
+  Train set: 14098 rows
+  Test set: 4700 rows
+[Step 10] Saving outputs to data/clean/...
+  Saved: data\clean\ad_opt_data_bert.csv
+  Saved: data\clean\train_bert.csv
+  Saved: data\clean\test_bert.csv
+  Saved: data\clean\unique_keyword_embeddings_bert.csv (154 rows)
+======================================================================
+✓ Pipeline completed successfully!
+======================================================================

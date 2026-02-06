@@ -2,7 +2,7 @@
 Data pipeline functions for ad optimization.
 Handles loading, cleaning, merging, and preparing datasets with embeddings.
 """
-
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
@@ -16,9 +16,10 @@ from .date_features import (
 )
 from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
 from .keyword_matching import fuzzy_fill_from_gkp
+from .llm_scoring import get_llm_scores_cached
 
 
-def load_and_combine_keyword_data(data_dir="data/reports"):
+def load_and_combine_keyword_data(data_dir=None):
     """
     Load keyword performance data from the consolidated report export.
     
@@ -29,6 +30,9 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     - kw_df (pd.DataFrame): Raw keyword data with consistent columns.
     """
     print("[Step 1] Loading and combining keyword data...")
+
+    if data_dir is None:
+        data_dir = Path(__file__).resolve().parents[1] / "data/reports"
 
     report_path = Path(data_dir) / "Search keyword - raw input to models.csv"
     if not report_path.exists():
@@ -48,7 +52,7 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     }
     kw_df = kw_df.rename(columns={k: v for k, v in rename_map.items() if k in kw_df.columns})
 
-    required_cols = {'Day', 'Keyword', 'Match type', 'Campaign', 'Clicks', 'Avg. CPC', 'Conv. value'}
+    required_cols = {'Day', 'Keyword', 'Match type', 'Campaign', 'Clicks', 'Cost'}
     missing = sorted(required_cols - set(kw_df.columns))
     if missing:
         raise ValueError(
@@ -60,17 +64,13 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     kw_df = kw_df.dropna(subset=['Day'])
 
     # Ensure numeric types (some exports may include currency formatting)
-    for col in ['Clicks', 'Avg. CPC', 'Conv. value']:
+    for col in ['Clicks', 'Cost']:
         if kw_df[col].dtype == 'object':
             kw_df[col] = kw_df[col].astype(str).apply(clean_currency)
         kw_df[col] = pd.to_numeric(kw_df[col], errors='coerce')
 
     kw_df['Clicks'] = kw_df['Clicks'].fillna(0)
-    kw_df['Avg. CPC'] = kw_df['Avg. CPC'].fillna(0)
-    kw_df['Conv. value'] = kw_df['Conv. value'].fillna(0)
-
-    # Prior reports included explicit Cost; this export does not.
-    kw_df['Cost'] = kw_df['Clicks'] * kw_df['Avg. CPC']
+    kw_df['Cost'] = kw_df['Cost'].fillna(0)
 
     # Keep only rows where Clicks > 0
     kw_df = kw_df[kw_df['Clicks'] > 0]
@@ -81,7 +81,21 @@ def load_and_combine_keyword_data(data_dir="data/reports"):
     return kw_df
 
 
-def format_keyword_data(kw_df):
+def _extract_region_from_campaign(campaign):
+    if pd.isna(campaign):
+        return None
+    parts = [p.strip() for p in str(campaign).split('-')]
+    for part in parts:
+        if ('USA' in part) or ('US' in part) or (part == 'US'):
+            return 'USA'
+        for region in ['A', 'B', 'C']:
+            if part == region or part.startswith(f"{region} ") or \
+               part.startswith(f"{region}/") or part.startswith(f"{region}("):
+                return region
+    return None
+
+
+def format_keyword_data(kw_df, regions_only=False):
     """
     Format and clean keyword data (campaigns, regions, keywords).
     
@@ -94,50 +108,64 @@ def format_keyword_data(kw_df):
     print("[Step 2] Formatting keyword data...")
     
     kw_df['Campaign'] = kw_df['Campaign'].str.replace(r'\[.*?\]', '', regex=True)
-    kw_df['Region'] = kw_df['Campaign'].str.split('-').str[-1].str.strip()
-    kw_df['Region'] = kw_df['Region'].replace({'USA and CA': 'USA'})
-    kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
-    kw_df['Day'] = pd.to_datetime(kw_df['Day'])
-    
-    kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Avg. CPC', 'Cost', 'Conv. value', 'Clicks']].copy()
-    
-    return kw_df
+    kw_df['Region'] = kw_df['Campaign'].apply(_extract_region_from_campaign)
+
+    # Print unique regions
+    unique_regions = kw_df['Region'].unique().tolist()
+    print(f"  Found {len(unique_regions)} unique regions: {unique_regions}")
+
+    if regions_only:
+        return kw_df
+    else:
+        kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
+        kw_df['Day'] = pd.to_datetime(kw_df['Day'])
+        
+        kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Cost', 'Clicks']].copy()
+        
+        return kw_df
 
 
-def extract_date_features(kw_df, course_start_dts):
+def get_date_features(input_data, course_start_dts, regions=['USA']):
     """
-    Extract temporal features (day of week, weekend, holidays, etc.).
+    Standardized feature extractor for both DataFrames and single dates.
     
     Args:
-    - kw_df (pd.DataFrame): Keyword data with Day column.
-    - course_start_dts (list): ISO date strings for course start dates.
-    
-    Returns:
-    - kw_df (pd.DataFrame): Data with date features added.
+        input_data: pd.DataFrame with a 'Day' column OR a single datetime/string.
+        course_start_dts (list): ISO date strings for course starts.
+        regions (list): Regions for holiday checking.
     """
-    print("[Step 3] Extracting date features...")
+    # 1. Standardize input to a DataFrame for uniform processing
+    is_single_date = False
+    if isinstance(input_data, (pd.Timestamp, str)):
+        is_single_date = True
+        df = pd.DataFrame({'Day': [pd.to_datetime(input_data)], 'Region': [regions[0]]})
+    else:
+        df = input_data.copy()
+
+    # 2. Extract Basic Features
+    df['day_of_week'] = df['Day'].dt.day_name()
+    df['is_weekend'] = (df['Day'].dt.weekday >= 5).astype(int)
+    df['month'] = df['Day'].dt.strftime('%b')  # Categorical extraction (Jan, Feb...)
+
+    # 3. Holiday Logic (Using your existing helper functions)
+    df['_country_code'] = df['Region'].apply(_region_to_country_code) if 'Region' in df else _region_to_country_code(regions[0])
     
-    kw_df['day_of_week'] = kw_df['Day'].dt.day_name()
-    kw_df['is_weekend'] = (kw_df['Day'].dt.weekday >= 5).astype(int)
-    kw_df['month'] = kw_df['Day'].dt.month
+    years = sorted(df['Day'].dt.year.unique().tolist())
+    holiday_cals = _get_holiday_calendars(df['_country_code'].unique(), years=years)
     
-    # Holiday detection
-    kw_df['_country_code'] = kw_df['Region'].apply(_region_to_country_code)
-    years_needed = sorted(set(kw_df['Day'].dt.year.dropna().astype(int).tolist()))
-    holiday_calendars = _get_holiday_calendars(kw_df['_country_code'].unique(), years=years_needed)
-    
-    kw_df['is_public_holiday'] = kw_df.apply(
-        lambda row: _is_holiday(row, holiday_calendars), axis=1
+    df['is_public_holiday'] = df.apply(
+        lambda row: _is_holiday(row, holiday_cals), axis=1
     )
-    
-    # Days to next course start
-    kw_df['days_to_next_course_start'] = kw_df['Day'].apply(
+
+    # 4. Course Start Logic
+    df['days_to_next_course_start'] = df['Day'].apply(
         lambda d: calculate_days_to_next(d, course_start_dts)
     )
+
+    # Cleanup and Return
+    df.drop(columns=['_country_code'], inplace=True, errors='ignore')
     
-    kw_df.drop(columns=['_country_code'], inplace=True)
-    
-    return kw_df
+    return df.iloc[0].to_dict() if is_single_date else df
 
 
 def filter_data_by_date(kw_df, min_date='2024-11-03'):
@@ -159,7 +187,7 @@ def filter_data_by_date(kw_df, min_date='2024-11-03'):
     return kw_df
 
 
-def get_gkp_data(gkp_dir='data/gkp'):
+def get_gkp_data(gkp_dir=None):
     """
     Load and tidy Google Keyword Planner data from saved keywords stats file.
     
@@ -176,6 +204,9 @@ def get_gkp_data(gkp_dir='data/gkp'):
     """
     print("[Step 5] Loading Google Keyword Planner data...")
     
+    if gkp_dir is None:
+        gkp_dir = Path(__file__).resolve().parents[1] / "data/gkp"
+        
     gkp_path = Path(gkp_dir)
     
     # Find the most recent "Saved Keywords Stats" file
@@ -218,7 +249,7 @@ def get_gkp_data(gkp_dir='data/gkp'):
         try:
             month_year = col.replace('Searches:', '').strip()
             # Parse the month year string (using abbreviated month format %b)
-            date_obj = pd.to_datetime(month_year, format='%b %Y')
+            date_obj = pd.to_datetime(month_year, format='mixed')
             search_dates.append((date_obj, col))
         except Exception as e:
             print(f"  Warning: Could not parse date from column '{col}': {e}")
@@ -288,10 +319,12 @@ def impute_missing_data(df):
         if null_count > 0:
             if pd.api.types.is_numeric_dtype(df[col]):
                 fill_type = 'numeric (0)'
-                df[col].fillna(0, inplace=True)
+                # Direct assignment instead of inplace
+                df[col] = df[col].fillna(0)
             else:
                 fill_type = 'categorical (Missing)'
-                df[col].fillna('Missing', inplace=True)
+                # Direct assignment instead of inplace
+                df[col] = df[col].fillna('Missing')
             
             summary_data.append({
                 'Column': col,
@@ -322,7 +355,7 @@ def merge_with_ads_data(
     gkp_df=None,
     *,
     use_fuzzy_matching: bool = True,
-    drop_unmatched_gkp: bool = False,
+    drop_unmatched_gkp: bool = True,
     unmatched_print_limit: int = 50,
 ):
     """
@@ -343,6 +376,8 @@ def merge_with_ads_data(
     Returns:
     - merged_df (pd.DataFrame): Merged data with time series features.
     """
+    import numpy as np
+
     print("[Step 6] Merging with GKP data by keyword and date...")
     
     # Load GKP data if not provided
@@ -355,142 +390,141 @@ def merge_with_ads_data(
     # Create merge key from Day
     merged_df['year_month'] = merged_df['Day'].dt.strftime('%Y_%m')
     
-    if len(gkp_df) > 0:
-        gkp_df = gkp_df.copy()
-        gkp_df['Keyword'] = gkp_df['Keyword'].str.lower().str.strip()
-        
-        # Find which search columns are available (searches_YYYY_MM format)
-        search_cols = sorted([col for col in gkp_df.columns if col.startswith('searches_')])
-        print(f"  Found {len(search_cols)} monthly search columns")
+    gkp_df = gkp_df.copy()
+    gkp_df['Keyword'] = gkp_df['Keyword'].str.lower().str.strip()
+    
+    # Find which search columns are available (searches_YYYY_MM format)
+    search_cols = sorted([col for col in gkp_df.columns if col.startswith('searches_')])
+    print(f"  Found {len(search_cols)} monthly search columns")
 
-        # Exact merge on normalized Keyword (baseline behavior).
-        merged_df = pd.merge(merged_df, gkp_df, on='Keyword', how='left')
+    # Log search columns to reduce skewness
+    gkp_df[search_cols] = np.log1p(gkp_df[search_cols])
 
-        # Optional fuzzy-ish fill pass to increase join rate without changing
-        # already-matched rows.
-        if use_fuzzy_matching:
-            fuzzy_fill_from_gkp(
-                merged_df,
-                keyword_col='Keyword',
-                gkp_df=gkp_df,
-                gkp_keyword_col='Keyword',
-                value_cols=[c for c in gkp_df.columns if c != 'Keyword'],
-                verbose=True,
-                source_display_col='Keyword',
-                print_all_mappings=False,
-            )
+    # Exact merge on normalized Keyword (baseline behavior).
+    merged_df = pd.merge(merged_df, gkp_df, on='Keyword', how='left')
 
-        # Print (and optionally drop) any keywords that still have no GKP coverage.
-        # We treat missing values in the first available GKP column as "unmatched".
-        gkp_cols = [c for c in gkp_df.columns if c != 'Keyword']
-        gkp_cols = [c for c in gkp_cols if c in merged_df.columns]
-        if gkp_cols:
-            indicator_col = gkp_cols[0]
-            unmatched_mask = merged_df[indicator_col].isnull()
-            if unmatched_mask.any():
-                unmatched_keywords = sorted(merged_df.loc[unmatched_mask, 'Keyword'].astype(str).unique().tolist())
-                matched_keywords = sorted(merged_df.loc[~unmatched_mask, 'Keyword'].astype(str).unique().tolist())
+    # Optional fuzzy-ish fill pass to increase join rate without changing
+    # already-matched rows.
+    if use_fuzzy_matching:
+        fuzzy_fill_from_gkp(
+            merged_df,
+            keyword_col='Keyword',
+            gkp_df=gkp_df,
+            gkp_keyword_col='Keyword',
+            value_cols=[c for c in gkp_df.columns if c != 'Keyword'],
+            verbose=True,
+            source_display_col='Keyword',
+            print_all_mappings=False,
+        )
 
-                print(f"  Matched {len(matched_keywords)} unique keywords from GKP")
-                print(f"  Unmatched {len(unmatched_keywords)} keywords after {'fuzzy' if use_fuzzy_matching else 'exact'} merge")
-                if unmatched_keywords:
-                    to_print = unmatched_keywords[:max(0, int(unmatched_print_limit))]
-                    if to_print:
-                        print(f"  Unmatched keyword examples ({len(to_print)}): {to_print}")
-                    if len(unmatched_keywords) > len(to_print):
-                        print(f"  (Truncated; increase unmatched_print_limit to see more)")
+    # Print (and optionally drop) any keywords that still have no GKP coverage.
+    # We treat missing values in the first available GKP column as "unmatched".
+    gkp_cols = [c for c in gkp_df.columns if c != 'Keyword']
+    gkp_cols = [c for c in gkp_cols if c in merged_df.columns]
+    if gkp_cols:
+        indicator_col = gkp_cols[0]
+        unmatched_mask = merged_df[indicator_col].isnull()
+        if unmatched_mask.any():
+            unmatched_keywords = sorted(merged_df.loc[unmatched_mask, 'Keyword'].astype(str).unique().tolist())
+            matched_keywords = sorted(merged_df.loc[~unmatched_mask, 'Keyword'].astype(str).unique().tolist())
 
-                if drop_unmatched_gkp:
-                    before = len(merged_df)
-                    merged_df = merged_df.loc[~unmatched_mask].copy()
-                    after = len(merged_df)
-                    print(f"  Dropped {before - after} rows with no GKP match")
-        
-        # Calculate time series statistics for each row
-        if search_cols:
-            print(f"  Calculating time series statistics...")
+            print(f"  Matched {len(matched_keywords)} unique keywords from GKP")
+            print(f"  Unmatched {len(unmatched_keywords)} keywords after {'fuzzy' if use_fuzzy_matching else 'exact'} merge")
+            if unmatched_keywords:
+                to_print = unmatched_keywords[:max(0, int(unmatched_print_limit))]
+                if to_print:
+                    print(f"  Unmatched keyword examples ({len(to_print)}): {to_print}")
+                if len(unmatched_keywords) > len(to_print):
+                    print(f"  (Truncated; increase unmatched_print_limit to see more)")
 
-            import numpy as np
+            if drop_unmatched_gkp:
+                before = len(merged_df)
+                merged_df = merged_df.loc[~unmatched_mask].copy()
+                after = len(merged_df)
+                print(f"  Dropped {before - after} rows with no GKP match")
+    
+    # Calculate time series statistics for each row
+    if search_cols:
+        print(f"  Calculating time series statistics...")
 
-            month_keys = [c.replace('searches_', '') for c in search_cols]
+        import numpy as np
 
-            def _safe_float(v):
-                """Best-effort numeric parse; returns None for NaN/inf/unparseable."""
-                try:
-                    x = float(v)
-                except Exception:
-                    return None
-                if not np.isfinite(x):
-                    return None
-                return x
+        month_keys = [c.replace('searches_', '') for c in search_cols]
 
-            def calculate_ts_stats(row, search_cols, month_keys):
-                """Calculate time series stats from the row's monthly searches columns."""
-                year_month = row['year_month']  # Format: YYYY_MM
+        def _safe_float(v):
+            """Best-effort numeric parse; returns None for NaN/inf/unparseable."""
+            try:
+                x = float(v)
+            except Exception:
+                return None
+            if not np.isfinite(x):
+                return None
+            return x
 
-                # Use most recent month available overall (not necessarily < year_month)
-                last_val = None
-                for col in reversed(search_cols):
+        def calculate_ts_stats(row, search_cols, month_keys):
+            """Calculate time series stats from the row's monthly log searches columns."""
+            year_month = row['year_month']  # Format: YYYY_MM
+
+            # Use most recent month available overall (not necessarily < year_month)
+            last_val = None
+            for col in reversed(search_cols):
+                v = _safe_float(row.get(col))
+                if v is not None:
+                    last_val = v
+                    break
+
+            # Only months strictly before the row's month
+            before_vals = []
+            for mk, col in zip(month_keys, search_cols):
+                if mk < year_month:
                     v = _safe_float(row.get(col))
                     if v is not None:
-                        last_val = v
-                        break
+                        before_vals.append((mk, v))
 
-                # Only months strictly before the row's month
-                before_vals = []
-                for mk, col in zip(month_keys, search_cols):
-                    if mk < year_month:
-                        v = _safe_float(row.get(col))
-                        if v is not None:
-                            before_vals.append((mk, v))
+            three_vals = [v for _, v in before_vals[-3:]]
+            six_vals = [v for _, v in before_vals[-6:]]
 
-                three_vals = [v for _, v in before_vals[-3:]]
-                six_vals = [v for _, v in before_vals[-6:]]
+            three_avg = (sum(three_vals) / len(three_vals)) if three_vals else None
+            six_avg = (sum(six_vals) / len(six_vals)) if six_vals else None
 
-                three_avg = (sum(three_vals) / len(three_vals)) if three_vals else None
-                six_avg = (sum(six_vals) / len(six_vals)) if six_vals else None
+            mom = None
+            if len(before_vals) >= 2:
+                prev_val = before_vals[-2][1]
+                curr_val = before_vals[-1][1]
+                mom = curr_val - prev_val
 
-                mom = None
-                if len(before_vals) >= 2:
-                    prev_val = before_vals[-2][1]
-                    curr_val = before_vals[-1][1]
-                    if prev_val > 0:
-                        mom = ((curr_val - prev_val) / prev_val) * 100
-                    else:
-                        mom = 100.0 if curr_val > 0 else 0.0
+            trend = None
+            if len(six_vals) >= 2:
+                x = np.arange(len(six_vals))
+                y = np.array(six_vals)
+                if len(x) > 1:
+                    # Guard against rare LAPACK/SVD failures; trend is non-critical.
+                    try:
+                        trend = np.polyfit(x, y, 1)[0]
+                    except Exception:
+                        trend = None
 
-                trend = None
-                if len(six_vals) >= 2:
-                    x = np.arange(len(six_vals))
-                    y = np.array(six_vals)
-                    if len(x) > 1:
-                        # Guard against rare LAPACK/SVD failures; trend is non-critical.
-                        try:
-                            trend = np.polyfit(x, y, 1)[0]
-                        except Exception:
-                            trend = None
+            return {
+                'last_month_searches': last_val,
+                'three_month_avg': three_avg,
+                'six_month_avg': six_avg,
+                'mom_change': mom,
+                'search_trend': trend,
+            }
 
-                return {
-                    'last_month_searches': last_val,
-                    'three_month_avg': three_avg,
-                    'six_month_avg': six_avg,
-                    'mom_change': mom,
-                    'search_trend': trend,
-                }
-
-            stats_list = []
-            for idx, row in merged_df.iterrows():
-                stats = calculate_ts_stats(row, search_cols, month_keys)
-                stats_list.append(stats)
-            
-            # Add stats columns
-            for col_name in ['last_month_searches', 'three_month_avg', 'six_month_avg', 
-                           'mom_change', 'search_trend']:
-                merged_df[col_name] = [s.get(col_name) for s in stats_list]
-            
-            print(f"  Added time series statistics columns")
+        stats_list = []
+        for idx, row in merged_df.iterrows():
+            stats = calculate_ts_stats(row, search_cols, month_keys)
+            stats_list.append(stats)
         
-        # (Unmatched keyword reporting handled above, right after merge/fuzzy fill)
+        # Add stats columns
+        for col_name in ['last_month_searches', 'three_month_avg', 'six_month_avg', 
+                        'mom_change', 'search_trend']:
+            merged_df[col_name] = [s.get(col_name) for s in stats_list]
+        
+        print(f"  Added time series statistics columns")
+    
+    # (Unmatched keyword reporting handled above, right after merge/fuzzy fill)
     
     # # debug
     # merged_df.to_csv('check_merge.csv', index=False)
@@ -504,17 +538,17 @@ def merge_with_ads_data(
     
     # Calculate EPC (Expected conversion value Per Click)
     # Avoid division by zero by using fillna
-    merged_df['EPC'] = merged_df.apply(
-        lambda row: row['Conv. value'] / row['Clicks'] if row['Clicks'] > 0 else None,
-        axis=1
-    )
-    print(f"  Calculated EPC (Expected Conversion value Per Click)")
+    # merged_df['EPC'] = merged_df.apply(
+    #     lambda row: row['Conv. value'] / row['Clicks'] if row['Clicks'] > 0 else None,
+    #     axis=1
+    # )
+    # print(f"  Calculated EPC (Expected Conversion value Per Click)")
     
     # Check for NaNs introduced at this step
     ts_stat_cols = ['last_month_searches', 'three_month_avg', 'six_month_avg', 'mom_change', 'search_trend']
     ts_stat_cols = [col for col in ts_stat_cols if col in merged_df.columns]
     
-    print(f"\n  NaN check after time series calculations:")
+    print(f"\n  NaN check after time series calculations (from unmatched keywords):")
     for col in ts_stat_cols:
         nan_count = merged_df[col].isnull().sum()
         nan_pct = (nan_count / len(merged_df) * 100)
@@ -525,24 +559,34 @@ def merge_with_ads_data(
     return merged_df
 
 
-def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_models=False, model_dir='models'):
+def add_embeddings(
+    cleaned_df,
+    embedding_method='bert',
+    n_components=50,
+    save_models=False,
+    model_dir='models',
+    course='gen_ai',
+    cache_dir=None,
+):
     """
-    Add keyword embeddings (TF-IDF or BERT).
+    Add keyword embeddings or LLM relevance scores.
     
     Args:
     - cleaned_df (pd.DataFrame): Data with keywords.
-    - embedding_method (str): 'tfidf' or 'bert'.
-    - n_components (int): Target embedding dimensionality.
+    - embedding_method (str): 'tfidf', 'bert', or 'llm'.
+    - n_components (int): Target embedding dimensionality (for tfidf/bert only).
     - save_models (bool): If True, save vectorizer/SVD/normalizer for later use.
     - model_dir (str): Directory to save models. Default 'models'.
+    - course (str): Course identifier for LLM scoring. Default 'gen_ai'.
+    - cache_dir (str): Directory for caching LLM scores. Default None.
     
     Returns:
-    - df (pd.DataFrame): Data with embedding columns added.
+    - df (pd.DataFrame): Data with embedding/score columns added.
     """
     import pickle
     from pathlib import Path
     
-    print(f"[Step 8] Computing {embedding_method.upper()} embeddings...")
+    print(f"[Step 8] Computing {embedding_method.upper()} {'scores' if embedding_method == 'llm' else 'embeddings'}...")
     
     unique_keywords = cleaned_df['Keyword'].unique()
     print(f"  Processing {len(unique_keywords)} unique keywords...")
@@ -582,13 +626,35 @@ def add_embeddings(cleaned_df, embedding_method='bert', n_components=50, save_mo
             with open(model_path, 'wb') as f:
                 pickle.dump(bert_models, f)
             print(f"  Saved BERT pipeline to {model_path}")
+            
+    elif embedding_method.lower() == 'llm':
+        # Use LLM-based relevance scoring instead of embeddings
+        llm_cache_path = None
+        if cache_dir:
+            llm_cache_path = str(Path(cache_dir) / f'llm_scores_{course}.csv')
+        
+        embedding_df, llm_info = get_llm_scores_cached(
+            unique_keywords,
+            course=course,
+            model_name="Qwen/Qwen3-8B",
+            batch_size=1,
+            cache_path=llm_cache_path,
+            return_model=True,
+        )
+        
+        if save_models:
+            model_path = Path(model_dir) / f'llm_pipeline_{course}.pkl'
+            model_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(model_path, 'wb') as f:
+                pickle.dump(llm_info, f)
+            print(f"  Saved LLM info to {model_path}")
     else:
         raise ValueError(f"Unknown embedding method: {embedding_method}")
     
-    # Merge embeddings back
+    # Merge embeddings/scores back
     df = cleaned_df.merge(embedding_df, on='Keyword', how='left')
     
-    print(f"  Embeddings added with shape: {len(embedding_df)} x {len(embedding_df.columns)}")
+    print(f"  {'Scores' if embedding_method == 'llm' else 'Embeddings'} added with shape: {len(embedding_df)} x {len(embedding_df.columns)}")
     
     return df
 
@@ -608,8 +674,12 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     """
     print("[Step 9] Preparing train-test split...")
     
-    # Identify embedding columns
+    # Identify embedding columns (tfidf, bert, or llm score)
     embedding_cols = [col for col in df.columns if 'tfidf' in col or 'bert' in col]
+    
+    # Check for LLM relevance score column
+    llm_cols = [col for col in df.columns if col == 'llm_relevance_score']
+    embedding_cols.extend(llm_cols)
     
     # Feature and target columns
     # Use new time series statistics columns (from merge_with_ads_data)
@@ -619,12 +689,12 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
         'last_month_searches', 'three_month_avg', 'six_month_avg',
         'mom_change', 'search_trend',
         'Competition (indexed value)', 
-        'Top of page bid (low range)', 'Top of page bid (high range)', 'Avg. CPC'
+        'Top of page bid (low range)', 'Top of page bid (high range)', 'Cost'
     ] + embedding_cols
     
     # Check for missing required columns
     missing_cols = [col for col in feature_cols if col not in df.columns]
-    target_cols = ['Conv. value', 'Clicks', 'EPC']
+    target_cols = ['Clicks']
     missing_targets = [col for col in target_cols if col not in df.columns]
     
     if missing_cols:
@@ -648,7 +718,7 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     return df_train, df_test
 
 
-def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='data/clean'):
+def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None):
     """
     Save processed data to CSV files, including unique keyword embeddings.
     
@@ -659,6 +729,9 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='dat
     - embedding_method (str): 'tfidf' or 'bert' (for naming).
     - output_dir (str): Output directory.
     """
+    if output_dir is None:
+        output_dir = Path(__file__).resolve().parents[1] / "data/clean"
+
     print(f"[Step 10] Saving outputs to {output_dir}/...")
     
     output_path = Path(output_dir)
@@ -678,12 +751,20 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='dat
     print(f"  Saved: {train_output}")
     print(f"  Saved: {test_output}")
     
-    # Extract and save unique keyword embeddings without NAs in embedding columns
+    # Extract and save unique keyword embeddings/scores without NAs
     embedding_prefix = embedding_method.lower()
-    embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
+    
+    # Handle different column naming for LLM vs embedding methods
+    if embedding_method.lower() == 'llm':
+        embedding_cols = ['llm_relevance_score']
+    else:
+        embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
+    
+    # Filter to columns that exist
+    embedding_cols = [col for col in embedding_cols if col in df.columns]
     
     if embedding_cols:
-        # Get unique keywords with their embeddings, dropping rows with NaN in embedding columns
+        # Get unique keywords with their embeddings/scores, dropping rows with NaN
         # Keep rows even if they have NAs in other columns
         unique_kw_embeddings = df[['Keyword'] + embedding_cols].drop_duplicates(subset=['Keyword'])
         unique_kw_embeddings = unique_kw_embeddings.dropna(subset=embedding_cols).reset_index(drop=True)
@@ -692,42 +773,117 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir='dat
         unique_kw_embeddings.to_csv(embeddings_output, index=False)
         print(f"  Saved: {embeddings_output} ({len(unique_kw_embeddings)} rows)")
     else:
-        print(f"  Warning: No embedding columns found for method '{embedding_method}'")
+        print(f"  Warning: No embedding/score columns found for method '{embedding_method}'")
 
 
-def load_embeddings(embeddings_file, embedding_method='bert', keywords=None):
+def get_conversion_rates(by_reg=False, base_dir=None):
+
+    # Use path relative to the project root
+    if base_dir is None:
+        project_root = Path(__file__).resolve().parents[1]
+        loc_file = project_root / "data/reports/Location report.csv"
+    else:
+        loc_file = Path(base_dir) / "reports/Location report.csv"
+        
+    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
+
+    if by_reg:
+        # Aggregate to region level
+        loc_df = loc_df.groupby(['Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
+        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
+        loc_df = loc_df[['Region', 'Conv_rate']].copy()
+
+    else:
+        # Aggregate to location level
+        loc_df = loc_df.groupby(['Location','Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
+
+        # Want to get the columns 'Location', 'Click_prop (of region)', 'Conv_rate'
+        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
+        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
+        loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
+
+    return loc_df
+
+
+def get_purchase_conversion_rate(by_reg=False, base_dir=None):
     """
-    Load embeddings from file.
+    Calculate purchase conversion rate (purchases / clicks) by region.
+    
+    Uses the Purchase report to get purchase counts and the historic data to get total clicks.
     
     Args:
-    - embeddings_file (str or Path): Path to CSV with keyword embeddings.
-    - embedding_method (str): 'tfidf' or 'bert'.
-    - keywords (list, optional): If provided, filter to only these keywords.
-    
+        by_reg (bool): If True, return region-level rates. If False, return location-level rates.
+        base_dir (Path): Base directory for data files.
+        
     Returns:
-    - embeddings_df (pd.DataFrame): DataFrame with columns ['Keyword', 'embedding_0', ...]
-                                   without any NaN values in embedding columns.
+        pd.DataFrame: DataFrame with Region and Purch_rate columns (if by_reg=True),
+                      or Location, Region, Click_prop, Purch_rate columns (if by_reg=False).
     """
-    embeddings_file = Path(embeddings_file)
+    if base_dir is None:
+        project_root = Path(__file__).resolve().parents[1]
+        base_dir = project_root / "data"
+    else:
+        base_dir = Path(base_dir)
     
-    if not embeddings_file.exists():
-        raise FileNotFoundError(f"Embeddings file not found: {embeddings_file}")
+    # Load purchase report (skipping first 2 rows which are title and date range)
+    purch_file = base_dir / "reports/Purchase report.csv"
+    if not purch_file.exists():
+        print(f"[Warning] Purchase report not found at {purch_file}. Returning empty rates.")
+        if by_reg:
+            return pd.DataFrame(columns=['Region', 'Purch_rate'])
+        else:
+            return pd.DataFrame(columns=['Location', 'Region', 'Click_prop', 'Purch_rate'])
     
-    print(f"Loading embeddings from {embeddings_file}...")
-    df = pd.read_csv(embeddings_file)
+    purch_df = pd.read_csv(purch_file, skiprows=2)
+    purch_df.columns = purch_df.columns.str.strip()
     
-    # Get embedding column names (those starting with 'tfidf_' or 'bert_')
-    embedding_prefix = embedding_method.lower()
-    embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
+    # Extract region from campaign name
+    purch_df['Region'] = purch_df['Campaign'].apply(_extract_region_from_campaign)
     
-    # Drop rows with NaN in embedding columns
-    df_clean = df.dropna(subset=embedding_cols).reset_index(drop=True)
-    print(f"  Loaded {len(df_clean)} rows with complete embeddings")
+    # Convert Conversions to numeric (handle potential formatting)
+    purch_df['Conversions'] = pd.to_numeric(purch_df['Conversions'], errors='coerce').fillna(0)
     
-    # Filter by keywords if provided
-    if keywords is not None:
-        keywords_set = set(keywords)
-        df_clean = df_clean[df_clean['Keyword'].isin(keywords_set)].reset_index(drop=True)
-        print(f"  Filtered to {len(df_clean)} keywords")
+    # Aggregate purchases by region
+    purch_by_region = purch_df.groupby('Region')['Conversions'].sum().reset_index()
+    purch_by_region = purch_by_region.rename(columns={'Conversions': 'Purchases'})
     
-    return df_clean
+    # Load historic data to get total clicks by region
+    hist_file = base_dir / "clean/ad_opt_data_bert.csv"
+    if not hist_file.exists():
+        # Fallback to raw data
+        print(f"[Warning] Historic data not found at {hist_file}. Using location report for clicks.")
+        loc_file = base_dir / "reports/Location report.csv"
+        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
+        clicks_by_region = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+    else:
+        hist_df = pd.read_csv(hist_file)
+        clicks_by_region = hist_df.groupby('Region')['Clicks'].sum().reset_index()
+    
+    # Merge purchases with clicks
+    rate_df = purch_by_region.merge(clicks_by_region, on='Region', how='outer').fillna(0)
+    rate_df['Purch_rate'] = rate_df['Purchases'] / rate_df['Clicks'].replace(0, np.nan)
+    rate_df['Purch_rate'] = rate_df['Purch_rate'].fillna(0)
+    
+    if by_reg:
+        return rate_df[['Region', 'Purch_rate']].copy()
+    else:
+        # For location-level, we need to merge with location data
+        loc_file = base_dir / "reports/Location report.csv"
+        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
+        
+        # Calculate click proportion within each region
+        loc_df = loc_df.groupby(['Location', 'Region'])['Clicks'].sum().reset_index()
+        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
+        
+        # Merge with purchase rates
+        loc_df = loc_df.merge(rate_df[['Region', 'Purch_rate']], on='Region', how='left')
+        loc_df['Purch_rate'] = loc_df['Purch_rate'].fillna(0)
+        
+        return loc_df[['Location', 'Region', 'Click_prop', 'Purch_rate']].copy()
