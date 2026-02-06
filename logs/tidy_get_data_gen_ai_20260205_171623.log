@@ -1,0 +1,1133 @@
+[Logging] Tee output to logs/tidy_get_data_gen_ai_20260205_171623.log
+======================================================================
+Data Preparation Pipeline for Ad Optimization
+======================================================================
+Course: gen_ai
+Embedding method: llm
+N components: 50
+Force reload: False
+======================================================================
+
+[Step 1] Load and combine keyword data...
+  [Cache] Loading from step1_combined.parquet
+
+[Step 2] Format keyword data...
+[Step 2] Formatting keyword data...
+  Found 4 unique regions: ['USA', 'A', 'B', 'C']
+
+[Step 3] Extract date features...
+  [Cache] Loading from step3_features.parquet
+
+[Step 4] Filter data by date...
+  [Cache] Loading from step4_filtered.parquet
+
+[Step 5] Load GKP data...
+[Step 5] Loading Google Keyword Planner data...
+  Found GKP file: Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  Loaded 1749 rows from Saved Keywords Stats 2026-01-11 at 17_51_34.csv
+  After cleaning: 1747 rows with unique keywords
+
+[Step 5.5] Impute missing data...
+[Step 5.5] Imputing missing data...
+  Total: Imputed 0 missing values (0.00% of total data)
+[Step 5.5] Imputing missing data...
+
+  Imputation Summary:
+  -------------------------------------------------------------------------------------
+  searches_2024_07                        26.73% numeric (0)               (n=467)
+  searches_2024_08                        26.73% numeric (0)               (n=467)
+  searches_2024_09                        26.73% numeric (0)               (n=467)
+  searches_2024_10                        26.73% numeric (0)               (n=467)
+  searches_2024_11                        26.73% numeric (0)               (n=467)
+  searches_2024_12                        26.73% numeric (0)               (n=467)
+  searches_2025_01                        26.73% numeric (0)               (n=467)
+  searches_2025_02                        26.73% numeric (0)               (n=467)
+  searches_2025_03                        26.73% numeric (0)               (n=467)
+  searches_2025_04                        26.73% numeric (0)               (n=467)
+  searches_2025_05                        26.73% numeric (0)               (n=467)
+  searches_2025_06                        26.73% numeric (0)               (n=467)
+  searches_2025_07                        26.73% numeric (0)               (n=467)
+  searches_2025_08                        26.73% numeric (0)               (n=467)
+  searches_2025_09                        26.73% numeric (0)               (n=467)
+  searches_2025_10                        26.73% numeric (0)               (n=467)
+  searches_2025_11                        26.73% numeric (0)               (n=467)
+  Competition                             38.12% categorical (Missing)     (n=666)
+  Competition (indexed value)             38.12% numeric (0)               (n=666)
+  Top of page bid (low range)             54.26% numeric (0)               (n=948)
+  Top of page bid (high range)            54.26% numeric (0)               (n=948)
+  -------------------------------------------------------------------------------------
+  Total: Imputed 11167 missing values (29.06% of total data)
+
+[Step 6] Merge with GKP data and calculate search stats...
+  [Cache] Loading from step6_merged.parquet
+
+[Step 6.5] Remove outlier rows...
+  [Cache] Loading from step6_5_cleaned.parquet
+
+[Step 7] Add LLM scores...
+  [Computing] Running add_embeddings...
+[Step 8] Computing LLM scores...
+  Processing 154 unique keywords...
+  No cache found at data/gen_ai/cache/llm_scores_gen_ai.csv, generating LLM scores for all keywords
+  Scoring 154 keywords...
+  Course: Generative AI
+  Loading Qwen3 model: Qwen/Qwen3-8B
+  Using device: cuda
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|##        | 1/5 [00:06<00:27,  7.00s/it]Loading checkpoint shards:  40%|####      | 2/5 [00:13<00:20,  6.98s/it]Loading checkpoint shards:  60%|######    | 3/5 [00:19<00:13,  6.53s/it]Loading checkpoint shards:  80%|########  | 4/5 [00:23<00:05,  5.43s/it]Loading checkpoint shards: 100%|##########| 5/5 [00:25<00:00,  4.14s/it]Loading checkpoint shards: 100%|##########| 5/5 [00:25<00:00,  5.11s/it]
+Scoring keywords:   0%|          | 0/154 [00:00<?, ?it/s]The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai certificate course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+So, the keyword is "generative ai certificate course". Let me break it down. 
+
+First, check if any of the subtractive factors apply. The keyword doesn't have "free", "cheap", "youtube", "login", or seem unrelated to generative AI. So no subtraction there. 
+
+Next, check if it's purely informational. The keyword includes "certificate course", which sounds like an educational offering, not just a definition or news. So probably not purely informational. So no subtraction here either.
+
+Now, check for additive factors. The keyword includes "course", which implies learning intent. According to the rules, that's an add of 1. Then, "certificate" implies high purchase intent because it's about getting a certification. So that's another add of 1. 
+
+So starting with base 3, adding 1 for learning intent and 1 for high purchase intent. That totals 5. 
+
+Wait, are there any other factors? Let me double-check. The keyword isn't purely informational, so no subtraction. No negative keywords. So total score is 3 +1 +1 = 5. 
+
+But wait, the maximum is 5, so that's the highest possible. Does that make sense? The keyword is clearly about a course that leads to a certificate, which is a strong indicator of both learning and purchase intent. So yes, 5 seems right. 
+
+I think that's it. Final score is 5.
+\boxed{5}'
+Scoring keywords:   1%|          | 1/154 [00:12<31:31, 12.36s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai fundamentals course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+First, check if any of the subtractive factors apply. The keyword is "generative ai fundamentals course". Let me see: does it contain "free", "cheap", "youtube", "login", or is it unrelated? No, none of those words are present. So no subtraction here. 
+
+Next, check if it's purely informational. The keyword includes "fundamentals" which might suggest it's about basic concepts, but the presence of "course" implies a structured learning program. So maybe it's not purely informational. But I need to be careful. If it's a course, it's more about learning rather than just information. So probably no subtraction here either. 
+
+Now, check for additive factors. The keyword includes "course", which is one of the terms that imply learning intent. So that's +1. Are there any terms that imply high purchase intent? The keyword doesn't have words like "certification", "bootcamp", "university", etc. So no addition here. 
+
+So applying the modifiers: base score is 3, add 1 for the learning intent, no subtractions. Total would be 4. 
+
+Wait, let me double-check. The keyword is "generative ai fundamentals course". The "fundamentals" part might be considered informational, but since it's part of a course, the overall intent is learning. The rules say subtract 1 if it's purely informational. But since it's a course, it's more about learning, so maybe that's not a subtraction. 
+
+Another thing: the presence of "course" definitely adds 1. So 3 +1 =4. No other factors. So the final score should be 4. 
+
+But wait, could "fundamentals" be considered as informational? Like, if someone is searching for "what is generative AI fundamentals", that's informational. But here it's "course", so it's more about taking a course. So the keyword is about a course on fundamentals, which is a learning intent. Therefore, no subtraction for being informational. 
+
+So yes, the score is 4. Let me make sure there's no other factors. The keyword doesn't have any of the subtractive terms, so no subtraction. Add 1 for the course. So 3 +1 =4. That's the final score.
+\boxed{4}'
+Scoring keywords:   1%|1         | 2/154 [00:27<36:00, 14.21s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai online course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword is "generative ai online course". Let me break it down. The main terms here are "generative AI", "online", and "course". 
+
+First, checking for any subtract points. The rules say subtract 1 if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. Looking at the keyword, none of those words are present. "Generative AI" is definitely related, so no subtraction here. 
+
+Next, subtract 1 if the keyword is purely informational, like definitions, "what is", news, etc. The keyword here is about an online course, which implies it's more about learning or education rather than just information. So I don't think this applies. So no subtraction here either.
+
+Now, adding points. The first addition is if the keyword implies learning intent. Words like "course", "training", "tutorial", etc. The keyword has "course", so that's a clear indicator of learning intent. So add 1 here. That brings the score to 3 (base) +1 = 4.
+
+Next, check if it implies high purchase intent. Words like "certification", "bootcamp", "university", "MIT", etc. The keyword is "online course", which could be part of a paid program, but does it explicitly indicate high purchase intent? Maybe not necessarily. "Course" alone might be part of a free or paid offering. However, since it's an online course, it's possible that it's a paid course, but the keyword doesn't include terms like "certification" or "bootcamp". So maybe this doesn't apply. So no addition here. 
+
+So total score would be base 3 +1 (learning intent) = 4. 
+
+Wait, but let me double-check. The keyword is "generative ai online course". The presence of "course" definitely adds the learning intent. The other terms don't trigger any subtractions. So the final score is 4. 
+
+Is there any other factors? Let me check again. No "free" or other subtract terms. Not purely informational. So yes, 4. 
+
+But wait, could "online course" be considered as implying purchase intent? Maybe, but the rules specify certain terms like "certification", "bootcamp", etc. Since "online course" is more general, I think it's safer to not add that point. So the final score is 4. 
+
+Therefore, the relevance score is 4.
+\boxed{4}'
+Scoring keywords:   2%|1         | 3/154 [00:44<38:21, 15.24s/it]    [DEBUG] Raw response: 'The keyword is "generative ai online program".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? No. The keyword is related to generative AI and mentions an online program, which is relevant. So no subtraction here.
+
+Step 3: Check for informational intent
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? No. The keyword suggests a program, which implies a structured learning or educational offering. So no subtraction here.
+
+Step 4: Check for learning intent
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? Yes, "program" can imply a structured learning or educational offering. So add 1. New score = 3 + 1 = 4.
+
+Step 5: Check for high purchase intent
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword doesn't explicitly mention paid or certification, but "program" could be associated with paid programs. However, it's not explicitly stated. So no addition here.
+
+Final score: 4
+
+\boxed{4}'
+Scoring keywords:   3%|2         | 4/154 [00:53<31:43, 12.69s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai certificate program". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+First, check if any of the subtractive factors apply. The keyword is "generative ai certificate program". Let me see: does it contain "free", "cheap", "youtube", "login", or is it unrelated to generative AI? The keyword doesn't have any of those words. So no subtraction here. 
+
+Next, check if it's purely informational. The keyword is about a certificate program, which sounds like an educational offering rather than just information. So probably not informational. So no subtraction here either. 
+
+Now, check for additive factors. Does the keyword imply learning intent? Words like "course", "training", "tutorial", etc. The keyword has "certificate program", which definitely implies learning and education. So that's a +1. 
+
+Then, does it imply high purchase intent? Words like "certification", "bootcamp", "university", etc. "Certificate program" suggests that someone might be looking to enroll in a program that leads to a certificate, which is a form of certification. So that's another +1. 
+
+So starting with base 3, add 1 for learning intent and another 1 for high purchase intent. That totals 5. 
+
+Wait, are there any other factors? Let me double-check. The keyword isn't unrelated, no subtractive terms. So the final score should be 5. 
+
+But wait, sometimes "certificate program" might be seen as a bit generic. But according to the rules, as long as it implies learning and purchase intent, it's okay. So I think 5 is correct here. 
+
+Final score: 5.
+\boxed{5}'
+Scoring keywords:   3%|3         | 5/154 [01:04<30:21, 12.23s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai foundations course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+First, check if any of the subtractive factors apply. The keyword is "generative ai foundations course". Let me see: does it contain "free", "cheap", "youtube", "login", or is it unrelated to generative AI? The keyword doesn't have any of those words. So no subtraction here. 
+
+Next, check if it's purely informational. The keyword includes "foundations course", which sounds like an educational program. But is it purely informational? Maybe not. "Foundations course" could imply a structured learning program, so maybe not purely informational. But I need to be careful here. If it's about definitions or just explaining what generative AI is, that would be informational. But since it's a course, it's more about learning, so maybe not. So I think this doesn't trigger the subtraction. 
+
+Now, check for additive factors. The keyword includes "course", which is one of the terms that imply learning intent. So that's +1. Are there any other additive factors? The keyword doesn't mention anything like "certification", "bootcamp", "university", "MIT", "executive", or "paid". So no additional points there. 
+
+So applying the modifiers: base score is 3, add 1 for the learning intent, no subtractions. Total would be 4. 
+
+Wait, let me double-check. The keyword is "generative ai foundations course". The term "foundations" might be part of the course title, but does that make it purely informational? Maybe not. Because a foundations course is typically a structured educational program. So the informational subtraction doesn't apply. 
+
+Therefore, the final score should be 3 (base) +1 (learning intent) = 4. 
+
+I don't see any other factors. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:   4%|3         | 6/154 [01:17<30:31, 12.37s/it]    [DEBUG] Raw response: 'The keyword is "mit generative ai certificate".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? The keyword is "mit generative ai certificate". It does not contain any of the negative terms. It is related to generative AI. So, no subtraction here.
+
+Step 3: Check for informational intent
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? The keyword "mit generative ai certificate" seems to imply a certificate related to MIT and generative AI, which suggests a learning or educational intent rather than purely informational. So, no subtraction here.
+
+Step 4: Check for learning intent modifiers
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? The keyword includes "certificate", which is often associated with learning and education. So, we add 1. New score: 3 + 1 = 4.
+
+Step 5: Check for high purchase intent modifiers
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword includes "MIT", which is a prestigious institution, and "certificate" which can imply a paid program or certification. So, we add another 1. New score: 4 + 1 = 5.
+
+Final score: \boxed{5}'
+Scoring keywords:   5%|4         | 7/154 [01:26<28:15, 11.53s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai certification online". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "generative ai certification online". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words, so no subtraction there. 
+
+Next, check if it's purely informational. The keyword includes "certification", which suggests it's about obtaining a certification, not just information. So probably not purely informational. So no subtraction here either. 
+
+Now, check for additive factors. The keyword includes "certification", which is part of the high purchase intent indicators. According to the rules, if the keyword implies high purchase intent (like certification, bootcamp, etc.), add 1. So that's +1. 
+
+Also, check if it implies learning intent. Words like "course", "training", "tutorial" would add 1. The keyword has "certification", which is more about obtaining a credential rather than a course or training. But maybe "certification" could be considered part of learning intent? Hmm. Wait, the rules say "implies learning intent" if it has "course", "training", etc. "Certification" is more about the outcome of learning, not the learning process itself. So maybe that's not adding another point. So only the high purchase intent adds 1. 
+
+So total score would be base 3 + 1 (for high purchase intent) = 4. 
+
+Wait, but let me double-check. The keyword is "generative ai certification online". The "online" part might not affect the score. The main components are "generative ai" (relevant), "certification" (high purchase intent), and "online" (maybe indicating where it's offered, but not a modifier for scoring). 
+
+No other subtractive factors. So the final score should be 4. 
+
+But wait, could "certification" be considered as implying learning intent? For example, if someone is looking for a certification, they might be seeking a course or training program. But according to the rules, the specific words that add 1 are "course", "training", "tutorial", "education", etc. "Certification" isn't listed there. So maybe only the high purchase intent adds 1. 
+
+Therefore, the total is 3 +1 = 4. 
+
+I think that's correct. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:   5%|5         | 8/154 [01:43<31:51, 13.09s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "online course generative ai". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword is "online course generative ai". Let me break it down. The main components here are "online course" and "generative ai". 
+
+First, checking for any subtract points. The rules say subtract 1 if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. Looking at the keyword, there's no "free", "cheap", "youtube", or "login" here. Also, the keyword is clearly related to generative AI since it's part of the phrase. So no subtraction here for those terms. 
+
+Next, check if the keyword is purely informational. The keyword includes "online course", which suggests it's about taking a course, not just information. So it's not purely informational. So no subtraction here either. 
+
+Now, adding points. The first add is if the keyword implies learning intent. "Online course" definitely implies learning intent. So that's +1. 
+
+Then, check if it implies high purchase intent. The keyword is "online course", which could be part of a paid course, but does it explicitly mention something like "certification", "bootcamp", etc.? The keyword doesn't have those terms. However, "online course" might be considered as part of a paid program, but the rules specify adding 1 if it includes terms like "certification", "bootcamp", etc. Since "online course" alone isn't one of those terms, maybe this doesn't apply. Wait, but maybe the presence of "course" could be considered as implying purchase intent? Hmm, the rules are specific. Let me check again. The add 1 for high purchase intent is if the keyword includes "certification", "bootcamp", "university", "MIT", "executive", "paid", etc. The keyword here is "online course", which isn't in that list. So maybe no addition here. 
+
+So, base score is 3. Subtract nothing, add 1 for learning intent. So total would be 3 +1 = 4. 
+
+Wait, but maybe "online course" is considered as implying purchase intent? Because taking a course usually involves payment. But according to the rules, the specific terms like "certification" etc. are needed for the +1. So unless "course" is in that list, which it isn't. So only the learning intent adds 1. 
+
+So final score would be 3 +1 = 4. 
+
+But let me double-check. The keyword is "online course generative ai". The presence of "course" definitely indicates learning intent, so +1. No other additions. No subtractions. So 3 +1 = 4. 
+
+Is there any other factors? Let me check again. The keyword isn't purely informational, so no subtraction. No forbidden terms. So yes, 4. 
+
+But wait, maybe "generative ai" is part of the course topic, so the relevance is high. But the scoring is based on the modifiers given. So I think 4 is correct. 
+
+Final score: 4.
+\boxed{4}'
+Scoring keywords:   6%|5         | 9/154 [02:03<36:33, 15.13s/it]    [DEBUG] Raw response: 'The keyword is "professional ai certificate".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does it contain "free", "cheap", "youtube", "login"? No.
+- Is it unrelated to generative AI? No, "AI certificate" is related to AI.
+So, no subtraction here.
+
+Step 3: Check for informational intent
+- Is it purely informational? No, it's about obtaining a certificate, which implies a learning or certification action.
+So, no subtraction here.
+
+Step 4: Check for learning intent
+- Does it include "course", "training", "tutorial", "education"? No, but "certificate" can imply learning intent.
+However, the rules specify to add 1 if it includes specific terms. Since "certificate" isn't listed, we don't add here.
+
+Step 5: Check for high purchase intent
+- Does it include "certification", "bootcamp", "university", "MIT", "executive", "paid"? Yes, "certificate" is close to "certification" and implies a purchase or investment.
+So, add 1 here.
+
+Final score: 3 (base) + 1 (high purchase intent) = 4.
+
+\boxed{4}'
+Scoring keywords:   6%|6         | 10/154 [02:11<31:04, 12.95s/it]    [DEBUG] Raw response: 'The keyword is "mit professional development".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? The keyword is "mit professional development". It does not contain any of the listed negative terms. It is related to professional development, which is a general topic and not specifically generative AI. However, the presence of "MIT" might imply a connection to educational institutions or programs, which could be related to AI. But since the keyword doesn't explicitly mention generative AI, this might not count. So, no subtraction here.
+
+Step 3: Check for purely informational
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? "Mit professional development" seems to be a search for professional development programs or opportunities related to MIT. It's not purely informational; it's more about finding courses, training, or educational programs. So, no subtraction here.
+
+Step 4: Check for learning intent
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? "Professional development" does imply a learning intent, as it refers to gaining skills or knowledge. However, the keyword doesn't explicitly include terms like "course" or "training". But "professional development" itself is often associated with learning and training. So, this might qualify. Adding 1 here.
+
+Step 5: Check for high purchase intent
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword includes "MIT", which is a prestigious university and could imply a formal educational program, which might involve payment. However, "professional development" alone doesn't necessarily indicate purchase intent. But the inclusion of "MIT" might suggest a structured program that could be paid. So, this might qualify. Adding 1 here.
+
+Final score: 3 (base) + 1 (learning intent) + 1 (high purchase intent) = 5.
+
+But wait, the keyword is "mit professional development". The presence of "MIT" might not necessarily imply high purchase intent. It could be a search for information about MIT's professional development programs, which might be free or part of a university offering. Also, "professional development" is a broad term and might not always indicate a purchase intent. So, maybe the high purchase intent modifier isn't applicable here.
+
+Revisiting step 5: "MIT" is a university, which could imply educational programs that might require payment, but the keyword itself doesn't explicitly mention anything about purchasing. So, maybe the high purchase intent modifier isn't applicable. Therefore, only the learning intent modifier applies.
+
+So, final score: 3 (base) + 1 (learning intent) = 4.
+
+But the initial thought was that "MIT" might imply a formal program, which could be paid. However, without explicit terms like "certification" or "bootcamp", it's safer to not add the high purchase intent. So, the final score is 4.
+
+But let me check again. The keyword is "mit professional development". The term "professional development" is often associated with courses, training, or education, which implies learning intent. The "MIT" part could be a specific institution offering such programs, which might be paid. However, the keyword doesn't explicitly mention anything about purchasing, so the high purchase intent modifier might not apply. Therefore, only the learning intent modifier applies, adding 1. So, the final score is 4.
+
+But the initial step-by-step thought process had conflicting conclusions. Let me make sure.
+
+Final conclusion: The keyword "mit professional development" has a base score of 3. It doesn't have any negative modifiers, so no subtraction. It implies learning intent (adding 1) and possibly high purchase intent (adding 1). However, the high purchase intent might not be certain. So, the final score is 3 + 1 = 4 or 3 + 1 + 1 = 5. Which is more accurate?
+
+The term "professional development" is often associated with courses or training, which implies learning intent. The "MIT" part could be a specific program, which might be paid, but the keyword doesn't explicitly mention that. So, the high purchase intent modifier is not certain. Therefore, only the learning intent modifier applies. So, the final score is 4.
+
+But the initial thought was that "MIT" might imply a formal program, which could be paid. However, without explicit terms like "certification" or "bootcamp", it's safer to not add the high purchase intent. Therefore, the final score is 4.
+
+But the rules say to add 1 if the keyword implies high purchase intent. Does "MIT" imply high purchase intent? It could, as MIT is a university that offers paid programs. However, the keyword is "mit professional development", which could be a search for information about MIT's professional development programs, which might be free or paid. Since the keyword doesn't specify, it's ambiguous. Therefore, it's safer to not add the high purchase intent modifier.
+
+Thus, the final score is 3 (base) + 1 (learning intent) = 4.
+
+But I'm still a bit uncertain about the "MIT" part. Let me check the rules again. The high purchase intent modifier includes "MIT" as an example. So, if the keyword includes "MIT", we should add 1 for high purchase intent. Wait, the rule says: "Add 1 if: keyword implies high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)". So, "MIT" is listed as an example. Therefore, if the keyword includes "MIT", we should add 1 for high purchase intent.
+
+Therefore, the keyword "mit professional development" includes "MIT", so we add 1 for high purchase intent. Therefore, the final score is 3 + 1 (learning intent) + 1 (high purchase intent) = 5.
+
+Yes, that's correct. The rule explicitly lists "MIT" as an example of a term that implies high purchase intent. Therefore, the presence of "MIT" in the keyword warrants adding 1 for high purchase intent. Therefore, the final score is 5.
+
+Final answer: \boxed{5}'
+Scoring keywords:   7%|7         | 11/154 [02:48<48:21, 20.29s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword is "generative ai course". Let me check each rule step by step.
+
+First, the base score is 3. Now, looking at the subtract points. The first subtract condition is if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. The keyword here is "generative ai course". None of those words are present. "Generative ai" is related, so no subtraction here. So that's 0 subtracts from this rule.
+
+Next, subtract 1 if the keyword is purely informational, like definitions, "what is", news, etc. The keyword is "generative ai course". "Course" suggests a learning opportunity, not just informational. So this isn't purely informational. So no subtraction here either. So still base score of 3.
+
+Now, adding points. The first add is if the keyword implies learning intent. Words like "course", "training", "tutorial", etc. "Course" is definitely in there. So that's +1. Now the score is 4.
+
+Next add is if the keyword implies high purchase intent. Words like "certification", "bootcamp", "university", "MIT", etc. The keyword is "generative ai course". Does "course" imply high purchase intent? Well, courses can be purchased, but the keyword doesn't have words like "certification" or "bootcamp". However, "course" might still suggest a paid program, but maybe not necessarily. The rules say "implies high purchase intent". If the keyword is just "course", does that mean high purchase intent? Maybe, but maybe not. For example, some courses are free. But since the base score is 3, and we added 1 for learning intent, maybe the presence of "course" could be considered as implying some purchase intent. But the rules specify specific words like "certification", "bootcamp", etc. Since "course" isn't one of those, maybe we don't add another point here. So no addition here. So total score would be 3 (base) +1 (learning intent) = 4.
+
+Wait, but maybe "course" does imply purchase intent. Let me check the rules again. The add 1 for high purchase intent is if the keyword includes words like "certification", "bootcamp", etc. "Course" is not in that list. So even though a course might be a paid product, the keyword itself doesn't have those specific terms. Therefore, no addition here. So the total is 4.
+
+So the final score is 4. Let me check again. Base 3, no subtractions, +1 for learning intent. So 4. That seems right. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:   8%|7         | 12/154 [03:05<46:14, 19.54s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai courses". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword is "generative ai courses". Let me break it down. The main terms here are "generative ai" and "courses". 
+
+First, checking for any subtract points. The rules say subtract 1 if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. Looking at the keyword, there's no "free", "cheap", "youtube", or "login" here. Also, "generative ai" is definitely related to generative AI, so no subtraction there. So no subtraction for that part.
+
+Next, subtract 1 if the keyword is purely informational, like definitions, "what is", news, etc. The keyword is "courses", which implies educational content, but is it purely informational? Well, "courses" usually means structured learning, so maybe not purely informational. But I need to think if "courses" here is just about information or if it's about learning. Since it's a course, it's more about learning intent. So maybe this doesn't apply. So no subtraction here.
+
+Now, adding points. Add 1 if the keyword implies learning intent. The word "courses" definitely indicates learning intent. So that's +1. 
+
+Then, add 1 if the keyword implies high purchase intent. The keyword is "courses", which could be part of a paid program, but does it explicitly imply high purchase intent? Words like "certification", "bootcamp", "university" would be more direct. "Courses" can be free or paid, so maybe not necessarily high purchase intent. However, sometimes courses are associated with paid programs. But the keyword itself doesn't have words like "paid" or "certification". So maybe this doesn't apply. So no addition here.
+
+So starting with base score 3. Subtract nothing, add 1 for learning intent. So total score is 3 +1 = 4. 
+
+Wait, but let me double-check. The keyword is "generative ai courses". The presence of "courses" definitely adds the learning intent. The other part about purchase intent: maybe not. So the final score would be 4. 
+
+But wait, could there be any other factors? Let me check again. The keyword isn't purely informational, so no subtraction. No negative keywords. So yes, base 3 +1 = 4. So the relevance score is 4. 
+
+But wait, maybe "courses" could be considered as implying some purchase intent? Like if someone is looking to enroll in a course, which might require payment. But the rules specify that you add 1 if the keyword implies high purchase intent. The examples given are "certification", "bootcamp", etc. "Courses" is more general. So maybe not. So I think the correct score is 4. 
+
+Final answer: 4.
+\boxed{4}'
+Scoring keywords:   8%|8         | 13/154 [03:24<44:56, 19.12s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "online ai and ml courses". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "online ai and ml courses". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. It's related to AI and ML, which are part of generative AI, so that's good. So no subtraction here.
+
+Next, check if the keyword is purely informational. The keyword includes "courses", which suggests it's about learning, not just information. So probably not purely informational. So no subtraction here either.
+
+Now, check for additive factors. The keyword includes "courses", which implies a learning intent. According to the rules, that's an addition of 1. So base score becomes 3 + 1 = 4.
+
+Then, check if it implies high purchase intent. The keyword is "courses", which might suggest that someone is looking to enroll in a course, which could involve payment. However, the terms like "certification", "bootcamp", etc., are not present. So maybe not a high purchase intent. But "courses" could be part of a paid program. However, the rules specify adding 1 if it includes terms like "certification", "bootcamp", etc. Since "courses" alone might not be enough, maybe no addition here. Wait, the instruction says "implies high purchase intent". If someone is searching for courses, they might be looking to purchase them. But the exact terms for high purchase intent are specific. Since "courses" isn't one of those terms, maybe no addition here. So the score remains 4.
+
+Wait, but maybe "courses" is considered as implying learning intent, which we already added. So total score would be 3 (base) +1 (learning intent) = 4. No other additions. So the final score is 4. Let me double-check.
+
+No subtractive factors. Additive factors: learning intent (courses) adds 1. High purchase intent? The keyword doesn't have terms like certification, bootcamp, etc. So no. So total is 4. That seems right. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:   9%|9         | 14/154 [03:39<41:45, 17.90s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "mit ai course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "mit ai course". Let's see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. "MIT" is a university, and "AI" is definitely related to generative AI, so that's a plus. So no subtraction here.
+
+Next, check if the keyword is purely informational. The keyword includes "course", which suggests it's about learning, not just information. So probably not purely informational. So no subtraction here either.
+
+Now, check for additive factors. The keyword includes "course", which implies learning intent. According to the rules, that's an addition of 1. So base score becomes 3 + 1 = 4.
+
+Then, check if it implies high purchase intent. The keyword has "MIT", which is a prestigious institution, and "course" might imply a paid program. Also, "MIT" itself could be associated with paid courses. So that's another addition of 1. Now the score is 4 + 1 = 5.
+
+Wait, but let me double-check. The keyword is "mit ai course". Does "MIT" count as high purchase intent? Well, MIT is a university, and their courses are typically paid. So yes, that would trigger the high purchase intent modifier. So adding another 1. So total score is 5.
+
+But wait, the maximum is 5, so that's the highest possible. Let me make sure I didn't miss any subtractive factors. The keyword isn't related to free, cheap, etc. It's not purely informational. So no subtractions. So the final score is 5. That seems right. The keyword is about a course from MIT, which is a high purchase intent and learning intent. So the relevance score should be 5.
+\boxed{5}'
+Scoring keywords:  10%|9         | 15/154 [03:52<38:20, 16.55s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "stanford ai professional program". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+First, check if any of the subtractive factors apply. The keyword is "stanford ai professional program". Let me see: does it contain "free", "cheap", "youtube", "login", or is it unrelated to generative AI? The keyword doesn't have any of those words. "Stanford" is a university, "AI" is definitely related to generative AI, and "professional program" sounds like an educational offering. So no subtraction here. So base score remains 3.
+
+Next, check if the keyword is purely informational. The keyword seems to be about a specific program, not just a definition or news. It's more about a course or training program. So probably not purely informational. So no subtraction here. Still 3.
+
+Now, check for additive factors. Does the keyword imply learning intent? Words like "course", "training", "tutorial", etc. The keyword has "professional program", which does suggest a structured learning program. So that's a +1. Now score is 4.
+
+Next, does it imply high purchase intent? Words like "certification", "bootcamp", "university", "MIT", "executive", "paid". The keyword includes "Stanford", which is a university, and "professional program" might imply a paid program. So "university" is part of the keyword, so that's a +1. Now the score is 5.
+
+So applying all modifiers: base 3, no subtractions, two additions. Total is 5. But wait, let me double-check. The keyword is "stanford ai professional program". "Professional program" could be a paid program, so "paid" isn't explicitly there, but "university" is part of the keyword. So the presence of "Stanford" as a university name might trigger the high purchase intent. Also, "professional program" might be a course or certification. So yes, that's a +1. So total score is 5. 
+
+But wait, the rules say "implies high purchase intent" if it includes words like "certification", "bootcamp", etc. "Professional program" might not be exactly those words, but since Stanford is a university, maybe that's considered. Alternatively, maybe "professional program" is more about learning intent. Hmm. Let me check the rules again. The additive factors are: +1 if implies learning intent (like course, training, etc.) and +1 if implies high purchase intent (like certification, bootcamp, university, etc.). 
+
+So "professional program" is more about learning intent. But "Stanford" is a university, which is part of the keyword. So the presence of "university" in the keyword (even though it's not the exact word) might count? Wait, the exact words are "certification", "bootcamp", "university", "MIT", "executive", "paid". So "university" is one of the words. Since the keyword includes "Stanford", which is a university, does that count? Or does the keyword need to include the exact word "university"? The rule says "contains" those words. So if the keyword includes "university", then yes. But in this case, the keyword is "stanford ai professional program". It doesn't have the word "university". So maybe that's not applicable. Wait, but Stanford is a university. But the keyword doesn't have the word "university". So maybe that's not a trigger. 
+
+So then, the additive factors: "professional program" implies learning intent, so +1. Does it imply high purchase intent? The keyword might be for a paid program, but does it have words like "certification", "bootcamp", etc.? "Professional program" could be a paid program, but the exact words aren't there. So maybe that's not a +1. So then, only the learning intent adds +1, making the total 4. 
+
+Wait, this is a bit ambiguous. Let me re-examine. The keyword is "stanford ai professional program". The presence of "Stanford" as a prestigious university might imply that it's a paid program, but the exact words for high purchase intent are "certification", "bootcamp", "university", etc. Since "university" is not in the keyword, but Stanford is a university, does that count? The rule says "contains" those words. So unless the keyword includes "university", it's not applicable. Therefore, the high purchase intent might not be triggered. 
+
+So then, only the learning intent adds +1, making the total 4. 
+
+But maybe "professional program" is considered as implying high purchase intent? The rules don't specify that. The exact words are "certification", "bootcamp", "university", etc. So "professional program" isn't one of them. Therefore, only the learning intent adds +1. 
+
+So the score would be 3 (base) +1 (learning intent) = 4. 
+
+But earlier I thought "Stanford" as a university might count. But the rule says "contains" the words, not the name of the university. So maybe not. 
+
+Therefore, the final score is 4. 
+
+Wait, but the original keyword is "stanford ai professional program". The "professional program" could be a course or training, which is learning intent. So +1. No other additions. So 3 +1 = 4. 
+
+But maybe "professional program" is considered as implying high purchase intent? For example, if someone is looking to enroll in a professional program, that might be a high purchase intent. But the rule specifies certain words. Since "professional program" isn't one of them, maybe not. 
+
+So the final score is 4. 
+
+But I need to make sure. Let me check again. 
+
+Subtract 1 if keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative ai. No, so no subtraction. 
+
+Subtract 1 if purely informational. No, so no subtraction. 
+
+Add 1 if implies learning intent: "professional program" implies learning, so +1. 
+
+Add 1 if implies high purchase intent: does "professional program" imply high purchase intent? The rule lists specific words. Since "professional program" isn't one of them, maybe not. Unless "program" is considered. But the rule says "certification", "bootcamp", "university", etc. So "program" alone isn't enough. 
+
+Therefore, only +1. So total score is 3 +1 = 4. 
+
+But maybe "Stanford" is a university, so the presence of "university" in the keyword? Wait, the keyword is "stanford ai professional program". It doesn't have the word "university". So no. 
+
+Therefore, the final score is 4. 
+
+But I'm a bit confused because "Stanford" is a university, but the keyword doesn't have the word "university". So the high purchase intent isn't triggered. 
+
+So the answer is 4. 
+
+But let me check again. The original keyword is "stanford ai professional program". The "professional program" could be a paid program, so maybe it's high purchase intent. But the rule says specific words. So unless the keyword includes "certification", "bootcamp", "university", etc., it's not. 
+
+Therefore, the score is 4. 
+
+But maybe the presence of "professional" implies high purchase intent? The rule doesn't specify that. So no. 
+
+So final score is 4. 
+
+But I'm not 100% sure. Maybe the answer is 5? If "Stanford" is considered as a university, then the high purchase intent is implied. But the rule says the keyword must contain the words like "university". Since it doesn't, maybe not. 
+
+Therefore, I think the correct score is 4.
+\boxed{4}'
+Scoring keywords:  10%|#         | 16/154 [04:39<58:54, 25.61s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "mit xpro ai". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+So, the keyword is "mit xpro ai". Let me break it down. "MIT" is a well-known institution, so that might be a clue. "XPRO" could be a program or course they offer. "AI" stands for Artificial Intelligence. Putting it together, maybe it's related to an AI course or program from MIT's XPRO platform. 
+
+First, check if any of the subtractive factors apply. The keyword doesn't have "free", "cheap", "youtube", or "login", so those don't trigger a subtraction. Now, is it unrelated to generative AI? Well, "AI" is a broad term, but generative AI is a subset. However, the keyword doesn't specify "generative", but maybe the context implies it. Since the user hasn't specified, I might have to assume it's related to AI in general. But the rule says if it's unrelated to generative AI, subtract 1. Since "AI" is a general term, maybe it's not specific enough. Wait, but the keyword is "mit xpro ai", and if XPRO is a program, maybe it's about AI, including generative. Hmm, this is a bit ambiguous. Maybe I should assume it's related to AI, so no subtraction here. But I'm not 100% sure. Let me note that and check other factors.
+
+Next, check if it's purely informational. The keyword doesn't seem to be asking for definitions or news. It's more like a product or program name. So probably not informational, so no subtraction here.
+
+Now, check for adding points. Does it imply learning intent? Words like "course", "training", "education" are in the add list. The keyword has "xpro" which might be a program, so maybe it's a learning intent. But the keyword itself doesn't have those exact words. However, "MIT" is an educational institution, so maybe that implies learning intent. But the rule says if the keyword includes those terms. Since "xpro" isn't one of the listed words, maybe not. Wait, but the keyword is "mit xpro ai". If XPRO is a course or training program, then maybe it's implied. But the user hasn't specified. This is a bit tricky. Maybe I should assume that "XPRO" is a program, so it's learning intent. So add 1 here.
+
+Then, check for high purchase intent. Words like "certification", "bootcamp", "university", "MIT", "executive", "paid" are in the list. The keyword includes "MIT", which is an educational institution, and "XPRO" might be a paid program. So "MIT" is in the list, so add 1 here. Also, if "XPRO" is a paid program, then "paid" is implied. So that's another +1. Wait, but the keyword doesn't have "paid" explicitly. However, "MIT" is in the list, so adding 1 for that. So that's +1.
+
+So, base score is 3. Then, possible subtractions: none. Additions: +1 for learning intent (assuming XPRO is a program) and +1 for MIT. So total would be 3 + 1 +1 = 5. But wait, let me check again.
+
+Wait, the learning intent addition is if the keyword includes "course", "training", etc. The keyword is "mit xpro ai". If "xpro" is a course, then maybe. But the keyword doesn't have those exact words. However, "MIT" is an educational institution, so maybe that's enough? Or does the keyword need to explicitly include the learning intent terms? The rule says "implies learning intent". So if the keyword is about a program or course, even if the words aren't there, maybe it's implied. But the rule says "if the keyword implies learning intent". So if "mit xpro ai" is a course or training program, then yes. But without knowing what XPRO is, it's a bit of a guess. However, given that MIT is a university, and XPRO might be a professional education program, it's plausible. So adding 1 for learning intent.
+
+Then, for high purchase intent, "MIT" is in the list, so adding 1. Also, if the program is paid, then "paid" is implied. But the keyword doesn't have "paid", but "MIT" is in the list. So that's +1. So total additions are 2, so 3 + 2 = 5. 
+
+But wait, the original keyword is "mit xpro ai". Let me check if "xpro" is a known program. Maybe XPRO is MIT's professional education programs. If that's the case, then it's a paid program, so high purchase intent. So adding 1 for MIT and another for high purchase intent? Wait, the rule says add 1 if the keyword implies high purchase intent. So if "MIT" is part of the keyword, does that imply high purchase intent? The rule lists "MIT" as a word that implies high purchase intent. So yes, adding 1 for that. So that's +1. 
+
+So total score would be 3 (base) + 1 (learning intent) + 1 (MIT) = 5. 
+
+But wait, the rule says "add 1 if keyword implies learning intent" and "add 1 if keyword implies high purchase intent". So if both are true, then add 2. So 3 + 2 = 5. 
+
+But I need to make sure that "mit xpro ai" does imply high purchase intent. Since MIT is a prestigious institution, their programs are likely paid, so yes. So that's a +1. 
+
+So the final score would be 5. 
+
+But let me check again for any possible subtractions. The keyword doesn't have "free", "cheap", etc., so no subtraction. It's not purely informational. So no subtraction. 
+
+Therefore, the final score is 5. 
+
+But wait, maybe "mit xpro ai" is not about generative AI. If the keyword is about AI in general, but the rule says subtract 1 if it's unrelated to generative AI. But the keyword is "ai", which is a broad term. However, generative AI is a subset. If the keyword is about AI in general, then it's not specifically generative. But the user might be referring to generative AI. However, the rule says "unrelated to generative ai". If the keyword is about AI in general, then it's not specifically generative. But maybe the context is that the user is looking for generative AI. However, without more info, I have to assume that "ai" is not specifically generative. So would that trigger a subtraction? 
+
+Wait, the rule says subtract 1 if the keyword is unrelated to generative AI. So if the keyword is about AI in general, but not specifically generative, then it's unrelated. But maybe "ai" is considered part of generative AI? Or is generative AI a specific type of AI? 
+
+This is a bit ambiguous. For example, if someone searches for "AI", it could be about general AI or generative AI. But the rule is about generative AI. So if the keyword is "ai" without specifying generative, then it's not directly related to generative AI. Therefore, subtract 1. 
+
+Wait, but the original keyword is "mit xpro ai". If XPRO is a program that's about generative AI, then it's related. But without knowing, maybe we have to assume that "ai" is not specifically generative. Therefore, subtract 1. 
+
+So that would bring the score down. Let me recalculate. 
+
+Base score: 3. 
+
+Subtractions: 1 for being unrelated to generative AI. 
+
+Additions: 1 for learning intent (assuming XPRO is a program) and 1 for MIT (high purchase intent). 
+
+So total: 3 -1 +1 +1 = 4. 
+
+But this depends on whether "ai" is considered related to generative AI. If the keyword is about AI in general, then it's not specifically generative. But maybe the user is referring to generative AI. However, the rule is strict: if it's unrelated to generative AI, subtract 1. 
+
+So if the keyword is "ai", which is a broader term, then it's not specifically generative. Therefore, subtract 1. 
+
+So the score would be 3 -1 (unrelated to generative AI) +1 (learning intent) +1 (MIT) = 4. 
+
+But I'm not sure. Maybe "ai" is considered part of generative AI? Or maybe the keyword is about AI in general, which is related to generative AI. This is a bit of a judgment call. 
+
+Alternatively, maybe the keyword is about MIT's XPRO program, which could be a course on AI, which could include generative AI. But without knowing, it's safer to assume that "ai" is not specifically generative. Therefore, subtract 1. 
+
+So the final score would be 4. 
+
+But I need to make sure. Let me check the rules again. 
+
+Subtract 1 if keyword is unrelated to generative ai. 
+
+So if the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. 
+
+So the score would be 3 -1 (unrelated to generative AI) +1 (learning intent) +1 (MIT) = 4. 
+
+But maybe "ai" is considered related to generative AI. For example, if someone searches for "ai", they might be looking for generative AI. But the rule is strict. 
+
+Alternatively, maybe the keyword is about MIT's XPRO program, which is a professional education program, and the AI part is part of the program's focus. So if the program is about generative AI, then it's related. But without knowing, it's safer to assume that "ai" is not specifically generative. 
+
+Therefore, subtract 1. 
+
+So the final score is 4. 
+
+But I'm still a bit conflicted. Let me think again. 
+
+If the keyword is "mit xpro ai", and XPRO is a program, then the AI part is the subject of the program. If the program is about generative AI, then it's related. But if it's about AI in general, then it's not specifically generative. 
+
+But the rule says "unrelated to generative ai". So if the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. 
+
+So the score would be 3 -1 +1 +1 = 4. 
+
+But maybe the keyword is about generative AI. For example, if XPRO is a course on generative AI, then it's related. But without knowing, it's a guess. 
+
+In this case, since the user hasn't provided context, I have to make an assumption. 
+
+Alternatively, maybe "ai" is considered part of generative AI. For example, generative AI is a type of AI. So if the keyword is about AI, it's related to generative AI. But that's not accurate. Generative AI is a subset of AI. So if the keyword is about AI in general, it's not specifically generative. 
+
+Therefore, subtract 1. 
+
+So the final score is 4. 
+
+But I'm not 100% sure. Maybe the answer expects that "ai" is related to generative AI. 
+
+Alternatively, maybe the keyword is about MIT's XPRO program, which is a professional education program, and the AI part is part of the program's focus. So it's related to AI, which could include generative AI. 
+
+But the rule is about generative AI specifically. 
+
+This is a bit of a gray area. 
+
+In the absence of more information, I think the safest assumption is that "ai" is not specifically generative, so subtract 1. 
+
+Therefore, the final score is 4. 
+
+But I need to check again. 
+
+Let me re-express the steps:
+
+1. Base score: 3
+
+2. Subtract 1 if keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative ai. 
+
+   - The keyword is "mit xpro ai". Does it contain any of those words? No. 
+
+   - Is it unrelated to generative ai? If "ai" is not specifically generative, then yes. So subtract 1. 
+
+3. Subtract 1 if keyword is purely informational. 
+
+   - Not applicable. 
+
+4. Add 1 if keyword implies learning intent. 
+
+   - "mit xpro ai" could be a program, so learning intent. Add 1. 
+
+5. Add 1 if keyword implies high purchase intent. 
+
+   - "MIT" is in the list, so add 1. 
+
+Total: 3 -1 +1 +1 = 4. 
+
+So the final score is 4. 
+
+But I'm still a bit uncertain about the generative AI part. If the keyword is about AI in general, then it's not specifically generative. But maybe the user is referring to generative AI. 
+
+Alternatively, maybe the keyword is about MIT's XPRO program, which is a professional education program, and the AI part is part of the program's focus. So it's related to AI, which could include generative AI. 
+
+But the rule says "unrelated to generative ai". If the keyword is about AI in general, then it's not specifically generative. 
+
+Therefore, I think the correct score is 4. 
+
+But I'm not entirely sure. Maybe the answer expects that "ai" is related to generative AI. 
+
+Alternatively, maybe the keyword is about generative AI. For example, if XPRO is a course on generative AI, then it's related. 
+
+But without knowing, it's safer to assume that "ai" is not specifically generative. 
+
+So final score: 4. 
+
+But I need to check if "mit xpro ai" is a known program. Maybe XPRO is a program by MIT that's about AI, including generative AI. 
+
+If that's the case, then it's related to generative AI. 
+
+But since I don't have that information, I have to make an assumption. 
+
+In the absence of specific information, I think the safest assumption is that "ai" is not specifically generative, so subtract 1. 
+
+Final score: 4. 
+
+But I'm still conflicted. Maybe the answer is 5. 
+
+Alternatively, maybe the keyword is about generative AI. 
+
+Let me think again. 
+
+If the keyword is "mit xpro ai", and XPRO is a program, then the AI part is the subject. If the program is about generative AI, then it's related. But if it's about AI in general, then it's not. 
+
+But the user is asking for relevance to generative AI. 
+
+Since the keyword is "ai", which is a broad term, but generative AI is a subset. 
+
+Therefore, the keyword is not specifically about generative AI, so subtract 1. 
+
+Final score: 4. 
+
+But I'm not sure. Maybe the answer is 5. 
+
+Alternatively, maybe the keyword is about generative AI. 
+
+In that case, no subtraction. 
+
+So, if I assume that "ai" is related to generative AI, then the score is 5. 
+
+But I think the correct approach is to subtract 1 because it's not specifically generative. 
+
+Therefore, the final score is 4. 
+
+But I'm not 100% certain. 
+
+Alternatively, maybe the keyword is about generative AI. 
+
+In that case, no subtraction. 
+
+So, the answer could be 5. 
+
+But I need to make a decision. 
+
+Given that the keyword is "mit xpro ai", and assuming that XPRO is a program related to AI, which could include generative AI, but not necessarily. 
+
+Since the rule is strict, I think the correct approach is to subtract 1 for being unrelated to generative AI. 
+
+Final score: 4. 
+
+But I'm still not sure. 
+
+Alternatively, maybe the keyword is about generative AI. 
+
+In that case, no subtraction. 
+
+So, the answer is 5. 
+
+But I think the safest answer is 4. 
+
+But I'm going to go with 4. 
+
+Wait, but the initial thought was 5, but after considering the generative AI part, it's 4. 
+
+So, the final answer is \boxed{4}.'
+Scoring keywords:  11%|#1        | 17/154 [06:16<1:47:53, 47.25s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "mit artificial intelligence course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "mit artificial intelligence course". Let's see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. "MIT" is a university, so it's related to education, which might be a positive. But the keyword isn't about generative AI specifically. Wait, the rule says subtract 1 if it's unrelated to generative AI. But the keyword is about artificial intelligence in general. However, generative AI is a subset of AI. But maybe the keyword isn't specifically about generative AI. Hmm, the rule says "unrelated to generative ai". So if the keyword is about AI in general, does that count as unrelated? Or is generative AI considered part of AI? This might be a point of confusion. The keyword is "artificial intelligence course" with MIT. Since generative AI is a specific area within AI, maybe the keyword is broader. But the rule says subtract 1 if it's unrelated. So if the keyword is about AI in general, not specifically generative AI, then maybe it's unrelated? Or is the presence of "artificial intelligence" enough? I think the rule is that if the keyword is not about generative AI, then subtract 1. But since the keyword is about AI in general, which is a broader term, maybe it's not directly related to generative AI. So that would be a subtraction. Wait, but maybe the course is about generative AI. The keyword doesn't specify. So perhaps the keyword is not specifically about generative AI, so subtract 1 here. So that's a subtraction of 1. So base score is 3, minus 1 for being unrelated to generative AI. Now, check if it's purely informational. The keyword is "mit artificial intelligence course". It's about a course, which implies learning intent. So the keyword isn't purely informational. So no subtraction here. Then, check for additive factors. The keyword includes "course", which implies learning intent. So add 1. Also, the keyword includes "MIT", which is a university, so that's part of the high purchase intent factors. The rule says add 1 if the keyword implies high purchase intent, like "certification", "bootcamp", "university", etc. So "MIT" is a university, so that's a +1. So total modifiers: -1 (unrelated to generative AI) +1 (learning intent) +1 (high purchase intent). So total score is 3 -1 +1 +1 = 4. Wait, but the initial subtraction was for being unrelated to generative AI. Let me double-check that. The keyword is "mit artificial intelligence course". The term "artificial intelligence" is a broad term. The rule says subtract 1 if it's unrelated to generative AI. But generative AI is a subset of AI. So if the course is about AI in general, is it unrelated to generative AI? Or is it related? Maybe the keyword is about AI in general, which could include generative AI. But the rule is specifically about being unrelated to generative AI. So if the keyword is not specifically about generative AI, then it's unrelated. Therefore, subtract 1. So that's correct. So the final score would be 3 (base) -1 (unrelated to generative AI) +1 (learning intent) +1 (MIT as high purchase intent) = 4. So the relevance score is 4. But wait, let me check again. The keyword is "mit artificial intelligence course". The presence of "MIT" might be a university, so that's a high purchase intent. Also, "course" implies learning intent. So the additions are correct. The subtraction is for being unrelated to generative AI. But maybe the keyword is about AI in general, which is related to generative AI. Wait, the rule says subtract 1 if the keyword is unrelated to generative AI. So if the keyword is about AI in general, is that considered unrelated? Or is generative AI a specific type of AI, so the keyword is related? This is a bit ambiguous. For example, if the keyword is "AI course", is that related to generative AI? Maybe not directly. But the course could cover generative AI as part of the curriculum. However, the keyword itself doesn't specify. So the rule is that if the keyword is purely about AI in general and not specifically about generative AI, then subtract 1. Therefore, the subtraction applies. So the score would be 4. Alternatively, maybe the presence of "artificial intelligence" is considered related to generative AI, so no subtraction. That's a possible point of confusion. If the keyword is about AI in general, but generative AI is a subset, then the keyword is related. But the rule says "unrelated to generative ai". So if the keyword is about AI in general, which is a broader term, then it's not specifically about generative AI. Therefore, subtract 1. So the score is 4. So the final answer is 4.
+\boxed{4}'
+Scoring keywords:  12%|#1        | 18/154 [06:48<1:36:30, 42.58s/it]    [DEBUG] Raw response: 'The keyword is "professional certificate in ai".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? The keyword is "professional certificate in ai". It does not contain any of the excluded terms. The keyword is related to AI, which is a subset of generative AI. So, no subtraction here.
+
+Step 3: Check for purely informational intent
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? The keyword "professional certificate in ai" suggests a desire to obtain a certificate, which is an action-oriented intent rather than purely informational. So, no subtraction here.
+
+Step 4: Check for learning intent modifiers
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? The keyword includes "certificate", which is closely related to learning and education. So, we add 1. New score = 3 + 1 = 4.
+
+Step 5: Check for high purchase intent modifiers
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword includes "certificate", which can imply a purchase intent as it often requires payment. So, we add another 1. New score = 4 + 1 = 5.
+
+Final score: \boxed{5}'
+Scoring keywords:  12%|#2        | 19/154 [06:58<1:13:30, 32.67s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "generative ai course mit". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "generative ai course mit". Let's see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words, so no subtraction there. 
+
+Next, check if the keyword is purely informational. The keyword includes "course", which suggests it's about learning, so that's not purely informational. So no subtraction here either. 
+
+Now, check for additive factors. The keyword includes "course", which implies a learning intent. According to the rules, that's an addition of 1. Then, the keyword has "MIT", which is a university or educational institution. The rules mention adding 1 if there's a high purchase intent, and "MIT" falls under that category. So that's another +1. 
+
+So, starting with 3, adding 1 for "course" and another 1 for "MIT", that's a total of 5. Are there any other factors? Let me double-check. No other words that would subtract, and the keyword isn't purely informational. So the final score should be 5. 
+
+Wait, but the maximum is 5, so that's the highest possible. Let me confirm each step again. Base 3, no subtractions, two additions. Yep, that's correct. So the relevance score is 5.
+\boxed{5}'
+Scoring keywords:  13%|#2        | 20/154 [07:08<58:21, 26.13s/it]      [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "prompt engineering course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+So, starting with the base score of 3. Now, check for any subtractive factors. The first subtractor is if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. The keyword here is "prompt engineering course". Let me check each part. "Prompt engineering" is related to generative AI, right? Because prompt engineering is about creating effective prompts for AI models like GPT. So that's related. The keyword doesn't have "free", "cheap", "youtube", or "login", so those subtractors don't apply. So no subtraction here.
+
+Next, check if the keyword is purely informational. The keyword is "prompt engineering course". That sounds like a course offering, which is more about learning rather than just information. So maybe not purely informational. But wait, the rules say subtract 1 if it's purely informational, like definitions, "what is", news, etc. Since "course" implies a learning program, not just information, I think this doesn't apply. So no subtraction here either.
+
+Now, check for additive factors. The first adder is if the keyword implies learning intent. Words like "course", "training", "tutorial", etc. The keyword has "course", so that's a clear indicator of learning intent. So add 1 here. Now the score is 3 + 1 = 4.
+
+Next adder is if the keyword implies high purchase intent. Words like "certification", "bootcamp", "university", "MIT", etc. The keyword is "prompt engineering course". Does "course" imply high purchase intent? Well, courses can be purchased, but the keyword doesn't have words like "certification" or "bootcamp". However, "course" might still suggest that someone is looking to enroll, which could imply purchase intent. But the rules specify specific terms. Since "course" isn't one of the listed high purchase intent terms, maybe this doesn't apply. Wait, the rules say "implies high purchase intent" and list examples. So unless the keyword includes those specific terms, maybe it's not. So maybe no addition here. So the score remains 4.
+
+Wait, but maybe "course" is considered as part of learning intent, which we already added. So the total would be 3 (base) +1 (learning intent) = 4. No other additions. So the final score is 4. Let me double-check.
+
+No subtractors applied, so base 3. Add 1 for learning intent. No other adders. So 4. That seems right. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:  14%|#3        | 21/154 [07:25<51:50, 23.39s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "mit xpro ai course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "mit xpro ai course". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. "MIT" is a known institution, and "XPRO" might be a program or course. The focus is on AI, so it's related to generative AI. So no subtraction here for those factors. 
+
+Next, check if the keyword is purely informational. The keyword includes "course", which suggests it's about learning, so it's not purely informational. So no subtraction here either. 
+
+Now, check for additive factors. The keyword includes "course", which implies learning intent. According to the rules, that's an addition of 1. So base score becomes 3 + 1 = 4. 
+
+Then, check if it implies high purchase intent. The keyword has "MIT", which is a prestigious institution, and "course" might imply a paid program. Also, "XPRO" could be a certification or a structured program. So "MIT" and the context of a course might indicate high purchase intent. So adding another 1 here. Now the total is 4 + 1 = 5. 
+
+Wait, but I need to make sure that "MIT" is considered as part of high purchase intent. The rules mention "MIT" as one of the words that imply high purchase intent. So yes, including "MIT" would add 1. 
+
+So applying all modifiers: base 3, add 1 for learning intent, add 1 for high purchase intent. Total is 5. 
+
+But wait, are there any other factors? Let me double-check. The keyword isn't purely informational, so no subtraction. No forbidden words. So the final score should be 5. 
+
+But wait, sometimes "course" might be considered as part of learning intent, but does "MIT" add to purchase intent? The rules say "MIT" is one of the words that imply high purchase intent. So yes. So the final score is 5. 
+
+I think that's it. Let me confirm once more. No subtractions, two additions. So 3 + 1 +1 = 5. The maximum score is 5, so that's the final answer.
+\boxed{5}'
+Scoring keywords:  14%|#4        | 22/154 [07:41<46:33, 21.17s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "online generative ai course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "online generative ai course". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words, so no subtraction there. 
+
+Next, check if the keyword is purely informational. The keyword includes "course", which suggests it's about learning, so it's not purely informational. So no subtraction here either. 
+
+Now, check for additive factors. The keyword includes "course", which implies learning intent. According to the rules, that's an addition of 1. So base score becomes 3 + 1 = 4. 
+
+Then, check if it implies high purchase intent. The keyword is "course", but does that mean high purchase intent? Well, courses can be part of a paid program, but the keyword itself doesn't explicitly mention things like "certification", "bootcamp", "paid", etc. However, "course" might still imply that there's a product or service being offered, which could have purchase intent. But the rules specify adding 1 only if it includes terms like "certification", "bootcamp", etc. Since "course" isn't one of those exact terms, maybe I shouldn't add another point here. Wait, the rules say "implies high purchase intent". So if the keyword is about a course that's likely to be paid, does that count? Hmm. The keyword is "online generative ai course" – it's possible that the course is a paid product, but the keyword itself doesn't specify that. So maybe it's not a direct indicator of high purchase intent. Therefore, no addition here. 
+
+So total score would be base 3 + 1 (for learning intent) = 4. No other modifiers apply. So the final score is 4. Let me double-check. 
+
+No subtractive factors, so base remains 3. Add 1 for "course" implying learning intent. No addition for purchase intent because the keyword doesn't have terms like certification or bootcamp. So 3 +1 =4. That seems right. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:  15%|#4        | 23/154 [07:56<42:14, 19.35s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "artificial intelligence course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword here is "artificial intelligence course". Let me check each rule step by step.
+
+First, the base score is 3. Now, looking at the subtract points. The first subtract condition is if the keyword contains "free", "cheap", "youtube", "login", or is unrelated to generative AI. The keyword here is "artificial intelligence course". None of those words are present. It's about AI courses, which are related to generative AI, I think. So no subtraction here.
+
+Next, subtract 1 if the keyword is purely informational, like definitions, "what is", news, etc. The keyword is "artificial intelligence course". That sounds like it's about taking a course, which is more of a learning intent rather than just informational. So probably not purely informational. So no subtraction here either.
+
+Now, adding points. The first add is if the keyword implies learning intent. Words like "course", "training", "tutorial", etc. The keyword has "course", so that's a clear learning intent. So add 1 here. Now the score is 3 + 1 = 4.
+
+Next, add 1 if the keyword implies high purchase intent. Words like "certification", "bootcamp", "university", "MIT", etc. The keyword is "course", which could imply a purchase intent, but does it? Well, "course" can be free or paid. But the presence of "course" alone might not necessarily indicate high purchase intent. However, sometimes courses are associated with paid programs. But the rules specify words like "certification", "bootcamp", etc. Since "course" isn't one of those exact words, maybe this doesn't apply. Wait, the instruction says "implies high purchase intent". So if the keyword is "course", does that imply high purchase intent? Maybe not necessarily. For example, someone might search for "free AI course" which would be low purchase intent. But in this case, the keyword is just "artificial intelligence course" without any modifiers. So maybe it's neutral. Therefore, I might not add the 1 here. But I need to check the exact wording of the rule. The rule says "implies high purchase intent (e.g., certification, bootcamp, university, MIT, executive, paid, etc.)". So "course" isn't in the examples, but maybe it's considered. Hmm. This is a bit ambiguous. However, since "course" is a general term, and the examples include "certification" and "bootcamp", which are more specific. So maybe "course" alone isn't enough. Therefore, no addition here. So the score remains 4.
+
+So total score is 3 (base) +1 (learning intent) = 4. No subtractions. So the final score is 4. Wait, but let me double-check. Are there any other factors? The keyword isn't related to generative AI? Wait, the first subtract condition says if it's unrelated to generative AI. But "artificial intelligence" is a broader term. Generative AI is a subset of AI. So the keyword is related to AI, which includes generative AI. So that's okay. So no subtraction. Therefore, the final score is 4. 
+
+But wait, maybe the presence of "course" is enough for high purchase intent? Let me think again. If someone searches for "artificial intelligence course", they might be looking to enroll in a paid course, which would imply purchase intent. However, the rule specifies certain keywords like "certification", "bootcamp", etc. Since "course" isn't listed, maybe it's safer not to add that point. But maybe the rule is more about the intent rather than exact keywords. For example, if the keyword is "course", that's a learning intent, but does it imply purchase intent? It could be either. However, the rule says "high purchase intent", so maybe "course" isn't enough. Therefore, I think the correct score is 4. 
+
+So the final score is 4.
+\boxed{4}'
+Scoring keywords:  16%|#5        | 24/154 [08:21<45:35, 21.04s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "mit generative ai course". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "mit generative ai course". Let's see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words, so no subtraction there. 
+
+Next, check if the keyword is purely informational. The keyword includes "course", which suggests it's about learning, so maybe not purely informational. But I need to think: is "course" here indicating a learning intent or just a general term? Since it's combined with "generative ai" and "MIT", it's more about a course related to generative AI, so probably not purely informational. So no subtraction here either.
+
+Now, check for additive factors. The keyword includes "course", which implies learning intent. According to the rules, if the keyword implies learning intent (like "course", "training", etc.), add 1. So that's +1. 
+
+Then, check if it implies high purchase intent. The keyword has "MIT", which might be a university or an institution, and "course" could imply a paid course. However, the presence of "MIT" might not directly indicate purchase intent unless it's a specific program. But "MIT" is a well-known institution, so maybe there's an implication that the course is part of a formal program, which could be paid. However, the rules mention words like "certification", "bootcamp", "university", "MIT", "executive", "paid". So "MIT" is listed as a possible indicator. So adding 1 for high purchase intent. 
+
+So, base score is 3. Add 1 for learning intent, add 1 for high purchase intent. That's 3 + 1 + 1 = 5. 
+
+Wait, but are there any other factors? Let me double-check. The keyword doesn't have any of the subtractive terms. It's not purely informational. So the total would be 5. 
+
+But wait, does "MIT" alone imply high purchase intent? Maybe. If the course is offered by MIT, it's likely a paid program. So that's a valid addition. So the final score would be 5. 
+
+Alternatively, maybe "MIT" is just part of the course name, like a course from MIT, but the keyword is "mit generative ai course". So the user is searching for a course related to generative AI from MIT. So the presence of "MIT" could indicate that the course is from a reputable institution, which might be paid. Therefore, adding 1 for high purchase intent. 
+
+So yes, the final score is 5. 
+
+But let me check again. The base is 3. Add 1 for "course" (learning intent), add 1 for "MIT" (high purchase intent). So 3 + 1 +1 = 5. No subtractions. So the score is 5. 
+
+I think that's correct. The keyword is highly relevant as it's about a course (learning intent) from MIT (high purchase intent), and no negative factors apply. So the final score is 5.
+\boxed{5}'
+Scoring keywords:  16%|#6        | 25/154 [08:42<44:52, 20.87s/it]    [DEBUG] Raw response: 'The keyword is "generative ai fundamentals".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? No. The keyword is related to generative AI and doesn't contain any of the excluded terms. So, no subtraction here.
+
+Step 3: Check for informational keyword
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? "Fundamentals" suggests a foundational understanding, which is somewhat informational. However, it's not purely informational as it could imply a course or educational content. So, no subtraction here.
+
+Step 4: Check for learning intent
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? "Fundamentals" can imply learning intent, as it suggests foundational knowledge. However, it's not explicitly stating a course or training. So, no addition here.
+
+Step 5: Check for high purchase intent
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? No. The keyword doesn't suggest a product or service that would require a purchase. So, no addition here.
+
+Final Score: 3
+
+\boxed{3}'
+Scoring keywords:  17%|#6        | 26/154 [08:51<36:51, 17.28s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "ai certification mit". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+So, the keyword is "ai certification mit". Let me break it down. The main components are "ai", "certification", and "mit". Now, "MIT" is a well-known university, so that might be relevant. The word "certification" is part of the keyword, which according to the rules, if the keyword implies high purchase intent, we add 1. Since certification often relates to courses or programs that you pay for, that's a good sign. So that's an addition of 1. 
+
+Next, checking if there are any subtractive factors. The keyword doesn't contain "free", "cheap", "youtube", or "login", so those don't apply. Now, is the keyword unrelated to generative AI? Well, "ai" is a broad term, but generative AI is a subset. However, the keyword doesn't specify generative AI, but since the base is about AI certification, maybe it's still relevant. The rules say subtract 1 if it's unrelated to generative AI. But since the keyword is just "ai", not specifying generative, maybe that's a point to subtract? Wait, the user might be referring to AI in general. But the instruction says "unrelated to generative ai". So if the keyword is about AI certification in general, not specifically generative AI, does that count as unrelated? Hmm. The problem is that the keyword is "ai certification mit", which could be about AI certification from MIT. But generative AI is a specific area. However, the rules might consider "ai" as related to generative AI, but maybe not. Wait, the rules say "unrelated to generative ai". So if the keyword is about AI in general, not specifically generative AI, then it's unrelated. But maybe the keyword is about AI certification, which could include generative AI. This is a bit ambiguous. Let me think again. The keyword is "ai certification mit". If the user is looking for a certification in AI, which could be a broad field, but the rules subtract 1 if it's unrelated to generative AI. So if the keyword is not specifically about generative AI, then it's unrelated. But maybe the keyword is about AI certification in general, which could include generative AI. However, the rules might consider that as not specifically generative, so subtract 1. Wait, but the base score is 3. Let me check the rules again. The subtract 1 if the keyword is unrelated to generative AI. So if the keyword is about AI certification, but not specifically generative AI, then it's unrelated. But maybe the keyword is about AI certification, which could be in any area, including generative. But the rules might not consider that. Alternatively, maybe the keyword is about AI certification, which is related to generative AI. Hmm. This is a bit tricky. Maybe I should assume that "ai" is related to generative AI, so no subtraction. But I'm not sure. Let me check other factors. 
+
+Next, is the keyword purely informational? The keyword is "ai certification mit". It's not a question like "what is AI certification" or news, so it's not purely informational. So no subtraction there. 
+
+Now, the keyword implies learning intent? The word "certification" suggests that the user is looking to get certified, which is a learning intent. So according to the rules, add 1. 
+
+Also, the keyword implies high purchase intent because of "certification" and "MIT". MIT is a prestigious institution, so certification from MIT would likely be a paid program. So that's another addition of 1. 
+
+So let's tally up. Base score is 3. 
+
+Subtract 1 if unrelated to generative AI. If I assume that "ai" is not specifically generative, then subtract 1. But if it's considered related, then no. Let me think again. The keyword is "ai certification mit". If the user is looking for a certification in AI, which could be in any area, including generative AI. However, the rules say subtract 1 if it's unrelated to generative AI. So if the keyword is about AI certification in general, not specifically generative AI, then it's unrelated. But maybe the keyword is about generative AI certification. However, the keyword doesn't specify "generative". So perhaps it's safer to assume that it's not specifically generative AI, so subtract 1. 
+
+So that would be base 3, subtract 1 for unrelated to generative AI, then add 1 for learning intent, add 1 for high purchase intent. So total would be 3 -1 +1 +1 = 4. 
+
+But wait, if the keyword is "ai certification mit", and MIT is a university, maybe the certification is from MIT, which could be in AI, which could include generative AI. But the keyword doesn't specify. So maybe the subtraction is not applicable. Alternatively, maybe the keyword is about AI certification, which is related to generative AI. 
+
+Alternatively, maybe the keyword is about AI certification, which is a broader term, and the rules consider that as related to generative AI. But I'm not sure. 
+
+Alternatively, maybe the keyword is not about generative AI, so subtract 1. 
+
+But if I subtract 1 for unrelated to generative AI, then the score would be 3 -1 +1 +1 = 4. 
+
+Alternatively, if I don't subtract, then 3 +1 +1 = 5. 
+
+Which is correct? The rules say subtract 1 if the keyword is unrelated to generative AI. So if the keyword is about AI certification, which is a broader term, but generative AI is a subset. So if the keyword is not specifically about generative AI, then it's unrelated. Therefore, subtract 1. 
+
+So the final score would be 3 -1 +1 +1 = 4. 
+
+But let me check again. The keyword is "ai certification mit". If the user is looking for a certification in AI from MIT, which could be in any area, but generative AI is a specific area. However, the keyword doesn't specify. So the keyword is about AI certification, which is related to generative AI? Or not? 
+
+Alternatively, maybe the keyword is about AI certification, which is related to generative AI. Because generative AI is a part of AI. So maybe the keyword is related. Therefore, no subtraction. 
+
+This is a bit ambiguous. But given that the rules say "unrelated to generative ai", if the keyword is about AI certification, which is a broader term, but generative AI is a subset, then the keyword is related to generative AI. Because AI includes generative AI. So maybe the keyword is related, so no subtraction. 
+
+In that case, the score would be 3 +1 +1 = 5. 
+
+But I'm not sure. Maybe the rules are strict. Let me think again. The keyword is "ai certification mit". If the user is looking for a certification in AI, which could be in any area, but generative AI is a specific area. However, the keyword doesn't specify. So the keyword is not specifically about generative AI, so it's unrelated. Therefore, subtract 1. 
+
+But then again, AI certification could be in generative AI. So maybe the keyword is related. 
+
+This is a bit of a judgment call. But given that the rules are strict, and the keyword doesn't mention generative AI, I think it's safer to assume that it's unrelated. Therefore, subtract 1. 
+
+So the final score would be 3 -1 +1 +1 = 4. 
+
+But I'm not 100% sure. Another angle: the keyword includes "MIT", which is a university known for AI research, including generative AI. So maybe the certification is related to generative AI. Therefore, no subtraction. 
+
+In that case, the score would be 3 +1 +1 = 5. 
+
+Hmm. This is a bit of a dilemma. But given that the rules are about being "unrelated to generative ai", and the keyword is "ai certification mit", which is about AI certification, which is a broader term, but generative AI is a subset. So the keyword is not specifically about generative AI, so it's unrelated. Therefore, subtract 1. 
+
+So the final score is 4. 
+
+But I'm still a bit uncertain. Let me check the other factors again. 
+
+No subtract for "free", "cheap", etc. 
+
+Not purely informational. 
+
+Add 1 for learning intent (certification implies learning). 
+
+Add 1 for high purchase intent (certification, MIT). 
+
+So base 3, subtract 1 for unrelated to generative AI, add 1 and add 1. 
+
+Total: 3 -1 +1 +1 = 4. 
+
+Therefore, the final score is 4.
+\boxed{4}'
+Scoring keywords:  18%|#7        | 27/154 [09:43<58:49, 27.79s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "driving innovation with generative ai mit". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "driving innovation with generative ai mit". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. So no subtraction here. 
+
+Next, check if the keyword is purely informational. The phrase seems to be about driving innovation using generative AI, possibly related to MIT. It doesn't look like it's just asking for definitions or news. So maybe no subtraction here either. So the base remains 3.
+
+Now, check for additive factors. The keyword implies learning intent? Words like "course", "training", etc. The keyword doesn't have those terms. So no addition here. 
+
+Then, check if it implies high purchase intent. The keyword includes "MIT", which is a university. Also, "MIT" might be part of a program or certification. So according to the rules, if it includes "MIT", that's a high purchase intent indicator. So add 1 here. 
+
+So total score would be base 3 + 1 (for MIT) = 4. 
+
+Wait, let me double-check. The keyword is "driving innovation with generative ai mit". The "MIT" part could be referring to the Massachusetts Institute of Technology, which is a prestigious university. If someone is searching for how MIT is using generative AI to drive innovation, that might be related to educational content, research, or programs. Since "MIT" is listed as a high purchase intent term, that adds 1. 
+
+No other additive factors. So the final score is 4. 
+
+I don't see any other factors. The keyword isn't purely informational, doesn't have the subtractive terms, and adds 1 for MIT. So 3 +1 =4. That should be the score.
+\boxed{4}'
+Scoring keywords:  18%|#8        | 28/154 [09:57<49:19, 23.49s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "generative ai course usa". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "generative ai course usa". Let's see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words, so no subtraction there. 
+
+Next, check if it's purely informational. The keyword includes "course", which suggests it's about learning, so probably not purely informational. But wait, the rules say subtract 1 if it's purely informational like definitions or "what is" etc. Since "course" implies a learning program, maybe it's not purely informational. So no subtraction here.
+
+Now, check for additive factors. The keyword includes "course", which is one of the words that imply learning intent (like "course", "training", etc.). So that's +1. 
+
+Then, check if it implies high purchase intent. Words like "certification", "bootcamp", "university", etc. The keyword is "course", which might be part of a program that could involve payment, but "course" alone doesn't necessarily indicate high purchase intent. However, the presence of "course" might be associated with paid programs. But the rules specify words like "certification", "bootcamp", etc. Since "course" isn't one of those exact terms, maybe no addition here. Wait, but the instruction says "implies high purchase intent". If the keyword is about a course, which could be a paid program, maybe it's a bit of a gray area. But according to the rules, only specific terms add 1. So unless "course" is listed, maybe no addition. So maybe only the +1 for learning intent.
+
+So total score: base 3 +1 (learning intent) = 4. No subtractions. So the final score would be 4. 
+
+Wait, but let me double-check. The keyword is "generative ai course usa". The "course" is there, so learning intent is present. No other subtractive factors. So yes, 3 +1 = 4. So the relevance score is 4. 
+
+But wait, could "course" be considered as implying high purchase intent? Maybe not directly. The rules specify "certification", "bootcamp", etc. So unless the keyword includes those terms, it's not adding. So the only addition is the learning intent. So final score is 4. 
+
+I think that's correct. Let me make sure I didn't miss any other factors. The keyword isn't unrelated, doesn't have any of the subtractive words, and has a learning intent. So 3 +1 = 4. So the answer should be 4.
+\boxed{4}'
+Scoring keywords:  19%|#8        | 29/154 [10:15<45:26, 21.81s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "artificial intelligence certification mit". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract based on certain criteria.
+
+Starting with the base score of 3. Now, check for any subtractive factors. The keyword is "artificial intelligence certification mit". Let me see if it contains any of the words that would subtract points: "free", "cheap", "youtube", "login", or if it's unrelated to generative AI. The keyword doesn't have any of those words. It does mention "certification" and "MIT", which are related to education and institutions. So no subtraction here for those factors. Next, check if it's purely informational. The keyword includes "certification", which suggests it's about obtaining a certification, not just information. So probably not purely informational. So no subtraction here either. 
+
+Now, check for additive factors. Does the keyword imply learning intent? Words like "course", "training", "tutorial", etc. The keyword has "certification", which is related to learning and education, so that might count. The rules say to add 1 if it implies learning intent. So that's +1. Then, does it imply high purchase intent? Words like "certification", "bootcamp", "university", "MIT", "executive", "paid". The keyword includes "certification" and "MIT". MIT is a prestigious university, so that's a strong indicator of high purchase intent. So that's another +1. 
+
+So starting with 3, adding 1 for learning intent and another 1 for high purchase intent, that's 3 + 1 + 1 = 5. Are there any other factors? Let me double-check. No subtraction factors applied. So the maximum score is 5. 
+
+Wait, but the keyword is "artificial intelligence certification mit". Is "MIT" considered as part of the high purchase intent? Yes, because MIT is a university, so offering certifications. So that's correct. Also, "certification" directly implies a learning intent and purchase intent. So the score should be 5. 
+
+I think that's all. No other modifiers apply. So the final score is 5.
+\boxed{5}'
+Scoring keywords:  19%|#9        | 30/154 [10:28<40:08, 19.42s/it]    [DEBUG] Raw response: 'The keyword is "mit ai class".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? The keyword is "mit ai class". It does not contain any of the excluded terms. It is related to AI, which is a generative AI topic. So, no subtraction here.
+
+Step 3: Check for informational intent
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? The keyword "mit ai class" seems to imply a course or class related to AI at MIT. It's not purely informational. So, no subtraction here.
+
+Step 4: Check for learning intent
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? The keyword includes "class", which implies a learning or educational context. So, we add 1. New score: 3 + 1 = 4.
+
+Step 5: Check for high purchase intent
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword includes "MIT", which is a prestigious university, and "class" could imply a paid course or program. This suggests high purchase intent. So, we add 1. New score: 4 + 1 = 5.
+
+Final score: \boxed{5}'
+Scoring keywords:  20%|##        | 31/154 [10:38<33:49, 16.50s/it]    [DEBUG] Raw response: 'The keyword is "certification for artificial intelligence".
+
+Step 1: Base Score = 3
+
+Step 2: Check for negative modifiers
+- Does the keyword contain "free", "cheap", "youtube", "login", or is unrelated to generative ai? The keyword is "certification for artificial intelligence". It does not contain any of the excluded terms. It is related to AI, which is a subset of generative AI. So, no subtraction here.
+
+Step 3: Check for informational intent
+- Is the keyword purely informational (e.g., definitions, "what is", news, etc.)? The keyword "certification for artificial intelligence" is not purely informational. It suggests a specific action (getting certified) rather than just seeking information. So, no subtraction here.
+
+Step 4: Check for learning intent
+- Does the keyword imply learning intent (e.g., "course", "training", "tutorial", "education", etc.)? The keyword includes "certification", which is closely related to learning and education. Therefore, we add 1. New score = 3 + 1 = 4.
+
+Step 5: Check for high purchase intent
+- Does the keyword imply high purchase intent (e.g., "certification", "bootcamp", "university", "MIT", "executive", "paid", etc.)? The keyword includes "certification", which implies a purchase intent (as certifications often require payment). Therefore, we add another 1. New score = 4 + 1 = 5.
+
+Final score: \boxed{5}'
+Scoring keywords:  21%|##        | 32/154 [10:48<29:22, 14.44s/it]    [DEBUG] Raw response: 'Let's go!
+Okay, let's tackle this relevance score calculation for the keyword "learn how to program ai". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+First, check if any of the subtractive factors apply. The keyword is "learn how to program ai". Let me see: does it contain "free", "cheap", "youtube", "login", or is it unrelated to generative AI? The keyword doesn't have any of those words. So no subtraction here. Also, is it unrelated to generative AI? Well, "program AI" could be related to generative AI, but maybe not necessarily. Wait, the rules say subtract 1 if it's unrelated to generative AI. But the keyword is about programming AI, which could be a broader term. However, generative AI is a subset of AI. But maybe the keyword is too general? Hmm, but the instruction says "unrelated to generative ai". If the keyword is about AI in general, maybe it's not specifically generative. But I'm not sure. Maybe the keyword is still relevant enough. Let me note that as a possible point to consider. Maybe I should check if "program AI" is considered generative AI. If not, then subtract 1. But I'm not certain. Let me think again. The keyword is "learn how to program ai". Programming AI could refer to creating AI systems, which might include generative AI, but it's not specific. However, the rules say subtract 1 if it's unrelated to generative AI. If the keyword is about AI in general, maybe it's not directly related. But maybe the keyword is still considered relevant. This is a bit ambiguous. Maybe I should assume that "program AI" is related to generative AI, so no subtraction here. Let me tentatively say no subtraction for that.
+
+Next, check if the keyword is purely informational. The keyword is "learn how to program ai". That sounds like a learning intent, not just informational. Because "learn how to" implies wanting to acquire skills, not just definitions or news. So no subtraction here. So the base score remains 3.
+
+Now, check for additive factors. First, does the keyword imply learning intent? Words like "learn", "how to", "program" suggest learning. So yes, "learn how to" is a strong indicator of learning intent. So add 1. Now the score is 4.
+
+Next, does it imply high purchase intent? The keyword is "learn how to program ai". There's no mention of certification, bootcamp, university, MIT, executive, paid, etc. So no addition here. So the total score would be 4.
+
+Wait, but let me double-check. The original keyword is "learn how to program ai". The base score is 3. No subtractions (assuming it's related to generative AI and not purely informational). Then add 1 for learning intent. So total 4. Is there any other factors? Let me check again.
+
+Wait, the first subtractive factor: if the keyword is unrelated to generative AI. If "program AI" is not generative AI, then subtract 1. But the problem is that the keyword is about programming AI, which could be a general term. However, generative AI is a type of AI. So if the keyword is about programming AI in general, maybe it's not specifically generative. But the rules say "unrelated to generative ai". So if the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1 here. Wait, but the original instruction says "unrelated to generative ai". So if the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. So that would bring the score down from 3 to 2, then add 1 for learning intent, making it 3. But I'm not sure if "program AI" is considered generative AI. Maybe the keyword is too broad. Alternatively, maybe the keyword is considered relevant to generative AI because programming AI could involve generative models. This is a bit of a judgment call. 
+
+Alternatively, maybe the keyword is considered related to generative AI. For example, if someone is learning to program AI, they might be referring to creating AI models, which could include generative AI. But it's not specific. However, the rules don't specify that the keyword has to be exactly about generative AI, just that if it's unrelated, subtract 1. So if the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. 
+
+So let's recalculate. Base score 3. Subtract 1 for being unrelated to generative AI. Then check if it's purely informational. No, because it's about learning how to program. So no subtraction. Then add 1 for learning intent. So total score is 3 -1 +1 = 3. 
+
+But wait, the initial base score is 3. Then subtract 1 for being unrelated to generative AI, making it 2. Then add 1 for learning intent, making it 3. 
+
+But maybe the keyword is considered related to generative AI. For example, if someone is learning to program AI, they might be referring to generative AI. But I'm not sure. This is a bit ambiguous. 
+
+Alternatively, maybe the keyword is considered related to generative AI. For example, "program AI" could be part of generative AI development. So no subtraction. Then the score would be 3 +1 = 4. 
+
+This is a bit of a dilemma. Let me think again. The rules say subtract 1 if the keyword is unrelated to generative AI. So if the keyword is about AI in general, then it's not specifically generative. But if the keyword is about programming AI, which could be a part of generative AI, then maybe it's related. However, the keyword is not specific. 
+
+Alternatively, maybe the keyword is considered related to generative AI because programming AI could involve creating AI models, which includes generative models. But I'm not certain. 
+
+In the absence of clear information, perhaps the safest assumption is that the keyword is not specifically about generative AI, so subtract 1. Therefore, the score would be 3 -1 +1 = 3. 
+
+But I'm not entirely confident. Another angle: the keyword "learn how to program ai" could be about programming AI systems, which could include various types of AI, not just generative. Therefore, it's not specifically generative AI. Hence, subtract 1. 
+
+So final score would be 3. 
+
+But let me check again. The base score is 3. Subtract 1 for being unrelated to generative AI (assuming that's the case). Then add 1 for learning intent. So 3 -1 +1 = 3. 
+
+Alternatively, if the keyword is considered related to generative AI, then no subtraction. So 3 +1 = 4. 
+
+Which is correct? 
+
+The rules state that the keyword should be checked for being unrelated to generative AI. If the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. 
+
+Therefore, the final score would be 3. 
+
+But I'm still a bit uncertain. Maybe the keyword is considered relevant enough. Let me think of examples. If someone searches "learn how to program AI", they might be looking for tutorials on creating AI models, which could include generative AI. So maybe it's still considered relevant. 
+
+In that case, no subtraction. So base score 3, add 1 for learning intent, total 4. 
+
+Hmm. This is tricky. 
+
+Alternatively, maybe the keyword is not purely informational. It's about learning how to program AI, which is a skill, so it's not purely informational. 
+
+So, if I assume that the keyword is related to generative AI, then the score is 4. If not, then 3. 
+
+But since the rules don't specify that the keyword has to be exactly about generative AI, but just that if it's unrelated, subtract 1. 
+
+Given that "program AI" could be part of generative AI, but not necessarily, I think the safest answer is to assume that it's not specifically generative AI, so subtract 1. 
+
+Therefore, the final score is 3. 
+
+But I'm not 100% sure. Maybe the answer expects that "program AI" is related to generative AI. 
+
+Alternatively, maybe the keyword is considered related to generative AI because programming AI could involve creating AI models, which includes generative models. 
+
+In that case, no subtraction. 
+
+So, the answer could be 4. 
+
+I think I need to make a decision here. Given that the keyword is about learning to program AI, which is a broad term, but generative AI is a subset. However, the rules don't require the keyword to be specifically about generative AI, just that if it's unrelated, subtract 1. 
+
+If the keyword is about AI in general, then it's not specifically generative. Therefore, subtract 1. 
+
+So, final score: 3 (base) -1 (unrelated to generative AI) +1 (learning intent) = 3. 
+
+But I'm still a bit conflicted. Maybe the answer is 4. 
+
+Alternatively, maybe the keyword is considered related to generative AI. 
+
+In the absence of clear guidelines, I think the best approach is to assume that "learn how to program AI" is related to generative AI, so no subtraction. Therefore, the score is 4. 
+
+But I'm not sure. 
+
+Alternatively, maybe the keyword is not related to generative AI. For example, if someone is learning to program AI, they might be referring to AI in general, not specifically generative. 
+
+In that case, subtract 1. 
+
+So, I think the answer is 3 or 4. 
+
+But given that the keyword is about programming AI, which could be part of generative AI, I think it's safer to assume it's related. Therefore, no subtraction. 
+
+Final score: 3 +1 = 4. 
+
+So, I'll go with 4.
+\boxed{4}'
+Scoring keywords:  21%|##1       | 33/154 [11:47<56:01, 27.78s/it]    [DEBUG] Raw response: 'Let's go!
+
+Okay, let's tackle this relevance score calculation for the keyword "course on generative ai". First, I need to remember the scoring rules. The base score starts at 3. Then there are modifiers to add or subtract points based on certain criteria.
+
+So, the keyword is "course on generative ai". Let me check each rule step by step.
+
+First, the base score is 3. Now, check for any subtract points. The keyword doesn't have "free", "cheap", "youtube", "login", or anything unrelated to generative AI. So no subtraction here. Then, check if it's purely informational. The keyword is about a course, which is more about learning rather than just information. So probably not purely informational. So no subtraction here either. 
+
+Now, check for adding points. The keyword includes "course", which implies learning intent. According to the rules, that's an addition of 1. So base score 3 +1 =4. 
+
+Next, check if it implies high purchase intent. The keyword is "course", but does that mean high purchase intent? Maybe. Courses can be paid, but the keyword itself doesn't have words like "certification", "bootcamp", "paid", etc. So maybe not. So no addition here. 
+
+So total score would be 3 (base) +1 (learning intent) =4. 
+
+Wait, but maybe "course" is considered high purchase intent? Hmm. The rules say add 1 if it implies high purchase intent. The examples given are "certification", "bootcamp", etc. "Course" is a bit more general. Maybe it's not high purchase intent. So I think the addition is only for the learning intent. 
+
+So final score is 4. Let me double-check. No subtractions, add 1 for learning intent. So 3+1=4. That seems right. So the relevance score is 4.
+\boxed{4}'
+Scoring keywords:  22%|##2       | 34/154 [11:58<46:00, 23.00s/it]
