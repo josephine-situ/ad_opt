@@ -120,8 +120,8 @@ def main():
             hist_metrics[row["Day"].date()] = row.to_dict()
     
     # 1. Train/Get Best Evaluation Model on FULL data
-    eval_model_path = eval_models_dir / "eval_model_full.joblib"
-    eval_metrics_path = eval_models_dir / "eval_metrics_full.joblib"
+    eval_model_path = eval_models_dir / f"eval_model_full_{embedding_method}.joblib"
+    eval_metrics_path = eval_models_dir / f"eval_metrics_full_{embedding_method}.joblib"
     
     if eval_model_path.exists():
         print(f"Loading cached full eval model")
@@ -174,7 +174,8 @@ def main():
             opt_date=day, 
             cache_dir=cache_dir,
             base_dir=base_dir,
-            course_start_dts=COURSE_START_DATES_MAP.get(args.course, [])
+            course_start_dts=COURSE_START_DATES_MAP.get(args.course, []),
+            embedding_method=embedding_method
         )
         
         for b in args.budget:

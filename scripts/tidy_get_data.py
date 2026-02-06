@@ -11,7 +11,7 @@ Usage:
 
 LLMs:
     request gpus with salloc -p pi_dbertsim --gpus=1
-    python scripts/tidy_get_data.py --embedding-method llm # Use LLM-based relevance scoring (Prometheus)
+    python scripts/tidy_get_data.py --course sys_eng --embedding-method llm # Use LLM-based relevance scoring
 """
 
 import argparse
