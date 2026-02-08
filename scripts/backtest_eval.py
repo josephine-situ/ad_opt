@@ -155,7 +155,7 @@ def main():
         val_act_clicks = val_act_diff.sum()
         
         # Prepare Actuals DF for country breakdown
-        obs_breakdown = obs[["Keyword", "Region", "Origin", "Cost"]].copy()
+        obs_breakdown = obs[["Keyword", "Region", "Origin", "Match type", "Cost"]].copy()
         obs_breakdown["t_Clicks_ActCost"] = val_act_diff
         
         act_cost = obs["Cost"].sum()
@@ -301,26 +301,34 @@ def main():
             val_opt_purch = df_country['Opt_Purchases'].sum()
             val_act_purch = df_country['Act_Purchases'].sum()
 
-            # Calculate Origin Conversions
-            # We distribute the Region+Origin clicks to countries in that region
-            def calc_origin_conversions(clicks_df, click_col):
-                 # clicks_df: [Region, Origin, click_col]
+            # Generic helpers to distribute Region+group clicks to countries
+            def calc_group_conversions(clicks_df, click_col, group_col):
                  m = clicks_df.merge(loc_df, on='Region', how='left')
                  m['Predicted_Conv'] = m[click_col] * m['Click_prop'] * m['Conv_rate']
-                 return m.groupby('Origin')['Predicted_Conv'].sum().to_dict()
+                 return m.groupby(group_col)['Predicted_Conv'].sum().to_dict()
             
-            def calc_origin_purchases(clicks_df, click_col):
-                 # clicks_df: [Region, Origin, click_col]
+            def calc_group_purchases(clicks_df, click_col, group_col):
                  m = clicks_df.merge(loc_df, on='Region', how='left')
                  m['Purch_rate'] = m['Purch_rate'].fillna(0)
                  m['Predicted_Purch'] = m[click_col] * m['Click_prop'] * m['Purch_rate']
-                 return m.groupby('Origin')['Predicted_Purch'].sum().to_dict()
+                 return m.groupby(group_col)['Predicted_Purch'].sum().to_dict()
             
-            opt_conv_origin_map = calc_origin_conversions(opt_clicks_reg_org, 't_Clicks_OptCost')
-            act_conv_origin_map = calc_origin_conversions(act_clicks_reg_org, 't_Clicks_ActCost')
+            # Origin conversions/purchases
+            opt_conv_origin_map = calc_group_conversions(opt_clicks_reg_org, 't_Clicks_OptCost', 'Origin')
+            act_conv_origin_map = calc_group_conversions(act_clicks_reg_org, 't_Clicks_ActCost', 'Origin')
             
-            opt_purch_origin_map = calc_origin_purchases(opt_clicks_reg_org, 't_Clicks_OptCost')
-            act_purch_origin_map = calc_origin_purchases(act_clicks_reg_org, 't_Clicks_ActCost')
+            opt_purch_origin_map = calc_group_purchases(opt_clicks_reg_org, 't_Clicks_OptCost', 'Origin')
+            act_purch_origin_map = calc_group_purchases(act_clicks_reg_org, 't_Clicks_ActCost', 'Origin')
+            
+            # Match type conversions/purchases
+            opt_clicks_reg_mt = X_day.groupby(['Region', 'Match type'])['t_Clicks_OptCost'].sum().reset_index()
+            act_clicks_reg_mt = obs_breakdown.groupby(['Region', 'Match type'])['t_Clicks_ActCost'].sum().reset_index()
+            
+            opt_conv_mt_map = calc_group_conversions(opt_clicks_reg_mt, 't_Clicks_OptCost', 'Match type')
+            act_conv_mt_map = calc_group_conversions(act_clicks_reg_mt, 't_Clicks_ActCost', 'Match type')
+            
+            opt_purch_mt_map = calc_group_purchases(opt_clicks_reg_mt, 't_Clicks_OptCost', 'Match type')
+            act_purch_mt_map = calc_group_purchases(act_clicks_reg_mt, 't_Clicks_ActCost', 'Match type')
             
             # Save Country breakdown to run_dir (include purchases)
             breakdown_file = run_dir / f"country_breakdown_{day.strftime('%Y-%m-%d')}.csv"
@@ -432,6 +440,25 @@ def main():
                 # Purchases (Calculated above)
                 row_dict[f"Opt_Purch_Origin_{org}"] = opt_purch_origin_map.get(org, 0.0)
                 row_dict[f"Act_Purch_Origin_{org}"] = act_purch_origin_map.get(org, 0.0)
+            
+            # Match Types
+            all_match_types = ['Exact match', 'Phrase match', 'Broad match']
+            for mt in all_match_types:
+                # Cost
+                row_dict[f"Opt_Cost_Match_{mt}"] = X_day[X_day['Match type'] == mt]['Optimal Cost'].sum()
+                row_dict[f"Act_Cost_Match_{mt}"] = obs[obs['Match type'] == mt]['Cost'].sum()
+                
+                # Clicks (Lift)
+                row_dict[f"Opt_Clicks_Match_{mt}"] = X_day[X_day['Match type'] == mt]['t_Clicks_OptCost'].sum()
+                row_dict[f"Act_Clicks_Match_{mt}"] = obs_breakdown[obs_breakdown['Match type'] == mt]['t_Clicks_ActCost'].sum()
+                
+                # Conversions
+                row_dict[f"Opt_Conv_Match_{mt}"] = opt_conv_mt_map.get(mt, 0.0)
+                row_dict[f"Act_Conv_Match_{mt}"] = act_conv_mt_map.get(mt, 0.0)
+                
+                # Purchases
+                row_dict[f"Opt_Purch_Match_{mt}"] = opt_purch_mt_map.get(mt, 0.0)
+                row_dict[f"Act_Purch_Match_{mt}"] = act_purch_mt_map.get(mt, 0.0)
             
             eval_summary_rows.append(row_dict)
                 
