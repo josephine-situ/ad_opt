@@ -145,3 +145,12 @@ Manifest.toml
 
 # Gurobi license
 gurobi.lic
+
+# *.csv
+# *.joblib
+# *.parquet
+*.ipynb
+*.xlsx
+*.tex
+logs
+notebooks

@@ -360,25 +360,15 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         )
 
     # Objective
-    if max_purch:
-        # Maximize purchases
-        from utils.data_pipeline import get_purchase_conversion_rate
-        purch_rates = get_purchase_conversion_rate(by_reg=True, base_dir=base_dir)
-        X = X.merge(
-            purch_rates,
-            on='Region',
-            how='left'
-        )
+    if max_purch or max_conv:
+        rates = get_conversion_rates(by_reg=True, base_dir=base_dir)
+        X = X.merge(rates, on='Region', how='left')
+        X['Conv_rate'] = X['Conv_rate'].fillna(0)
         X['Purch_rate'] = X['Purch_rate'].fillna(0)
+
+    if max_purch:
         model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Purch_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
     elif max_conv:
-        # Maximize conversions
-        conv_rates = get_conversion_rates(by_reg=True, base_dir=base_dir)
-        X = X.merge(
-            conv_rates,
-            on='Region',
-            how='left'
-        )
         model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Conv_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
     else:
         # Maximize clicks

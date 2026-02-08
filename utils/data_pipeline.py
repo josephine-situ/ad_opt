@@ -777,113 +777,96 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
 
 
 def get_conversion_rates(by_reg=False, base_dir=None):
-
-    # Use path relative to the project root
-    if base_dir is None:
-        project_root = Path(__file__).resolve().parents[1]
-        loc_file = project_root / "data/reports/Location report.csv"
-    else:
-        loc_file = Path(base_dir) / "reports/Location report.csv"
-        
-    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
-    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
-
-    if by_reg:
-        # Aggregate to region level
-        loc_df = loc_df.groupby(['Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
-        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
-        loc_df = loc_df[['Region', 'Conv_rate']].copy()
-
-    else:
-        # Aggregate to location level
-        loc_df = loc_df.groupby(['Location','Region']).agg({'Clicks':'sum','Conversions':'sum'}).reset_index()
-
-        # Want to get the columns 'Location', 'Click_prop (of region)', 'Conv_rate'
-        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
-        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
-        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
-        loc_df['Conv_rate'] = loc_df['Conversions'] / loc_df['Clicks']
-        loc_df = loc_df[['Location', 'Region', 'Click_prop', 'Conv_rate']].copy()
-
-    return loc_df
-
-
-def get_purchase_conversion_rate(by_reg=False, base_dir=None):
     """
-    Calculate purchase conversion rate (purchases / clicks) by region.
-    
-    Uses the Purchase report to get purchase counts and the historic data to get total clicks.
-    
+    Calculate conversion rate and purchase conversion rate by region or location.
+
+    Uses the Location report for clicks/conversions and the Purchase report for
+    purchase counts.  Returns both Conv_rate (conversions / clicks) and
+    Purch_rate (purchases / clicks) in a single DataFrame.
+
     Args:
-        by_reg (bool): If True, return region-level rates. If False, return location-level rates.
-        base_dir (Path): Base directory for data files.
-        
+        by_reg (bool): If True, return region-level rates.
+                       If False, return location-level rates with Click_prop.
+        base_dir (Path | str | None): Base *data* directory (contains reports/, clean/, etc.).
+                                      Defaults to <project_root>/data.
+
     Returns:
-        pd.DataFrame: DataFrame with Region and Purch_rate columns (if by_reg=True),
-                      or Location, Region, Click_prop, Purch_rate columns (if by_reg=False).
+        pd.DataFrame:
+            by_reg=True  -> [Region, Conv_rate, Purch_rate]
+            by_reg=False -> [Location, Region, Click_prop, Conv_rate, Purch_rate]
     """
     if base_dir is None:
         project_root = Path(__file__).resolve().parents[1]
         base_dir = project_root / "data"
     else:
         base_dir = Path(base_dir)
-    
-    # Load purchase report (skipping first 2 rows which are title and date range)
+
+    # ── Location report (clicks & conversions) ──────────────────────────
+    loc_file = base_dir / "reports/Location report.csv"
+    loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
+    loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Conversions', 'Clicks']].copy()
+
+    # ── Purchase report ─────────────────────────────────────────────────
     purch_file = base_dir / "reports/Purchase report.csv"
-    if not purch_file.exists():
-        print(f"[Warning] Purchase report not found at {purch_file}. Returning empty rates.")
-        if by_reg:
-            return pd.DataFrame(columns=['Region', 'Purch_rate'])
+    has_purch = purch_file.exists()
+
+    if has_purch:
+        purch_df = pd.read_csv(purch_file, skiprows=2)
+        purch_df.columns = purch_df.columns.str.strip()
+        purch_df['Region'] = purch_df['Campaign'].apply(_extract_region_from_campaign)
+        purch_df['Conversions'] = pd.to_numeric(purch_df['Conversions'], errors='coerce').fillna(0)
+        purch_by_region = purch_df.groupby('Region')['Conversions'].sum().reset_index()
+        purch_by_region = purch_by_region.rename(columns={'Conversions': 'Purchases'})
+
+        # Clicks denominator for purchase rate – prefer historic data
+        hist_file = base_dir / "clean/ad_opt_data_bert.csv"
+        if hist_file.exists():
+            hist_df = pd.read_csv(hist_file)
+            purch_clicks = hist_df.groupby('Region')['Clicks'].sum().reset_index()
         else:
-            return pd.DataFrame(columns=['Location', 'Region', 'Click_prop', 'Purch_rate'])
-    
-    purch_df = pd.read_csv(purch_file, skiprows=2)
-    purch_df.columns = purch_df.columns.str.strip()
-    
-    # Extract region from campaign name
-    purch_df['Region'] = purch_df['Campaign'].apply(_extract_region_from_campaign)
-    
-    # Convert Conversions to numeric (handle potential formatting)
-    purch_df['Conversions'] = pd.to_numeric(purch_df['Conversions'], errors='coerce').fillna(0)
-    
-    # Aggregate purchases by region
-    purch_by_region = purch_df.groupby('Region')['Conversions'].sum().reset_index()
-    purch_by_region = purch_by_region.rename(columns={'Conversions': 'Purchases'})
-    
-    # Load historic data to get total clicks by region
-    hist_file = base_dir / "clean/ad_opt_data_bert.csv"
-    if not hist_file.exists():
-        # Fallback to raw data
-        print(f"[Warning] Historic data not found at {hist_file}. Using location report for clicks.")
-        loc_file = base_dir / "reports/Location report.csv"
-        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
-        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
-        clicks_by_region = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+            print(f"[Warning] Historic data not found at {hist_file}. Using location report for purchase-rate clicks.")
+            purch_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
+
+        purch_rate_df = purch_by_region.merge(purch_clicks, on='Region', how='outer').fillna(0)
+        purch_rate_df['Purch_rate'] = purch_rate_df['Purchases'] / purch_rate_df['Clicks'].replace(0, np.nan)
+        purch_rate_df['Purch_rate'] = purch_rate_df['Purch_rate'].fillna(0)
+        purch_rate_df = purch_rate_df[['Region', 'Purch_rate']]
     else:
-        hist_df = pd.read_csv(hist_file)
-        clicks_by_region = hist_df.groupby('Region')['Clicks'].sum().reset_index()
-    
-    # Merge purchases with clicks
-    rate_df = purch_by_region.merge(clicks_by_region, on='Region', how='outer').fillna(0)
-    rate_df['Purch_rate'] = rate_df['Purchases'] / rate_df['Clicks'].replace(0, np.nan)
-    rate_df['Purch_rate'] = rate_df['Purch_rate'].fillna(0)
-    
+        print(f"[Warning] Purchase report not found at {purch_file}. Purch_rate will be 0.")
+        purch_rate_df = None
+
+    # ── Build output ────────────────────────────────────────────────────
     if by_reg:
-        return rate_df[['Region', 'Purch_rate']].copy()
+        agg = loc_df.groupby('Region').agg({'Clicks': 'sum', 'Conversions': 'sum'}).reset_index()
+        agg['Conv_rate'] = agg['Conversions'] / agg['Clicks']
+        result = agg[['Region', 'Conv_rate']].copy()
+
+        if purch_rate_df is not None:
+            result = result.merge(purch_rate_df, on='Region', how='left')
+        else:
+            result['Purch_rate'] = 0.0
+        result['Purch_rate'] = result['Purch_rate'].fillna(0)
     else:
-        # For location-level, we need to merge with location data
-        loc_file = base_dir / "reports/Location report.csv"
-        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
-        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
-        
-        # Calculate click proportion within each region
-        loc_df = loc_df.groupby(['Location', 'Region'])['Clicks'].sum().reset_index()
-        region_clicks = loc_df.groupby('Region')['Clicks'].sum().reset_index()
-        loc_df = loc_df.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
-        loc_df['Click_prop'] = loc_df['Clicks'] / loc_df['Clicks_region_total']
-        
-        # Merge with purchase rates
-        loc_df = loc_df.merge(rate_df[['Region', 'Purch_rate']], on='Region', how='left')
-        loc_df['Purch_rate'] = loc_df['Purch_rate'].fillna(0)
-        
-        return loc_df[['Location', 'Region', 'Click_prop', 'Purch_rate']].copy()
+        agg = loc_df.groupby(['Location', 'Region']).agg({'Clicks': 'sum', 'Conversions': 'sum'}).reset_index()
+        region_clicks = agg.groupby('Region')['Clicks'].sum().reset_index()
+        agg = agg.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
+        agg['Click_prop'] = agg['Clicks'] / agg['Clicks_region_total']
+        agg['Conv_rate'] = agg['Conversions'] / agg['Clicks']
+
+        if purch_rate_df is not None:
+            agg = agg.merge(purch_rate_df, on='Region', how='left')
+        else:
+            agg['Purch_rate'] = 0.0
+        agg['Purch_rate'] = agg['Purch_rate'].fillna(0)
+
+        result = agg[['Location', 'Region', 'Click_prop', 'Conv_rate', 'Purch_rate']].copy()
+
+    # ── Save for sense-checking ─────────────────────────────────────────
+    cache_dir = base_dir / "cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    tag = "by_region" if by_reg else "by_location"
+    out_path = cache_dir / f"conversion_rates_{tag}.csv"
+    result.to_csv(out_path, index=False)
+    print(f"[Sense-check] Conversion rates saved to {out_path}")
+
+    return result

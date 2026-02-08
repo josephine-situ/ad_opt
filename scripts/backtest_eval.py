@@ -24,7 +24,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.modeling import _to_float32_csr, train_best_model
 from scripts.backtest_daily import feature_matrix_cached, select_keywords
-from utils.data_pipeline import format_keyword_data, get_conversion_rates, get_purchase_conversion_rate
+from utils.data_pipeline import format_keyword_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES_MAP
 from config import COURSE_CONFIG
 
@@ -135,11 +135,8 @@ def main():
         e_metrics = {"CV_MSE": cv_mse, "Train_MSE": train_mse, "Train_R2": train_r2, "Best_Params": params}
         joblib.dump(e_metrics, eval_metrics_path)
 
-    # Get observed clicks, conversion rate by location
+    # Get observed clicks, conversion rate and purchase rate by location
     loc_df = get_conversion_rates(base_dir=base_dir)
-    
-    # Get purchase conversion rates by location
-    purch_loc_df = get_purchase_conversion_rate(by_reg=False, base_dir=base_dir)
 
     eval_summary_rows = []
     
@@ -277,7 +274,7 @@ def main():
             act_clicks_reg_org = obs_breakdown.groupby(['Region', 'Origin'])['t_Clicks_ActCost'].sum().reset_index()
             
             # Merge with loc_df
-            # loc_df: [Location, Region, Click_prop, Conv_rate]
+            # loc_df: [Location, Region, Click_prop, Conv_rate, Purch_rate]
             
             # Use loc_df as base to ensure all locations are present
             df_country = loc_df.merge(opt_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_OptCost': 'Opt_Clicks_Reg'})
@@ -298,19 +295,11 @@ def main():
             df_country['Act_Spend'] = df_country['Act_Cost_Reg'] * df_country['Click_prop']
 
             # --- Calculate Purchases ---
-            # Merge purchase rates with country data
-            df_country_purch = df_country.merge(
-                purch_loc_df[['Location', 'Region', 'Purch_rate']], 
-                on=['Location', 'Region'], 
-                how='left'
-            )
-            df_country_purch['Purch_rate'] = df_country_purch['Purch_rate'].fillna(0)
+            df_country['Opt_Purchases'] = df_country['Opt_Clicks'] * df_country['Purch_rate']
+            df_country['Act_Purchases'] = df_country['Act_Clicks'] * df_country['Purch_rate']
             
-            df_country_purch['Opt_Purchases'] = df_country_purch['Opt_Clicks'] * df_country_purch['Purch_rate']
-            df_country_purch['Act_Purchases'] = df_country_purch['Act_Clicks'] * df_country_purch['Purch_rate']
-            
-            val_opt_purch = df_country_purch['Opt_Purchases'].sum()
-            val_act_purch = df_country_purch['Act_Purchases'].sum()
+            val_opt_purch = df_country['Opt_Purchases'].sum()
+            val_act_purch = df_country['Act_Purchases'].sum()
 
             # Calculate Origin Conversions
             # We distribute the Region+Origin clicks to countries in that region
@@ -322,7 +311,7 @@ def main():
             
             def calc_origin_purchases(clicks_df, click_col):
                  # clicks_df: [Region, Origin, click_col]
-                 m = clicks_df.merge(purch_loc_df, on='Region', how='left')
+                 m = clicks_df.merge(loc_df, on='Region', how='left')
                  m['Purch_rate'] = m['Purch_rate'].fillna(0)
                  m['Predicted_Purch'] = m[click_col] * m['Click_prop'] * m['Purch_rate']
                  return m.groupby('Origin')['Predicted_Purch'].sum().to_dict()
@@ -335,10 +324,7 @@ def main():
             
             # Save Country breakdown to run_dir (include purchases)
             breakdown_file = run_dir / f"country_breakdown_{day.strftime('%Y-%m-%d')}.csv"
-            df_country_out = df_country.copy()
-            df_country_out['Opt_Purchases'] = df_country_purch['Opt_Purchases']
-            df_country_out['Act_Purchases'] = df_country_purch['Act_Purchases']
-            df_country_out[['Location', 'Region', 'Opt_Conversions', 'Act_Conversions', 'Opt_Purchases', 'Act_Purchases', 'Opt_Clicks', 'Act_Clicks', 'Opt_Spend', 'Act_Spend']].to_csv(breakdown_file, index=False)
+            df_country[['Location', 'Region', 'Opt_Conversions', 'Act_Conversions', 'Opt_Purchases', 'Act_Purchases', 'Opt_Clicks', 'Act_Clicks', 'Opt_Spend', 'Act_Spend']].to_csv(breakdown_file, index=False)
 
             val_opt_conv = df_country['Opt_Conversions'].sum()
             val_act_conv = df_country['Act_Conversions'].sum()
@@ -425,8 +411,8 @@ def main():
                 row_dict[f"Act_Conv_Region_{reg}"] = df_country[df_country['Region'] == reg]['Act_Conversions'].sum()
 
                 # Regional Purchases
-                row_dict[f"Opt_Purch_Region_{reg}"] = df_country_purch[df_country_purch['Region'] == reg]['Opt_Purchases'].sum()
-                row_dict[f"Act_Purch_Region_{reg}"] = df_country_purch[df_country_purch['Region'] == reg]['Act_Purchases'].sum()
+                row_dict[f"Opt_Purch_Region_{reg}"] = df_country[df_country['Region'] == reg]['Opt_Purchases'].sum()
+                row_dict[f"Act_Purch_Region_{reg}"] = df_country[df_country['Region'] == reg]['Act_Purchases'].sum()
 
             # Origins
             all_origins = ['new', 'existing', 'existing searches'] # Enforce standard origins
