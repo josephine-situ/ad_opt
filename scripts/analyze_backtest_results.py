@@ -1,5 +1,5 @@
 """
-Example usage: python scripts/analyze_backtest_results.py --exp-name exp1
+Example usage: python scripts/analyze_backtest_results.py --course gen_ai --exp-name exp1
 Analyzes backtest results from the backtest_eval.py script. Generates a summary csv and LaTeX table of performance metrics
 and regional cost shares across different budget levels.
 """
