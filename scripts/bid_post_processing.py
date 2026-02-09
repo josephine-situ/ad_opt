@@ -62,7 +62,8 @@ def group_hours(hour: int) -> str:
     return f"{start} - {end}"
 
 
-def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str) -> pd.DataFrame:
+def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
+                        extra_conv_cols=None) -> pd.DataFrame:
     """
     Load and merge clicks and conversions reports.
     
@@ -70,6 +71,8 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str) ->
         clicks_file: Path to the clicks CSV file
         conv_file: Path to the conversions CSV file
         segment_col: Name of the segment column (e.g., 'Age', 'Device', 'Hour of the day')
+        extra_conv_cols: Additional conversion columns to sum into total Conversions
+                         (e.g., ['Cross-device conv.'])
     
     Returns:
         DataFrame with Campaign, segment, Clicks, and Conversions columns
@@ -86,6 +89,12 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str) ->
         clicks_df[segment_col] = clean_string_column(clicks_df[segment_col])
     if segment_col in conv_df.columns:
         conv_df[segment_col] = clean_string_column(conv_df[segment_col])
+    
+    # Sum extra conversion columns into Conversions (e.g., Cross-device conv.)
+    if extra_conv_cols:
+        for col in extra_conv_cols:
+            if col in conv_df.columns:
+                conv_df['Conversions'] = conv_df['Conversions'] + conv_df[col].fillna(0)
     
     # Aggregate clicks by Campaign and segment
     clicks_agg = clicks_df.groupby(['Campaign', segment_col])['Clicks'].sum().reset_index()
@@ -245,7 +254,8 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     device_conv = bid_adj_dir / 'device_conv.csv'
     if device_clicks.exists() and device_conv.exists():
         print("  Processing Device adjustments...")
-        df = load_bid_adj_report(device_clicks, device_conv, 'Device')
+        df = load_bid_adj_report(device_clicks, device_conv, 'Device',
+                                extra_conv_cols=['Cross-device conv.'])
         results['device'] = calculate_bid_adjustments(
             df, 'Device', 'device', min_clicks
         )
@@ -516,8 +526,8 @@ def main():
     
     parser.add_argument(
         '--course',
-        choices=['gen_ai', 'ml', 'sys_eng'],
-        help='Course to process (gen_ai, ml, or sys_eng)'
+        choices=['gen_ai', 'ml', 'sys_eng', 'sys_think'],
+        help='Course to process (gen_ai, ml, sys_eng, or sys_think)'
     )
     parser.add_argument(
         '--all-courses',

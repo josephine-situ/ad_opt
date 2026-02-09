@@ -19,11 +19,11 @@ from scripts.modeling import _to_float32_csr
 
 # Configuration
 parser = argparse.ArgumentParser()
-parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
+parser.add_argument('--course', default='ml', help='Course name (default: gen_ai)')
 args = parser.parse_args()
 
 base_dir = Path(f'data/{args.course}')
-MODEL_PATH = Path(f'models/{args.course}_xgb_clicks_model.joblib')
+MODEL_PATH = Path(f'models/ml/backtests/exp102_fix_err/xgb_clicks_model_2025-12-31.joblib')
 OUTPUT_DIR = Path('model_interpretability') / args.course
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
