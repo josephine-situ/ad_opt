@@ -1,5 +1,5 @@
 Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
-embedded programming course,USA,Broad match,existing searches,25.370001149617732,8.528568838037001,7.593167755998122,8.528567,1.5238890522795143e-06,4.0518837
+embedded programming course,USA,Broad match,existing searches,25.37000114961773,8.528568838037001,7.593167755998122,8.528567,1.5238890522795143e-06,4.0518837
 freecodecamp courses with certificate,USA,Exact match,existing searches,25.370001149617725,8.528983804037,8.4448226789135,8.528985,-1.2194615344185422e-06,2.5560384
 freecodecamp courses with certificate,USA,Phrase match,existing searches,25.37000114961773,8.989098219837,8.893680638338378,8.989099,-3.290521597421048e-07,2.7160442
 freecodecamp courses with certificate,USA,Broad match,existing searches,25.37000114961772,9.612109579537002,9.365524642560567,9.612109,3.952718650168663e-07,3.8210292
