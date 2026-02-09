@@ -1,15 +1,28 @@
 Device report
 1 January 2022 - 2 February 2026
-Campaign,Conversion action,Targeted location,Conversions
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,United States,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,South Korea,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Canada,0
-Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,United States,0
-Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,United States,0
-Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,United Kingdom,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Israel,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Germany,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Norway,0
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Australia,0
-Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,United States,0
-Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,Italy,0
+Campaign,Conversion action,Targeted location,All conv.
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Israel,2.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,United States,2.34
+Program - MLx - Run 14 - Search - Prospecting - USA,Purchase,United States,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,United Kingdom,1.00
+Program - MLx - Run 14 - Search - Prospecting - A,Purchase,United Kingdom,0.81
+Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,Italy,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,United States,2.34
+Program - MLx - Run 9 - Search - Lead Gen - US,Purchase,United States,3.85
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,"Washington, United States",1.00
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,"California, United States",2.00
+Machine Learning Program - xPRO - A/Developed - Search Lead Gen - Run 7 - 2T2022,Purchase,France,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,South Korea,0.78
+Program - MLx - Run 9 - Search - Lead Gen - A/Developed,Purchase,France,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Germany,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Canada,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,United States,16.01
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,"Tennessee, United States",1.00
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,"Maryland, United States",1.00
+Machine Learning Program - xPRO - B/Developing - Search Lead Gen - Run 7 - 2T2022,Purchase,Singapore,1.40
+Program - MLx - Run 14 - Search - Prospecting - B,Purchase,Peru,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,United States,4.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Norway,1.00
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,"Illinois, United States",1.00
+Machine Learning Program - xPRO - A/Developed - Search Lead Gen - Run 7 - 2T2022,Purchase,South Korea,0.50
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Australia,1.00

@@ -21,13 +21,12 @@ def generate_performance_table(summary_df):
     df['Budget'] = df['Budget'].apply(lambda x: f"{x:.0f}")
     
     df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['se clicks (opt)']:,.1f}", axis=1)
-    df['avg conv (opt)'] = df.apply(lambda row: f"{row['avg conv (opt)']:,.1f} $\\pm$ {row['se conv (opt)']:,.1f}", axis=1)
     df['avg purch (opt)'] = df.apply(lambda row: f"{row['avg purch (opt)']:,.2f} $\\pm$ {row['se purch (opt)']:,.2f}", axis=1)
     df['avg cost (opt)'] = df.apply(lambda row: f"{row['avg cost (opt)']:,.2f} $\\pm$ {row['se cost (opt)']:,.2f}", axis=1)
     df['avg kws (opt)'] = df.apply(lambda row: f"{row['avg kws (opt)']:,.0f} $\\pm$ {row['se kws (opt)']:,.0f}", axis=1)
 
     # Percentage Metrics
-    for col in ['improvement in clicks', 'improvement in clicks/$', 'improvement in conv', 'improvement in purch']:
+    for col in ['improvement in clicks', 'improvement in clicks/$', 'improvement in purch']:
         if col in df.columns:
             df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
             
@@ -47,17 +46,15 @@ def generate_performance_table(summary_df):
             df.at[best_idx, col] = f"\\textbf{{{str(current_val)}}}"
 
     # --- COLUMN MAPPING ---
-    # Note: Added Conversions and Purchases
+    # Note: Added Purchases
     col_mapping = [
         ('Budget',                  ('', 'Budget')),
         ('avg clicks (opt)',        ('Opt', 'Clicks')),
-        ('avg conv (opt)',          ('Opt', 'Conv')),
         ('avg purch (opt)',         ('Opt', 'Purch')),
         ('avg cost (opt)',          ('Opt', 'Cost')),
         ('clicks/$ (opt)',          ('Opt', r'Clicks/\$')),
         ('avg kws (opt)',           ('Opt', 'Kws')),
         ('improvement in clicks',   ('Improvement', 'Clicks')),
-        ('improvement in conv',     ('Improvement', 'Conv')),
         ('improvement in purch',    ('Improvement', 'Purch')),
         ('improvement in clicks/$', ('Improvement', r'Clicks/\$'))
     ]
@@ -99,8 +96,6 @@ def generate_performance_table(summary_df):
     act_vals = {
         'clicks': summary_df['avg clicks (act)'].iloc[0],
         'se_clicks': summary_df['se clicks (act)'].iloc[0],
-        'conv': summary_df['avg conv (act)'].iloc[0],
-        'se_conv': summary_df['se conv (act)'].iloc[0],
         'purch': summary_df['avg purch (act)'].iloc[0] if 'avg purch (act)' in summary_df.columns else 0,
         'se_purch': summary_df['se purch (act)'].iloc[0] if 'se purch (act)' in summary_df.columns else 0,
         'cost': summary_df['avg cost (act)'].iloc[0],
@@ -113,7 +108,6 @@ def generate_performance_table(summary_df):
     note_row = (
         fr"\multicolumn{{{total_cols}}}{{l}}{{\scriptsize \textbf{{Actual values:}} "
         f"Clicks: {fmt_mse(act_vals['clicks'], act_vals['se_clicks'])}, "
-        f"Conv: {fmt_mse(act_vals['conv'], act_vals['se_conv'])}, "
         f"Purch: {fmt_mse(act_vals['purch'], act_vals['se_purch'], 2)}, "
         f"Cost: {fmt_mse(act_vals['cost'], act_vals['se_cost'], 2, prefix=dollar_prefix)}, "
         f"Clicks/\\$: {act_vals['cpc']:.3f}, "
@@ -190,7 +184,7 @@ def generate_share_table(share_df, categories, display_renames=None):
     df['sort_key'] = df['Budget'].apply(sorter)
     df = df.sort_values(by=['sort_key']).drop(columns=['sort_key'])
 
-    metrics = ['Spend', 'Clicks', 'Conv', 'Purch']
+    metrics = ['Spend', 'Clicks', 'Purch']
     col_order = ['Budget']
     for cat in categories:
         for metric in metrics:
@@ -311,10 +305,10 @@ def generate_country_table(exp_name, budget, course="gen_ai", top_n=10):
     
     # Aggregation
     agg_df = full_df.groupby(['Location', 'Region']).agg(
-        Opt_Conv_Mean=('Opt_Conversions', 'mean'),
-        Opt_Conv_SE=('Opt_Conversions', 'sem'),
-        Act_Conv_Mean=('Act_Conversions', 'mean'),
-        Act_Conv_SE=('Act_Conversions', 'sem'),
+        Opt_Purch_Mean=('Opt_Purchases', 'mean'),
+        Opt_Purch_SE=('Opt_Purchases', 'sem'),
+        Act_Purch_Mean=('Act_Purchases', 'mean'),
+        Act_Purch_SE=('Act_Purchases', 'sem'),
         
         Opt_Click_Mean=('Opt_Clicks', 'mean'),
         Opt_Click_SE=('Opt_Clicks', 'sem'),
@@ -327,8 +321,8 @@ def generate_country_table(exp_name, budget, course="gen_ai", top_n=10):
         Act_Spend_SE=('Act_Spend', 'sem'),
     ).reset_index()
     
-    # Sort by Opt Conv Mean Desc
-    agg_df = agg_df.sort_values(by='Opt_Conv_Mean', ascending=False).head(top_n)
+    # Sort by Opt Purch Mean Desc
+    agg_df = agg_df.sort_values(by='Opt_Purch_Mean', ascending=False).head(top_n)
     
     # Format Function
     def fmt(mean, se, decimals=1):
@@ -337,15 +331,15 @@ def generate_country_table(exp_name, budget, course="gen_ai", top_n=10):
     # Create formatted columns
     agg_df[('Opt', 'Spend')] = agg_df.apply(lambda r: fmt(r['Opt_Spend_Mean'], r['Opt_Spend_SE'], 2), axis=1)
     agg_df[('Opt', 'Clicks')] = agg_df.apply(lambda r: fmt(r['Opt_Click_Mean'], r['Opt_Click_SE'], 1), axis=1)
-    agg_df[('Opt', 'Conv')] = agg_df.apply(lambda r: fmt(r['Opt_Conv_Mean'], r['Opt_Conv_SE'], 1), axis=1)
+    agg_df[('Opt', 'Purch')] = agg_df.apply(lambda r: fmt(r['Opt_Purch_Mean'], r['Opt_Purch_SE'], 2), axis=1)
     
     agg_df[('Act', 'Spend')] = agg_df.apply(lambda r: fmt(r['Act_Spend_Mean'], r['Act_Spend_SE'], 2), axis=1)
     agg_df[('Act', 'Clicks')] = agg_df.apply(lambda r: fmt(r['Act_Click_Mean'], r['Act_Click_SE'], 1), axis=1)
-    agg_df[('Act', 'Conv')] = agg_df.apply(lambda r: fmt(r['Act_Conv_Mean'], r['Act_Conv_SE'], 1), axis=1)
+    agg_df[('Act', 'Purch')] = agg_df.apply(lambda r: fmt(r['Act_Purch_Mean'], r['Act_Purch_SE'], 2), axis=1)
 
     # Select columns
-    cols = [('Opt', 'Spend'), ('Opt', 'Clicks'), ('Opt', 'Conv'), 
-            ('Act', 'Spend'), ('Act', 'Clicks'), ('Act', 'Conv')]
+    cols = [('Opt', 'Spend'), ('Opt', 'Clicks'), ('Opt', 'Purch'), 
+            ('Act', 'Spend'), ('Act', 'Clicks'), ('Act', 'Purch')]
     
     # We need Location and Region too
     # For MultiIndex, we can handle index differently or flatten.
@@ -466,7 +460,6 @@ def compute_share_row(source_df, categories, prefix, infix, totals, display_name
     metric_map = {
         'Spend': ('Cost', totals.get('cost', 0)),
         'Clicks': ('Clicks', totals.get('clicks', 0)),
-        'Conv': ('Conv', totals.get('conv', 0)),
         'Purch': ('Purch', totals.get('purch', 0)),
     }
     for cat in categories:
@@ -522,8 +515,6 @@ def main():
 
     avg_clicks_act = act_df["t_Clicks_ActCost"].mean()
     se_clicks_act = act_df["t_Clicks_ActCost"].sem()
-    avg_conv_act = act_df["Act_Conv"].mean()
-    se_conv_act = act_df["Act_Conv"].sem()
     avg_purch_act = act_df["Act_Purch"].mean() if "Act_Purch" in act_df.columns else 0
     se_purch_act = act_df["Act_Purch"].sem() if "Act_Purch" in act_df.columns else 0
     avg_cost_act = act_df["Act_Cost"].mean()
@@ -536,11 +527,10 @@ def main():
     
     # Actual Share Breakdowns (Regional, Origin, Match Type)
     total_act_cost = act_df["Act_Cost"].sum()
-    total_act_conv = act_df["Act_Conv"].sum() if "Act_Conv" in act_df.columns else 0
     total_act_purch = act_df["Act_Purch"].sum() if "Act_Purch" in act_df.columns else 0
     total_act_clicks = act_df["t_Clicks_ActCost"].sum()
     
-    act_totals = {'cost': total_act_cost, 'clicks': total_act_clicks, 'conv': total_act_conv, 'purch': total_act_purch}
+    act_totals = {'cost': total_act_cost, 'clicks': total_act_clicks, 'purch': total_act_purch}
     
     # Breakdown dimensions
     regions = ['USA', 'A', 'B']
@@ -570,8 +560,6 @@ def main():
         se_clicks_opt = df_group["t_Clicks_OptCost"].sem()
         avg_cost_opt = df_group["Opt_Cost"].mean()
         se_cost_opt = df_group["Opt_Cost"].sem()
-        avg_conv_opt = df_group['Opt_Conv'].mean()
-        se_conv_opt = df_group['Opt_Conv'].sem()
         avg_purch_opt = df_group['Opt_Purch'].mean() if 'Opt_Purch' in df_group.columns else 0
         se_purch_opt = df_group['Opt_Purch'].sem() if 'Opt_Purch' in df_group.columns else 0
 
@@ -604,7 +592,6 @@ def main():
         # Improvements vs Actual
         imp_clicks = (avg_clicks_opt - avg_clicks_act) / avg_clicks_act if avg_clicks_act > 0 else 0
         imp_c_d = (clicks_per_dollar_opt - clicks_per_dollar_act) / clicks_per_dollar_act if clicks_per_dollar_act > 0 else 0
-        imp_conv = (avg_conv_opt - avg_conv_act) / avg_conv_act if avg_conv_act > 0 else 0
         imp_purch = (avg_purch_opt - avg_purch_act) / avg_purch_act if avg_purch_act > 0 else 0
 
         summary_rows.append({
@@ -613,8 +600,6 @@ def main():
             "se clicks (opt)": se_clicks_opt,
             "avg cost (opt)": avg_cost_opt,
             "se cost (opt)": se_cost_opt,
-            "avg conv (opt)": avg_conv_opt,
-            "se conv (opt)": se_conv_opt,
             "avg purch (opt)": avg_purch_opt,
             "se purch (opt)": se_purch_opt,
             "clicks/$ (opt)": clicks_per_dollar_opt,
@@ -622,14 +607,11 @@ def main():
             "se kws (opt)": se_kws_opt,
             "improvement in clicks": imp_clicks,
             "improvement in clicks/$": imp_c_d,
-            "improvement in conv": imp_conv,
             "improvement in purch": imp_purch,
             "avg clicks (act)": avg_clicks_act,
             "se clicks (act)": se_clicks_act,
             "avg cost (act)": avg_cost_act,
             "se cost (act)": se_cost_act,
-            "avg conv (act)": avg_conv_act,
-            "se conv (act)": se_conv_act,
             "avg purch (act)": avg_purch_act,
             "se purch (act)": se_purch_act,
             "clicks/$ (act)": clicks_per_dollar_act,
@@ -639,11 +621,10 @@ def main():
         
         # 2. Share Breakdown Metrics (Regional, Origin, Match Type)
         total_opt_cost_grp = df_group["Opt_Cost"].sum()
-        total_opt_conv_grp = df_group["Opt_Conv"].sum() if "Opt_Conv" in df_group.columns else 0
         total_opt_purch_grp = df_group["Opt_Purch"].sum() if "Opt_Purch" in df_group.columns else 0
         total_opt_clicks_grp = df_group["t_Clicks_OptCost"].sum()
         
-        opt_totals = {'cost': total_opt_cost_grp, 'clicks': total_opt_clicks_grp, 'conv': total_opt_conv_grp, 'purch': total_opt_purch_grp}
+        opt_totals = {'cost': total_opt_cost_grp, 'clicks': total_opt_clicks_grp, 'purch': total_opt_purch_grp}
         
         # Regional
         reg_row = {"Budget": budget}

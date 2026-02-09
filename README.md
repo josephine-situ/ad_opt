@@ -5,7 +5,7 @@
 This project implements a machine learning pipeline for optimizing daily spend per keyword, region, and match type in Google Ads. It includes data preprocessing, model training, and bid optimization using linear programming.
 
 ## Steps
-1. Get reports from Google Ads (Search keyword - raw input to models.csv (saved), Search keyword - search terms (saved, use conv > 0), Purchase report (if using max-purch), and Location report (only if using max-conv or if evaluating from Audiences, keywords and content > Locations)). Get Semrush keywords (Semrush > SEO > Keyword Magic Tool).
+1. Get reports from Google Ads (Search keyword - raw input to models.csv (saved), Search keyword - search terms (saved, use conv > 0), Purchase report, and Location report (for geographic click distribution in evaluation) from Audiences, keywords and content > Locations). Make sure to use 'All conv.' when getting conversion reports (includes when purchases isn't a primary conversion action). Get Semrush keywords (Semrush > SEO > Keyword Magic Tool).
 2. Run compare_keywords.py to combine new and existing keywords and search terms.
 3. Copy and paste these keywords into Google Keyword Planner (change to Google and search partners) to get historical search popularity and competitiveness indices (make sure to change date range to 6 months before course start date).
 4. Adjust the course start dates, course min dates, and budgets in `config.py`.

@@ -4,7 +4,7 @@ Sensitivity analysis: keyword concentration risk.
 For each backtest day, randomly drops a fraction of keywords within each
 (Region, Match type) group and rescales the remaining bids so that per-group
 spend is preserved.  Repeats the random draw several times, evaluates
-predicted clicks / conversions / purchases with the full-data evaluation
+predicted clicks / purchases with the full-data evaluation
 model, and produces a summary table (CSV + LaTeX) comparable to
 analyze_backtest_results.py.
 
@@ -99,9 +99,9 @@ def evaluate_bids(
     features: list[str],
     loc_df: pd.DataFrame,
 ) -> dict:
-    """Merge bids with features, predict clicks, derive conv & purch."""
+    """Merge bids with features, predict clicks, derive purchases."""
     if sol.empty:
-        return dict(clicks=0.0, cost=0.0, conv=0.0, purch=0.0, n_kws=0)
+        return dict(clicks=0.0, cost=0.0, purch=0.0, n_kws=0)
 
     X = X_base.merge(
         sol[["Keyword", "Region", "Match type", "Optimal Cost"]],
@@ -112,16 +112,14 @@ def evaluate_bids(
     lift = _predict_lift(X, model, features)
     X["lift"] = lift
 
-    # Conversions & purchases via location-level click proportions
+    # Purchases via location-level click proportions
     clicks_reg = X.groupby("Region")["lift"].sum().reset_index()
     merged = loc_df.merge(clicks_reg, on="Region", how="left").fillna(0)
-    merged["conv"]  = merged["lift"] * merged["Click_prop"] * merged["Conv_rate"]
     merged["purch"] = merged["lift"] * merged["Click_prop"] * merged["Purch_rate"]
 
     return dict(
         clicks=float(lift.sum()),
         cost=float(X["Optimal Cost"].sum()),
-        conv=float(merged["conv"].sum()),
         purch=float(merged["purch"].sum()),
         n_kws=len(X),
     )
@@ -145,8 +143,6 @@ def generate_sensitivity_table(summary_df: pd.DataFrame) -> str:
     # ── mean ± se columns ──
     df["Clicks"] = df.apply(
         lambda r: f"{r['avg clicks']:,.1f} $\\pm$ {r['se clicks']:,.1f}", axis=1)
-    df["Conv"] = df.apply(
-        lambda r: f"{r['avg conv']:,.1f} $\\pm$ {r['se conv']:,.1f}", axis=1)
     df["Purch"] = df.apply(
         lambda r: f"{r['avg purch']:,.2f} $\\pm$ {r['se purch']:,.2f}", axis=1)
     df["Cost"] = df.apply(
@@ -156,7 +152,7 @@ def generate_sensitivity_table(summary_df: pd.DataFrame) -> str:
     df[r"Clicks/\$"] = df["clicks/$"].map("{:,.3f}".format)
 
     # ── improvement columns ──
-    imp_cols = ["imp clicks", "imp conv", "imp purch", r"imp clicks/$"]
+    imp_cols = ["imp clicks", "imp purch", r"imp clicks/$"]
     for col in imp_cols:
         df[col] = df[col].apply(
             lambda x: "---" if x == 0 and col in imp_cols else f"{x * 100:,.1f}\\%"
@@ -179,13 +175,11 @@ def generate_sensitivity_table(summary_df: pd.DataFrame) -> str:
     col_map = [
         ("Drop %",            ("", r"Drop \%")),
         ("Clicks",            ("Metrics", "Clicks")),
-        ("Conv",              ("Metrics", "Conv")),
         ("Purch",             ("Metrics", "Purch")),
         ("Cost",              ("Metrics", "Cost")),
         (r"Clicks/\$",        ("Metrics", r"Clicks/\$")),
         ("Kws",               ("Metrics", "Kws")),
         ("imp clicks",        ("Improvement", "Clicks")),
-        ("imp conv",          ("Improvement", "Conv")),
         ("imp purch",         ("Improvement", "Purch")),
         (r"imp clicks/$",     ("Improvement", r"Clicks/\$")),
     ]
@@ -360,7 +354,6 @@ def main():
             actual_rows.append(dict(
                 clicks=r["t_Clicks_ActCost"],
                 cost=r["Act_Cost"],
-                conv=r["Act_Conv"],
                 purch=r.get("Act_Purch", 0),
                 n_kws=r["N_Obs"],
             ))
@@ -384,7 +377,6 @@ def main():
                 day=day,
                 clicks=np.mean([m["clicks"] for m in rep_metrics]),
                 cost=np.mean([m["cost"] for m in rep_metrics]),
-                conv=np.mean([m["conv"] for m in rep_metrics]),
                 purch=np.mean([m["purch"] for m in rep_metrics]),
                 n_kws=np.mean([m["n_kws"] for m in rep_metrics]),
             ))
@@ -396,7 +388,6 @@ def main():
     act_df = pd.DataFrame(actual_rows)
 
     avg_act_clicks = act_df["clicks"].mean()
-    avg_act_conv   = act_df["conv"].mean()
     avg_act_purch  = act_df["purch"].mean()
     act_cpd = (act_df["clicks"].sum() / act_df["cost"].sum()
                if act_df["cost"].sum() > 0 else 0)
@@ -408,8 +399,6 @@ def main():
         "Drop %":     "Actual",
         "avg clicks": act_df["clicks"].mean(),
         "se clicks":  act_df["clicks"].sem(),
-        "avg conv":   act_df["conv"].mean(),
-        "se conv":    act_df["conv"].sem(),
         "avg purch":  act_df["purch"].mean(),
         "se purch":   act_df["purch"].sem(),
         "avg cost":   act_df["cost"].mean(),
@@ -418,7 +407,6 @@ def main():
         "avg kws":    act_df["n_kws"].mean(),
         "se kws":     act_df["n_kws"].sem(),
         "imp clicks":    0,
-        "imp conv":      0,
         "imp purch":     0,
         "imp clicks/$":  0,
     })
@@ -426,7 +414,6 @@ def main():
     # One row per drop %
     for pct, grp in res_df.groupby("drop_pct"):
         avg_c     = grp["clicks"].mean()
-        avg_conv  = grp["conv"].mean()
         avg_purch = grp["purch"].mean()
         total_c   = grp["clicks"].sum()
         total_cost = grp["cost"].sum()
@@ -436,8 +423,6 @@ def main():
             "Drop %":     pct,
             "avg clicks": avg_c,
             "se clicks":  grp["clicks"].sem(),
-            "avg conv":   avg_conv,
-            "se conv":    grp["conv"].sem(),
             "avg purch":  avg_purch,
             "se purch":   grp["purch"].sem(),
             "avg cost":   grp["cost"].mean(),
@@ -446,7 +431,6 @@ def main():
             "avg kws":    grp["n_kws"].mean(),
             "se kws":     grp["n_kws"].sem(),
             "imp clicks":   (avg_c - avg_act_clicks) / avg_act_clicks if avg_act_clicks else 0,
-            "imp conv":     (avg_conv - avg_act_conv) / avg_act_conv if avg_act_conv else 0,
             "imp purch":    (avg_purch - avg_act_purch) / avg_act_purch if avg_act_purch else 0,
             "imp clicks/$": (cpd - act_cpd) / act_cpd if act_cpd else 0,
         })

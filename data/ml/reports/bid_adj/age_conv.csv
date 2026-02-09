@@ -1,20 +1,36 @@
 Device report
 1 January 2022 - 2 February 2026
-Campaign,Conversion action,Age,Conversions
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,45 - 54,1.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,Unknown,1.00
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,45 - 54,1.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,25 - 34,1.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,35 - 44,5.50
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,Unknown,4.00
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Unknown,2.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,65+,0.50
-Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,45 - 54,1.34
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,55 - 64,1.00
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,25 - 34,1.78
-Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,18 - 24,1.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,65+,1.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,45 - 54,2.34
+Campaign,Conversion action,Age,All conv.
+Machine Learning Program - xPRO - B/Developing - Search Lead Gen - Run 7 - 2T2022,Purchase,Unknown,1.00
 Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,45 - 54,1.00
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,Unknown,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,45 - 54,1.34
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,45 - 54,2.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,Unknown,2.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,25 - 34,1.78
+Program - MLx - Run 14 - Search - Prospecting - B,Purchase,25 - 34,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,Unknown,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,35 - 44,5.50
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,25 - 34,2.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,65+,1.50
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,25 - 34,3.00
+Program - MLx - Run 9 - Search - Lead Gen - A/Developed,Purchase,18 - 24,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,18 - 24,1.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,55 - 64,1.00
 Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,18 - 24,2.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,25 - 34,2.00
+Machine Learning Program - xPRO - A/Developed - Search Lead Gen - Run 7 - 2T2022,Purchase,25 - 34,0.50
+Machine Learning Program - xPRO - A/Developed - Search Lead Gen - Run 7 - 2T2022,Purchase,Unknown,1.00
+Program - MLx - Run 14 - Search - Prospecting - USA,Purchase,Unknown,1.00
+Program - MLx - Run 9 - Search - Lead Gen - US,Purchase,65+,0.85
+Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,45 - 54,2.34
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,45 - 54,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,Unknown,5.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,45 - 54,2.00
+Machine Learning Program - xPRO - B/Developing - Search Lead Gen - Run 7 - 2T2022,Purchase,45 - 54,0.40
+Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,25 - 34,1.00
+Program - MLx - Run 9 - Search - Lead Gen - US,Purchase,45 - 54,2.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,65+,1.00
+Program - MLx - Run 9 - Search - Lead Gen - US,Purchase,18 - 24,1.00
+Program - MLx - Run 14 - Search - Prospecting - A,Purchase,25 - 34,0.81
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,35 - 44,1.00
+Machine Learning Program - xPRO - B/Developing - Search Lead Gen - Run 7 - 2T2022,Purchase,25 - 34,1.00

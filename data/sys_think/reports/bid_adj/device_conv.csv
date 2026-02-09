@@ -1,30 +1,37 @@
 Device report
-All time
-Campaign,Conversion action,Device,Conversions,Cross-device conv.
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,Mobile phones,3.70,5.50
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,"Computers
-",16.51,6.50
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,"Computers
-",1.39,4.50
-Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,Mobile phones,0.00,1.00
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,Mobile phones,3.50,2.50
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,"Computers
-",0.00,2.00
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,"Computers
-",0.00,1.00
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,Mobile phones,0.00,1.00
-Lifetime Campaign - Organizational Strategy  - A (Run 1),Purchase,"Computers
-",3.10,0.50
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,"Computers
-",7.40,1.00
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,Mobile phones,0.60,6.00
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,"Computers
-",0.00,3.00
+1 June 2022 - 9 February 2026
+Campaign,Conversion action,Device,All conv.
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,Mobile phones,4.80
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,Purchase,"Computers
+",2.25
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,Mobile phones,4.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,Tablets,2.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,Mobile phones,4.00
 Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,"Computers
-",0.00,2.00
-Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,Mobile phones,0.00,1.00
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,Mobile phones,0.00,1.00
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,Mobile phones,0.00,1.00
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,Mobile phones,0.00,1.00
-Lifetime Campaign - Organizational Strategy  - B (Run 1),Purchase,Mobile phones,0.40,0.00
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,Mobile phones,0.00,2.00
+",9.00
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,Mobile phones,5.25
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,"Computers
+",27.80
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,"Computers
+",4.00
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,"Computers
+",10.00
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,Mobile phones,5.90
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,Mobile phones,2.00
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,Mobile phones,2.20
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,"Computers
+",7.00
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,"Computers
+",19.77
+Course - System Thinking - Run 17 - Search - Prospecting - B,Purchase,Mobile phones,1.00
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,Mobile phones,8.90
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,"Computers
+",50.60
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,"Computers
+",62.70
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,Mobile phones,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,"Computers
+",30.75
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,Purchase,Mobile phones,1.00
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,Purchase,"Computers
+",2.00

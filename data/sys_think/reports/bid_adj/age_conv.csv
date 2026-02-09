@@ -1,18 +1,49 @@
 Device report
-All time
-Campaign,Conversion action,Age,Conversions
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,35 - 44,5.61
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,35 - 44,1.59
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,25 - 34,4.00
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,25 - 34,1.50
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,25 - 34,0.40
-Lifetime Campaign - Organizational Strategy  - A (Run 1),Purchase,35 - 44,2.00
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,Unknown,3.00
-Lifetime Campaign - Organizational Strategy  - B (Run 1),Purchase,35 - 44,0.40
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,45 - 54,5.10
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,45 - 54,4.00
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,Unknown,4.00
-Lifetime Campaign - Organizational Strategy  - A (Run 1),Purchase,25 - 34,1.10
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,55 - 64,0.50
-Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,65+,1.00
-Lifetime Campaign - Organizational Strategy  - US (Run 1),Purchase,35 - 44,2.40
+1 June 2022 - 9 February 2026
+Campaign,Conversion action,Age,All conv.
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,35 - 44,11.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,25 - 34,4.50
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,45 - 54,8.75
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,45 - 54,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,25 - 34,5.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,18 - 24,1.50
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,55 - 64,1.00
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,Purchase,35 - 44,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,45 - 54,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,Unknown,2.00
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,Unknown,4.00
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,55 - 64,2.00
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,25 - 34,16.50
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,35 - 44,2.00
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,35 - 44,14.60
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,65+,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,55 - 64,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,Purchase,Unknown,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,Unknown,11.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,Purchase,35 - 44,10.00
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,45 - 54,14.00
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,Unknown,9.00
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,25 - 34,6.13
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,45 - 54,1.00
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,Unknown,7.25
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,25 - 34,13.00
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,45 - 54,3.00
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,Purchase,25 - 34,2.00
+Course - System Thinking - Run 17 - Search - Prospecting - B,Purchase,35 - 44,1.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,Purchase,45 - 54,0.25
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,Purchase,18 - 24,1.00
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,Unknown,8.00
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,35 - 44,14.50
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,35 - 44,5.00
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,45 - 54,2.52
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,Purchase,35 - 44,7.91
+Course - System Thinking - Run 17 - Search - Prospecting - USA,Purchase,25 - 34,3.00
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,Unknown,19.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,25 - 34,2.00
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,35 - 44,2.00
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,Purchase,25 - 34,2.00
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,Purchase,Unknown,27.00
+Course - System Thinking - Run 12 - Search - Lead Gen - US,Purchase,45 - 54,9.50
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,Purchase,45 - 54,5.00
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,Purchase,55 - 64,1.00
+Course - System Thinking - Run 17 - Search - Prospecting - A,Purchase,Unknown,2.00

@@ -1,9 +1,17 @@
 Purchase report
 1 January 2022 - 27 January 2026
-Campaign,Conversion action,Conversions
+Campaign,Conversion action,All conv.
+Program - MLx - Run 9 - Search - Lead Gen - US,Purchase,3.85
+Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,2.34
+Program - MLx - Run 14 - Search - Prospecting - USA,Purchase,1.00
+Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,4.00
 Program - MLx - Run 13 - Search - Lead Gen - A (broad),Purchase,2.00
 Program - MLx - Run 13 - Search - Lead Gen - USA (testing KWs),Purchase,2.34
-Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,13.00
-Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,5.78
-Program - MLx - Run 13 - Search - Lead Gen - USA (broad),Purchase,4.00
-Program - MLx - Run 13 - Search - Lead Gen - USA (phrase),Purchase,2.34
+Program - MLx - Run 13 - Search - Lead Gen - USA (exact),Purchase,16.01
+Machine Learning Program - xPRO - B/Developing - Search Lead Gen - Run 7 - 2T2022,Purchase,2.40
+Machine Learning Program - xPRO - A/Developed - Search Lead Gen - Run 7 - 2T2022,Purchase,1.50
+Program - MLx - Run 14 - Search - Prospecting - A,Purchase,0.81
+Program - MLx - Run 14 - Search - Prospecting - B,Purchase,1.00
+Machine Learning Program - xPRO - USA - Search Lead Gen - Run 7 - 2T2022,Purchase,6.00
+Program - MLx - Run 13 - Search - Lead Gen - A (exact + phrase),Purchase,6.78
+Program - MLx - Run 9 - Search - Lead Gen - A/Developed,Purchase,1.00

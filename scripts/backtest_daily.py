@@ -122,7 +122,6 @@ def main():
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     p.add_argument("--mask-frac", type=float, default=0.1, help="Fraction of keywords to mask as new")
     p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
-    p.add_argument("--max-conv", action="store_true", help="Use max conversions objective instead of clicks")
     p.add_argument("--max-purch", action="store_true", help="Use max purchases objective instead of clicks")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
@@ -133,7 +132,7 @@ def main():
     if args.budget is None:
         args.budget = COURSE_CONFIG[args.course]['budgets']
 
-    start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_conv, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_conv, args.max_purch
+    start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
     embedding_method = args.embedding_method
     
     base_dir = Path(f"data/{args.course}")
@@ -253,7 +252,6 @@ def main():
                 budget=b, 
                 kw_df=kw_df_daily, 
                 order_budget=order_budget, 
-                max_conv=max_conv, 
                 max_purch=max_purch,
                 base_dir=base_dir
             )
