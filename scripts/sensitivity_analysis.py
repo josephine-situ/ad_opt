@@ -97,7 +97,7 @@ def evaluate_bids(
     X_base: pd.DataFrame,
     model,
     features: list[str],
-    loc_df: pd.DataFrame,
+    rates_df: pd.DataFrame,
 ) -> dict:
     """Merge bids with features, predict clicks, derive purchases."""
     if sol.empty:
@@ -112,10 +112,10 @@ def evaluate_bids(
     lift = _predict_lift(X, model, features)
     X["lift"] = lift
 
-    # Purchases via location-level click proportions
+    # Purchases via region-level purchase rates
     clicks_reg = X.groupby("Region")["lift"].sum().reset_index()
-    merged = loc_df.merge(clicks_reg, on="Region", how="left").fillna(0)
-    merged["purch"] = merged["lift"] * merged["Click_prop"] * merged["Purch_rate"]
+    merged = rates_df.merge(clicks_reg, on="Region", how="left").fillna(0)
+    merged["purch"] = merged["lift"] * merged["Purch_rate"]
 
     return dict(
         clicks=float(lift.sum()),
@@ -293,8 +293,8 @@ def main():
     model = joblib.load(model_path)
     print(f"Loaded eval model from {model_path}")
 
-    # ── conversion / purchase rates by location ──
-    loc_df = get_conversion_rates(base_dir=base_dir)
+    # ── conversion / purchase rates by region ──
+    rates_df = get_conversion_rates(base_dir=base_dir)
 
     # ── actual metrics from evaluation_results.csv ──
     eval_csv = base_results_dir / "evaluation_results.csv"
@@ -368,7 +368,7 @@ def main():
                 seed = int(day.strftime("%Y%m%d")) * 1000 + int(drop_pct) * 10 + rep
                 rng = np.random.default_rng(seed)
                 sol_dropped = drop_keywords_and_rescale(sol, frac, rng)
-                m = evaluate_bids(sol_dropped, X_base, model, features, loc_df)
+                m = evaluate_bids(sol_dropped, X_base, model, features, rates_df)
                 rep_metrics.append(m)
 
             # Average across reps → one observation per (day, drop_pct)

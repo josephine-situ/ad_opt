@@ -776,23 +776,19 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
         print(f"  Warning: No embedding/score columns found for method '{embedding_method}'")
 
 
-def get_conversion_rates(by_reg=False, base_dir=None):
+def get_conversion_rates(base_dir=None):
     """
-    Calculate purchase rate by region or location.
+    Calculate purchase rate by region.
 
     Uses the Purchase report for purchase counts and historic data (or the
     Location report as fallback) for click denominators.
 
     Args:
-        by_reg (bool): If True, return region-level rates.
-                       If False, return location-level rates with Click_prop.
         base_dir (Path | str | None): Base *data* directory (contains reports/, clean/, etc.).
                                       Defaults to <project_root>/data.
 
     Returns:
-        pd.DataFrame:
-            by_reg=True  -> [Region, Purch_rate]
-            by_reg=False -> [Location, Region, Click_prop, Purch_rate]
+        pd.DataFrame: [Region, Purch_rate]
     """
     if base_dir is None:
         project_root = Path(__file__).resolve().parents[1]
@@ -827,32 +823,12 @@ def get_conversion_rates(by_reg=False, base_dir=None):
     purch_rate_df = purch_by_region.merge(purch_clicks, on='Region', how='outer').fillna(0)
     purch_rate_df['Purch_rate'] = purch_rate_df['Purchases'] / purch_rate_df['Clicks'].replace(0, np.nan)
     purch_rate_df['Purch_rate'] = purch_rate_df['Purch_rate'].fillna(0)
-    purch_rate_df = purch_rate_df[['Region', 'Purch_rate']]
-
-    # ── Build output ────────────────────────────────────────────────────
-    if by_reg:
-        result = purch_rate_df.copy()
-    else:
-        # Location report needed for Click_prop (geographic click distribution)
-        loc_file = base_dir / "reports/Location report.csv"
-        loc_df = pd.read_csv(loc_file, header=2, skipfooter=4, thousands=',', engine='python')
-        loc_df = format_keyword_data(loc_df, regions_only=True)[['Location', 'Region', 'Clicks']].copy()
-
-        agg = loc_df.groupby(['Location', 'Region']).agg({'Clicks': 'sum'}).reset_index()
-        region_clicks = agg.groupby('Region')['Clicks'].sum().reset_index()
-        agg = agg.merge(region_clicks, on='Region', suffixes=('', '_region_total'))
-        agg['Click_prop'] = agg['Clicks'] / agg['Clicks_region_total']
-
-        agg = agg.merge(purch_rate_df, on='Region', how='left')
-        agg['Purch_rate'] = agg['Purch_rate'].fillna(0)
-
-        result = agg[['Location', 'Region', 'Click_prop', 'Purch_rate']].copy()
+    result = purch_rate_df[['Region', 'Purch_rate']].copy()
 
     # ── Save for sense-checking ─────────────────────────────────────────
     cache_dir = base_dir / "cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    tag = "by_region" if by_reg else "by_location"
-    out_path = cache_dir / f"conversion_rates_{tag}.csv"
+    out_path = cache_dir / "conversion_rates_by_region.csv"
     result.to_csv(out_path, index=False)
     print(f"[Sense-check] Conversion rates saved to {out_path}")
 

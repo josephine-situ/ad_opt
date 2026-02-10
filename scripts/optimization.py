@@ -321,13 +321,14 @@ def embed_xgb(model, model_path, X, budget=400):
         pred_vars.append(pred_var)
 
         # Constraint: pred_opt - pred_base < historical_searches. Preds are on clicks scale, last_month_searches is log1p.
-        # This ensures predicted incremental clicks don't exceed search volume
-        historical_searches = X.iloc[i]['last_month_searches']
-        base_pred = pred_clicks_cost0[valid_indices[i]]
-        model.addConstr(
-            pred_var - base_pred <= np.expm1(historical_searches),
-            name=f"search_volume_cap_{i}"
-        )
+        # This ensures predicted incremental clicks don't exceed search volume (exact match only)
+        if X.iloc[i]['Match type'] == 'Exact match':
+            historical_searches = X.iloc[i]['last_month_searches']
+            base_pred = pred_clicks_cost0[valid_indices[i]]
+            model.addConstr(
+                pred_var - base_pred <= np.expm1(historical_searches),
+                name=f"search_volume_cap_{i}"
+            )
     
     model.update()
     return cost_vars, pred_vars, X
@@ -361,7 +362,7 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
 
     # Objective
     if max_purch:
-        rates = get_conversion_rates(by_reg=True, base_dir=base_dir)
+        rates = get_conversion_rates(base_dir=base_dir)
         X = X.merge(rates, on='Region', how='left')
         X['Purch_rate'] = X['Purch_rate'].fillna(0)
         model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Purch_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
