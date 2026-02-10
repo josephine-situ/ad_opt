@@ -497,6 +497,166 @@ def process_bids(
         add_bid_column_to_file(file_path, bid_multiplier, output_dir)
 
 
+def generate_example_bid_table(
+    bids_path: Path,
+    output_dir: Path,
+    bid_multiplier: float = 1.3,
+    top_n: int = 20,
+):
+    """
+    Generate an example output bid table (.tex) from the first bids file found.
+
+    The table is sorted by daily budget (Optimal Cost) descending, then base bid
+    descending, and shows the top *top_n* rows with columns:
+    Keyword, Region, Match Type, Base Bid.
+
+    Args:
+        bids_path: Path to a single CSV or a directory containing optimized_costs*.csv
+        output_dir: Directory to write the .tex file into
+        bid_multiplier: Multiplier used when the Bid column needs to be computed
+        top_n: Number of rows to include
+    """
+    # Find the first bids file
+    if bids_path.is_file():
+        first_file = bids_path
+    else:
+        files = sorted(bids_path.rglob("optimized_costs*.csv"))
+        if not files:
+            print(f"  No optimized_costs*.csv files found in {bids_path}")
+            return
+        first_file = files[0]
+
+    print(f"  Generating example bid table from {first_file.name} ...")
+    df = pd.read_csv(first_file)
+
+    # Ensure a Bid column exists
+    if 'Bid' not in df.columns:
+        if 'Gurobi Pred over Base' in df.columns:
+            df['Bid'] = np.where(
+                df['Gurobi Pred over Base'] > 0.0001,
+                df['Optimal Cost'] / df['Gurobi Pred over Base'] * bid_multiplier,
+                0.0,
+            )
+        else:
+            # Fallback: use Optimal Cost as the bid proxy
+            df['Bid'] = df['Optimal Cost']
+
+    # Sort by Optimal Cost desc, then Bid desc
+    df = df.sort_values(
+        ['Optimal Cost', 'Bid'], ascending=[False, False]
+    ).head(top_n)
+
+    # Build LaTeX
+    lines = [
+        r"\begin{table}[h!]",
+        r"\centering",
+        r"\resizebox{\textwidth}{!}{%",
+        r"\begin{tabular}{llll}",
+        r"\toprule",
+        r"\textbf{Keyword} & \textbf{Region} & \textbf{Match Type} & \textbf{Base Bid (\$)} \\",
+        r"\midrule",
+    ]
+
+    for _, row in df.iterrows():
+        kw = str(row['Keyword']).replace('&', r'\&').replace('_', r'\_')
+        region = str(row['Region'])
+        mt = str(row['Match type'])
+        bid = f"{row['Bid']:.2f}"
+        lines.append(f"{kw} & {region} & {mt} & {bid} \\\\")
+
+    lines.extend([
+        r"\bottomrule",
+        r"\end{tabular}%",
+        r"}",
+        r"\caption{Example optimized bids (top " + str(top_n) + r", sorted by daily budget then base bid).}",
+        r"\end{table}",
+    ])
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tex_path = output_dir / 'example_bids.tex'
+    with open(tex_path, 'w') as f:
+        f.write('\n'.join(lines))
+    print(f"  Saved example bid table to {tex_path}")
+
+
+def generate_daily_budget_table(
+    bids_path: Path,
+    output_dir: Path,
+):
+    """
+    Generate a daily budget summary (.csv and .tex).
+
+    The daily budget is the sum of Optimal Cost for each (Region, Match type)
+    combination -- e.g., one value for USA + Exact match, another for USA +
+    Phrase match, etc.
+
+    Args:
+        bids_path: Path to a single CSV or a directory with optimized_costs*.csv
+        output_dir: Directory to write the outputs into
+    """
+    # Find the first bids file
+    if bids_path.is_file():
+        first_file = bids_path
+    else:
+        files = sorted(bids_path.rglob("optimized_costs*.csv"))
+        if not files:
+            print(f"  No optimized_costs*.csv files found in {bids_path}")
+            return
+        first_file = files[0]
+
+    print(f"  Generating daily budget table from {first_file.name} ...")
+    df = pd.read_csv(first_file)
+
+    budget_df = (
+        df.groupby(['Region', 'Match type'])['Optimal Cost']
+        .sum()
+        .reset_index()
+        .rename(columns={'Optimal Cost': 'Daily Budget'})
+        .sort_values(['Region', 'Match type'])
+    )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- CSV ---
+    csv_path = output_dir / 'daily_budget.csv'
+    budget_df.to_csv(csv_path, index=False)
+    print(f"  Saved daily budget CSV to {csv_path}")
+
+    # --- LaTeX ---
+    lines = [
+        r"\begin{table}[h!]",
+        r"\centering",
+        r"\resizebox{\textwidth}{!}{%",
+        r"\begin{tabular}{llr}",
+        r"\toprule",
+        r"\textbf{Region} & \textbf{Match Type} & \textbf{Daily Budget (\$)} \\",
+        r"\midrule",
+    ]
+
+    for _, row in budget_df.iterrows():
+        region = str(row['Region'])
+        mt = str(row['Match type'])
+        budget = f"{row['Daily Budget']:.2f}"
+        lines.append(f"{region} & {mt} & {budget} \\\\")
+
+    # Add a total row
+    total = budget_df['Daily Budget'].sum()
+    lines.extend([
+        r"\midrule",
+        f"\\textbf{{Total}} & & \\textbf{{{total:.2f}}} \\\\",
+        r"\bottomrule",
+        r"\end{tabular}%",
+        r"}",
+        r"\caption{Daily budget by region and match type.}",
+        r"\end{table}",
+    ])
+
+    tex_path = output_dir / 'daily_budget.tex'
+    with open(tex_path, 'w') as f:
+        f.write('\n'.join(lines))
+    print(f"  Saved daily budget LaTeX to {tex_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Post-processing for bid optimization: calculate bid adjustments and add bid column.",
@@ -518,6 +678,9 @@ def main():
             # Process a specific file or directory
             python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
             python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
+
+            # Use experiment name instead of bids-path (resolves to opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids)
+            python scripts/bid_post_processing.py --course ml --exp-name exp107_max_conv --budget 353 --skip-adjustments
 
             # Only calculate bid adjustments (skip adding bid column)
             python scripts/bid_post_processing.py --course gen_ai --skip-bids
@@ -563,6 +726,17 @@ def main():
         help='Custom bids file or directory to process (default: opt_results/<course>/bids)'
     )
     parser.add_argument(
+        '--exp-name',
+        type=str,
+        help='Experiment name (resolves to opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids). '
+             'Use instead of --bids-path for backtest experiments.'
+    )
+    parser.add_argument(
+        '--budget',
+        type=int,
+        help='Budget value for experiment directory (e.g., 353). Required when --exp-name is used.'
+    )
+    parser.add_argument(
         '--skip-adjustments',
         action='store_true',
         help='Skip bid adjustment calculation (only add bid column)'
@@ -575,6 +749,12 @@ def main():
     
     args = parser.parse_args()
     
+    # Validate --exp-name / --bids-path mutual exclusivity and budget requirement
+    if args.exp_name and args.bids_path:
+        parser.error("--exp-name and --bids-path are mutually exclusive")
+    if args.exp_name and args.budget is None:
+        parser.error("--budget is required when --exp-name is used")
+
     # Determine courses to process
     if args.all_courses:
         courses = ['gen_ai', 'ml', 'sys_eng']
@@ -631,16 +811,42 @@ def main():
                     import traceback
                     traceback.print_exc()
         
+        # --- Resolve bids path ---
+        if args.exp_name:
+            bids_path = (
+                project_root / 'opt_results' / course / 'backtests'
+                / args.exp_name / f'budget_{args.budget}' / 'bids'
+            )
+        elif args.bids_path:
+            bids_path = Path(args.bids_path)
+        else:
+            bids_path = project_root / 'opt_results' / course / 'bids'
+
         # --- Add Bid Column to Bids Files ---
         if not args.skip_bids:
-            if args.bids_path:
-                bids_path = Path(args.bids_path)
-            else:
-                bids_path = project_root / 'opt_results' / course / 'bids'
-            
             print(f"\n  --- Processing Bids Files (multiplier={args.bid_multiplier}) ---")
             process_bids(bids_path, args.bid_multiplier)
-    
+
+        # --- Example Bid Table & Daily Budget ---
+        if bids_path.exists():
+            # Determine output directory for tables
+            if args.exp_name:
+                tables_dir = (
+                    project_root / 'opt_results' / course / 'backtests'
+                    / args.exp_name
+                )
+            elif args.output_dir:
+                tables_dir = Path(args.output_dir)
+            else:
+                tables_dir = project_root / 'opt_results' / course / 'bids'
+
+            print(f"\n  --- Generating Example Tables ---")
+            generate_example_bid_table(
+                bids_path, tables_dir,
+                bid_multiplier=args.bid_multiplier,
+            )
+            generate_daily_budget_table(bids_path, tables_dir)
+
     print("\nDone!")
 
 
