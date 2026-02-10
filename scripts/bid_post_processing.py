@@ -63,7 +63,8 @@ def group_hours(hour: int) -> str:
 
 
 def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
-                        extra_conv_cols=None) -> pd.DataFrame:
+                        extra_conv_cols=None,
+                        fallback_segment_col: str = None) -> tuple[pd.DataFrame, str]:
     """
     Load and merge clicks and conversions reports.
     
@@ -73,9 +74,11 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
         segment_col: Name of the segment column (e.g., 'Age', 'Device', 'Hour of the day')
         extra_conv_cols: Additional conversion columns to sum into total Conversions
                          (e.g., ['Cross-device conv.'])
+        fallback_segment_col: Fallback column name if segment_col is not found
     
     Returns:
-        DataFrame with Campaign, segment, Clicks, and Conversions columns
+        Tuple of (DataFrame with Campaign, segment, Clicks, and All conv. columns,
+                  resolved segment column name)
     """
     # Read clicks file (skip header rows)
     clicks_df = pd.read_csv(clicks_file, skiprows=2)
@@ -83,6 +86,11 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
     
     # Read conversions file (skip header rows)
     conv_df = pd.read_csv(conv_file, skiprows=2)
+    
+    # Resolve segment column: use fallback if primary not found
+    if segment_col not in clicks_df.columns and fallback_segment_col and fallback_segment_col in clicks_df.columns:
+        print(f"    Column '{segment_col}' not found, using fallback '{fallback_segment_col}'")
+        segment_col = fallback_segment_col
     
     # Clean segment column (remove newlines from Device names)
     if segment_col in clicks_df.columns:
@@ -94,7 +102,7 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
     if extra_conv_cols:
         for col in extra_conv_cols:
             if col in conv_df.columns:
-                conv_df['Conversions'] = conv_df['Conversions'] + conv_df[col].fillna(0)
+                conv_df['All conv.'] = conv_df['All conv.'] + conv_df[col].fillna(0)
     
     # Aggregate clicks by Campaign and segment
     clicks_agg = clicks_df.groupby(['Campaign', segment_col])['Clicks'].sum().reset_index()
@@ -102,13 +110,13 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
     # Aggregate conversions (may have multiple conversion actions)
     if 'Conversion action' in conv_df.columns:
         conv_df = conv_df.drop(columns=['Conversion action'])
-    conv_agg = conv_df.groupby(['Campaign', segment_col])['Conversions'].sum().reset_index()
+    conv_agg = conv_df.groupby(['Campaign', segment_col])['All conv.'].sum().reset_index()
     
     # Merge clicks and conversions
     merged = clicks_agg.merge(conv_agg, on=['Campaign', segment_col], how='left')
-    merged['Conversions'] = merged['Conversions'].fillna(0)
+    merged['All conv.'] = merged['All conv.'].fillna(0)
     
-    return merged
+    return merged, segment_col
 
 
 def calculate_bid_adjustments(
@@ -123,7 +131,7 @@ def calculate_bid_adjustments(
     Bid adjustment = (segment conversion rate / average conversion rate) - 1
     
     Args:
-        df: DataFrame with Campaign, segment, Clicks, Conversions
+        df: DataFrame with Campaign, segment, Clicks, All conv.
         segment_col: Name of the segment column
         category: Category for limit application ('hour', 'device', 'location', 'age')
         min_clicks: Minimum clicks threshold for applying bid adjustment
@@ -145,24 +153,24 @@ def calculate_bid_adjustments(
     # Aggregate by Region and Segment
     agg_df = df.groupby(['Region', segment_col]).agg({
         'Clicks': 'sum',
-        'Conversions': 'sum'
+        'All conv.': 'sum'
     }).reset_index()
     
     # Calculate conversion rate for each segment-region combo
     agg_df['ConversionRate'] = np.where(
         agg_df['Clicks'] > 0,
-        agg_df['Conversions'] / agg_df['Clicks'],
+        agg_df['All conv.'] / agg_df['Clicks'],
         0
     )
     
     # Calculate average conversion rate per region
     region_totals = agg_df.groupby('Region').agg({
         'Clicks': 'sum',
-        'Conversions': 'sum'
+        'All conv.': 'sum'
     }).reset_index()
     region_totals['AvgConversionRate'] = np.where(
         region_totals['Clicks'] > 0,
-        region_totals['Conversions'] / region_totals['Clicks'],
+        region_totals['All conv.'] / region_totals['Clicks'],
         0
     )
     region_totals = region_totals[['Region', 'AvgConversionRate']]
@@ -237,13 +245,13 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     hod_conv = bid_adj_dir / 'hod_conv.csv'
     if hod_clicks.exists() and hod_conv.exists():
         print("  Processing Hour of Day adjustments (grouped 0-2, 3-5, etc.)...")
-        df = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
+        df, _ = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
         # Group hours into 3-hour bins
         df['Hour Group'] = df['Hour of the day'].apply(group_hours)
         # Aggregate by the new hour groups
         df = df.groupby(['Campaign', 'Hour Group']).agg({
             'Clicks': 'sum',
-            'Conversions': 'sum'
+            'All conv.': 'sum'
         }).reset_index()
         results['hour_of_day'] = calculate_bid_adjustments(
             df, 'Hour Group', 'hour', min_clicks
@@ -254,8 +262,8 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     device_conv = bid_adj_dir / 'device_conv.csv'
     if device_clicks.exists() and device_conv.exists():
         print("  Processing Device adjustments...")
-        df = load_bid_adj_report(device_clicks, device_conv, 'Device',
-                                extra_conv_cols=['Cross-device conv.'])
+        df, _ = load_bid_adj_report(device_clicks, device_conv, 'Device',
+                                    extra_conv_cols=['Cross-device conv.'])
         results['device'] = calculate_bid_adjustments(
             df, 'Device', 'device', min_clicks
         )
@@ -265,9 +273,12 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     loc_conv = bid_adj_dir / 'loc_conv.csv'
     if loc_clicks.exists() and loc_conv.exists():
         print("  Processing Location adjustments...")
-        df = load_bid_adj_report(loc_clicks, loc_conv, 'Targeted location')
+        df, loc_col = load_bid_adj_report(
+            loc_clicks, loc_conv, 'Targeted location',
+            fallback_segment_col='Country/Territory (User location)'
+        )
         results['location'] = calculate_bid_adjustments(
-            df, 'Targeted location', 'location', min_clicks
+            df, loc_col, 'location', min_clicks
         )
     
     # Age
@@ -275,7 +286,7 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     age_conv = bid_adj_dir / 'age_conv.csv'
     if age_clicks.exists() and age_conv.exists():
         print("  Processing Age adjustments...")
-        df = load_bid_adj_report(age_clicks, age_conv, 'Age')
+        df, _ = load_bid_adj_report(age_clicks, age_conv, 'Age')
         results['age'] = calculate_bid_adjustments(
             df, 'Age', 'age', min_clicks
         )
@@ -326,6 +337,14 @@ def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_
             continue
         
         segment_col = segment_col_names.get(segment_type, segment_type)
+        # Resolve fallback column name if primary doesn't exist in DataFrame
+        if segment_col not in df.columns:
+            for col in df.columns:
+                if col not in ('Region', 'Clicks', 'All conv.', 'ConversionRate',
+                               'AvgConversionRate', 'BidAdjustment', 'BidAdjustmentPct',
+                               'BidAdjustmentFormatted', 'Campaign'):
+                    segment_col = col
+                    break
         display_name = segment_display_names.get(segment_type, segment_type)
         
         # Only include rows with valid bid adjustments
@@ -337,7 +356,7 @@ def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_
                 'Segment': display_name,
                 'Value': row[segment_col],
                 'Clicks': row['Clicks'],
-                'Conversions': row['Conversions'],
+                'Purchases': row['All conv.'],
                 'BidAdjustment': row['BidAdjustment']
             })
     
@@ -361,7 +380,7 @@ def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_
         segment = row['Segment']
         value = str(row['Value'])
         clicks = f"{int(row['Clicks']):,}"
-        conversions = f"{row['Conversions']:.1f}"
+        conversions = f"{row['Purchases']:.1f}"
         adj_pct = row['BidAdjustment'] * 100
         if adj_pct >= 0:
             adj_str = f"+{adj_pct:.0f}\\%"
