@@ -1,0 +1,478 @@
+\documentclass[smaller]{beamer}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{multirow}
+
+% --- TOGGLE DETAILED SLIDES ---
+% Set to \detailedtrue to show detailed slides, \detailedfalse to hide them
+\newif\ifdetailed
+% \detailedtrue 
+\detailedfalse
+
+% --- THEME SETTINGS ---
+\usetheme{Madrid}
+\setbeamertemplate{navigation symbols}{} % Removes bottom navigation icons
+\setbeamertemplate{footline}[frame number] % Adds frame numbers
+
+% --- PRESENTATION INFO ---
+\title{Search Ad Optimization Project Update}
+
+\begin{document}
+
+\begin{frame}{Results - Machine Learning and System Thinking}
+    \framesubtitle{Dec 1-31: Performance (daily averages)}
+
+Depending on the course, we can choose to maximize purchases or clicks.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccccc}
+\toprule
+& & \multicolumn{5}{c}{Metrics} & \multicolumn{3}{c}{Improvement (vs Actual)} \\
+\cmidrule(lr){3-7} \cmidrule(lr){8-10}
+Course & Strategy & Clicks & Purch & Cost & Clicks/\$ & Kws & Clicks & Purch & Clicks/\$ \\
+\midrule
+
+% ML GROUP
+\multirow{3}{*}{\textbf{ML}} 
+  & Actual & 146.5 & 0.12 & 332.28 & 0.441 & 38 & -- & -- & -- \\
+  & Max Purch & 122.6 & \textbf{0.15} & 353.94 & 0.346 & 410 & -16.3\% & \textbf{+30.2\%} & -21.4\% \\
+  & Max Clicks & 281.7 & 0.06 & 353.88 & 0.796 & 285 & +92.2\% & -5.4\% & +80.5\% \\
+\midrule
+
+% SYS THINK GROUP
+\multirow{3}{*}{\textbf{Sys Think}} 
+  & Actual & 122.3 & 0.26 & 331.81 & 0.369 & 35 & -- & -- & -- \\
+  & Max Purch & 265.2 & \textbf{0.34} & 357.05 & 0.743 & 119 & +116.9\% & \textbf{+31.7\%} & +101.5\% \\
+  & Max Clicks & 252.9 & 0.02 & 356.98 & 0.709 & 107 & +106.8\% & -54.2\% & +92.3\% \\
+
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\end{frame}
+
+\begin{frame}{Experimental Results}
+    \framesubtitle{Dec 1-31: Regional Breakdown}
+
+Spend in each region adapts according to the course and strategy.
+
+\begin{table}[htbp]
+  \centering
+  \resizebox{0.6\textwidth}{!}{%
+    \begin{tabular}{llccc}
+    \toprule
+      & & \multicolumn{3}{c}{Spend Percentage} \\
+      \cmidrule(lr){3-5}
+    Course & Strategy & USA & Region A & Region B \\
+    \midrule
+    
+    % ML Section
+    \multirow{3}{*}{\textbf{ML}} 
+      & Actual & 75.3\% & 15.1\% & 9.6\% \\
+      & Max Purch & 93.2\% & 6.8\% & 0.0\% \\
+      & Max Clicks & 33.4\% & 33.3\% & 33.2\% \\
+    \midrule
+     
+    % Sys Think Section
+    \multirow{3}{*}{\textbf{Sys Think}} 
+      & Actual & 65.7\% & 24.3\% & 10.1\% \\
+      & Max Purch & 35.9\% & 35.2\% & 28.9\% \\
+      & Max Clicks & 33.6\% & 33.4\% & 33.0\% \\
+    \bottomrule
+    \end{tabular}%
+  }
+\end{table}
+\end{frame}
+
+\begin{frame}{Experimental Results}
+\framesubtitle{Dec 1-31: Match Type Breakdown}
+
+Similarly, spend on each match type adapts according to the course and strategy.
+For both courses, we observe a shift towards more Exact and Phrase matches.
+
+\begin{table}[htbp]
+  \centering
+  \resizebox{0.6\textwidth}{!}{%
+    \begin{tabular}{llccc}
+    \toprule
+      & & \multicolumn{3}{c}{Spend Percentage} \\
+      \cmidrule(lr){3-5}
+    Course & Strategy & Exact & Phrase & Broad \\
+    \midrule
+    
+    % ML Section
+    \multirow{3}{*}{\textbf{ML}} 
+      & Actual & 2.6\% & 5.2\% & 92.2\% \\
+      & Max Purch & 15.9\% & 23.0\% & 61.1\% \\
+      & Max Clicks & 12.9\% & 20.0\% & 67.1\% \\
+    \midrule
+     
+    % Sys Think Section
+    \multirow{3}{*}{\textbf{Sys Think}} 
+      & Actual & 11.5\% & 7.9\% & 80.6\% \\
+      & Max Purch & 12.9\% & 27.7\% & 59.5\% \\
+      & Max Clicks & 17.8\% & 27.9\% & 54.3\% \\
+    \bottomrule
+    \end{tabular}%
+  }
+\end{table}
+
+\end{frame}
+
+% Implementation slides for Ad Bid Optimizer
+% Include in a Beamer presentation with \input{slides_implementation}
+
+% ============================================================================
+% Slide 1 — Input Data
+% ============================================================================
+\begin{frame}{Implementation}
+\framesubtitle{Input data}
+\begin{itemize}
+    \item Fixed list of keywords (from Google Ads past searches, Semrush).
+    \item Google Ads reports
+    \begin{itemize}
+        \item Keyword-level past performance (daily clicks, costs).
+        \item Campaign-level past performance (total clicks, purchases, also broken down by segment).
+        \item Historical metrics for each keyword (e.g., search volume).
+        \item These are currently manually downloaded, but we would need to automate
+        this to download daily (e.g., using Google Ads API).
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% Slide 2 — Processing Overview
+% ============================================================================
+\begin{frame}{Implementation}
+\framesubtitle{Processing}
+The processing pipeline consists of the following stages (currently four separate Python scripts):
+\begin{enumerate}
+    \item Data processing: combining reports, getting keyword embeddings.
+    \item Modeling: fit an XGBoost model to predict clicks.
+    \item Optimization: embed model and use Gurobi to solve (maximizing clicks or purchases).
+          The model is large and is currently solved on the Engaging compute cluster.
+    \item Post-processing: daily budgets, manual bids, and bid adjustments.
+\end{enumerate}
+\end{frame}
+
+\ifdetailed
+
+% ============================================================================
+% Slide 3 — Data Processing Detail
+% ============================================================================
+\begin{frame}{Processing --- in more detail}
+\framesubtitle{Data processing}
+\begin{enumerate}
+    \item Load daily keyword performance (clicks, cost) from Google Ads.
+    \item Extract campaign $\to$ region mapping (USA, A, B) from campaign names.
+    \item Merge with Google Keyword Planner data: search volume, competition index, bid ranges.
+    \item Engineer temporal features: day-of-week, weekend, holiday, month, days to next course start.
+    \item Compute search-trend features: 3-month \& 6-month averages, month-over-month change, trend slope.
+    \item Generate 50-d keyword embeddings via BERT + TruncatedSVD.
+    \item Impute missing values at multiple stages:
+    \begin{itemize}
+        \item On load: fill missing clicks/cost with 0; drop rows with unparseable dates.
+        \item Before GKP merge: fill numeric nulls with 0, categorical with ``Missing''.
+        \item After GKP merge: fuzzy-match keywords to fill remaining GKP gaps (search volume, trends).
+        \item Final cleanup: drop any remaining rows with NaNs.
+    \end{itemize}
+    \item Remove outliers, train/test split.
+\end{enumerate}
+\end{frame}
+
+% ============================================================================
+% Slide 4 — Modeling
+% ============================================================================
+\begin{frame}{Processing --- in more detail}
+\framesubtitle{Modeling}
+\begin{itemize}
+    \item Target: daily clicks per (keyword, match type, region) combination.
+    \item XGBoost regressor (MSE loss) with StandardScaler + OneHotEncoder preprocessing.
+    \item Hyperparameters tuned via 5-fold cross-validated grid search over:
+    \begin{itemize}
+        \item \texttt{n\_estimators} $\in \{5, 10, 20\}$,\; \texttt{max\_depth} $\in \{2, 3, 4\}$,\; \texttt{learning\_rate} $\in \{0.1, 0.3\}$.
+    \end{itemize}
+    \item Features include keyword embeddings, search stats, temporal, competitiveness, match type, region, and \textbf{cost} (the decision variable).
+    \item Model interpretability: SHAP values confirm cost, search volume, and days-to-start are top drivers.
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+% Slide 5 — Optimization Formulation (Max Clicks)
+% ============================================================================
+\begin{frame}{Processing --- in more detail}
+\framesubtitle{Optimization --- maximize clicks}
+
+\footnotesize
+
+\textbf{Decision variables.}
+\begin{itemize}
+    \item $x_i \geq 0$: daily cost (spend) for combination $i$.
+    \item $\hat{g}_i$: predicted clicks from the embedded XGBoost model for combination $i$.
+    \item $B_r \geq 0$: regional sub-budget for region $r$.
+\end{itemize}
+
+\medskip
+\textbf{Formulation:}
+\begin{align*}
+    \max_{x,\hat{g}, B_r} \quad & \sum_{i} \hat{g}_i \\
+    \text{s.t.} \quad
+    & \hat{g}_i = f_{\text{XGB}}(x_i, \mathbf{w}_i) && \forall\; i \\
+    & \sum_{r \in \mathcal{R}} B_r = B && \text{(total budget)} \\
+    & \sum_{i \in \mathcal{I}_r} x_i \leq B_r && \forall\; r \in \mathcal{R} \\
+    & \hat{g}_i - \hat{g}_i^{(0)} \leq S_i && \forall\; i \text{ with exact match} \\
+    & B_{\text{USA}} \geq B_{\text{A}} \geq B_{\text{B}} && \text{(optional)} \\
+    & x_i \geq 0,\; \hat{g}_i \geq 0 && \forall\; i
+\end{align*}
+
+where $\mathbf{w}_i$ are the static features, $B$ is the total daily budget, $B_r$ is the regional sub-budget, $\mathcal{I}_r$ is the set of combinations in region $r$, $\hat{g}_i^{(0)}$ is predicted clicks at cost 0, and $S_i$ is the historical monthly search volume.
+
+\end{frame}
+
+% ============================================================================
+% Slide 6 — Optimization Formulation (Max Purchases)
+% ============================================================================
+\begin{frame}{Processing --- in more detail}
+\framesubtitle{Optimization --- maximize purchases}
+
+If maximizing expected purchases instead of clicks, the objective changes to:
+\begin{align*}
+    \max_{x,\hat{g}, B_r} \quad & \sum_{r \in \mathcal{R}} \sum_{i \in \mathcal{I}_r} \hat{g}_i \cdot p_r
+\end{align*}
+where $p_r = \dfrac{\text{total purchases in region } r}{\text{total clicks in region } r}$ is the historical purchase rate for region $r$.
+
+\medskip
+All other constraints remain the same.
+
+\medskip
+\textbf{XGBoost embedding.} Each tree is linearized: for each row $i$ and tree $t$, binary indicator variables $z_{i,t,\ell}$ select exactly one leaf. Static feature splits are pruned at build time; the cost variable splits become Big-M constraints on $x_i$, giving a mixed-integer program solvable by Gurobi.
+\end{frame}
+
+\fi
+
+% ============================================================================
+% Slide 7 — Uploading Solution to Google Ads
+% ============================================================================
+\begin{frame}{Implementation}
+\framesubtitle{Uploading solution to Google Ads}
+
+The following should be uploaded daily to Google Ads (e.g., through API):
+
+\begin{enumerate}
+    \item Separate each match type and region into campaigns, and have a daily budget for each campaign. E.g., USA + Exact match, USA + Phrase match, etc.
+    \item Base bid for each $i$ (keyword, match type, region combination).
+        \begin{itemize}
+            \item Calculated as $\dfrac{\text{daily cost}_i}{\text{predicted clicks}_i} \times 1.3$
+            \item $\times 1.3$ is because we pay less than what we bid due to the second-price auction mechanism. This value will need to be validated experimentally.
+        \end{itemize}
+    \item Bid adjustments for hour of the day and the user.
+        \begin{itemize}
+            \item Based on purchase rates $\left(\dfrac{\text{num purchases}}{\text{num clicks}}\right)$.
+            \item Calculated as $\dfrac{\text{segment purch rate}}{\text{region purch rate}} - 1$.
+            \item Input to Google Ads as percentage adjustments to the base bid (e.g., +30\%, -50\%).
+        \end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{ML, Dec 1st, Max Purchases: Daily Campaign Budgets}
+\begin{table}[h!]
+\centering
+\resizebox{0.5\textwidth}{!}{%
+\begin{tabular}{llr}
+\toprule
+\textbf{Region} & \textbf{Match Type} & \textbf{Daily Budget (\$)} \\
+\midrule
+USA & Broad match & 179.64 \\
+USA & Exact match & 75.84 \\
+USA & Phrase match & 98.38 \\
+\midrule
+\textbf{Total} & & \textbf{353.86} \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Daily budget by region and match type.}
+\end{table}
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{ML, Dec 1st, Max Purchases: Sorted by Daily Budget (Top 20)}
+\begin{table}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+\textbf{Keyword} & \textbf{Region} & \textbf{Match Type} & \textbf{Base Bid (\$)} \\
+\midrule
+free ai and machine learning courses with certificates & USA & Broad match & 1.81 \\
+ai training courses & USA & Broad match & 1.81 \\
+ai free courses & USA & Broad match & 1.81 \\
+nvidia training courses & USA & Broad match & 1.81 \\
+course cs50 & USA & Broad match & 1.72 \\
+aws certified machine learning engineer associate course & USA & Broad match & 1.61 \\
+training data machine learning & USA & Phrase match & 1.83 \\
+ict iitr & USA & Phrase match & 1.83 \\
+sas machine learning course & USA & Phrase match & 1.83 \\
+kaggle machine learning course & USA & Phrase match & 1.83 \\
+download python for data science and machine learning bootcamp course & USA & Phrase match & 1.83 \\
+machine learning course certificate free & USA & Phrase match & 1.83 \\
+google free machine learning course with certificate & USA & Phrase match & 1.83 \\
+learn how to use a sewing machine course & USA & Phrase match & 1.83 \\
+machine learning engineer course udemy & USA & Phrase match & 1.83 \\
+machine learning systems design course & USA & Phrase match & 1.83 \\
+machine learning system design course & USA & Phrase match & 1.83 \\
+octave machine learning & USA & Exact match & 1.80 \\
+scientific computing with python freecodecamp & USA & Exact match & 1.80 \\
+analytics vidhya machine learning free course & USA & Exact match & 1.80 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Example optimized bids (top 20, sorted by daily budget then base bid).}
+\end{table}
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{ML, Bid Adjustments (with clicks and purchases for reference)}
+
+\begin{table}[h!]
+\centering
+\resizebox{0.8\textwidth}{!}{%
+\begin{tabular}{lllrrr}
+\toprule
+\textbf{Region} & \textbf{Segment} & \textbf{Value} & \textbf{Clicks} & \textbf{Purchases} & \textbf{Bid Adjustment} \\
+\midrule
+\multicolumn{6}{c}{\textit{\textbf{Increases}}} \\
+\midrule
+USA & Hour of Day & 15 - 17 & 5,942 & 10.5 & +78\% \\
+USA & Hour of Day & 12 - 14 & 6,554 & 8.7 & +33\% \\
+A & Device & Computers & 15,593 & 10.1 & +31\% \\
+USA & Device & Computers & 25,877 & 33.1 & +28\% \\
+USA & Age & 35 - 44 & 5,374 & 6.5 & +22\% \\
+A & Age & Unknown & 5,794 & 3.0 & +5\% \\
+\midrule
+\multicolumn{6}{c}{\textit{\textbf{Decreases}}} \\
+\midrule
+USA & Device & Mobile phones & 9,426 & 2.5 & -74\% \\
+A & Device & Mobile phones & 8,615 & 2.0 & -53\% \\
+USA & Age & 18 - 24 & 5,633 & 3.0 & -46\% \\
+USA & Age & 25 - 34 & 9,078 & 6.0 & -34\% \\
+A & Age & 25 - 34 & 7,964 & 3.1 & -21\% \\
+USA & Age & Unknown & 9,066 & 8.0 & -11\% \\
+\bottomrule
+\multicolumn{6}{l}{\textit{Note: total of 22 non-zero bid adjustments.}} \\
+\multicolumn{6}{l}{\textit{Bid adjustments are only calculated where we have more than 5,000 clicks.}} \\
+\end{tabular}
+}
+\end{table}
+
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{Sys Think, Dec 1st, Max Purchases: Daily Campaign Budgets}
+\begin{table}[h!]
+\centering
+\resizebox{0.5\textwidth}{!}{%
+\begin{tabular}{llr}
+\toprule
+\textbf{Region} & \textbf{Match Type} & \textbf{Daily Budget (\$)} \\
+\midrule
+A & Broad match & 45.51 \\
+A & Exact match & 18.46 \\
+A & Phrase match & 54.77 \\
+B & Broad match & 68.44 \\
+B & Exact match & 21.16 \\
+B & Phrase match & 29.29 \\
+USA & Broad match & 93.61 \\
+USA & Exact match & 12.95 \\
+USA & Phrase match & 12.80 \\
+\midrule
+\textbf{Total} & & \textbf{356.99} \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Daily budget by region and match type.}
+\end{table}
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{Sys Think, Dec 1st, Max Purchases: Sorted by Daily Budget (Top 20)}
+\begin{table}[h!]
+\centering
+\resizebox{0.7\textwidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+\textbf{Keyword} & \textbf{Region} & \textbf{Match Type} & \textbf{Base Bid (\$)} \\
+\midrule
+software architect certification & USA & Broad match & 3.77 \\
+microsoft project management certification & USA & Broad match & 3.75 \\
+design patterns certification & B & Broad match & 0.49 \\
+system design certification & B & Broad match & 0.53 \\
+system design certification & B & Exact match & 0.52 \\
+certificate in design thinking & B & Broad match & 0.56 \\
+lms learning program & USA & Broad match & 3.65 \\
+certificate in design thinking & B & Phrase match & 0.54 \\
+cm2 certification & A & Phrase match & 1.70 \\
+system design certification & B & Phrase match & 0.63 \\
+asana academy certification & A & Phrase match & 1.64 \\
+cpim certification & A & Phrase match & 1.61 \\
+design patterns certification & A & Phrase match & 1.59 \\
+system design certification & A & Broad match & 1.50 \\
+metadata certification & A & Exact match & 1.70 \\
+metadata certification & A & Phrase match & 1.66 \\
+asana academy certification & A & Broad match & 1.63 \\
+alison course certificate & A & Broad match & 1.63 \\
+cpim certification & A & Broad match & 1.59 \\
+design patterns certification & A & Broad match & 1.58 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Example optimized bids (top 20, sorted by daily budget then base bid).}
+\end{table}
+\end{frame}
+
+\begin{frame}{Example input to Google Ads}
+\framesubtitle{Sys Think, Bid Adjustments (with clicks and purchases for reference)}
+\begin{table}[h!]
+\centering
+\tiny % Sets text size small for single-slide fit
+\begin{tabular}{lllrrr}
+\toprule
+\textbf{Region} & \textbf{Segment} & \textbf{Value} & \textbf{Clicks} & \textbf{Purchases} & \textbf{Bid Adjustment} \\
+\midrule
+\multicolumn{6}{c}{\textit{\textbf{Top 10 Increases}}} \\
+\midrule
+B & Location & Brazil & 12,657 & 7.0 & +134\% \\
+A & Location & United Kingdom & 7,541 & 14.8 & +132\% \\
+B & Location & Peru & 5,546 & 2.5 & +87\% \\
+B & Age & 35 - 44 & 20,896 & 13.9 & +72\% \\
+B & Device & Computers & 46,734 & 28.8 & +59\% \\
+A & Device & Computers & 39,772 & 97.5 & +59\% \\
+B & Hour of Day & 6 - 8 & 15,858 & 8.8 & +44\% \\
+USA & Hour of Day & 12 - 14 & 14,815 & 33.9 & +42\% \\
+A & Age & Unknown & 17,403 & 38.0 & +41\% \\
+B & Hour of Day & 3 - 5 & 15,414 & 8.2 & +38\% \\
+\midrule
+\multicolumn{6}{c}{\textit{\textbf{Top 10 Decreases}}} \\
+\midrule
+B & Age & 18 - 24 & 10,590 & 0.0 & -90\% \\
+A & Age & 18 - 24 & 5,260 & 0.0 & -90\% \\
+B & Location & Bangladesh & 10,376 & 0.0 & -90\% \\
+A & Location & South Africa & 61,756 & 5.0 & -90\% \\
+B & Location & Ethiopia & 5,609 & 0.0 & -90\% \\
+B & Location & Philippines & 20,574 & 0.0 & -90\% \\
+B & Location & Pakistan & 14,007 & 0.0 & -90\% \\
+B & Location & Nigeria & 13,956 & 0.0 & -90\% \\
+B & Hour of Day & 18 - 20 & 7,426 & 0.0 & -90\% \\
+A & Location & Mexico & 10,040 & 1.0 & -88\% \\
+\bottomrule
+\multicolumn{6}{l}{\textit{Note: total of 53 non-zero bid adjustments.}} \\
+\multicolumn{6}{l}{\textit{Bid adjustments are only calculated where we have more than 5,000 clicks.}} \\
+\end{tabular}
+\end{table}
+\end{frame}
+
+\end{document}
+

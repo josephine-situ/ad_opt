@@ -151,6 +151,15 @@ gurobi.lic
 # *.parquet
 *.ipynb
 *.xlsx
-*.tex
 logs
 notebooks
+
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.nav
+*.snm
