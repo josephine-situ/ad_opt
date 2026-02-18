@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --job-name=adopt-nest-sweep
+#SBATCH --partition=mit_normal
+#SBATCH --time=12:00:00
+#SBATCH --mem=128G
+#SBATCH --cpus-per-task=16
+#SBATCH --array=0-30%2
+#SBATCH --output=logs/backtest_nest_%A_%a.out
+#SBATCH --error=logs/backtest_nest_%A_%a.err
+
+# Backtest: sweep n_estimators for ml and sys_think courses
+# Usage:  sbatch submit_backtest_n_estimators.sh [EXP_NAME]
+
+cd "${SLURM_SUBMIT_DIR:-$PWD}"
+mkdir -p logs
+
+echo "========== Env & Dir =========="
+echo "Host: $(hostname)"
+echo "Start: $(date)"
+echo "Submit dir: ${SLURM_SUBMIT_DIR:-$PWD}"
+echo "PWD: $PWD"
+echo "==============================="
+
+echo "Load modules..."
+module load miniforge
+
+echo "Activate environment..."
+conda activate adopt_env
+
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export NUMEXPR_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+
+START_DAY="2025-12-01"
+TASK_ID=${SLURM_ARRAY_TASK_ID:-0}
+DAY=$(python - <<PY
+import datetime as dt
+start = dt.date.fromisoformat("$START_DAY")
+print((start + dt.timedelta(days=int("$TASK_ID"))).isoformat())
+PY
+)
+
+EXP_NAME="${1:-n_est_sweep}"
+
+# --- ml ---
+echo "Running backtest_daily.py --day $DAY --course ml --n-estimators 5 10 20"
+python -u scripts/backtest_daily.py \
+    --day "$DAY" \
+    --exp-name "$EXP_NAME" \
+    --order-budget \
+    --max-purch \
+    --course ml \
+    --n-estimators 5 10 20
+
+# --- sys_think ---
+echo "Running backtest_daily.py --day $DAY --course sys_think --n-estimators 5 10 20"
+python -u scripts/backtest_daily.py \
+    --day "$DAY" \
+    --exp-name "$EXP_NAME" \
+    --order-budget \
+    --max-purch \
+    --course sys_think \
+    --n-estimators 5 10 20
+
+echo "End: $(date)"

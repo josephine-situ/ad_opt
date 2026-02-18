@@ -126,11 +126,16 @@ def main():
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
     p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
+    p.add_argument("--n-estimators", type=int, nargs='+', default=None,
+                   help="When set, sweep over these fixed n_estimators values (e.g. 5 10 20). "
+                        "Uses the default course budget for each.")
 
     args = p.parse_args()
 
     if args.budget is None:
         args.budget = COURSE_CONFIG[args.course]['budgets']
+
+    n_estimators_list = args.n_estimators          # None ⇒ normal mode
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
     embedding_method = args.embedding_method
@@ -196,30 +201,16 @@ def main():
         if masked:
             history_source = df[~df['Keyword'].isin(new_keywords)].copy()
         hist = history_source[history_source["Day"] < day].copy()
-        
-        # Train best model using CV
-        pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(hist, features=features, day_date=day)
-        
-        # Calculate and Save Hist Metrics
-        metrics_file = models_dir / "hist_model_metrics.csv"
-        metrics_row = pd.DataFrame([{
-            "Day": day.date(),
-            "Hist_MSE": hist_mse,
-            "Hist_R2": hist_r2,
-            "Hist_Bias": hist_bias,
-            "CV_Score": best_cv,
-            "best_params": best_params
-        }])
-        if not metrics_file.exists():
-            metrics_row.to_csv(metrics_file, index=False)
+
+        # ---- Determine the (n_estimators, budget) combos to run ----
+        if n_estimators_list is not None:
+            # Sweep n_estimators; use the first (default) budget for each
+            default_budget = budget_list[0]
+            combos = [(n_est, default_budget) for n_est in n_estimators_list]
         else:
-            metrics_row.to_csv(metrics_file, mode='a', header=False, index=False)
+            combos = [(None, b) for b in budget_list]
 
-        # Save training model
-        model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
-        joblib.dump(pipe, model_path)
-
-        # Precompute feature matrix (shared across parameters)
+        # Precompute feature matrix (shared across all combos)
         X_base = feature_matrix_cached(
             keywords=keywords, 
             opt_date=day, 
@@ -230,22 +221,59 @@ def main():
             course=args.course
         )
 
-        # Optimize for each parameter combination
-        for b in budget_list:
-            # Define output directory for this run
-            run_dir = base_results_dir / f"budget_{int(b)}"
+        # Cache trained models per n_estimators so we don't re-train for each budget
+        _model_cache = {}
+
+        for n_est, b in combos:
+            # --- output dirs ---
+            if n_est is not None:
+                tag = f"n_estimators_{n_est}"
+            else:
+                tag = f"budget_{int(b)}"
+
+            run_dir = base_results_dir / tag
             bids_dir = run_dir / "bids"
             bids_dir.mkdir(parents=True, exist_ok=True)
 
-            # Check if already optimized
+            combo_models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}/{tag}")
+            combo_models_dir.mkdir(parents=True, exist_ok=True)
+
+            # Skip if already done
             opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
             if opt_path.exists():
-                print(f"Skipping {day.date()} budget={b} - already exists")
+                print(f"Skipping {day.date()} {tag} - already exists")
                 continue
 
-            # Optimize bids for day t
-            # Copy X_base to avoid modification issues
-            # optimize_bids now only takes budget and kw_df
+            # --- train (or re-use cached) model ---
+            cache_key = n_est  # None when sweeping budget (one model per day)
+            if cache_key not in _model_cache:
+                pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(
+                    hist, features=features, day_date=day, n_estimators=n_est
+                )
+                model_path = combo_models_dir / f"xgb_clicks_model_{day.date()}.joblib"
+                joblib.dump(pipe, model_path)
+
+                # Save hist metrics
+                metrics_file = combo_models_dir / "hist_model_metrics.csv"
+                metrics_row = pd.DataFrame([{
+                    "Day": day.date(),
+                    **(({"N_Estimators": n_est} if n_est is not None else {})),
+                    "Hist_MSE": hist_mse,
+                    "Hist_R2": hist_r2,
+                    "Hist_Bias": hist_bias,
+                    "CV_Score": best_cv,
+                    "best_params": best_params,
+                }])
+                if not metrics_file.exists():
+                    metrics_row.to_csv(metrics_file, index=False)
+                else:
+                    metrics_row.to_csv(metrics_file, mode='a', header=False, index=False)
+
+                _model_cache[cache_key] = (pipe, model_path)
+            else:
+                pipe, model_path = _model_cache[cache_key]
+
+            # --- optimise ---
             m, cost_vars, pred_vars, X_opt = optimize_bids(
                 X_base.copy(), 
                 str(model_path), 
@@ -257,7 +285,6 @@ def main():
             )
             sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
-            # Save optimized costs
             if sol is not None:
                 sol.to_csv(opt_path, index=False)
 

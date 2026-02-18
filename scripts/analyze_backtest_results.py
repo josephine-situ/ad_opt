@@ -9,16 +9,16 @@ import argparse
 from pathlib import Path
 import numpy as np
 
-def generate_performance_table(summary_df):
+def generate_performance_table(summary_df, group_col='Budget'):
     # Create a copy to avoid SettingWithCopyWarning on the original df
     df = summary_df.copy()
-    df = df.sort_values(by=['Budget'], ascending=[True], na_position='last')
+    df = df.sort_values(by=[group_col], ascending=[True], na_position='last')
 
     # Identify "Best" Row (max improvement in clicks)
     best_idx = df['improvement in clicks'].idxmax()
 
     # --- FORMATTING ---
-    df['Budget'] = df['Budget'].apply(lambda x: f"{x:.0f}")
+    df[group_col] = df[group_col].apply(lambda x: f"{x:.0f}")
     
     df['avg clicks (opt)'] = df.apply(lambda row: f"{row['avg clicks (opt)']:,.1f} $\\pm$ {row['se clicks (opt)']:,.1f}", axis=1)
     df['avg purch (opt)'] = df.apply(lambda row: f"{row['avg purch (opt)']:,.2f} $\\pm$ {row['se purch (opt)']:,.2f}", axis=1)
@@ -48,7 +48,7 @@ def generate_performance_table(summary_df):
     # --- COLUMN MAPPING ---
     # Note: Added Purchases
     col_mapping = [
-        ('Budget',                  ('', 'Budget')),
+        (group_col,                 ('', group_col)),
         ('avg clicks (opt)',        ('Opt', 'Clicks')),
         ('avg purch (opt)',         ('Opt', 'Purch')),
         ('avg cost (opt)',          ('Opt', 'Cost')),
@@ -163,29 +163,30 @@ def generate_performance_table(summary_df):
     )
     return final_latex
 
-def generate_share_table(share_df, categories, display_renames=None):
+def generate_share_table(share_df, categories, display_renames=None, group_col='Budget'):
     """Generic function to generate a LaTeX share breakdown table.
     
     Used for regional, origin, and match type percentage breakdowns.
     
     Args:
-        share_df: DataFrame with 'Budget' column and columns like 'Spend {cat}', 'Clicks {cat}', etc.
+        share_df: DataFrame with group_col column and columns like 'Spend {cat}', 'Clicks {cat}', etc.
         categories: List of category names as they appear in column names.
         display_renames: Optional dict mapping column category names to shorter display names.
+        group_col: Name of the grouping column (default: 'Budget').
     """
     df = share_df.copy()
-    df['Budget'] = df['Budget'].astype(str)
+    df[group_col] = df[group_col].astype(str)
     
     def sorter(val):
         if val == "Actual": return -1
         try: return float(val)
         except: return 999999
     
-    df['sort_key'] = df['Budget'].apply(sorter)
+    df['sort_key'] = df[group_col].apply(sorter)
     df = df.sort_values(by=['sort_key']).drop(columns=['sort_key'])
 
     metrics = ['Spend', 'Clicks', 'Purch']
-    col_order = ['Budget']
+    col_order = [group_col]
     for cat in categories:
         for metric in metrics:
             col_order.append(f'{metric} {cat}')
@@ -206,14 +207,14 @@ def generate_share_table(share_df, categories, display_renames=None):
 
     # Format percentages
     for col in df.columns:
-        if col != 'Budget':
+        if col != group_col:
              df[col] = (df[col] * 100).map('{:,.1f}\\%'.format)
              
     # Create MultiIndex for LaTeX: (Category, Metric)
     tuples = []
     for c in df.columns:
-        if c == 'Budget': 
-            tuples.append(('', 'Budget'))
+        if c == group_col: 
+            tuples.append(('', group_col))
         else:
             parts = c.split(' ', 1)  # Split on first space only
             metric = parts[0]
@@ -404,12 +405,12 @@ def generate_country_table(exp_name, budget, course="gen_ai", top_n=10):
     
     return final_latex
 
-def generate_stability_table(stability_df):
+def generate_stability_table(stability_df, group_col='Budget'):
     df = stability_df.copy()
     
-    # Sort by Budget
-    df['Budget'] = df['Budget'].apply(lambda x: f"{float(x):.0f}")
-    df['sort_key'] = df['Budget'].astype(float)
+    # Sort by group column
+    df[group_col] = df[group_col].apply(lambda x: f"{float(x):.0f}")
+    df['sort_key'] = df[group_col].astype(float)
     df = df.sort_values('sort_key').drop(columns=['sort_key'])
     
     # Format Function
@@ -425,7 +426,7 @@ def generate_stability_table(stability_df):
     df['New Keywords'] = df.apply(lambda r: fmt(r['avg_new_kws'], r['se_new_kws'], 1, r'\%'), axis=1)
     
     # Select columns
-    out_df = df[['Budget', 'Avg Cost Change', 'New Keywords']].copy()
+    out_df = df[[group_col, 'Avg Cost Change', 'New Keywords']].copy()
     
     # LaTeX
     latex = out_df.to_latex(index=False, column_format='lcc', escape=False)
@@ -488,19 +489,22 @@ def main():
 
     full_results = pd.read_csv(eval_csv)
     
-    # Handle different evaluation formats
-    if 'Budget' not in full_results.columns:
+    # Detect grouping dimension: N_Estimators (n_est sweep) or Budget (default)
+    if 'N_Estimators' in full_results.columns:
+        group_col = 'N_Estimators'
+        print(f"Detected n_estimators sweep — grouping by {group_col}")
+    elif 'Budget' in full_results.columns:
+        group_col = 'Budget'
+    else:
         print(f"Available columns: {list(full_results.columns)}")
-        # Check for old format with x_max/alpha columns
         if 'x_max' in full_results.columns or 'alpha' in full_results.columns:
             print("Detected old evaluation format with x_max/alpha columns.")
             print("Please re-run backtest_eval.py to generate the new format with Budget column.")
-            print("The new format includes regional breakdowns, conversions, and purchases.")
             return
         else:
-            print("Warning: 'Budget' column not found. Assuming single budget scenario.")
-            # If there's no Budget column, assume a single budget scenario
+            print("Warning: Neither 'Budget' nor 'N_Estimators' column found. Assuming single scenario.")
             full_results['Budget'] = 'N/A'
+            group_col = 'Budget'
     
     summary_rows = []
     regional_rows = []
@@ -508,7 +512,7 @@ def main():
     match_type_rows = []
     stability_rows = []
     
-    grouped = full_results.groupby('Budget', dropna=False)
+    grouped = full_results.groupby(group_col, dropna=False)
 
     # Calculate Actuals (GLOBAL)
     act_df = full_results.drop_duplicates(subset=['Day']) if 'Day' in full_results.columns else full_results
@@ -539,21 +543,21 @@ def main():
     match_types = ['Exact match', 'Phrase match', 'Broad match']
     
     # Actual Regional Share
-    act_reg_row = {"Budget": "Actual"}
+    act_reg_row = {group_col: "Actual"}
     act_reg_row.update(compute_share_row(act_df, regions, 'Act', 'Region', act_totals))
     regional_rows.append(act_reg_row)
     
     # Actual Origin Share
-    act_orig_row = {"Budget": "Actual"}
+    act_orig_row = {group_col: "Actual"}
     act_orig_row.update(compute_share_row(act_df, origin_keys, 'Act', 'Origin', act_totals, origin_display))
     origin_rows.append(act_orig_row)
     
     # Actual Match Type Share
-    act_mt_row = {"Budget": "Actual"}
+    act_mt_row = {group_col: "Actual"}
     act_mt_row.update(compute_share_row(act_df, match_types, 'Act', 'Match', act_totals))
     match_type_rows.append(act_mt_row)
 
-    for budget, df_group in grouped:
+    for group_val, df_group in grouped:
         
         # 1. Performance Metrics
         avg_clicks_opt = df_group["t_Clicks_OptCost"].mean()
@@ -580,7 +584,7 @@ def main():
             avg_new_kws, se_new_kws = 0, 0
             
         stability_rows.append({
-            "Budget": budget,
+            group_col: group_val,
             "avg_cost_change": avg_cost_change,
             "se_cost_change": se_cost_change,
             "avg_new_kws": avg_new_kws,
@@ -595,7 +599,7 @@ def main():
         imp_purch = (avg_purch_opt - avg_purch_act) / avg_purch_act if avg_purch_act > 0 else 0
 
         summary_rows.append({
-            "Budget": budget,
+            group_col: group_val,
             "avg clicks (opt)": avg_clicks_opt,
             "se clicks (opt)": se_clicks_opt,
             "avg cost (opt)": avg_cost_opt,
@@ -627,17 +631,17 @@ def main():
         opt_totals = {'cost': total_opt_cost_grp, 'clicks': total_opt_clicks_grp, 'purch': total_opt_purch_grp}
         
         # Regional
-        reg_row = {"Budget": budget}
+        reg_row = {group_col: group_val}
         reg_row.update(compute_share_row(df_group, regions, 'Opt', 'Region', opt_totals))
         regional_rows.append(reg_row)
         
         # Origin
-        orig_row = {"Budget": budget}
+        orig_row = {group_col: group_val}
         orig_row.update(compute_share_row(df_group, origin_keys, 'Opt', 'Origin', opt_totals, origin_display))
         origin_rows.append(orig_row)
         
         # Match Type
-        mt_row = {"Budget": budget}
+        mt_row = {group_col: group_val}
         mt_row.update(compute_share_row(df_group, match_types, 'Opt', 'Match', opt_totals))
         match_type_rows.append(mt_row)
 
@@ -654,13 +658,13 @@ def main():
     if stability_rows and any(r['avg_cost_change'] != 0 for r in stability_rows):
         stability_df = pd.DataFrame(stability_rows)
         out_stab_tex = base_results_dir / "stability_metrics.tex"
-        latex_stab = generate_stability_table(stability_df)
+        latex_stab = generate_stability_table(stability_df, group_col=group_col)
         with open(out_stab_tex, "w") as f:
             f.write(latex_stab)
         print(f"\nStability Table saved to {out_stab_tex}")
         print(latex_stab)
     
-    latex_perf = generate_performance_table(summary_df)
+    latex_perf = generate_performance_table(summary_df, group_col=group_col)
     out_tex = base_results_dir / "backtest_summary.tex"
     with open(out_tex, "w") as f:
         f.write(latex_perf)
@@ -672,7 +676,7 @@ def main():
     out_reg_csv = base_results_dir / "regional_breakdown.csv"
     regional_df.to_csv(out_reg_csv, index=False)
     
-    latex_reg = generate_share_table(regional_df, regions)
+    latex_reg = generate_share_table(regional_df, regions, group_col=group_col)
     out_reg_tex = base_results_dir / "regional_breakdown.tex"
     with open(out_reg_tex, "w") as f:
         f.write(latex_reg)
@@ -686,7 +690,8 @@ def main():
     
     latex_orig = generate_share_table(origin_df, 
                                        [k.capitalize() for k in origin_keys],
-                                       display_renames={'Existing searches': 'ExSearches'})
+                                       display_renames={'Existing searches': 'ExSearches'},
+                                       group_col=group_col)
     out_orig_tex = base_results_dir / "origin_breakdown.tex"
     with open(out_orig_tex, "w") as f:
         f.write(latex_orig)
@@ -699,25 +704,26 @@ def main():
     match_type_df.to_csv(out_mt_csv, index=False)
     
     latex_mt = generate_share_table(match_type_df, match_types,
-                                     display_renames={'Exact match': 'Exact', 'Phrase match': 'Phrase', 'Broad match': 'Broad'})
+                                     display_renames={'Exact match': 'Exact', 'Phrase match': 'Phrase', 'Broad match': 'Broad'},
+                                     group_col=group_col)
     out_mt_tex = base_results_dir / "match_type_breakdown.tex"
     with open(out_mt_tex, "w") as f:
         f.write(latex_mt)
     print(f"\nMatch Type Table saved to {out_mt_tex}")
     print(latex_mt)
 
-    # --- Output Country Table (Best Budget) ---
-    # Find best budget based on clicks improvement
-    if 'improvement in clicks' in summary_df.columns:
+    # --- Output Country Table (Best group value) ---
+    # Find best group value based on clicks improvement
+    if 'improvement in clicks' in summary_df.columns and group_col == 'Budget':
          best_row = summary_df.loc[summary_df['improvement in clicks'].idxmax()]
-         best_budget = best_row['Budget']
+         best_budget = best_row[group_col]
          
          latex_country = generate_country_table(args.exp_name, int(best_budget), args.course)
          if latex_country:
              out_country_tex = base_results_dir / "country_breakdown.tex"
              with open(out_country_tex, "w") as f:
                  f.write(latex_country)
-             print(f"\nCountry Table (Budget {best_budget}) saved to {out_country_tex}")
+             print(f"\nCountry Table ({group_col} {best_budget}) saved to {out_country_tex}")
              print(latex_country)
          else:
              print("\nCould not generate country table (files missing?)")

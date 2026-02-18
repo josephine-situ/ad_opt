@@ -70,10 +70,18 @@ def evaluate_model(model, X_test, y_test):
 
     return metrics
 
-def train_best_model(df_day, features, day_date):
+def train_best_model(df_day, features, day_date, n_estimators=None):
     """
     Train a single best model for the day using GridSearchCV.
-    Returns: pipeline, best_params, cv_score (negative MSE), in_sample_score (MSE), r2, bias
+
+    Parameters
+    ----------
+    n_estimators : int or None
+        If *None* (default), n_estimators is included in the grid search
+        ([5, 10, 20]).  If an int is supplied, n_estimators is **fixed** at
+        that value and only max_depth / learning_rate are searched.
+
+    Returns: pipeline, best_params, cv_score (positive MSE), in_sample_mse, r2, bias
     """
     X, y = df_day[features], df_day["Clicks"]
     cat = list(X.select_dtypes(include=["object", "category", "bool"]).columns)
@@ -87,13 +95,17 @@ def train_best_model(df_day, features, day_date):
         remainder="drop",
     )
     
-    # Base estimator (same hyperparams range as typically used, but can be searched)
-    xgb_reg = xgb.XGBRegressor(
+    # Base estimator
+    xgb_kwargs = dict(
         objective="reg:squarederror",
         random_state=42,
         subsample=1.0,
         colsample_bytree=1.0,
     )
+    if n_estimators is not None:
+        xgb_kwargs["n_estimators"] = n_estimators
+
+    xgb_reg = xgb.XGBRegressor(**xgb_kwargs)
     
     pipeline = Pipeline(
         [
@@ -105,10 +117,11 @@ def train_best_model(df_day, features, day_date):
 
     # Keep the grid small to reduce overfitting risk on small daily data
     param_grid = {
-        "model__n_estimators": [5, 10, 20],
         "model__max_depth": [2, 3, 4],
         "model__learning_rate": [0.1, 0.3],
     }
+    if n_estimators is None:
+        param_grid["model__n_estimators"] = [5, 10, 20]
     
     # Use deterministic seed based on day
     if hasattr(day_date, 'strftime'):
@@ -131,6 +144,8 @@ def train_best_model(df_day, features, day_date):
     
     best_model = grid_search.best_estimator_
     best_params = grid_search.best_params_
+    if n_estimators is not None:
+        best_params["model__n_estimators"] = n_estimators
     best_cv_score = -grid_search.best_score_ # Convert back to positive MSE
     
     # In-sample metrics on full data (best_model is already refitted on X, y)
@@ -140,6 +155,7 @@ def train_best_model(df_day, features, day_date):
     in_sample_bias = (y_pred - y).mean()
     
     return best_model, best_params, best_cv_score, in_sample_mse, in_sample_r2, in_sample_bias
+
 
 def main():
     parser = argparse.ArgumentParser()

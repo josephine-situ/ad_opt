@@ -5,6 +5,8 @@ Separated from backtest_daily.py to allow re-evaluation and cross-validation.
 
 Example Usage:
     python scripts/backtest_eval.py --course gen_ai --exp-name exp1 --masked
+    python scripts/backtest_eval.py --course ml --exp-name n_est_sweep --n-estimators 5 10 20
+
 """
 
 import pandas as pd
@@ -42,9 +44,12 @@ def get_args():
     p.add_argument("--keywords-n", type=int, default=None)
     p.add_argument("--masked", action="store_true", help="Use masked data as new keywords for testing")
     p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
+    p.add_argument("--n-estimators", type=int, nargs='+', default=None,
+                   help="When set, evaluate over these fixed n_estimators values (e.g. 5 10 20). "
+                        "Mutually exclusive with --budget.")
     
     args = p.parse_args()
-    if args.budget is None:
+    if args.budget is None and args.n_estimators is None:
         args.budget = COURSE_CONFIG[args.course]['budgets']
     return args
 
@@ -105,19 +110,32 @@ def main():
     
     base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
     eval_models_dir = Path(f"opt_results/{args.course}/eval_models")
-    models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}") # For reading hist metrics
+    models_base_dir = Path(f"models/{args.course}/backtests/{args.exp_name}")
     
     eval_models_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = base_results_dir / "cache"
+
+    # --- Determine sweep mode: n_estimators or budget ---
+    n_estimators_list = args.n_estimators          # None ⇒ budget mode
+    if n_estimators_list is not None:
+        default_budget = COURSE_CONFIG[args.course]['budgets'][0]
+        combos = [(n_est, default_budget) for n_est in n_estimators_list]
+    else:
+        combos = [(None, b) for b in args.budget]
     
-    # Load Hist Metrics if available
-    hist_metrics = {}
-    hist_metrics_file = models_dir / "hist_model_metrics.csv"
-    if hist_metrics_file.exists():
-        hm_df = pd.read_csv(hist_metrics_file)
-        hm_df["Day"] = pd.to_datetime(hm_df["Day"])
-        for _, row in hm_df.iterrows():
-            hist_metrics[row["Day"].date()] = row.to_dict()
+    # Load Hist Metrics from per-combo subdirectories
+    hist_metrics = {}   # key = (n_est_or_none, date) -> dict
+    for n_est, b in combos:
+        tag = f"n_estimators_{n_est}" if n_est is not None else f"budget_{int(b)}"
+        hm_file = models_base_dir / tag / "hist_model_metrics.csv"
+        if not hm_file.exists():
+            # Fallback: try top-level metrics file (old layout)
+            hm_file = models_base_dir / "hist_model_metrics.csv"
+        if hm_file.exists():
+            hm_df = pd.read_csv(hm_file)
+            hm_df["Day"] = pd.to_datetime(hm_df["Day"])
+            for _, row in hm_df.iterrows():
+                hist_metrics[(n_est, row["Day"].date())] = row.to_dict()
     
     # 1. Train/Get Best Evaluation Model on FULL data
     eval_model_path = eval_models_dir / f"eval_model_full_{embedding_method}.joblib"
@@ -175,9 +193,13 @@ def main():
             embedding_method=embedding_method
         )
         
-        for b in args.budget:
-                
-            run_dir = base_results_dir / f"budget_{int(b)}"
+        for n_est, b in combos:
+            if n_est is not None:
+                tag = f"n_estimators_{n_est}"
+            else:
+                tag = f"budget_{int(b)}"
+
+            run_dir = base_results_dir / tag
             bids_dir = run_dir / "bids"
             bids_file = bids_dir / f"optimized_costs_{day.date()}.csv"
             act_file = bids_dir / f"actual_costs_{day.date()}.csv"
@@ -347,7 +369,7 @@ def main():
                         obs_out.to_csv(act_file, index=False)
             
             # Hist metrics
-            hm = hist_metrics.get(day.date(), {})
+            hm = hist_metrics.get((n_est, day.date()), {})
             
             # --- Dynamic Compilation of Summary Row ---
             row_dict = {
@@ -377,6 +399,8 @@ def main():
                 "Hist_R2": hm.get("Hist_R2"),
                 "Hist_Bias": hm.get("Hist_Bias")
             }
+            if n_est is not None:
+                row_dict["N_Estimators"] = n_est
             
             # Add Region/Origin Breakdowns Dynamically
             # Regions
