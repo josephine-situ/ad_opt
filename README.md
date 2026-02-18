@@ -63,9 +63,83 @@ The following pipeline outputs need to be uploaded to Google Ads after each opti
 | **Age bid adjustments** | `opt_results/<course>/bid_adjustments/bid_adj_age.csv` | Apply as Demographics → Age bid adjustments (%) |
 
 #### Monitoring
-- Track daily spend vs. budget (could be used to update base bids - currently set at 30% higher than what we actually want to spend).
-- Metrics: clicks, purchases, etc.
+
+- Track daily spend vs. budget (could be used to update base bids — currently set at 30% higher than what we actually want to spend).
+- Metrics: clicks, purchases, regional breakdown, etc.
 - Alert on anomalies (e.g., sudden cost spikes, infeasible solves).
+
+**Example dashboard UI**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Ad Bid Optimizer — Dashboard (Feb 18th 2026)                  [gen_ai ▼] [🔄]  │
+├──────────────────────────┬──────────────────────────────────────────────────────┤
+│  📊 Latest Snapshot      │  📈 Spend vs. Budget (rolling 30 days)              │
+│                          │                                                      │
+│  Budget     $120.00      │   $|                                                 │
+│  Spend       $97.42      │    |        ·  ·                                     │
+│  Clicks         184      │    |  · ──── ··── ·· ── Budget                       │
+│  Purchases        7      │    | · ·   ·         ··                              │
+│  CPC          $0.53      │    |·   ···            ·· ── Spend                   │
+│  Conv. rate    3.8%      │    └──────────────────────────→ days                 │
+│                          │                                                      │
+├──────────────────────────┼──────────────────────────────────────────────────────┤
+│  🚨 Alerts               │  🗺️ Regional Breakdown                              │
+│                          │                                                      │
+│  ⚠ sys_eng budget        │   Region │ Spend  │ Clicks │ Purchases │ Conv %      │
+│    exceeded by 12%       │   ───────┼────────┼────────┼───────────┼────────     │
+│  ⚠ keyword "online       │   USA    │ $52.10 │    102 │         4 │  3.9%       │
+│    machine learning      │   A      │ $28.30 │     51 │         2 │  3.9%       │
+│    course" CPC spike     │   B      │ $17.02 │     31 │         1 │  3.2%       │
+│  ✅ All solves feasible  │                                                      │
+│                          │                                                      │
+├──────────────────────────┴──────────────────────────────────────────────────────┤
+│  🔑 Top Keywords by Predicted Clicks                                            │
+│                                                                                 │
+│   Keyword                          Match  │ Bid   │ Pred. Clicks │ Actual       │
+│   ────────────────────────────────────────┼───────┼──────────────┼──────────    │
+│   generative ai course             Exact  │ $1.20 │         18.3 │       16     │
+│   gen ai certification             Phrase │ $0.95 │         12.1 │       14     │
+│   machine learning online          Broad  │ $0.78 │          9.7 │        8     │
+│   ...                                                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ⚙️ Marketer Actions                                                            │
+│                                                                                 │
+│  ┌────────────────────────┐  ┌────────────────────────┐  ┌────────────────────┐ │
+│  │ ➕ Add Course / Run    │  │ 🗑️ Remove Keywords    │  │ 💰 Adjust Budget   │ │
+│  │                        │  │                        │  │                    │ │
+│  │ Course: [sys_think  ]  │  │ ☐ "ai bootcamp"        │  │ Course: [gen_ai ▼] │ │
+│  │ Start:  [2026-09-01 ]  │  │ ☐ "free ml course"     │  │ Current: $120      │ │
+│  │ Budget: [$150.00    ]  │  │ ☐ "data science cert"  │  │ New:  [$140.00 ]   │ │
+│  │ [Upload Keywords]      │  │                        │  │                    │ │
+│  │ [Create]               │  │ [Remove Selected]      │  │ [Update]           │ │
+│  └────────────────────────┘  └────────────────────────┘  └────────────────────┘ │
+│                                                                                 │
+│  ┌────────────────────────┐  ┌───────────────────┐   ┌────────────────────────┐ │
+│  │ ➕ Add Keywords        │  │ 🔄 Re-run Optim. │   │ 📋 Audit Log (recent)  │ │
+│  │                        │  │                   │   │                        │ │
+│  │ Course: [gen_ai   ▼]   │  │ Course: [gen_ai ▼]│   │ 02-18 06:02 Pipeline   │ │
+│  │ Keywords (one/line):   │  │ Date:  today      │   │   run completed ✅     │ │
+│  │ ┌──────────────────┐   │  │                   │   │ 02-17 18:30 Budget     │ │
+│  │ │ llm fundamentals │   │  │ [Run Pipeline]    │   │   gen_ai → $120        │ │
+│  │ │ prompt eng course│   │  │ [Push]            │   │ 02-17 14:12 Keyword    │ │
+│  │ └──────────────────┘   │  │                   │   │   "free ml" removed    │ │
+│  │ [Add & Re-optimize]    │  │ Last run: 06:02   │   │ 02-16 06:01 Pipeline   │ │
+│  └────────────────────────┘  │ Status: ✅ OK     │   │   run completed ✅    │ │
+│                              └───────────────────┘   └────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key marketer actions explained**
+
+| Action | Description |
+|--------|-------------|
+| **Add Course / Run** | Register a new course (or a new run of an existing course) with its start date and daily budget. Triggers a full pipeline re-run for that course. |
+| **Add Keywords** | Paste or upload new keywords, fetches GKP stats, generates embeddings, and re-optimizes. |
+| **Remove Keywords** | Pause or permanently drop underperforming keywords. Freed budget is automatically reallocated at the next solve. |
+| **Adjust Budget** | Change the total daily budget for a course. The optimizer redistributes spend across keywords and regions accordingly. |
+| **Re-run Optimization** | Manually trigger the pipeline outside the scheduled daily run (e.g., after adding keywords or changing budgets). |
+| **Audit Log** | Chronological record of every configuration change, pipeline run, and alert — useful for diagnosing performance shifts. |
 
 ### Infrastructure requirements
 
