@@ -5,13 +5,30 @@ Loads, cleans, and preprocesses keyword and ads data with embeddings.
 Supports both TF-IDF and BERT embeddings for keyword representations.
 
 Usage:
-    python scripts/tidy_get_data.py --embedding-method tfidf
-    python scripts/tidy_get_data.py --embedding-method bert
+    python scripts/tidy_get_data.py --course ml # Use this
     python scripts/tidy_get_data.py --force-reload # Force full recompute if you updated source data
 
 LLMs:
     request gpus with salloc -p pi_dbertsim --gpus=1
     python scripts/tidy_get_data.py --course sys_eng --embedding-method llm # Use LLM-based relevance scoring
+
+Input files:
+    data/<course>/reports/Search keyword - raw input to models.csv   [FROM GOOGLE ADS REPORTS]
+    data/<course>/gkp/Saved Keywords Stats *.csv                     [FROM GOOGLE KEYWORD PLANNER]
+    config.py  (course start dates, min dates)
+
+Output files:
+    data/<course>/clean/ad_opt_data_<emb>.csv      Full processed dataset
+    data/<course>/clean/train_<emb>.csv             Training split
+    data/<course>/clean/test_<emb>.csv              Test split
+    data/<course>/clean/unique_keyword_embeddings_<emb>.csv
+    data/<course>/clean/bert_pipeline_50d.pkl       (BERT only) SVD + normalizer pipeline
+    data/<course>/cache/step*.parquet               Intermediate pipeline caches
+    logs/tidy_get_data_<course>_*.log               Run log
+
+Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
+    ~2-5 min per course (BERT embeddings)
+    ~10-30 min per course (LLM scoring, requires GPU)
 """
 
 import argparse

@@ -13,6 +13,31 @@ Segments supported:
 - Device (Mobile, Tablet, Desktop): -100% to +900%
 - Location (Country/State): -90% to +900%
 - Age (Demographics): -90% to +900%
+
+Input files:
+    opt_results/<course>/bids/optimized_costs.csv     (from optimization.py)
+    data/<course>/reports/bid_adj/hod_clicks.csv       [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/hod_conv.csv         [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/device_clicks.csv    [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/device_conv.csv      [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/loc_clicks.csv       [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/loc_conv.csv         [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/age_clicks.csv       [FROM GOOGLE ADS REPORTS]
+    data/<course>/reports/bid_adj/age_conv.csv         [FROM GOOGLE ADS REPORTS]
+
+Output files:
+    opt_results/<course>/bid_adjustments/bid_adj_hour_of_day.csv
+    opt_results/<course>/bid_adjustments/bid_adj_device.csv
+    opt_results/<course>/bid_adjustments/bid_adj_location.csv
+    opt_results/<course>/bid_adjustments/bid_adj_age.csv
+    opt_results/<course>/bid_adjustments/bid_adjustments_table.tex
+    opt_results/<course>/bids/optimized_costs.csv          (updated with Bid column)
+    opt_results/<course>/bids/example_bids.tex
+    opt_results/<course>/bids/daily_budget.csv
+    opt_results/<course>/bids/daily_budget.tex
+
+Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
+    <1 min per course
 """
 
 import argparse

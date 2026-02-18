@@ -1,8 +1,27 @@
 """
-Maximize clicks fora single day of data, based on a pre-trained XGB model.
+Maximize clicks for a single day of data, based on a pre-trained XGB model.
 1. Create feature matrix from raw data (and all keyword combos).
 2. Load and embed pre-trained model.
 3. Use Gurobi to maximize clicks under budget constraint.
+
+Example usage:
+    python scripts/optimization.py --course ml
+
+Input files:
+    data/<course>/gkp/keywords_classified.csv                       [FROM GKP / compare_keywords.py]
+    data/<course>/gkp/Saved Keywords Stats *.csv                    [FROM GOOGLE KEYWORD PLANNER]
+    data/<course>/clean/unique_keyword_embeddings_bert.csv           (from tidy_get_data.py, BERT only)
+    data/<course>/clean/bert_pipeline_50d.pkl                        (from tidy_get_data.py, BERT only)
+    models/<course>_xgb_clicks_model_<emb>.joblib                    (from modeling.py)
+    data/<course>/reports/Purchase report.csv                        [FROM GOOGLE ADS REPORTS] (max-purch mode)
+    config.py  (course start dates, budgets)
+
+Output files:
+    opt_results/<course>/bids/optimized_costs.csv     Optimal cost allocations per keyword-region-match type
+    opt_results/<course>/cache/feature_matrix.parquet  Cached feature matrix
+
+Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
+    ~5-15 min per course per budget (Gurobi MIP solve; depends on keyword count)
 """
 
 from datetime import datetime
@@ -25,6 +44,7 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_data, merge_with_ads_data, get_conversion_rates
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
+from config import COURSE_CONFIG
 from utils.llm_scoring import get_llm_scores_cached
 from tidy_get_data import load_or_cache
 from scripts.modeling import _to_float32_csr # necessary to read model correctly
@@ -503,10 +523,23 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--course', default='sys_eng', help='Course name (default: gen_ai)')
+    parser.add_argument('--course', required=True, help='Course name (e.g. gen_ai, ml, sys_eng, sys_think)')
+    parser.add_argument('--embedding-method', default='bert', choices=['bert', 'llm'], help='Embedding method: bert or llm (default: bert)')
+    parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
+    parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
+    parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
     args = parser.parse_args()
 
+    if args.budget is None:
+        args.budget = COURSE_CONFIG[args.course]['budgets']
+
+    embedding_method = args.embedding_method
+
     print(f"Optimizing bids for course: {args.course}")
+    print(f"Embedding method: {embedding_method}")
+    print(f"Budget(s): {args.budget}")
+    print(f"Order budget: {args.order_budget}")
+    print(f"Max purchases objective: {args.max_purch}")
 
     base_dir = Path(f'data/{args.course}')
     
@@ -530,18 +563,25 @@ def main():
         base_dir
     )
 
-    X = X[X['Region'] != 'C'][:10000]  # Filter out region C due to low EPC
+    X = X[X['Region'] != 'C']  # Filter out region C due to low EPC
     
     # Optimize bids using Gurobi
-    model_path = f'models/{args.course}_xgb_clicks_model.joblib'
-    X = X[:10]  # For testing with a smaller subset
-    model, cost_vars, pred_vars, X = optimize_bids(X, model_path, kw_df=kw_df, base_dir=base_dir)
+    model_path = f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib'
 
-    # Extract solution and validate predictions
-    results_df = extract_solution(model, cost_vars, pred_vars, model_path, X)
-    if results_df is not None:
-        results_df.to_csv(res_dir / 'optimized_costs.csv', index=False)
-        print(f"[Info] Optimization results saved to '{res_dir}/optimized_costs.csv'.")
+    for b in args.budget:
+        print(f"\n--- Budget: {b} ---")
+        model, cost_vars, pred_vars, X_opt = optimize_bids(
+            X.copy(), model_path, budget=b, kw_df=kw_df,
+            order_budget=args.order_budget, max_purch=args.max_purch,
+            base_dir=base_dir
+        )
+
+        # Extract solution and validate predictions
+        results_df = extract_solution(model, cost_vars, pred_vars, model_path, X_opt)
+        if results_df is not None:
+            out_path = res_dir / f'optimized_costs.csv'
+            results_df.to_csv(out_path, index=False)
+            print(f"[Info] Optimization results saved to '{out_path}'.")
 
 
 if __name__ == '__main__':

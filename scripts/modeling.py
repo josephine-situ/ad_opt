@@ -1,6 +1,20 @@
 """
 Prediction modeling for clicks. We only use XGB here as this was found to be the best model in prior experiments.
 Handles training, evaluation, and saving of models. Used in backtests.
+
+Example:
+    python scripts/modeling.py --course ml
+
+Input files:
+    data/<course>/clean/train_<emb>.csv     Training split (from tidy_get_data.py)
+    data/<course>/clean/test_<emb>.csv      Test split     (from tidy_get_data.py)
+
+Output files:
+    models/<course>_xgb_clicks_model_<emb>.joblib   Saved sklearn Pipeline (preprocessor + XGBoost)
+    logs/modeling_<course>_<emb>_*.log               Run log
+
+Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
+    ~1-3 min per course (GridSearchCV with 5-fold CV)
 """
 
 from pathlib import Path
@@ -55,63 +69,6 @@ def evaluate_model(model, X_test, y_test):
     }
 
     return metrics
-
-def train_xgb_mse(df_train, df_test, features, target, param_grid):
-    '''Train and evaluate an XGBoost model for regression using MSE loss. Use CV for hyperparameter tuning.
-    Returns the trained model and prints evaluation metrics.
-    '''
-
-    # Prepare X and y
-    X_train = df_train[features]
-    y_train = df_train[target]
-    X_test = df_test[features]
-    y_test = df_test[target]
-
-    # Define preprocessor
-    categorical_cols = list(X_train.select_dtypes(include=["object", "category", "bool"]).columns)
-    numeric_cols = [c for c in X_train.columns if c not in categorical_cols]
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(with_mean=False), numeric_cols),
-            ('cat', OneHotEncoder(sparse_output=True), categorical_cols)
-        ],
-        remainder='drop' # or 'passthrough' if you want to keep other columns
-    )
-
-    # Define model
-    xgb_model = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
-
-    # Pipeline
-    pipe = Pipeline(
-        steps=[
-            ("preprocess", preprocessor),
-            ("cast", FunctionTransformer(_to_float32_csr, accept_sparse=True)),
-            ("model", xgb_model),
-        ]
-    )
-
-    # Grid search with CV
-    grid_search = GridSearchCV(
-        estimator=pipe,
-        param_grid=param_grid,
-        scoring='neg_mean_squared_error',
-        cv=KFold(n_splits=3, shuffle=True, random_state=42),
-        n_jobs=-1,
-        verbose=1,
-    )
-    
-    grid_search.fit(X_train, y_train)
-
-    # Evaluate best model
-    best_model = grid_search.best_estimator_
-    print(f"Best hyperparameters: {grid_search.best_params_}")
-    train_metrics = evaluate_model(best_model, X_train, y_train)
-    print(f"Training metrics: {train_metrics}")
-    test_metrics = evaluate_model(best_model, X_test, y_test)
-    print(f"Test metrics: {test_metrics}")
-
-    return best_model
-
 
 def train_best_model(df_day, features, day_date):
     """
@@ -188,6 +145,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')
     parser.add_argument('--embedding-method', default='bert', choices=['bert', 'llm'], help='Embedding method: bert or llm (default: bert)')
+    parser.add_argument('--train-only', action='store_true', help='Train on train set only (default: train on full data)')
     args = parser.parse_args()
 
     log_path = setup_tee_logging(
@@ -229,17 +187,33 @@ def main():
     print(f"Using target: {target}")
     print(f"Using {len(features)} features for modeling.")
 
-    # Keep the grid small: embedding complexity primarily scales with the
-    # number of trees and the tree depth. 
-    param_grid = {
-        "model__n_estimators": [5, 10, 20],
-        "model__max_depth": [2, 3, 4],
-        "model__learning_rate": [0.1, 0.3],
-        "model__subsample": [1.0],
-        "model__colsample_bytree": [1.0],
-    }
+    # Use train_best_model for consistency with backtest_daily
+    if args.train_only:
+        df_fit = df_train
+        train_label = "train set only"
+    else:
+        df_fit = pd.concat([df_train, df_test], ignore_index=True)
+        train_label = "full data (train + test)"
 
-    best_model = train_xgb_mse(df_train, df_test, features, target, param_grid)
+    print(f"Training on: {train_label} ({len(df_fit)} rows)")
+
+    best_model, best_params, best_cv_mse, in_sample_mse, in_sample_r2, in_sample_bias = train_best_model(
+        df_fit, features=features, day_date=None
+    )
+
+    # Derive CV R² from CV MSE: R² = 1 - MSE / Var(y)
+    y_var = df_fit[target].var()
+    cv_r2 = 1 - best_cv_mse / y_var if y_var > 0 else float('nan')
+
+    print(f"Best hyperparameters: {best_params}")
+    print(f"CV MSE ({train_label}): {best_cv_mse:.4f}")
+    print(f"CV R2  ({train_label}): {cv_r2:.4f}")
+    print(f"In-sample metrics ({train_label}): {{'MSE': {in_sample_mse:.4f}, 'R2': {in_sample_r2:.4f}, 'Bias': {in_sample_bias:.4f}}}")
+
+    # Held-out test evaluation (only meaningful when --train-only)
+    if args.train_only:
+        test_metrics = evaluate_model(best_model, df_test[features], df_test[target])
+        print(f"Held-out test metrics: {test_metrics}")
 
     # Save the best model
     # Use course-specific and embedding-specific model name
