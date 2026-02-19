@@ -1,0 +1,4 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+harvard online coding classes,A,Exact match,existing searches,50.64000173452551,3.959395346000024,2.3588175147317134,3.9593952,1.7578823197084148e-07
+machine learning projects with source code,USA,Exact match,existing searches,50.64000173452551,6.16212254,4.892733149054566,6.162122,7.672338870889917e-07
+mit data analytics,B,Exact match,existing searches,50.64000173452551,18.125019665,16.320423240897217,18.125021,-1.3158349609909692e-06

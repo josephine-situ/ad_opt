@@ -1,0 +1,2 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+mit deep learning certificate,B,Exact match,existing searches,50.680000507038024,11.109331234000067,9.163042767546514,11.109331,1.0301862118922145e-07

@@ -1,0 +1,4 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+mit business certificate,A,Exact match,existing searches,27.839998790580157,11.052366381600015,9.69759131045591,11.052367,-8.287881687607523e-07
+simplilearn skillup certificate,A,Exact match,existing searches,27.839998790580157,11.052366381600015,9.69759131045591,11.052367,-8.287881687607523e-07
+soft skill training certificate pakistan,A,Exact match,existing searches,27.839998790580157,11.052366381600015,9.69759131045591,11.052367,-8.287881687607523e-07

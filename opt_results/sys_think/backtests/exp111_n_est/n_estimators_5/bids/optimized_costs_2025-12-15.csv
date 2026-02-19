@@ -1,0 +1,6 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+design patterns certification,B,Phrase match,existing searches,11.729999913715819,21.273243401000002,19.80597445721338,21.273245,-1.4567880839422287e-06
+design patterns certification,B,Broad match,existing searches,10.239999869235863,18.378425783,16.822453206858643,18.378426,1.8485546959823296e-07
+system design certification,USA,Broad match,existing,1.3,1.4980551360999999,0.10104564417952866,1.4980551,3.5659020847234046e-08
+ui ux design free course with certificate,B,Phrase match,existing searches,10.239999869235863,18.331664508000003,16.70928425134717,18.331665,-5.310624970888966e-07
+ui ux design free course with certificate,B,Broad match,existing searches,10.239999869235863,18.378425783,16.822453206858643,18.378426,1.8485546959823296e-07

@@ -1,0 +1,5 @@
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
+xpro mit,USA,Broad match,existing searches,38.63000020515356,5.8138389553,4.786336299317028,5.813839,-3.440234763729677e-09
+youth alliance for leadership and development in africa,USA,Exact match,existing searches,38.63000020515356,6.568283899300082,5.686857684128268,6.5682836,3.414082359043391e-07
+youth alliance for leadership and development in africa,USA,Phrase match,existing searches,38.63000020515356,6.568283899300001,5.686857684128187,6.5682836,3.414081550801029e-07
+youth alliance for leadership and development in africa,USA,Broad match,existing searches,38.63000020515356,7.4773368673,6.439612372365918,7.4773364,4.6059223635097624e-07
