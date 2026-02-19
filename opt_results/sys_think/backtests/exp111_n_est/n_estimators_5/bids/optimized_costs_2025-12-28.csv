@@ -1,5 +1,5 @@
-Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff
-certificate in systems thinking,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08
-certification in agentic systems and design,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08
-design patterns certification,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08
-hp certification courses,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08
+Keyword,Region,Match type,Origin,Optimal Cost,Gurobi Pred,Gurobi Pred over Base,Actual Model Pred,Diff,t_Clicks_OptCost
+certificate in systems thinking,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08,1.7983352
+certification in agentic systems and design,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08,1.6371106
+design patterns certification,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08,2.06569
+hp certification courses,B,Exact match,existing searches,2.930000011836193,3.1795109935000005,1.717698735733277,3.179511,-7.675146429519941e-08,1.6371102
