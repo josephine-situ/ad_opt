@@ -7,10 +7,28 @@ import argparse
 import os
 import sys
 
+from google.ads.googleads.client import GoogleAdsClient
+
 ADS_REPORTS = 'ads_reports'
 KEYWORD_PLANNING = 'keyword_planning'
 SEMRUSH = 'semrush'
 VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
+
+# TODO: Put queries into their own module.
+RAW_INPUT_TO_MODELS_QUERY = """
+    SELECT
+        segments.date,
+        search_term_view.search_term,
+        segments.search_term_match_type,
+        campaign.name,
+        metrics.clicks,
+        metrics.conversions_value,
+        customer.currency_code,
+        metrics.cost_micros
+    FROM search_term_view
+    WHERE segments.date BETWEEN '2024-07-01' AND '2026-01-11'
+    ORDER BY segments.date
+"""
 
 def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
@@ -34,25 +52,40 @@ def validate_environment_variables(datasets):
     return True
 
 
-def pull_ads_reports():
+def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str = None):
     """Pull ads reports data from Google Ads."""
-    customer_id = os.getenv('GOOGLE_ADS_CUSTOMER_ID')
-    yaml_path = os.getenv('GOOGLE_ADS_YAML_PATH')
     
     print(f"Pulling ads reports data...")
     print(f"Customer ID: {customer_id}")
-    print(f"Config file: {yaml_path}")
-    # TODO: Implement ads reports pull logic - slightly blocked on approach, but can start with using sheets as input.
+    # TODO: This is completely untested. I think the query is approximately correct,
+    # but we need to run it against an account with real data and compare results
+
+    ads_service = google_ads_client.get_service("GoogleAdsService")
+    stream = ads_service.search_stream(customer_id=customer_id, query=RAW_INPUT_TO_MODELS_QUERY)
+
+    # Process results
+    # TODO: Once we've validated this, we'll need to write it to a file instead of printing
+    # We will also need to add the other GAQL queries
+    for batch in stream:
+        for row in batch.results:
+            date = row.segments.date
+            search_term = row.search_term_view.search_term
+            match_type = row.segments.search_term_match_type.name
+            campaign_name = row.campaign.name
+            clicks = row.metrics.clicks
+            conv_value = row.metrics.conversions_value
+            currency = row.customer.currency_code
+            cost = row.metrics.cost_micros / 1_000_000  # Convert from micros https://groups.google.com/g/adwords-scripts/c/mSl5bxSkwec
+
+            print(f"{date},{search_term},{match_type},{campaign_name},{clicks},{conv_value},{currency},{cost}")
     
 
-def pull_keyword_planning():
+def pull_keyword_planning(google_ads_client: GoogleAdsClient, customer_id: str = None):
     """Pull keyword planning data from Google Ads."""
     customer_id = os.getenv('GOOGLE_ADS_CUSTOMER_ID')
-    yaml_path = os.getenv('GOOGLE_ADS_YAML_PATH')
     
     print(f"Pulling keyword planning data...")
     print(f"Customer ID: {customer_id}")
-    print(f"Config file: {yaml_path}")
     # TODO: Implement keyword planning pull logic.
 
 
@@ -90,12 +123,16 @@ def main():
     # Ensure we have necessary credentials set for the requested datasets
     validate_environment_variables(requested_datasets)
 
+    yaml_path = os.getenv('GOOGLE_ADS_YAML_PATH')
+    google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
+    customer_id = os.getenv('GOOGLE_ADS_CUSTOMER_ID')
+
     if ADS_REPORTS in requested_datasets:
-        pull_ads_reports()
+        pull_ads_reports(google_ads_client, customer_id)
         print(f"Successfully pulled ads_reports data")
     
     if KEYWORD_PLANNING in requested_datasets:
-        pull_keyword_planning()
+        pull_keyword_planning(google_ads_client, customer_id)
         print(f"Successfully pulled keyword_planning data")
     
     if SEMRUSH in requested_datasets:
