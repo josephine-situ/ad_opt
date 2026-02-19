@@ -150,18 +150,22 @@ def pull_keyword_planning(
     print(f"\nReceived {len(response.results)} keyword results:\n")
 
     """
-    The following fields are in our example data, but absent from the API response.
+    The following fields are in our example data, but absent from the API response. They could possibly be derived from this API
      - three_month_change - We could technically calculate this from the monthly volumes we pull by default.
      - yoy_change - I think we'd have to calculate this ourselves by pulling more historical data and comparing volumes per row.
-     - organic_avg_position - Search console data, but blank in example files. Is this used?
-     - organic_impression_share - Search console data, but blank in example files. Is this used?
      
-     The following fields are not in our example data, but should be available using a different API.
-     See above GAQL queries for theoretical implementation ideas.
-     - in_account - Not available from this API (would need to check if keyword exists in account separately)
-     - ad_impression_share - Not available from this API endpoint (this would come from actual campaign data)
+     The following fields are in our example data, not present in the API response, but should be available using a different API.
+     See above GAQL queries for theoretical implementation.
+     - in_account
+     - ad_impression_share
      
-     Segmentation and currency data are set as USD and "All" for now, since those are representative of the examples I have. This may need to change
+     The following fields are not in the API response and are blank in our example data. Are they used?
+     - organic_avg_position
+     - organic_impression_share
+     
+     The following fields are in the example data, but they seem like they don't vary by keyword/are related to the report as a whole?
+     - segmentation - Always appears to be blank on a per row basis, and that we only query for United States? 
+     - currency - Always appears to be USD
     """
 
     # Output header row to match GKP CSV format
