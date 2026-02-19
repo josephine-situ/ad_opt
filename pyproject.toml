@@ -21,6 +21,7 @@ dependencies = [
     "openpyxl>=3.0.10",
     "holidays>=0.83",
     "torch>=2.0.0",
+    "google-ads>=29.1.0",
 ]
 
 [project.optional-dependencies]
