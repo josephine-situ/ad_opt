@@ -13,44 +13,21 @@ from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
 
+from utils.gaql_queries import RAW_INPUT_TO_MODELS_QUERY
+
 ADS_REPORTS = "ads_reports"
 KEYWORD_PLANNING = "keyword_planning"
 SEMRUSH = "semrush"
 VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
 
-# TODO: Put queries into their own module.
-RAW_INPUT_TO_MODELS_QUERY = """
-    SELECT
-        segments.date,
-        search_term_view.search_term,
-        segments.search_term_match_type,
-        campaign.name,
-        metrics.clicks,
-        metrics.conversions_value,
-        customer.currency_code,
-        metrics.cost_micros
-    FROM search_term_view
-    WHERE segments.date BETWEEN '2024-07-01' AND '2026-01-11'
-    ORDER BY segments.date
-"""
-
-# Query to check if keywords exist in account - could provide "In Account" field for GKP output
-KEYWORDS_IN_ACCOUNT_QUERY = """
-    SELECT ad_group_criterion.keyword.text
-    FROM keyword_view
-    WHERE ad_group_criterion.type = KEYWORD
-"""
-
-# Query to get ad impression share for keywords in account - could provide "Ad impression share" field for GKP output
-KEYWORD_IMPRESSION_SHARE_QUERY = """
-    SELECT 
-        ad_group_criterion.keyword.text,
-        metrics.search_impression_share
-    FROM keyword_view
-    WHERE segments.date DURING LAST_30_DAYS
-    AND ad_group_criterion.type = KEYWORD
-"""
-
+def write_to_file(header_parts, row_generator, output_file, delimiter="\t"):
+    """Write data to a file with the given header and rows from a generator."""
+    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=delimiter)
+        # Write header
+        writer.writerow(header_parts)
+        for row in row_generator:
+            writer.writerow(row)
 
 def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
@@ -112,6 +89,46 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
                 )
             )
 
+def generate_rows_from_gkp_response(response):
+    # Write data rows
+    for result in response.results:
+        metrics = result.keyword_metrics
+        keyword = result.text
+        avg_monthly_searches = metrics.avg_monthly_searches if metrics.avg_monthly_searches else ""
+        competition = metrics.competition.name.capitalize() if metrics.competition else ""
+        competition_index = metrics.competition_index if metrics.competition_index else ""
+        low_bid = (
+            metrics.low_top_of_page_bid_micros / 1_000_000
+            if metrics.low_top_of_page_bid_micros
+            else ""
+        )
+        high_bid = (
+            metrics.high_top_of_page_bid_micros / 1_000_000
+            if metrics.high_top_of_page_bid_micros
+            else ""
+        )
+
+        # Build row with base columns
+        row_parts = [
+            keyword,
+            avg_monthly_searches,
+            competition,
+            competition_index,
+            low_bid,
+            high_bid,
+        ]
+
+        # Add monthly search volumes (one column per month)
+        if metrics.monthly_search_volumes:
+            for monthly_vol in metrics.monthly_search_volumes:
+                row_parts.append(
+                    monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
+                )
+        else:
+            row_parts.extend(
+                ["" * 12]
+            )  # Add empty columns if no monthly data is available to match examples more closely
+        yield row_parts
 
 def pull_keyword_planning(
     google_ads_client: GoogleAdsClient, customer_id: str, keyword_planning_input_file: str, output_course: str
@@ -135,7 +152,6 @@ def pull_keyword_planning(
     print(f"Pulling keyword planning data...")
     print(f"Customer ID: {customer_id}")
     print(f"Keywords file: {keyword_planning_input_file}")
-    # TODO: Limit to 10k keywords. That's the per-request limit
     num_keywords = len(keywords)
     if num_keywords > 10_000:
         print(
@@ -186,53 +202,7 @@ def pull_keyword_planning(
     # I know this is a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f, delimiter='\t')
-        
-        # Write header
-        writer.writerow(header_parts)
-        
-        # Write data rows
-        for result in response.results:
-            metrics = result.keyword_metrics
-            keyword = result.text
-            avg_monthly_searches = metrics.avg_monthly_searches if metrics.avg_monthly_searches else ""
-            competition = metrics.competition.name.capitalize() if metrics.competition else ""
-            competition_index = metrics.competition_index if metrics.competition_index else ""
-            low_bid = (
-                metrics.low_top_of_page_bid_micros / 1_000_000
-                if metrics.low_top_of_page_bid_micros
-                else ""
-            )
-            high_bid = (
-                metrics.high_top_of_page_bid_micros / 1_000_000
-                if metrics.high_top_of_page_bid_micros
-                else ""
-            )
-
-            # Build row with base columns
-            row_parts = [
-                keyword,
-                avg_monthly_searches,
-                competition,
-                competition_index,
-                low_bid,
-                high_bid,
-            ]
-
-            # Add monthly search volumes (one column per month)
-            if metrics.monthly_search_volumes:
-                for monthly_vol in metrics.monthly_search_volumes:
-                    row_parts.append(
-                        monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
-                    )
-            else:
-                row_parts.extend(
-                    ["" * 12]
-                )  # Add empty columns if no monthly data is available to match examples more closely
-
-            writer.writerow(row_parts)
-    
+    write_to_file(header_parts, generate_rows_from_gkp_response(response), output_file)
     print(f"Keyword planning data written to: {output_file}")
 
 
