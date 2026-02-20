@@ -163,3 +163,5 @@ notebooks
 *.synctex.gz
 *.nav
 *.snm
+
+google-ads.yaml
