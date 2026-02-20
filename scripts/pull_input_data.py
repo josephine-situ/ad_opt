@@ -90,7 +90,6 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
             )
 
 def generate_rows_from_gkp_response(response):
-    # Write data rows
     for result in response.results:
         metrics = result.keyword_metrics
         keyword = result.text
@@ -108,7 +107,6 @@ def generate_rows_from_gkp_response(response):
             else ""
         )
 
-        # Build row with base columns
         row_parts = [
             keyword,
             avg_monthly_searches,
@@ -160,7 +158,6 @@ def pull_keyword_planning(
         sys.exit(1)
     print(f"Loaded {num_keywords} keywords")
 
-    # Initialize keyword plan idea service
     keyword_plan_idea_service = google_ads_client.get_service("KeywordPlanIdeaService")
 
     # Set up request for historical metrics
@@ -199,7 +196,7 @@ def pull_keyword_planning(
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H-%M-%S")
-    # I know this is a TSV, but the rest of the code picks up csvs. We can change that later
+    # This is technically a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
     write_to_file(header_parts, generate_rows_from_gkp_response(response), output_file)
