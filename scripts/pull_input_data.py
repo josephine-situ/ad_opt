@@ -20,14 +20,16 @@ KEYWORD_PLANNING = "keyword_planning"
 SEMRUSH = "semrush"
 VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
 
+
 def write_to_file(header_parts, row_generator, output_file, delimiter="\t"):
     """Write data to a file with the given header and rows from a generator."""
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter=delimiter)
         # Write header
         writer.writerow(header_parts)
         for row in row_generator:
             writer.writerow(row)
+
 
 def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
@@ -55,7 +57,10 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
     print(f"Customer ID: {customer_id}")
     # TODO: This is completely untested. I think the query is approximately correct,
     # but since I have no actual data in my account, I can only validate that the query runs without error.
-    query = RAW_INPUT_TO_MODELS_QUERY.format(start_date=(datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d"), end_date=datetime.now().strftime("%Y-%m-%d"))
+    query = RAW_INPUT_TO_MODELS_QUERY.format(
+        start_date=(datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d"),
+        end_date=datetime.now().strftime("%Y-%m-%d"),
+    )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
@@ -88,6 +93,7 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
                     ]
                 )
             )
+
 
 def generate_rows_from_gkp_response(response):
     for result in response.results:
@@ -128,8 +134,12 @@ def generate_rows_from_gkp_response(response):
             )  # Add empty columns if no monthly data is available to match examples more closely
         yield row_parts
 
+
 def pull_keyword_planning(
-    google_ads_client: GoogleAdsClient, customer_id: str, keyword_planning_input_file: str, output_course: str
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    keyword_planning_input_file: str,
+    output_course: str,
 ):
     """Pull keyword planning data from Google Ads using generate_keyword_historical_metrics.
 
@@ -192,7 +202,7 @@ def pull_keyword_planning(
 
     # Create output directory and filename
     output_dir = Path(f"data/{output_course}/gkp")
-    
+
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H-%M-%S")
@@ -231,9 +241,9 @@ def main():
         "--output-course",
         type=str,
         default="",
-        choices=['gen_ai', 'ml', 'sys_eng', 'sys_think'],
+        choices=["gen_ai", "ml", "sys_eng", "sys_think"],
         required=True,
-        help="The course to pull data for, determines the location of the file outputs."
+        help="The course to pull data for, determines the location of the file outputs.",
     )
 
     args = parser.parse_args()
@@ -260,7 +270,9 @@ def main():
         print(f"Successfully pulled ads_reports data")
 
     if KEYWORD_PLANNING in requested_datasets:
-        pull_keyword_planning(google_ads_client, customer_id, args.keyword_planning_input_file, args.output_course)
+        pull_keyword_planning(
+            google_ads_client, customer_id, args.keyword_planning_input_file, args.output_course
+        )
         print(f"Successfully pulled keyword_planning data")
 
     if SEMRUSH in requested_datasets:
