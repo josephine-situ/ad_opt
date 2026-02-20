@@ -211,6 +211,7 @@ def pull_semrush():
     api_key = os.getenv("SEMRUSH_API_KEY")
 
     print(f"Pulling SEMrush data...")
+    raise NotImplementedError
     # TODO: Implement SEMrush pull logic - blocked on API access atm
 
 
