@@ -4,9 +4,12 @@ Script to pull input data from various sources (ads reports, keyword planning, S
 """
 
 import argparse
+import csv
 import os
 import sys
 from pathlib import Path
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
 
@@ -111,7 +114,7 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
 
 
 def pull_keyword_planning(
-    google_ads_client: GoogleAdsClient, customer_id: str, keyword_planning_input_file: str
+    google_ads_client: GoogleAdsClient, customer_id: str, keyword_planning_input_file: str, output_course: str
 ):
     """Pull keyword planning data from Google Ads using generate_keyword_historical_metrics.
 
@@ -119,6 +122,7 @@ def pull_keyword_planning(
         google_ads_client: GoogleAdsClient instance
         customer_id: Google Ads customer ID
         keyword_planning_input_file: Path to file containing keywords (one per line)
+        output_course: {gen_ai, ml, sys_eng, sys_think} - determines output location for the pulled data
     """
     # Read keywords from file
     if not keyword_planning_input_file:
@@ -132,7 +136,13 @@ def pull_keyword_planning(
     print(f"Customer ID: {customer_id}")
     print(f"Keywords file: {keyword_planning_input_file}")
     # TODO: Limit to 10k keywords. That's the per-request limit
-    print(f"Loaded {len(keywords)} keywords")
+    num_keywords = len(keywords)
+    if num_keywords > 10_000:
+        print(
+            f"Warning: {num_keywords} keywords provided, but the API only supports up to 10,000 keywords per request."
+        )
+        sys.exit(1)
+    print(f"Loaded {num_keywords} keywords")
 
     # Initialize keyword plan idea service
     keyword_plan_idea_service = google_ads_client.get_service("KeywordPlanIdeaService")
@@ -148,29 +158,6 @@ def pull_keyword_planning(
     response = keyword_plan_idea_service.generate_keyword_historical_metrics(request=request)
 
     print(f"\nReceived {len(response.results)} keyword results:\n")
-
-    """
-    The following fields are in our example data, but absent from the API response. They could possibly be derived from this API
-     - three_month_change - We could technically calculate this from the monthly volumes we pull by default.
-     - yoy_change - I think we'd have to calculate this ourselves by pulling more historical data and comparing volumes per row.
-     
-     The following fields are in our example data, not present in the API response, but should be available using a different API.
-     See above GAQL queries for theoretical implementation.
-     - in_account
-     - ad_impression_share
-     
-     The following fields are not in the API response and are blank in our example data. Are they used?
-     - organic_avg_position
-     - organic_impression_share
-     
-     The following fields are in the example data, but they seem like they don't vary by keyword/are related to the report as a whole?
-     - segmentation - Always appears to be blank on a per row basis, and that we only query for United States? 
-     - currency - Always appears to be USD
-    """
-
-    # Output header row to match GKP CSV format
-    from datetime import datetime
-    from dateutil.relativedelta import relativedelta
 
     header_parts = [
         "Keyword",
@@ -190,48 +177,63 @@ def pull_keyword_planning(
         year = month_date.year
         header_parts.append(f"Searches: {month_name} {year}")
 
-    print("\t".join(header_parts))
+    # Create output directory and filename
+    output_dir = Path(f"data/{output_course}/gkp")
+    
+    now = datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H-%M-%S")
+    # I know this is a TSV, but the rest of the code picks up csvs. We can change that later
+    output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
-    result_data = []
-    for result in response.results:
-        metrics = result.keyword_metrics
-        keyword = result.text
-        avg_monthly_searches = metrics.avg_monthly_searches if metrics.avg_monthly_searches else ""
-        competition = metrics.competition.name.capitalize() if metrics.competition else ""
-        competition_index = metrics.competition_index if metrics.competition_index else ""
-        low_bid = (
-            metrics.low_top_of_page_bid_micros / 1_000_000
-            if metrics.low_top_of_page_bid_micros
-            else ""
-        )
-        high_bid = (
-            metrics.high_top_of_page_bid_micros / 1_000_000
-            if metrics.high_top_of_page_bid_micros
-            else ""
-        )
+    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter='\t')
+        
+        # Write header
+        writer.writerow(header_parts)
+        
+        # Write data rows
+        for result in response.results:
+            metrics = result.keyword_metrics
+            keyword = result.text
+            avg_monthly_searches = metrics.avg_monthly_searches if metrics.avg_monthly_searches else ""
+            competition = metrics.competition.name.capitalize() if metrics.competition else ""
+            competition_index = metrics.competition_index if metrics.competition_index else ""
+            low_bid = (
+                metrics.low_top_of_page_bid_micros / 1_000_000
+                if metrics.low_top_of_page_bid_micros
+                else ""
+            )
+            high_bid = (
+                metrics.high_top_of_page_bid_micros / 1_000_000
+                if metrics.high_top_of_page_bid_micros
+                else ""
+            )
 
-        # Build row with base columns
-        row_parts = [
-            keyword,
-            avg_monthly_searches,
-            competition,
-            competition_index,
-            low_bid,
-            high_bid,
-        ]
+            # Build row with base columns
+            row_parts = [
+                keyword,
+                avg_monthly_searches,
+                competition,
+                competition_index,
+                low_bid,
+                high_bid,
+            ]
 
-        # Add monthly search volumes (one column per month)
-        if metrics.monthly_search_volumes:
-            for monthly_vol in metrics.monthly_search_volumes:
-                row_parts.append(
-                    monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
-                )
-        else:
-            row_parts.extend(
-                ["" * 12]
-            )  # Add empty columns if no monthly data is available to match examples more closely
+            # Add monthly search volumes (one column per month)
+            if metrics.monthly_search_volumes:
+                for monthly_vol in metrics.monthly_search_volumes:
+                    row_parts.append(
+                        monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
+                    )
+            else:
+                row_parts.extend(
+                    ["" * 12]
+                )  # Add empty columns if no monthly data is available to match examples more closely
 
-        print("\t".join(str(p) for p in row_parts))
+            writer.writerow(row_parts)
+    
+    print(f"Keyword planning data written to: {output_file}")
 
 
 def pull_semrush():
@@ -242,6 +244,7 @@ def pull_semrush():
     # TODO: Implement SEMrush pull logic - blocked on API access atm
 
 
+# TODO: Need to figure out if all courses are in one account (and if so, how they're organized) or if we have one course per like in the example I've got
 def main():
     parser = argparse.ArgumentParser(description="Pull input data from various sources")
     parser.add_argument(
@@ -255,6 +258,14 @@ def main():
         type=str,
         default="",
         help="Location of a list of keywords to pull planning data for (required if keyword_planning dataset is selected). File should be a single keyword per line",
+    )
+    parser.add_argument(
+        "--output-course",
+        type=str,
+        default="",
+        choices=['gen_ai', 'ml', 'sys_eng', 'sys_think'],
+        required=True,
+        help="The course to pull data for, determines the location of the file outputs."
     )
 
     args = parser.parse_args()
@@ -281,7 +292,7 @@ def main():
         print(f"Successfully pulled ads_reports data")
 
     if KEYWORD_PLANNING in requested_datasets:
-        pull_keyword_planning(google_ads_client, customer_id, args.keyword_planning_input_file)
+        pull_keyword_planning(google_ads_client, customer_id, args.keyword_planning_input_file, args.output_course)
         print(f"Successfully pulled keyword_planning data")
 
     if SEMRUSH in requested_datasets:
