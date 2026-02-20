@@ -54,13 +54,13 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
     print(f"Pulling ads reports data...")
     print(f"Customer ID: {customer_id}")
     # TODO: This is completely untested. I think the query is approximately correct,
-    # but since I have no actual data in my account, I can't actually validate anything.
+    # but since I have no actual data in my account, I can only validate that the query runs without error.
+    query = RAW_INPUT_TO_MODELS_QUERY.format(start_date=(datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d"), end_date=datetime.now().strftime("%Y-%m-%d"))
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
-    stream = ads_service.search_stream(customer_id=customer_id, query=RAW_INPUT_TO_MODELS_QUERY)
+    stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
     # TODO: Once we've validated this, we'll need to write it to a file instead of printing
-    # We will also need to add the other GAQL queries
     for batch in stream:
         for row in batch.results:
             date = row.segments.date
