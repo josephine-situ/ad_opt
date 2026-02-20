@@ -122,7 +122,7 @@ def generate_rows_from_gkp_response(response, date_headers):
             "Top of page bid (high range)": high_bid,
         }
 
-        # Add monthly search volumes (one column per month)
+        # Add monthly search volumes (one column per month). If no monthly search volume is available, we don't zero pad it for consistency w/ the UI
         if metrics.monthly_search_volumes:
             for monthly_vol in metrics.monthly_search_volumes:
                 row_parts[
@@ -229,7 +229,9 @@ def pull_keyword_planning(
     # This is technically a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
-    write_to_file(header_parts, generate_rows_from_gkp_response(response, date_header_parts), output_file)
+    write_to_file(
+        header_parts, generate_rows_from_gkp_response(response, date_header_parts), output_file
+    )
     print(f"Keyword planning data written to: {output_file}")
 
 
