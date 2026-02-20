@@ -24,9 +24,9 @@ VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
 def write_to_file(header_parts, row_generator, output_file, delimiter="\t"):
     """Write data to a file with the given header and rows from a generator."""
     with open(output_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f, delimiter=delimiter)
+        writer = csv.DictWriter(f, fieldnames=header_parts, delimiter=delimiter, restval="0")
         # Write header
-        writer.writerow(header_parts)
+        writer.writeheader()
         for row in row_generator:
             writer.writerow(row)
 
@@ -95,7 +95,7 @@ def pull_ads_reports(google_ads_client: GoogleAdsClient, customer_id: str):
             )
 
 
-def generate_rows_from_gkp_response(response):
+def generate_rows_from_gkp_response(response, date_headers):
     for result in response.results:
         metrics = result.keyword_metrics
         keyword = result.text
@@ -113,25 +113,25 @@ def generate_rows_from_gkp_response(response):
             else ""
         )
 
-        row_parts = [
-            keyword,
-            avg_monthly_searches,
-            competition,
-            competition_index,
-            low_bid,
-            high_bid,
-        ]
+        row_parts = {
+            "Keyword": keyword,
+            "Avg. monthly searches": avg_monthly_searches,
+            "Competition": competition,
+            "Competition (indexed value)": competition_index,
+            "Top of page bid (low range)": low_bid,
+            "Top of page bid (high range)": high_bid,
+        }
 
         # Add monthly search volumes (one column per month)
         if metrics.monthly_search_volumes:
             for monthly_vol in metrics.monthly_search_volumes:
-                row_parts.append(
-                    monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
-                )
+                row_parts[
+                    f"Searches: {monthly_vol.month.name[:3].capitalize()} {monthly_vol.year}"
+                ] = (monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0)
         else:
-            row_parts.extend(
-                ["" * 12]
-            )  # Add empty columns if no monthly data is available to match examples more closely
+            for header in date_headers:
+                row_parts[header] = ""
+
         yield row_parts
 
 
@@ -177,6 +177,24 @@ def pull_keyword_planning(
     # Not sure if this is actually required/desirable?
     request.keyword_plan_network = google_ads_client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
 
+    # Set historical metrics options to get trailing 12 months
+    historical_metrics_options = google_ads_client.get_type("HistoricalMetricsOptions")
+    current_date = datetime.now()
+    start_date = current_date - relativedelta(months=12)
+    # End date is last month (since current month data isn't complete)
+    end_date = current_date - relativedelta(months=1)
+
+    month_of_year_enum = google_ads_client.enums.MonthOfYearEnum
+    historical_metrics_options.year_month_range.start.year = start_date.year
+    historical_metrics_options.year_month_range.start.month = getattr(
+        month_of_year_enum, start_date.strftime("%B").upper()
+    )
+    historical_metrics_options.year_month_range.end.year = end_date.year
+    historical_metrics_options.year_month_range.end.month = getattr(
+        month_of_year_enum, end_date.strftime("%B").upper()
+    )
+    request.historical_metrics_options = historical_metrics_options
+
     print("Fetching historical metrics from Google Ads...")
     response = keyword_plan_idea_service.generate_keyword_historical_metrics(request=request)
 
@@ -191,25 +209,27 @@ def pull_keyword_planning(
         "Top of page bid (high range)",
     ]
 
-    # Add monthly search volume headers for trailing 12 months. This matches the default timeframe we search for.
-    # We can do this based on API output, but I'm not sure what's conditionally included and what isn't yet.
-    current_date = datetime.now()
-    for i in range(11, -1, -1):
+    # This is a bit squirrely. We observed that the data coming out of the API is pretty sparse
+    # We can't rely on it having an entry for each month in the range we've asked it for, so instead we construct all
+    # possible headers and rely on the DictWriter to fill in missing values with 0s as a restval.
+    date_header_parts = []
+    for i in range(12, 0, -1):
         month_date = current_date - relativedelta(months=i)
         month_name = month_date.strftime("%b")
         year = month_date.year
-        header_parts.append(f"Searches: {month_name} {year}")
+        date_header_parts.append(f"Searches: {month_name} {year}")
+
+    header_parts.extend(date_header_parts)
 
     # Create output directory and filename
     output_dir = Path(f"data/{output_course}/gkp")
 
-    now = datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
-    time_str = now.strftime("%H-%M-%S")
+    date_str = current_date.strftime("%Y-%m-%d")
+    time_str = current_date.strftime("%H-%M-%S")
     # This is technically a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
-    write_to_file(header_parts, generate_rows_from_gkp_response(response), output_file)
+    write_to_file(header_parts, generate_rows_from_gkp_response(response, date_header_parts), output_file)
     print(f"Keyword planning data written to: {output_file}")
 
 
