@@ -14,9 +14,7 @@ from google.api_core import protobuf_helpers
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
-    RAW_INPUT_TO_MODELS_QUERY,
     GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME,
-    GET_CAMPAIGNS_IN_ACCOUNT,
 )
 from config import COURSE_CONFIG
 

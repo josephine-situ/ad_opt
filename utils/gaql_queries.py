@@ -14,9 +14,9 @@ RAW_INPUT_TO_MODELS_QUERY = """
 """
 
 GET_CAMPAIGNS_IN_ACCOUNT = """
-SELECT campaign.id, campaign.name
-FROM campaign
-WHERE campaign.status != 'REMOVED'
+    SELECT campaign.id, campaign.name
+    FROM campaign
+    WHERE campaign.status != 'REMOVED'
 """
 
 GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME = """
