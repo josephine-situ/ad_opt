@@ -183,7 +183,8 @@ def push_cpc(google_ads_client, customer_id, output_course):
         keyword = row["Keyword"]
         region = row["Region"]
         match_type = row["Match type"]
-        optimal_cost = float(row["Optimal Cost"])
+        bid = float(row["Bid"])
+        status = row["Status"]
 
         # Get campaign and corresponding ad group based on row parameters
         campaign_name = construct_campaign_name_for_args(output_course, match_type, region)
@@ -216,20 +217,19 @@ def push_cpc(google_ads_client, customer_id, output_course):
             customer_id, ad_group_id, criterion_id
         )
 
-        # Enable if the cost is non-zero and set cost-per-click. Disable if zero.
-        if optimal_cost == 0.0:
-            # Disable keyword if cost is 0
+        # Enable if status is ENABLED. If enabling, also set the bid.
+        if status == "PAUSED":
             if current_status != google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED:
                 criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED
         else:
-            # Enable keyword if currently disabled and has non-zero cost
+            # Enable keyword if currently disabled
             if current_status == google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED:
                 criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.ENABLED
 
-            criterion.cpc_bid_micros = int(round(optimal_cost, 2) * 1_000_000)
+            criterion.cpc_bid_micros = int(round(bid, 2) * 1_000_000)
 
         print(
-            f'Updating keyword "{keyword}" ({match_type}) in ad group {ad_group_id}: optimal cost ${optimal_cost:.2f}, status {"PAUSED" if optimal_cost == 0.0 else "ENABLED"}'
+            f'Updating keyword "{keyword}" ({match_type}) in ad group {ad_group_id}: optimal cost ${bid:.2f}, status {status}'
         )
 
         # Generate field mask from the updated criterion
