@@ -36,6 +36,30 @@ Output files:
     opt_results/<course>/bids/daily_budget.csv
     opt_results/<course>/bids/daily_budget.tex
 
+Examples:
+    # Calculate bid adjustments for gen_ai course
+    python scripts/bid_post_processing.py --course gen_ai
+    
+    # Calculate with custom minimum clicks threshold
+    python scripts/bid_post_processing.py --course ml --min-clicks 500
+    
+    # Process all courses
+    python scripts/bid_post_processing.py --all-courses
+    
+    # Only add bid column to bids files
+    python scripts/bid_post_processing.py --course gen_ai --skip-adjustments
+    python scripts/bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
+    
+    # Process a specific file or directory
+    python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
+    python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
+
+    # Use experiment name instead of bids-path (resolves to opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids)
+    python scripts/bid_post_processing.py --course ml --exp-name exp107_max_conv --budget 353 --skip-adjustments
+
+    # Only calculate bid adjustments (skip adding bid column)
+    python scripts/bid_post_processing.py --course gen_ai --skip-bids
+
 Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
     <1 min per course
 """
@@ -43,14 +67,18 @@ Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no 
 import argparse
 import pandas as pd
 import numpy as np
+from itertools import product
 from pathlib import Path
 import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.data_cleaning import clean_currency
 from utils.data_pipeline import _extract_region_from_campaign
+
+# Full set of match types and regions used in optimization
+MATCH_TYPES = ['Exact match', 'Phrase match', 'Broad match']
+REGIONS = ['USA', 'A', 'B']
 
 # Bid adjustment limits by category (as decimal, e.g., -0.9 for -90%)
 BID_ADJUSTMENT_LIMITS = {
@@ -329,185 +357,100 @@ def save_bid_adjustments(results: dict, output_dir: Path):
         print(f"  Saved {segment_type} adjustments to {output_file}")
 
 
-def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_n: int = 10):
-    """
-    Generate a LaTeX table showing top increases and decreases in bid adjustments.
-    
-    Args:
-        results: Dictionary with bid adjustments for each segment type
-        output_file: Path to save the LaTeX table
-        min_clicks: Minimum clicks threshold used
-        top_n: Number of top increases/decreases to show
-    """
-    # Map segment types to display names
-    segment_display_names = {
-        'hour_of_day': 'Hour of Day',
-        'device': 'Device',
-        'location': 'Location',
-        'age': 'Age'
-    }
-    
-    # Get the segment column name for each type
-    segment_col_names = {
-        'hour_of_day': 'Hour Group',
-        'device': 'Device',
-        'location': 'Targeted location',
-        'age': 'Age'
-    }
-    
-    # Combine all results into one DataFrame
-    all_rows = []
-    for segment_type, df in results.items():
-        if df is None or df.empty:
-            continue
-        
-        segment_col = segment_col_names.get(segment_type, segment_type)
-        # Resolve fallback column name if primary doesn't exist in DataFrame
-        if segment_col not in df.columns:
-            for col in df.columns:
-                if col not in ('Region', 'Clicks', 'All conv.', 'ConversionRate',
-                               'AvgConversionRate', 'BidAdjustment', 'BidAdjustmentPct',
-                               'BidAdjustmentFormatted', 'Campaign'):
-                    segment_col = col
-                    break
-        display_name = segment_display_names.get(segment_type, segment_type)
-        
-        # Only include rows with valid bid adjustments
-        valid_df = df[df['BidAdjustment'].notna()].copy()
-        
-        for _, row in valid_df.iterrows():
-            all_rows.append({
-                'Region': row['Region'],
-                'Segment': display_name,
-                'Value': row[segment_col],
-                'Clicks': row['Clicks'],
-                'Purchases': row['All conv.'],
-                'BidAdjustment': row['BidAdjustment']
-            })
-    
-    if not all_rows:
-        print("  No valid bid adjustments to generate LaTeX table")
-        return
-    
-    combined_df = pd.DataFrame(all_rows)
-    
-    # Count non-zero adjustments
-    non_zero_count = (abs(combined_df['BidAdjustment']) >= 1e-6).sum()
-    
-    # Sort for top increases and decreases
-    sorted_df = combined_df.sort_values('BidAdjustment', ascending=False)
-    top_increases = sorted_df.head(top_n)
-    top_decreases = sorted_df.tail(top_n).iloc[::-1]  # Reverse to show most negative first
-    
-    def format_row(row):
-        """Format a single row for LaTeX."""
-        region = row['Region']
-        segment = row['Segment']
-        value = str(row['Value'])
-        clicks = f"{int(row['Clicks']):,}"
-        conversions = f"{row['Purchases']:.1f}"
-        adj_pct = row['BidAdjustment'] * 100
-        if adj_pct >= 0:
-            adj_str = f"+{adj_pct:.0f}\\%"
-        else:
-            adj_str = f"{adj_pct:.0f}\\%"
-        return f"{region} & {segment} & {value} & {clicks} & {conversions} & {adj_str} \\\\"
-    
-    # Build LaTeX table
-    latex_lines = [
-        r"\begin{table}[h!]",
-        r"\centering",
-        r"\tiny % Sets text size small for single-slide fit",
-        r"\begin{tabular}{lllrrr}",
-        r"\toprule",
-        r"\textbf{Region} & \textbf{Segment} & \textbf{Value} & \textbf{Clicks} & \textbf{Purchases} & \textbf{Bid Adjustment} \\",
-        r"\midrule",
-        r"\multicolumn{6}{c}{\textit{\textbf{Top " + str(top_n) + r" Increases}}} \\",
-        r"\midrule",
-    ]
-    
-    for _, row in top_increases.iterrows():
-        latex_lines.append(format_row(row))
-    
-    latex_lines.extend([
-        r"\midrule",
-        r"\multicolumn{6}{c}{\textit{\textbf{Top " + str(top_n) + r" Decreases}}} \\",
-        r"\midrule",
-    ])
-    
-    for _, row in top_decreases.iterrows():
-        latex_lines.append(format_row(row))
-    
-    latex_lines.extend([
-        r"\bottomrule",
-        r"\multicolumn{6}{l}{\textit{Note: total of " + str(non_zero_count) + r" non-zero bid adjustments.}} \\",
-        r"\multicolumn{6}{l}{\textit{Bid adjustments are only calculated where we have more than " + f"{min_clicks:,}" + r" clicks.}} \\",
-        r"\end{tabular}",
-        r"\end{table}",
-    ])
-    
-    # Write to file
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_file, 'w') as f:
-        f.write('\n'.join(latex_lines))
-    
-    print(f"  Saved LaTeX table to {output_file}")
-
 
 def add_bid_column_to_file(
-    file_path: Path, 
+    file_path: Path,
     bid_multiplier: float = 1.3,
-    output_dir: Path = None
+    output_dir: Path = None,
+    keywords_path: Path = None,
 ) -> pd.DataFrame:
     """
-    Add a 'Bid' column to a bids file.
-    
+    Add 'Bid' and 'Status' columns to a bids file.
+
+    When *keywords_path* is provided the output contains one row for every
+    keyword x match type x region combination from the classified keyword list.
+    Keywords not selected by the optimiser receive Optimal Cost = 0 and
+    Status = PAUSED.  Selected keywords get Status = ENABLED.
+
     Bid = Optimal Cost / Gurobi Pred over Base * multiplier
-    
+
     Args:
-        file_path: Path to the bids CSV file
-        bid_multiplier: Multiplier for bid calculation (default: 1.3)
-        output_dir: Output directory (if None, overwrites original)
-    
+        file_path: Path to the bids CSV file (from optimization.py).
+        bid_multiplier: Multiplier for bid calculation (default: 1.3).
+        output_dir: Output directory (if None, overwrites original).
+        keywords_path: Path to keywords_classified.csv.  When provided the
+            output will contain every keyword x match-type x region.
+
     Returns:
-        DataFrame with Bid column added
+        DataFrame with Bid and Status columns added.
     """
     df = pd.read_csv(file_path)
-    
+
     # Check if required columns exist
     if 'Optimal Cost' not in df.columns:
         print(f"  Warning: 'Optimal Cost' column not found in {file_path.name}")
         return df
-    
-    if 'Gurobi Pred over Base' not in df.columns:
-        print(f"  Warning: 'Gurobi Pred over Base' column not found in {file_path.name}")
-        return df
-    
+
+    # --- Expand to full keyword roster if keywords_classified provided ---
+    if keywords_path is not None and keywords_path.exists():
+        kw_df = pd.read_csv(keywords_path)
+        all_keywords = kw_df['Keyword'].tolist()
+        full_roster = pd.DataFrame(
+            list(product(all_keywords, REGIONS, MATCH_TYPES)),
+            columns=['Keyword', 'Region', 'Match type'],
+        )
+        # Bring in Origin column
+        full_roster = full_roster.merge(
+            kw_df[['Keyword', 'Origin']], on='Keyword', how='left',
+        )
+        # Left-join optimisation results onto the full roster
+        merge_cols = ['Keyword', 'Region', 'Match type']
+        df = full_roster.merge(df, on=merge_cols, how='left', suffixes=('', '_opt'))
+        # If Origin existed in both, keep the roster version
+        if 'Origin_opt' in df.columns:
+            df = df.drop(columns=['Origin_opt'])
+        print(f"  Expanded to {len(df)} rows using {keywords_path.name}")
+
     # Calculate bid: Optimal Cost / Gurobi Pred over Base * multiplier
-    # Handle division by zero or near-zero
+    if 'Gurobi Pred over Base' in df.columns:
+        denom = df['Gurobi Pred over Base']
+    else:
+        denom = pd.Series(0.0, index=df.index)
+        print(f"  Warning: 'Gurobi Pred over Base' not found in {file_path.name}; Bid set to 0")
+
     df['Bid'] = np.where(
-        df['Gurobi Pred over Base'] > 0.0001,  # Avoid division by very small numbers
-        df['Optimal Cost'] / df['Gurobi Pred over Base'] * bid_multiplier,
-        0.0
+        denom > 0.0001,
+        df['Optimal Cost'] / denom * bid_multiplier,
+        0.0,
     )
-    
+
+    # Status: ENABLED when bid > 0, PAUSED otherwise
+    df['Status'] = np.where(df['Bid'] > 0, 'ENABLED', 'PAUSED')
+
+    # Sort: ENABLED keywords first (by Optimal Cost desc, then Bid desc)
+    df = df.sort_values(
+        ['Optimal Cost', 'Bid'], ascending=[False, False],
+    ).reset_index(drop=True)
+
     # Determine output path
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / file_path.name
     else:
         output_file = file_path
-    
+
     df.to_csv(output_file, index=False)
-    print(f"  Added Bid column to {output_file}")
-    
+    enabled = (df['Status'] == 'ENABLED').sum()
+    print(f"  Saved {output_file}  ({enabled} ENABLED / {len(df)} total)")
+
     return df
 
 
 def process_bids(
     bids_path: Path, 
     bid_multiplier: float = 1.3,
-    output_dir: Path = None
+    output_dir: Path = None,
+    keywords_path: Path = None,
 ):
     """
     Process bids file(s) - can be a single file or a directory.
@@ -516,6 +459,8 @@ def process_bids(
         bids_path: Path to a bids CSV file or directory containing them
         bid_multiplier: Multiplier for bid calculation
         output_dir: Output directory (if None, overwrites original files)
+        keywords_path: Path to keywords_classified.csv (passed to
+            add_bid_column_to_file so that every keyword gets a row).
     """
     if not bids_path.exists():
         print(f"Warning: Bids path not found: {bids_path}")
@@ -524,7 +469,8 @@ def process_bids(
     if bids_path.is_file():
         # Process single file
         print(f"  Processing single bids file: {bids_path.name}")
-        add_bid_column_to_file(bids_path, bid_multiplier, output_dir)
+        add_bid_column_to_file(bids_path, bid_multiplier, output_dir,
+                               keywords_path=keywords_path)
         return
     
     # It's a directory
@@ -538,107 +484,24 @@ def process_bids(
     print(f"  Found {len(bids_files)} bids file(s) to process in {bids_path}")
     
     for file_path in bids_files:
-        add_bid_column_to_file(file_path, bid_multiplier, output_dir)
+        add_bid_column_to_file(file_path, bid_multiplier, output_dir,
+                               keywords_path=keywords_path)
 
 
-def generate_example_bid_table(
-    bids_path: Path,
-    output_dir: Path,
-    bid_multiplier: float = 1.3,
-    top_n: int = 20,
-):
-    """
-    Generate an example output bid table (.tex) from the first bids file found.
-
-    The table is sorted by daily budget (Optimal Cost) descending, then base bid
-    descending, and shows the top *top_n* rows with columns:
-    Keyword, Region, Match Type, Base Bid.
-
-    Args:
-        bids_path: Path to a single CSV or a directory containing optimized_costs*.csv
-        output_dir: Directory to write the .tex file into
-        bid_multiplier: Multiplier used when the Bid column needs to be computed
-        top_n: Number of rows to include
-    """
-    # Find the first bids file
-    if bids_path.is_file():
-        first_file = bids_path
-    else:
-        files = sorted(bids_path.rglob("optimized_costs*.csv"))
-        if not files:
-            print(f"  No optimized_costs*.csv files found in {bids_path}")
-            return
-        first_file = files[0]
-
-    print(f"  Generating example bid table from {first_file.name} ...")
-    df = pd.read_csv(first_file)
-
-    # Ensure a Bid column exists
-    if 'Bid' not in df.columns:
-        if 'Gurobi Pred over Base' in df.columns:
-            df['Bid'] = np.where(
-                df['Gurobi Pred over Base'] > 0.0001,
-                df['Optimal Cost'] / df['Gurobi Pred over Base'] * bid_multiplier,
-                0.0,
-            )
-        else:
-            # Fallback: use Optimal Cost as the bid proxy
-            df['Bid'] = df['Optimal Cost']
-
-    # Sort by Optimal Cost desc, then Bid desc
-    df = df.sort_values(
-        ['Optimal Cost', 'Bid'], ascending=[False, False]
-    ).head(top_n)
-
-    # Build LaTeX
-    lines = [
-        r"\begin{table}[h!]",
-        r"\centering",
-        r"\resizebox{\textwidth}{!}{%",
-        r"\begin{tabular}{llll}",
-        r"\toprule",
-        r"\textbf{Keyword} & \textbf{Region} & \textbf{Match Type} & \textbf{Base Bid (\$)} \\",
-        r"\midrule",
-    ]
-
-    for _, row in df.iterrows():
-        kw = str(row['Keyword']).replace('&', r'\&').replace('_', r'\_')
-        region = str(row['Region'])
-        mt = str(row['Match type'])
-        bid = f"{row['Bid']:.2f}"
-        lines.append(f"{kw} & {region} & {mt} & {bid} \\\\")
-
-    lines.extend([
-        r"\bottomrule",
-        r"\end{tabular}%",
-        r"}",
-        r"\caption{Example optimized bids (top " + str(top_n) + r", sorted by daily budget then base bid).}",
-        r"\end{table}",
-    ])
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    tex_path = output_dir / 'example_bids.tex'
-    with open(tex_path, 'w') as f:
-        f.write('\n'.join(lines))
-    print(f"  Saved example bid table to {tex_path}")
-
-
-def generate_daily_budget_table(
+def generate_daily_budget_csv(
     bids_path: Path,
     output_dir: Path,
 ):
     """
-    Generate a daily budget summary (.csv and .tex).
+    Generate a daily budget summary CSV.
 
     The daily budget is the sum of Optimal Cost for each (Region, Match type)
-    combination -- e.g., one value for USA + Exact match, another for USA +
-    Phrase match, etc.
+    combination.
 
     Args:
         bids_path: Path to a single CSV or a directory with optimized_costs*.csv
-        output_dir: Directory to write the outputs into
+        output_dir: Directory to write the CSV into
     """
-    # Find the first bids file
     if bids_path.is_file():
         first_file = bids_path
     else:
@@ -648,7 +511,7 @@ def generate_daily_budget_table(
             return
         first_file = files[0]
 
-    print(f"  Generating daily budget table from {first_file.name} ...")
+    print(f"  Generating daily budget CSV from {first_file.name} ...")
     df = pd.read_csv(first_file)
 
     budget_df = (
@@ -660,75 +523,16 @@ def generate_daily_budget_table(
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # --- CSV ---
     csv_path = output_dir / 'daily_budget.csv'
     budget_df.to_csv(csv_path, index=False)
     print(f"  Saved daily budget CSV to {csv_path}")
 
-    # --- LaTeX ---
-    lines = [
-        r"\begin{table}[h!]",
-        r"\centering",
-        r"\resizebox{\textwidth}{!}{%",
-        r"\begin{tabular}{llr}",
-        r"\toprule",
-        r"\textbf{Region} & \textbf{Match Type} & \textbf{Daily Budget (\$)} \\",
-        r"\midrule",
-    ]
-
-    for _, row in budget_df.iterrows():
-        region = str(row['Region'])
-        mt = str(row['Match type'])
-        budget = f"{row['Daily Budget']:.2f}"
-        lines.append(f"{region} & {mt} & {budget} \\\\")
-
-    # Add a total row
-    total = budget_df['Daily Budget'].sum()
-    lines.extend([
-        r"\midrule",
-        f"\\textbf{{Total}} & & \\textbf{{{total:.2f}}} \\\\",
-        r"\bottomrule",
-        r"\end{tabular}%",
-        r"}",
-        r"\caption{Daily budget by region and match type.}",
-        r"\end{table}",
-    ])
-
-    tex_path = output_dir / 'daily_budget.tex'
-    with open(tex_path, 'w') as f:
-        f.write('\n'.join(lines))
-    print(f"  Saved daily budget LaTeX to {tex_path}")
-
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Post-processing for bid optimization: calculate bid adjustments and add bid column.",
+        description="Post-processing for bid optimization (Google Ads upload). "
+                    "For presentation (.tex) outputs see bid_presentation.py.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-        Examples:
-            # Calculate bid adjustments for gen_ai course
-            python scripts/bid_post_processing.py --course gen_ai
-            
-            # Calculate with custom minimum clicks threshold
-            python scripts/bid_post_processing.py --course ml --min-clicks 500
-            
-            # Process all courses
-            python scripts/bid_post_processing.py --all-courses
-            
-            # Only add bid column to bids files with custom multiplier
-            python scripts/bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
-            
-            # Process a specific file or directory
-            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
-            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
-
-            # Use experiment name instead of bids-path (resolves to opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids)
-            python scripts/bid_post_processing.py --course ml --exp-name exp107_max_conv --budget 353 --skip-adjustments
-
-            # Only calculate bid adjustments (skip adding bid column)
-            python scripts/bid_post_processing.py --course gen_ai --skip-bids
-        """
     )
     
     parser.add_argument(
@@ -815,6 +619,8 @@ def main():
         print(f"\n{'='*60}")
         print(f"Processing: {course.upper()}")
         print('='*60)
+
+        keywords_path = data_base / course / 'gkp' / 'keywords_classified.csv'
         
         # --- Bid Adjustments ---
         if not args.skip_adjustments:
@@ -836,10 +642,6 @@ def main():
                         
                         # Save results
                         save_bid_adjustments(results, output_dir)
-                        
-                        # Generate LaTeX table
-                        latex_file = output_dir / 'bid_adjustments_table.tex'
-                        generate_latex_table(results, latex_file, args.min_clicks)
                         
                         # Print summary
                         print(f"\n  --- Bid Adjustments Summary ---")
@@ -866,14 +668,14 @@ def main():
         else:
             bids_path = project_root / 'opt_results' / course / 'bids'
 
-        # --- Add Bid Column to Bids Files ---
+        # --- Add Bid + Status columns to bids files ---
         if not args.skip_bids:
             print(f"\n  --- Processing Bids Files (multiplier={args.bid_multiplier}) ---")
-            process_bids(bids_path, args.bid_multiplier)
+            process_bids(bids_path, args.bid_multiplier,
+                         keywords_path=keywords_path)
 
-        # --- Example Bid Table & Daily Budget ---
+        # --- Daily Budget CSV ---
         if bids_path.exists():
-            # Determine output directory for tables
             if args.exp_name:
                 tables_dir = (
                     project_root / 'opt_results' / course / 'backtests'
@@ -884,12 +686,7 @@ def main():
             else:
                 tables_dir = project_root / 'opt_results' / course / 'bids'
 
-            print(f"\n  --- Generating Example Tables ---")
-            generate_example_bid_table(
-                bids_path, tables_dir,
-                bid_multiplier=args.bid_multiplier,
-            )
-            generate_daily_budget_table(bids_path, tables_dir)
+            generate_daily_budget_csv(bids_path, tables_dir)
 
     print("\nDone!")
 
