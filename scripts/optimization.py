@@ -106,7 +106,7 @@ def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
     return embedding_df
     
 
-def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai'):
+def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai', raw_emb_map=None, svd_pipeline=None):
     """
     Create feature matrix for optimization.
     
@@ -117,6 +117,11 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         base_dir: Base directory for data files.
         embedding_method: 'bert' for BERT embeddings or 'llm' for LLM relevance scores.
         course: Course identifier ('gen_ai', 'ml', 'sys_eng') - used for LLM scoring.
+        raw_emb_map: Optional dict {keyword: raw_embedding_vector}. When provided
+                     with *svd_pipeline*, embeddings are computed on-the-fly instead
+                     of loading the saved pipeline.
+        svd_pipeline: Optional fitted SVD pipeline dict (from
+                      ``fit_svd_pipeline``).  Used together with *raw_emb_map*.
     
     Returns:
         DataFrame with all features for optimization.
@@ -159,10 +164,23 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         X['llm_relevance_score'] = X['llm_relevance_score'].fillna(3)
         embedding_cols = ['llm_relevance_score']
     else:
-        print(f"[Info] Using BERT embeddings")
-        emb_df = get_emb_from_pipeline(keywords, base_dir)
-        X = X.merge(emb_df, on='Keyword', how='left')
-        embedding_cols = [col for col in X.columns if col.startswith('bert_')]
+        if raw_emb_map is not None and svd_pipeline is not None:
+            # Use provided SVD pipeline (daily backtest / oracle evaluation)
+            from utils.embeddings import apply_svd_pipeline
+            unique_kw_in_X = X['Keyword'].unique().tolist()
+            raw_matrix = np.array([raw_emb_map[kw] for kw in unique_kw_in_X])
+            transformed = apply_svd_pipeline(raw_matrix, svd_pipeline)
+            n_comp = transformed.shape[1]
+            embedding_cols = [f'bert_{i}' for i in range(n_comp)]
+            emb_df = pd.DataFrame(transformed, columns=embedding_cols)
+            emb_df['Keyword'] = unique_kw_in_X
+            X = X.merge(emb_df, on='Keyword', how='left')
+            print(f"[Info] Using provided SVD pipeline (k={n_comp})")
+        else:
+            print(f"[Info] Using BERT embeddings")
+            emb_df = get_emb_from_pipeline(keywords, base_dir)
+            X = X.merge(emb_df, on='Keyword', how='left')
+            embedding_cols = [col for col in X.columns if col.startswith('bert_')]
 
     # Features (and Keyword)
     features = [

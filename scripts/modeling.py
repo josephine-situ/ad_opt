@@ -141,6 +141,96 @@ def train_best_model(df_day, features, day_date):
     
     return best_model, best_params, best_cv_score, in_sample_mse, in_sample_r2, in_sample_bias
 
+
+def train_oracle_model(
+    df_full,
+    features_base,
+    raw_emb_map,
+    k_candidates=(10, 20, 50, 100, 384),
+    embedding_prefix='bert',
+):
+    """Train the Gold-Standard Oracle model via CV over SVD dimensionality *k*.
+
+    For each candidate *k*:
+      1. Fit SVD(*k*) on the **full** keyword set.
+      2. Replace embedding columns with the SVD-transformed embeddings.
+      3. Run ``train_best_model`` (GridSearchCV on XGBoost).
+      4. Record CV MSE.
+
+    The *k* with the lowest CV MSE is selected (``k_eval``), and a final
+    model is trained on the full data with that *k*.
+
+    Args:
+        df_full: Full dataset (Day 0 … T) containing ``'Keyword'`` and
+                 ``'Day'`` columns plus all base features.
+        features_base: Feature column names **excluding** embedding columns.
+        raw_emb_map: ``{keyword: raw_embedding_vector}`` dict (from
+                     :func:`get_raw_bert_embeddings_cached`).
+        k_candidates: Tuple of SVD component counts to try.  Values ≥ the
+                      raw embedding dimensionality are treated as "no SVD".
+        embedding_prefix: Column prefix for embedding columns (default
+                          ``'bert'``).
+
+    Returns:
+        oracle_model: Fitted ``sklearn.pipeline.Pipeline``.
+        oracle_svd_pipeline: Fitted SVD pipeline dict.
+        best_k: Selected ``n_components`` (``int`` or ``None``).
+        cv_results: ``{k_label: cv_mse}`` dict.
+        oracle_features: List of feature names used by the Oracle.
+    """
+    from utils.embeddings import fit_svd_pipeline, replace_embeddings
+
+    unique_keywords = df_full['Keyword'].unique()
+    raw_matrix = np.array([raw_emb_map[kw] for kw in unique_keywords])
+    embedding_dim = raw_matrix.shape[1]
+
+    cv_results = {}
+
+    for k in k_candidates:
+        # Normalise k – values ≥ embedding_dim mean "no SVD"
+        k_eff = None if (k is None or k >= embedding_dim) else k
+        k_label = embedding_dim if k_eff is None else k_eff
+
+        # Skip duplicate labels (e.g. 384 and 768 both map to 384)
+        if k_label in cv_results:
+            continue
+
+        print(f"  Oracle CV: k={k_label} …")
+        svd_pipe = fit_svd_pipeline(raw_matrix, n_components=k_eff)
+        df_k, emb_cols = replace_embeddings(
+            df_full.copy(), raw_emb_map, svd_pipe, prefix=embedding_prefix,
+        )
+        features_k = list(features_base) + emb_cols
+
+        _, _, cv_mse, _, _, _ = train_best_model(
+            df_k, features_k, df_full['Day'].max(),
+        )
+        cv_results[k_label] = cv_mse
+        print(f"    k={k_label}: CV MSE = {cv_mse:.6f}")
+
+    # ── Pick best k ─────────────────────────────────────────────────────
+    best_k_label = min(cv_results, key=cv_results.get)
+    best_k = None if best_k_label >= embedding_dim else best_k_label
+    print(f"  Oracle best k={best_k_label} (CV MSE={cv_results[best_k_label]:.6f})")
+
+    # ── Refit final model with best k on all data ───────────────────────
+    svd_pipe_best = fit_svd_pipeline(raw_matrix, n_components=best_k)
+    df_best, emb_cols_best = replace_embeddings(
+        df_full.copy(), raw_emb_map, svd_pipe_best, prefix=embedding_prefix,
+    )
+    features_best = list(features_base) + emb_cols_best
+
+    oracle_model, best_params, cv_mse, train_mse, train_r2, train_bias = (
+        train_best_model(df_best, features_best, df_full['Day'].max())
+    )
+
+    print(
+        f"  Oracle final: params={best_params}, "
+        f"CV MSE={cv_mse:.4f}, Train R²={train_r2:.4f}"
+    )
+
+    return oracle_model, svd_pipe_best, best_k, cv_results, features_best
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--course', default='gen_ai', help='Course name (default: gen_ai)')

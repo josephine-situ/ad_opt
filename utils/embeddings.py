@@ -169,3 +169,135 @@ def get_bert_embeddings_pipeline(unique_texts, n_components=50, model_name='all-
     if return_model:
         return embedding_df, {'transformer': model, 'svd': svd, 'normalizer': normalizer}
     return embedding_df
+
+
+# ---------------------------------------------------------------------------
+# Raw embedding cache + SVD fit / transform utilities
+# ---------------------------------------------------------------------------
+
+def get_raw_bert_embeddings_cached(unique_texts, model_name='all-MiniLM-L6-v2',
+                                   batch_size=32, cache_path=None):
+    """
+    Return raw BERT embeddings (no SVD) with optional file caching.
+
+    Args:
+        unique_texts: Iterable of text strings.
+        model_name: Sentence-transformers model name.
+        batch_size: Encoding batch size.
+        cache_path: Path to a pickle cache file.  If *None*, no caching.
+
+    Returns:
+        dict: ``{text: np.ndarray}`` mapping each text to its raw embedding.
+    """
+    import pickle
+    from pathlib import Path
+
+    if not isinstance(unique_texts, list):
+        unique_texts = list(unique_texts)
+
+    cached: dict = {}
+    if cache_path is not None:
+        cache_path = Path(cache_path)
+        if cache_path.exists():
+            with open(cache_path, 'rb') as f:
+                cached = pickle.load(f)
+
+    missing = [t for t in unique_texts if t not in cached]
+
+    if missing:
+        from sentence_transformers import SentenceTransformer
+
+        print(f"  [RawBERT] Encoding {len(missing)} texts with {model_name} ...")
+        model = SentenceTransformer(model_name)
+        raw_embs = model.encode(
+            missing, batch_size=batch_size,
+            show_progress_bar=True, convert_to_numpy=True,
+        )
+        for text, emb in zip(missing, raw_embs):
+            cached[text] = emb
+
+        if cache_path is not None:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(cache_path, 'wb') as f:
+                pickle.dump(cached, f)
+            print(f"  [RawBERT] Saved {len(cached)} embeddings → {cache_path}")
+
+    return {t: cached[t] for t in unique_texts if t in cached}
+
+
+def fit_svd_pipeline(raw_embeddings_matrix, n_components=50):
+    """
+    Fit TruncatedSVD + L2 normalizer on a matrix of raw embeddings.
+
+    Args:
+        raw_embeddings_matrix: ``(n_samples, embedding_dim)`` numpy array.
+        n_components: Number of SVD components.
+            ``None`` or ``>= embedding_dim`` → skip SVD, normalise only.
+
+    Returns:
+        dict with keys ``'svd'``, ``'normalizer'``, ``'n_components'``.
+    """
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.preprocessing import Normalizer
+
+    dim = raw_embeddings_matrix.shape[1]
+
+    if n_components is None or n_components >= dim:
+        normalizer = Normalizer(norm='l2')
+        normalizer.fit(raw_embeddings_matrix)
+        return {'svd': None, 'normalizer': normalizer, 'n_components': dim}
+
+    svd = TruncatedSVD(n_components=n_components, random_state=42)
+    X_svd = svd.fit_transform(raw_embeddings_matrix)
+
+    normalizer = Normalizer(norm='l2')
+    normalizer.fit(X_svd)
+
+    return {'svd': svd, 'normalizer': normalizer, 'n_components': n_components}
+
+
+def apply_svd_pipeline(raw_embeddings_matrix, pipeline_dict):
+    """
+    Transform raw embeddings through a pre-fitted SVD + normalizer pipeline.
+
+    Returns:
+        numpy array of shape ``(n_samples, n_components)``.
+    """
+    X = raw_embeddings_matrix
+    if pipeline_dict['svd'] is not None:
+        X = pipeline_dict['svd'].transform(X)
+    X = pipeline_dict['normalizer'].transform(X)
+    return X
+
+
+def replace_embeddings(df, raw_emb_map, svd_pipeline, prefix='bert'):
+    """
+    Replace (or add) embedding columns in *df* using raw embeddings and a
+    fitted SVD pipeline.
+
+    Args:
+        df: DataFrame with a ``'Keyword'`` column.
+        raw_emb_map: ``{keyword: raw_vector}`` dict.
+        svd_pipeline: Output of :func:`fit_svd_pipeline`.
+        prefix: Column-name prefix (default ``'bert'``).
+
+    Returns:
+        ``(df_with_new_emb_cols, list_of_new_col_names)``
+    """
+    # Drop old embedding columns
+    old_cols = [c for c in df.columns if c.startswith(f'{prefix}_')]
+    df = df.drop(columns=old_cols, errors='ignore')
+
+    unique_kw = df['Keyword'].unique()
+    raw_matrix = np.array([raw_emb_map[kw] for kw in unique_kw])
+
+    transformed = apply_svd_pipeline(raw_matrix, svd_pipeline)
+    n_comp = transformed.shape[1]
+
+    emb_cols = [f'{prefix}_{i}' for i in range(n_comp)]
+    emb_df = pd.DataFrame(transformed, columns=emb_cols)
+    emb_df['Keyword'] = unique_kw
+
+    df = df.merge(emb_df, on='Keyword', how='left')
+
+    return df, emb_cols

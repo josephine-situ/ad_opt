@@ -2,10 +2,13 @@
 
 Example Usage:
     python scripts/backtest_daily.py --start 2025-12-01 --end 2025-12-31 --exp-name exp1 --masked
+    python scripts/backtest_daily.py --start 2025-12-01 --end 2025-12-31 --exp-name svd_sweep --k-policy 10 20 50 100
 
-For each day t:
-- Train model on data until t-1.
-- Embed this model and optimize to find (x^t)^*
+For each candidate k_policy (SVD dimensionality):
+  For each day t:
+  - Fit SVD(k_policy) on keywords from Day 0 … t-1  (no data leakage).
+  - Train model on the re-embedded history.
+  - Optimise to find (x^t)*.
 """
 
 from pathlib import Path
@@ -27,36 +30,49 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.optimization import create_feature_matrix, extract_solution, optimize_bids
 from scripts.modeling import _to_float32_csr, train_best_model
 from utils.date_features import COURSE_START_DATES_MAP
+from utils.embeddings import (
+    get_raw_bert_embeddings_cached,
+    fit_svd_pipeline,
+    replace_embeddings,
+)
 from config import COURSE_CONFIG
 
 
-def feature_matrix_cached(*, keywords: list[str], opt_date: pd.Timestamp, cache_dir: Path, base_dir: Path, course_start_dts: list, embedding_method: str = 'bert', course: str = 'gen_ai') -> pd.DataFrame:
+def feature_matrix_cached(
+    *,
+    keywords: list[str],
+    opt_date: pd.Timestamp,
+    cache_dir: Path,
+    base_dir: Path,
+    course_start_dts: list,
+    embedding_method: str = 'bert',
+    course: str = 'gen_ai',
+    raw_emb_map: dict | None = None,
+    svd_pipeline: dict | None = None,
+    k_policy: int | None = None,
+) -> pd.DataFrame:
     """
     Create or load cached feature matrix.
-    
-    Args:
-        keywords: List of keywords to create features for.
-        opt_date: Optimization date.
-        cache_dir: Directory for caching feature matrices.
-        base_dir: Base directory for data files.
-        course_start_dts: List of course start dates.
-        embedding_method: 'bert' for BERT embeddings or 'llm' for LLM relevance scores.
-        course: Course identifier ('gen_ai', 'ml', 'sys_eng') - used for LLM scoring.
-    
-    Returns:
-        DataFrame with all features for optimization.
+
+    When *raw_emb_map* and *svd_pipeline* are supplied the embeddings are
+    computed on-the-fly via the provided SVD pipeline (no leakage).  The
+    cache key includes *k_policy* so different dimensionalities are stored
+    independently.
     """
     kw_hash = hashlib.md5("|".join(sorted(keywords)).encode("utf-8")).hexdigest()[:10]
-    p = cache_dir / f"feature_matrix_{embedding_method}_{kw_hash}_{opt_date.date()}.parquet"
+    k_suffix = f"_k{k_policy}" if k_policy is not None else ""
+    p = cache_dir / f"feature_matrix_{embedding_method}_{kw_hash}_{opt_date.date()}{k_suffix}.parquet"
     if p.exists():
         return pd.read_parquet(p)
     X = create_feature_matrix(
-        keywords, 
-        opt_date=opt_date, 
-        course_start_dts=course_start_dts, 
+        keywords,
+        opt_date=opt_date,
+        course_start_dts=course_start_dts,
         base_dir=base_dir,
         embedding_method=embedding_method,
-        course=course
+        course=course,
+        raw_emb_map=raw_emb_map,
+        svd_pipeline=svd_pipeline,
     )
     p.parent.mkdir(parents=True, exist_ok=True)
     X.to_parquet(p)
@@ -126,6 +142,10 @@ def main():
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
     p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
+    p.add_argument("--k-policy", type=int, nargs="+", default=[50],
+                   help="SVD component counts to sweep (default: 50). "
+                        "Use 0 for full BERT embeddings (no SVD). "
+                        "Each value runs a full backtest with daily SVD fitting.")
 
     args = p.parse_args()
 
@@ -134,7 +154,9 @@ def main():
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
     embedding_method = args.embedding_method
-    
+    # Map sentinel 0 → None (no SVD, full BERT embeddings)
+    k_policy_list = [None if k == 0 else k for k in args.k_policy]
+
     base_dir = Path(f"data/{args.course}")
 
     # Load data based on embedding method
@@ -150,13 +172,8 @@ def main():
     else:
         opt_days = list(pd.date_range(start=start_dt, end=end_dt, freq="D"))
 
-    # Determine feature columns based on embedding method
-    if embedding_method == "llm":
-        embedding_cols = ["llm_relevance_score"] if "llm_relevance_score" in df.columns else []
-    else:
-        embedding_cols = [c for c in df.columns if c.startswith("bert_")]
-    
-    features = [
+    # ── Base (non-embedding) features ───────────────────────────────────
+    features_base = [
         "Match type",
         "Region",
         "day_of_week",
@@ -173,93 +190,147 @@ def main():
         "Top of page bid (low range)",
         "Top of page bid (high range)",
         "Cost",
-        *embedding_cols,
     ]
 
-    models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}")
-    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
-    cache_dir = base_results_dir / "cache"
-    models_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    # For LLM embedding method, SVD sweep is not applicable
+    if embedding_method == "llm":
+        llm_cols = ["llm_relevance_score"] if "llm_relevance_score" in df.columns else []
+        features = features_base + llm_cols
+        k_policy_list = [None]  # single pass, no SVD
 
-    for day in opt_days:
-        print(f"\n=== Day {day.date()} ===")
-
-        # Create a deterministic seed from the date (YYYYMMDD)
-        seed = int(day.strftime('%Y%m%d'))
-
-        # Select a new set of masked keywords each day
-        kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, mask_frac=mask_frac, seed=seed)
-
-        # Train model on history up to t-1, excluding new keywords if masked
-        history_source = df
-        if masked:
-            history_source = df[~df['Keyword'].isin(new_keywords)].copy()
-        hist = history_source[history_source["Day"] < day].copy()
-        
-        # Train best model using CV
-        pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(hist, features=features, day_date=day)
-        
-        # Calculate and Save Hist Metrics
-        metrics_file = models_dir / "hist_model_metrics.csv"
-        metrics_row = pd.DataFrame([{
-            "Day": day.date(),
-            "Hist_MSE": hist_mse,
-            "Hist_R2": hist_r2,
-            "Hist_Bias": hist_bias,
-            "CV_Score": best_cv,
-            "best_params": best_params
-        }])
-        if not metrics_file.exists():
-            metrics_row.to_csv(metrics_file, index=False)
-        else:
-            metrics_row.to_csv(metrics_file, mode='a', header=False, index=False)
-
-        # Save training model
-        model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
-        joblib.dump(pipe, model_path)
-
-        # Precompute feature matrix (shared across parameters)
-        X_base = feature_matrix_cached(
-            keywords=keywords, 
-            opt_date=day, 
-            cache_dir=cache_dir, 
-            base_dir=base_dir, 
-            course_start_dts=COURSE_START_DATES_MAP.get(args.course, []),
-            embedding_method=embedding_method,
-            course=args.course
+    # ── Pre-compute raw BERT embeddings (no leakage – BERT is frozen) ──
+    raw_emb_map: dict | None = None
+    if embedding_method == "bert":
+        all_keywords = list(
+            set(df["Keyword"].unique().tolist())
+            | set(kw_df["Keyword"].unique().tolist())
         )
+        raw_emb_cache = base_dir / "cache" / "raw_bert_embeddings.pkl"
+        raw_emb_map = get_raw_bert_embeddings_cached(
+            all_keywords, cache_path=raw_emb_cache,
+        )
+        print(f"Raw BERT embeddings: {len(raw_emb_map)} keywords")
 
-        # Optimize for each parameter combination
-        for b in budget_list:
-            # Define output directory for this run
-            run_dir = base_results_dir / f"budget_{int(b)}"
-            bids_dir = run_dir / "bids"
-            bids_dir.mkdir(parents=True, exist_ok=True)
+    # ── Outer loop: iterate over candidate k_policy values ─────────────
+    for k in k_policy_list:
+        k_label = k if k is not None else "full"
+        print(f"\n{'='*70}")
+        print(f"  k_policy = {k_label}")
+        print(f"{'='*70}")
 
-            # Check if already optimized
-            opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
-            if opt_path.exists():
-                print(f"Skipping {day.date()} budget={b} - already exists")
-                continue
+        # Directories scoped to this k
+        k_suffix = f"/k{k}" if k is not None else "/k_full"
+        models_dir = Path(f"models/{args.course}/backtests/{args.exp_name}{k_suffix}")
+        base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}{k_suffix}")
+        cache_dir = base_results_dir / "cache"
+        models_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-            # Optimize bids for day t
-            # Copy X_base to avoid modification issues
-            # optimize_bids now only takes budget and kw_df
-            m, cost_vars, pred_vars, X_opt = optimize_bids(
-                X_base.copy(), 
-                str(model_path), 
-                budget=b, 
-                kw_df=kw_df_daily, 
-                order_budget=order_budget, 
-                max_purch=max_purch,
-                base_dir=base_dir
+        for day in opt_days:
+            print(f"\n=== Day {day.date()} | k={k_label} ===")
+
+            # Create a deterministic seed from the date (YYYYMMDD)
+            seed = int(day.strftime('%Y%m%d'))
+
+            # Select a new set of masked keywords each day
+            kw_df_daily, keywords, new_keywords = select_keywords(kw_df, keywords_n, masked, mask_frac=mask_frac, seed=seed)
+
+            # Train model on history up to t-1, excluding new keywords if masked
+            history_source = df
+            if masked:
+                history_source = df[~df['Keyword'].isin(new_keywords)].copy()
+            hist = history_source[history_source["Day"] < day].copy()
+
+            # ── Daily SVD: fit on keywords known up to day t ────────────
+            daily_svd = None
+            if embedding_method == "bert" and raw_emb_map is not None:
+                hist_keywords = hist["Keyword"].unique()
+                raw_matrix = np.array([raw_emb_map[kw] for kw in hist_keywords])
+                daily_svd = fit_svd_pipeline(raw_matrix, n_components=k)
+                actual_k = daily_svd['n_components']
+                print(f"  SVD fit on {len(hist_keywords)} hist keywords → {actual_k}D")
+
+                # Replace embedding columns in training data
+                hist, emb_cols = replace_embeddings(hist, raw_emb_map, daily_svd)
+                features = features_base + emb_cols
+            elif embedding_method == "llm":
+                # features already set above; hist already has llm columns
+                pass
+            else:
+                # Fallback: use pre-computed bert_* columns (original behaviour)
+                emb_cols_existing = [c for c in df.columns if c.startswith("bert_")]
+                features = features_base + emb_cols_existing
+
+            # Train best model using CV
+            pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(hist, features=features, day_date=day)
+
+            # Calculate and Save Hist Metrics
+            metrics_file = models_dir / "hist_model_metrics.csv"
+            metrics_row = pd.DataFrame([{
+                "Day": day.date(),
+                "k_policy": k_label,
+                "Hist_MSE": hist_mse,
+                "Hist_R2": hist_r2,
+                "Hist_Bias": hist_bias,
+                "CV_Score": best_cv,
+                "best_params": best_params
+            }])
+            if not metrics_file.exists():
+                metrics_row.to_csv(metrics_file, index=False)
+            else:
+                metrics_row.to_csv(metrics_file, mode='a', header=False, index=False)
+
+            # Save training model
+            model_path = models_dir / f"xgb_clicks_model_{day.date()}.joblib"
+            joblib.dump(pipe, model_path)
+
+            # Also persist the daily SVD pipeline for eval
+            if daily_svd is not None:
+                svd_path = models_dir / f"svd_pipeline_{day.date()}.joblib"
+                joblib.dump(daily_svd, svd_path)
+
+            # Precompute feature matrix (shared across budgets)
+            X_base = feature_matrix_cached(
+                keywords=keywords,
+                opt_date=day,
+                cache_dir=cache_dir,
+                base_dir=base_dir,
+                course_start_dts=COURSE_START_DATES_MAP.get(args.course, []),
+                embedding_method=embedding_method,
+                course=args.course,
+                raw_emb_map=raw_emb_map,
+                svd_pipeline=daily_svd,
+                k_policy=k,
             )
-            sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
-            # Save optimized costs
-            if sol is not None:
-                sol.to_csv(opt_path, index=False)
+            # Optimize for each parameter combination
+            for b in budget_list:
+                # Define output directory for this run
+                run_dir = base_results_dir / f"budget_{int(b)}"
+                bids_dir = run_dir / "bids"
+                bids_dir.mkdir(parents=True, exist_ok=True)
+
+                # Check if already optimized
+                opt_path = bids_dir / f"optimized_costs_{day.date()}.csv"
+                if opt_path.exists():
+                    print(f"Skipping {day.date()} budget={b} - already exists")
+                    continue
+
+                # Optimize bids for day t
+                m, cost_vars, pred_vars, X_opt = optimize_bids(
+                    X_base.copy(),
+                    str(model_path),
+                    budget=b,
+                    kw_df=kw_df_daily,
+                    order_budget=order_budget,
+                    max_purch=max_purch,
+                    base_dir=base_dir
+                )
+                sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
+
+                # Save optimized costs
+                if sol is not None:
+                    sol.to_csv(opt_path, index=False)
 
     print(f"\nBacktest complete.")
 
