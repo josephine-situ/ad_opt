@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
 Interpret XGBoost clicks model using variable importance and SHAP values.
+
+Loads the same SVD pipeline that was fitted alongside the XGBoost model
+during backtesting, applies it to raw BERT embeddings, and then runs
+SHAP / variable-importance analysis on the model.
 """
 
 import argparse
@@ -16,14 +20,22 @@ import joblib
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.modeling import _to_float32_csr
+from utils.embeddings import (
+    get_raw_bert_embeddings_cached,
+    replace_embeddings,
+)
 
 # Configuration
 parser = argparse.ArgumentParser()
-parser.add_argument('--course', default='ml', help='Course name (default: gen_ai)')
+parser.add_argument('--course', default='sys_think', help='Course name (default: ml)')
+parser.add_argument('--k-policy', default='k_full', help='SVD k-policy folder name (default: k_full)')
+parser.add_argument('--model-date', default='2025-12-01', help='Model date stamp (default: 2025-12-01)')
 args = parser.parse_args()
 
 base_dir = Path(f'data/{args.course}')
-MODEL_PATH = Path(f'models/ml/backtests/exp102_fix_err/xgb_clicks_model_2025-12-31.joblib')
+models_dir = Path(f'models/{args.course}/backtests/svd_sweep/{args.k_policy}')
+MODEL_PATH = models_dir / f'xgb_clicks_model_{args.model_date}.joblib'
+SVD_PATH = models_dir / f'svd_pipeline_{args.model_date}.joblib'
 OUTPUT_DIR = Path('model_interpretability') / args.course
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
@@ -32,18 +44,55 @@ print(f"XGBoost Clicks Model Interpretation ({args.course})")
 print("=" * 70)
 
 # ============================================================================
-# Load test data
+# Load data (full dataset – need 'Keyword' column for SVD embedding lookup)
 # ============================================================================
-print("\n1. Loading test data...")
+print("\n1. Loading data...")
 
 embedding_choice = 'bert'
-test_file = base_dir / 'clean' / f'test_{embedding_choice}.csv'
+full_file = base_dir / 'clean' / f'ad_opt_data_{embedding_choice}.csv'
 
-X_test = pd.read_csv(test_file)
+df_full = pd.read_csv(full_file)
+print(f"  Full data shape: {df_full.shape}")
 
-print(f"  Test data shape: {X_test.shape}")
+# Use the latest 25 % of rows as "test" (mirrors prepare_train_test_split)
+from sklearn.model_selection import train_test_split
+_, X_test = train_test_split(df_full, test_size=0.25, random_state=42)
+X_test = X_test.copy()
+
+print(f"  Test split shape: {X_test.shape}")
 print(f"  Columns: {list(X_test.columns)[:10]}...")
 print(f"  Sample features: {list(X_test.columns[-10:])}")
+
+# ============================================================================
+# Load SVD pipeline & apply to test data
+# ============================================================================
+print("\n2. Loading SVD pipeline and transforming embeddings...")
+
+svd_pipeline = None
+if SVD_PATH.exists():
+    svd_pipeline = joblib.load(SVD_PATH)
+    n_comp = svd_pipeline['n_components']
+    has_svd = svd_pipeline['svd'] is not None
+    print(f"  Loaded SVD pipeline: {SVD_PATH.name}  (n_components={n_comp}, svd={'yes' if has_svd else 'no (normalize only)'})")
+
+    # Get raw BERT embeddings for all keywords in the test set
+    raw_emb_cache = base_dir / 'cache' / 'raw_bert_embeddings.pkl'
+    unique_keywords = X_test['Keyword'].unique().tolist()
+    raw_emb_map = get_raw_bert_embeddings_cached(
+        unique_keywords, cache_path=raw_emb_cache,
+    )
+    print(f"  Raw BERT embeddings: {len(raw_emb_map)} keywords")
+
+    # Replace the pre-computed bert_* columns with SVD-transformed embeddings
+    X_test, emb_cols = replace_embeddings(X_test, raw_emb_map, svd_pipeline, prefix='bert')
+    print(f"  After SVD replace_embeddings: {X_test.shape}  (embedding cols: {len(emb_cols)})")
+else:
+    print(f"  WARNING: SVD pipeline not found at {SVD_PATH} – using raw embedding columns from CSV")
+
+# Drop non-feature columns before model inference
+non_feature_cols = ['Day', 'Keyword', 'Clicks', 'Competition']
+X_test = X_test.drop(columns=[c for c in non_feature_cols if c in X_test.columns])
+print(f"  Final feature matrix shape: {X_test.shape}")
 
 # ============================================================================
 # Load XGBoost clicks model
