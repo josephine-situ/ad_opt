@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Evaluates backtest results using a Gold-Standard Oracle model.
 
 The Oracle is trained on full data (0:T) with CV over SVD dimensionality k.

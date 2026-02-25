@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Daily backtest - generate optimal solutions.
 
 Example Usage:
