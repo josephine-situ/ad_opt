@@ -10,12 +10,12 @@
 
 # ── Configurable parameters ──────────────────────────────────────────
 # Override via environment variables or edit defaults below.
-EXP_NAME="${EXP_NAME:-svd_sweep}"
+EXP_NAME="${EXP_NAME:-min_spend}"
 COURSES="${COURSES:-gen_ai}"                  # space-separated course names
 START_DAY="${START_DAY:-2025-12-01}"
 EMBEDDING_METHOD="${EMBEDDING_METHOD:-bert}"
-K_POLICY="${K_POLICY:-0 10 20 50 100}"        # space-separated SVD dims (0 = full BERT, no SVD)
-EXTRA_ARGS="${EXTRA_ARGS:---order-budget --max-purch}"
+K_POLICY="${K_POLICY:-0}"                     # 0 = full BERT, no SVD
+EXTRA_ARGS="${EXTRA_ARGS:---order-budget --max-purch --min-spend 1}"
 
 # ── Environment setup ────────────────────────────────────────────────
 cd "${SLURM_SUBMIT_DIR:-$PWD}"

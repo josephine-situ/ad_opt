@@ -371,10 +371,13 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None, min_spend=None):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
+    min_spend: If set, each active keyword must spend at least this amount (e.g. 1.0).
+               Adds binary activation variables z_i with:
+                 x_i <= budget * z_i,  x_i >= min_spend * z_i,  z_i in {0,1}
     
     Formulation:
         max   sum_i  g_i
@@ -438,6 +441,16 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         # Add ordering constraints: B_{USA} >= B_{A} >= B_{B}
         model.addConstr(region_budgets['USA'] >= region_budgets['A'], name='order_budget_USA_A')
         model.addConstr(region_budgets['A'] >= region_budgets['B'], name='order_budget_A_B')
+
+    # Minimum-spend constraints: if keyword i is active (z_i=1), it must
+    # spend at least min_spend dollars.
+    if min_spend is not None:
+        c_min = float(min_spend)
+        print(f"[Info] Adding minimum-spend constraints: c_min = ${c_min:.2f}")
+        for i, x_i in enumerate(cost_vars):
+            z_i = model.addVar(vtype=GRB.BINARY, name=f"active_{i}")
+            model.addConstr(x_i <= budget * z_i, name=f"min_spend_ub_{i}")
+            model.addConstr(x_i >= c_min * z_i, name=f"min_spend_lb_{i}")
 
     # Optimize
     model.optimize()
@@ -546,6 +559,7 @@ def main():
     parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
     parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
     parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
+    parser.add_argument('--min-spend', type=float, default=None, help='Minimum spend per active keyword (e.g. 1.0). If not set, no minimum-spend constraint is used.')
     args = parser.parse_args()
 
     if args.budget is None:
@@ -558,6 +572,7 @@ def main():
     print(f"Budget(s): {args.budget}")
     print(f"Order budget: {args.order_budget}")
     print(f"Max purchases objective: {args.max_purch}")
+    print(f"Min spend per keyword: {args.min_spend}")
 
     base_dir = Path(f'data/{args.course}')
     
@@ -591,7 +606,7 @@ def main():
         model, cost_vars, pred_vars, X_opt = optimize_bids(
             X.copy(), model_path, budget=b, kw_df=kw_df,
             order_budget=args.order_budget, max_purch=args.max_purch,
-            base_dir=base_dir
+            base_dir=base_dir, min_spend=args.min_spend
         )
 
         # Extract solution and validate predictions

@@ -140,6 +140,7 @@ def main():
     p.add_argument("--mask-frac", type=float, default=0.1, help="Fraction of keywords to mask as new")
     p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
     p.add_argument("--max-purch", action="store_true", help="Use max purchases objective instead of clicks")
+    p.add_argument("--min-spend", type=float, default=None, help="Minimum spend per active keyword (e.g. 1.0)")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
     p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
@@ -154,6 +155,7 @@ def main():
         args.budget = COURSE_CONFIG[args.course]['budgets']
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
+    min_spend = args.min_spend
     embedding_method = args.embedding_method
     # Map sentinel 0 → None (no SVD, full BERT embeddings)
     k_policy_list = [None if k == 0 else k for k in args.k_policy]
@@ -325,7 +327,8 @@ def main():
                     kw_df=kw_df_daily,
                     order_budget=order_budget,
                     max_purch=max_purch,
-                    base_dir=base_dir
+                    base_dir=base_dir,
+                    min_spend=min_spend,
                 )
                 sol = extract_solution(m, cost_vars, pred_vars, str(model_path), X_opt)
 
