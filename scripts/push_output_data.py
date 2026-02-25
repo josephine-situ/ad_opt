@@ -7,6 +7,7 @@ import argparse
 import csv
 import os
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 from google.ads.googleads.client import GoogleAdsClient
@@ -89,7 +90,7 @@ def push_budget(google_ads_client, customer_id, output_course):
             operation = google_ads_client.get_type("CampaignBudgetOperation")
             campaign_budget = operation.update
             campaign_budget.resource_name = campaign_budget_resource_name
-            campaign_budget.amount_micros = int(round(daily_budget, 2) * 1_000_000)
+            campaign_budget.amount_micros = int(round(Decimal(daily_budget), 2) * 1_000_000)
 
             # See https://developers.google.com/google-ads/api/docs/client-libs/python/field-masks
             # This is the preferred way to use field masks with the Google Ads API client.
@@ -226,7 +227,7 @@ def push_cpc(google_ads_client, customer_id, output_course):
             if current_status == google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED:
                 criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.ENABLED
 
-            criterion.cpc_bid_micros = int(round(bid, 2) * 1_000_000)
+            criterion.cpc_bid_micros = int(round(Decimal(bid), 2) * 1_000_000)
 
         print(
             f'Updating keyword "{keyword}" ({match_type}) in ad group {ad_group_id}: optimal cost ${bid:.2f}, status {status}'
