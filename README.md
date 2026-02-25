@@ -160,6 +160,81 @@ The following pipeline outputs need to be uploaded to Google Ads after each opti
 | **Google Ads API** | Automate daily downloading of keyword performance, conversion, and segment reports; automate uploading bids, budgets, and bid adjustments |
 | **Google Ads Keyword Planning API** | Programmatically fetch historical search stats and bid ranges (replaces manual GKP CSV export) |
 
+### Expected Google Ads Account Structure
+
+The pipeline expects a hierarchical Google Ads account structure with a single **Manager Account** (MCC) linked to multiple **Course Accounts**, one per course. Authentication uses a service account with API access to the Manager Account, which automatically provides access to all linked course accounts.
+
+#### Account Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Manager Account (MCC)                      │
+│          API Key (Service Account) provides access           │
+│                   to all linked accounts                     │
+└────────────┬────────────────────────────────────────────────┘
+             │
+             ├─────────────┬─────────────┬─────────────┬──────────────
+             │             │             │             │
+             ▼             ▼             ▼             ▼
+      ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+      │ Generative │ │  Machine   │ │  Systems   │ │  Systems   │
+      │  AI Course │ │  Learning  │ │ Engineering│ │  Thinking  │
+      │  Account   │ │   Course   │ │   Course   │ │   Course   │
+      │            │ │  Account   │ │  Account   │ │  Account   │
+      └────────────┘ └────────────┘ └────────────┘ └────────────┘
+```
+
+#### Campaign & Ad Group Structure
+
+Each course account contains **one campaign per (Course Name, Match Type, Region) tuple**. Each campaign contains **exactly one ad group** matching the same tuple, and each ad group contains **only keywords with the matching type**.
+
+**Example for Generative AI Course:**
+
+```
+Generative AI Course Account
+│
+├── Campaign: Generative AI - USA - Exact
+│   └── Ad Group: Generative AI - USA - Exact
+│       ├── Keyword: [generative ai course] (Exact Match)
+│       ├── Keyword: [ai training program] (Exact Match)
+│       └── Keyword: [learn generative ai] (Exact Match)
+│
+├── Campaign: Generative AI - USA - Phrase
+│   └── Ad Group: Generative AI - USA - Phrase
+│       ├── Keyword: "generative ai" (Phrase Match)
+│       ├── Keyword: "ai course online" (Phrase Match)
+│       └── Keyword: "chatgpt training" (Phrase Match)
+│
+├── Campaign: Generative AI - USA - Broad
+│   └── Ad Group: Generative AI - USA - Broad
+│       ├── Keyword: artificial intelligence course (Broad Match)
+│       ├── Keyword: ai certification (Broad Match)
+│       └── Keyword: machine learning basics (Broad Match)
+│
+├── Campaign: Generative AI - Region A - Exact
+│   └── Ad Group: Generative AI - Region A - Exact
+│       └── [Exact match keywords for Region A]
+│
+├── Campaign: Generative AI - Region A - Phrase
+│   └── Ad Group: Generative AI - Region A - Phrase
+│       └── [Phrase match keywords for Region A]
+│
+└── ... (additional Region × Match Type combinations)
+```
+
+**Key principles:**
+
+- **One campaign = one (Course, Region, Match Type) tuple** — enables granular budget control per region and match type
+- **One ad group per campaign** — simplifies keyword organization and bid management
+- **Match type isolation** — each ad group contains only keywords of one match type (Exact, Phrase, or Broad)
+- **Campaign-level daily budgets** — set from `daily_budget.csv` per Region × Match Type
+- **Keyword-level Max CPC bids** — set from `optimized_costs.csv` per Keyword × Region × Match Type. Keywords which do not match they correct type will not be adjusted in any way.
+- **Shared bid adjustments** — hour-of-day, device, location, and age adjustments applied at the campaign level
+
+This structure ensures the pipeline's output files (bids, budgets, bid adjustments) map cleanly to Google Ads entities without ambiguity.
+
+
+
 ## Repository Structure
 
 ```
