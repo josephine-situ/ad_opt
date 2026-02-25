@@ -7,7 +7,10 @@ COURSE_CONFIG = {
             '2024-10-15', '2025-02-10', '2025-09-29', '2026-02-09'
         ],
         'min_date': '2024-11-03',
-        'budgets': [362.91]
+        'budgets': [362.91],
+        # Used to derive course names when pushing to Google Ads.
+        # TODO: Identify the others as well and add to config.
+        'course_title_base': "Generative AI",
     },
     'ml': {
         'start_dates': [
@@ -16,7 +19,7 @@ COURSE_CONFIG = {
             '2025-09-29', '2026-02-09'
         ],
         'min_date': '2022-01-01',
-        'budgets': [353.99]
+        'budgets': [353.99],
     },
     'sys_eng': {
         'start_dates': [
