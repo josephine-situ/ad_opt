@@ -641,8 +641,6 @@ def get_existing_ad_group_age_for_campaigns(google_ads_service, customer_id, cam
     Returns:
         dict: Map of (campaign_id, age_range_type) -> (ad_group_id, criterion_id)
     """
-    # Build query to get ad group age criteria
-    campaign_id_list = "', '".join([f"customers/{customer_id}/campaigns/{cid}" for cid in campaign_ids])
 
     query = f"""
         SELECT
