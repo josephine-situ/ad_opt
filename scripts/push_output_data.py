@@ -5,7 +5,9 @@ Script to output to Google Ads. Can set overall budget, kw level max cpc and bid
 
 import argparse
 import csv
+import decimal
 import os
+import re
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -13,11 +15,15 @@ from pathlib import Path
 from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
+from utils.bid_adjustments import get_device_bid_adjustments, get_age_bid_adjustments, get_hour_of_day_bid_adjustments
+from utils.google_ads_api import get_existing_campaign_criteria, get_campaigns_for_course, get_location_bid_adjustments, \
+    get_existing_ad_group_age_for_campaigns
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
     GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME,
     SELECT_KEYWORD_CRITERION_IN_AD_GROUP,
-    SELECT_AD_GROUPS_FOR_CAMPAIGNS,
+    SELECT_AD_GROUPS_FOR_CAMPAIGNS
 )
 from config import COURSE_CONFIG
 
@@ -27,6 +33,9 @@ BUDGET = "budget"
 CPC = "cpc"
 BID_ADJ = "bid_adj"
 VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
+
+# Map match type strings to enum values
+MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
 
 def validate_environment_variables(datasets):
@@ -41,7 +50,6 @@ def validate_environment_variables(datasets):
         sys.exit(1)
 
     return True
-
 
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
@@ -119,9 +127,6 @@ def push_cpc(google_ads_client, customer_id, output_course):
     google_ads_service = google_ads_client.get_service("GoogleAdsService")
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
 
-    # Map match type strings to enum values
-    match_type_map = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
-
     # Read all rows to determine unique campaigns needed
     rows = []
     campaign_names = set()
@@ -197,7 +202,7 @@ def push_cpc(google_ads_client, customer_id, output_course):
             continue
 
         ad_group_id = campaign_to_ad_group[campaign_name]
-        match_type_enum = match_type_map[match_type]
+        match_type_enum = MATCH_TYPE_MAP[match_type]
 
         # Look up keyword criterion
         key = (ad_group_id, keyword.lower(), match_type_enum)
@@ -254,7 +259,6 @@ def push_cpc(google_ads_client, customer_id, output_course):
     else:
         print("No keyword updates to perform")
 
-
 def push_bid_adjustments(google_ads_client, customer_id, output_course):
     """Push bid adjustments to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bid_adjustments")
@@ -262,7 +266,100 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course):
     adj_device_filepath = budget_output_dir / "bid_adj_device.csv"
     adj_hour_of_day_filepath = budget_output_dir / "bid_adj_hour_of_day.csv"
     adj_location_filepath = budget_output_dir / "bid_adj_location.csv"
-    raise NotImplementedError
+    
+    # Get all campaigns for this course
+    ga_service = google_ads_client.get_service("GoogleAdsService")
+    campaigns = get_campaigns_for_course(ga_service, customer_id, output_course)
+    
+    if not campaigns:
+        print(f"Warning: No campaigns found for course {output_course}")
+        return
+    
+    print(f"Found {len(campaigns)} campaigns for {output_course}")
+    
+    # Get existing campaign criteria
+    print("Fetching existing campaign criteria...")
+    existing_campaign_criteria = get_existing_campaign_criteria(ga_service, customer_id, campaigns.values())
+    print(f"Found {len(existing_campaign_criteria['device'])} device criteria, "
+          f"{len(existing_campaign_criteria['schedule'])} schedule criteria, {len(existing_campaign_criteria['location'])} location criteria")
+
+    print("Fetching existing ad group age criteria...")
+    existing_ad_group_age_criteria = get_existing_ad_group_age_for_campaigns(ga_service, customer_id, map(str, campaigns.values()))
+
+    
+    all_operations = []
+    # Age bid adjustments are the only one which are done on the ad-group level.
+    age_ops = []
+    
+    # Process each type of bid adjustment
+    if adj_age_filepath.exists():
+        print("\n--- Processing Age Bid Adjustments ---")
+        age_ops.extend(get_age_bid_adjustments(google_ads_client, customer_id, campaigns, existing_ad_group_age_criteria, adj_age_filepath))
+    else:
+        print(f"Age adjustment file not found: {adj_age_filepath}")
+    
+    if adj_device_filepath.exists():
+        print("\n--- Processing Device Bid Adjustments ---")
+        device_ops = get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_device_filepath)
+        all_operations.extend(device_ops)
+    else:
+        print(f"Device adjustment file not found: {adj_device_filepath}")
+
+    if adj_hour_of_day_filepath.exists():
+        print("\n--- Processing Hour-of-Day Bid Adjustments ---")
+        hour_ops = get_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_hour_of_day_filepath)
+        all_operations.extend(hour_ops)
+    else:
+        print(f"Hour-of-day adjustment file not found: {adj_hour_of_day_filepath}")
+
+    if adj_location_filepath.exists():
+        print("\n--- Processing Location Bid Adjustments ---")
+        location_ops = get_location_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_location_filepath)
+        all_operations.extend(location_ops)
+    else:
+        print(f"Location adjustment file not found: {adj_location_filepath}")
+    
+    # Execute all bid adjustment operations
+    # Age operations use AdGroupCriterionService, others use CampaignCriterionService
+    if age_ops:
+        print(f"\n--- Executing {len(age_ops)} age bid adjustment operations ---")
+        ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
+        
+        # Process in batches
+        for i in range(0, len(age_ops), BATCH_SIZE):
+            batch = age_ops[i : i + BATCH_SIZE]
+            try:
+                response = ad_group_criterion_service.mutate_ad_group_criteria(
+                    customer_id=customer_id, operations=batch
+                )
+                print(f"Successfully applied {len(response.results)} age bid adjustments (batch {i//BATCH_SIZE + 1})")
+            except Exception as e:
+                print(f"Error applying age bid adjustments in batch {i//BATCH_SIZE + 1}: {e}")
+        
+        print(f"Successfully processed {len(age_ops)} total age bid adjustments")
+    else:
+        print("No age bid adjustments to apply")
+
+    if all_operations:
+        print(f"\n--- Executing {len(all_operations)} device/schedule/location bid adjustment operations ---")
+        campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
+
+        # Process in batches
+        for i in range(0, len(all_operations), BATCH_SIZE):
+            batch = all_operations[i : i + BATCH_SIZE]
+            try:
+                response = campaign_criterion_service.mutate_campaign_criteria(
+                    customer_id=customer_id, operations=batch
+                )
+                print(f"Successfully applied {len(response.results)} device/schedule/location bid adjustments (batch {i//BATCH_SIZE + 1})")
+            except Exception as e:
+                print(f"Error applying device/schedule/location bid adjustments in batch {i//BATCH_SIZE + 1}: {e}")
+
+        print(f"Successfully processed {len(all_operations)} total device/schedule/location bid adjustments")
+    else:
+        print("No device/schedule/location bid adjustments to apply")
+
+
 
 
 def main():
