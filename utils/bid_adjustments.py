@@ -1,6 +1,6 @@
 import csv
 
-from google.ads.googleads.v23.enums import AgeRangeTypeEnum, DayOfWeekEnum
+from google.ads.googleads.v23.enums import AgeRangeTypeEnum, DayOfWeekEnum, DeviceEnum
 from google.api_core import protobuf_helpers
 
 from utils.google_ads_api import normalize_bid_adjustment, should_skip_campaign
@@ -26,16 +26,15 @@ ALL_DAYS = [
         DayOfWeekEnum.DayOfWeek.SUNDAY,
     ]
 
+# Map CSV device names to Google Ads device types
+DEVICE_MAP = {
+    "Mobile phones": DeviceEnum.Device.MOBILE,
+    "Tablets": DeviceEnum.Device.TABLET,
+    "Computers": DeviceEnum.Device.DESKTOP,
+}
+
 def get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_device_filepath):
     """Push device bid adjustments to Google Ads."""
-    from google.ads.googleads.v23.enums.types import DeviceEnum
-
-    # Map CSV device names to Google Ads device types
-    device_map = {
-        "Mobile phones": DeviceEnum.Device.MOBILE,
-        "Tablets": DeviceEnum.Device.TABLET,
-        "Computers": DeviceEnum.Device.DESKTOP,
-    }
 
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
     operations = []
@@ -52,9 +51,9 @@ def get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existi
                 continue
 
             bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
-            device_type = device_map.get(device)
+            device_type = DEVICE_MAP.get(device)
 
-            if device_type is None:
+            if not DEVICE_MAP:
                 print(f"Warning: Unknown device '{device}', skipping")
                 continue
 
