@@ -7,6 +7,7 @@ import argparse
 import csv
 import decimal
 import os
+import re
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -61,21 +62,33 @@ def validate_environment_variables(datasets):
 def normalize_bid_adjustment(bid_adj):
     """Normalize bid adjustment to be within Google Ads limits (0.1 to 10.0, or exactly 0 for device criteria)."""
     bid_adj_decimal = Decimal(bid_adj)
-    if bid_adj_decimal < 0:
-        return Decimal(1.0) - bid_adj_decimal
-    elif bid_adj_decimal > 0:
-        return bid_adj_decimal
-
-    return bid_adj_decimal
+    return Decimal(1.0) + bid_adj_decimal
 
 def should_skip_campaign(campaign_name, check_course=None, check_region=None, check_match_type=None):
-    """Determine whether to skip a campaign based on its name and the specified region, match_type or course name."""
-    if check_course and check_course not in campaign_name:
+    """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
+    
+    Campaign name format: "Course - {course_title} - {region} - {match_type}"
+    Uses regex to validate exact position of each component.
+    """
+    # Parse campaign name using regex
+    # Pattern: "Course - {any course title} - {region} - {match type}"
+    pattern = r'^Course - (.+?) - (.+?) - (.+?)$'
+    match = re.match(pattern, campaign_name)
+    
+    if not match:
+        # Campaign name doesn't match expected format, skip it
         return True
-    if check_region and check_region not in campaign_name:
+    
+    course_title, region, match_type = match.groups()
+    
+    # Check each component if specified
+    if check_course and check_course not in course_title:
         return True
-    if check_match_type and check_match_type not in campaign_name:
+    if check_region and check_region != region:
         return True
+    if check_match_type and check_match_type != match_type:
+        return True
+    
     return False
 
 def construct_campaign_name_for_args(course, match_type, region):
@@ -561,7 +574,7 @@ def push_location_bid_adjustments(google_ads_client, customer_id, campaigns, exi
             # Skip if no bid adjustment calculated
             if not bid_adj_decimal:
                 continue
-            
+
             bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
 
             # Look up geo target constant for this location
