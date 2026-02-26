@@ -2,10 +2,11 @@
 Maximize clicks for a single day of data, based on a pre-trained XGB model.
 1. Create feature matrix from raw data (and all keyword combos).
 2. Load and embed pre-trained model.
-3. Use Gurobi to maximize clicks under budget constraint.
+3. Use a MIP solver (Gurobi or SCIP) to maximize clicks under budget constraint.
 
 Example usage:
     python scripts/optimization.py --course ml
+    python scripts/optimization.py --course ml --solver scip
 
 Input files:
     data/<course>/gkp/keywords_classified.csv                       [FROM GKP / compare_keywords.py]
@@ -21,7 +22,7 @@ Output files:
     opt_results/<course>/cache/feature_matrix.parquet  Cached feature matrix
 
 Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
-    ~5-15 min per course per budget (Gurobi MIP solve; depends on keyword count)
+    ~5-15 min per course per budget (MIP solve; depends on keyword count)
 """
 
 from datetime import datetime
@@ -35,8 +36,6 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from itertools import product
 from pathlib import Path
-import gurobipy as gp
-from gurobipy import GRB
 import json
 from tqdm import tqdm
 
@@ -46,6 +45,7 @@ from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
 from config import COURSE_CONFIG
 from utils.llm_scoring import get_llm_scores_cached
+from utils.solver import MIPSolver
 from tidy_get_data import load_or_cache
 from scripts.modeling import _to_float32_csr # necessary to read model correctly
 
@@ -181,7 +181,13 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
 
 def embed_xgb(model, model_path, X, budget=400):
     """
-    Embed XGBoost model into Gurobi.
+    Embed XGBoost model into a MIP solver (Gurobi or SCIP).
+
+    Args:
+        model: MIPSolver instance.
+        model_path: Path to the .joblib pipeline file.
+        X: Feature DataFrame.
+        budget: Total budget.
     """
 
     # 1. Load Model and Pipeline
@@ -266,7 +272,7 @@ def embed_xgb(model, model_path, X, budget=400):
     MIN_LHS = 0.0
     
     # Safety margin: Use a tiny epsilon ONLY for strict inequalities (<)
-    # This prevents 'Dead Zones' where Gurobi can't find a valid path
+    # This prevents 'Dead Zones' where the solver can't find a valid path
     EPSILON = 1e-5 
     print(f"[Info] Using one-sided epsilon: {EPSILON} to handle strict inequalities.")
     
@@ -275,11 +281,11 @@ def embed_xgb(model, model_path, X, budget=400):
     for i in tqdm(range(K), desc="Embedding Rows"):
 
         # A. Decision Variable 'x' (Cost)
-        current_cost = model.addVar(lb=0.0, name=f"Cost_{i}")
+        current_cost = model.add_var(lb=0.0, name=f"Cost_{i}")
         cost_vars.append(current_cost)
 
         # B. Prediction Variable
-        pred_var = model.addVar(lb=-GRB.INFINITY, name=f"pred_{i}")
+        pred_var = model.add_var(lb=-model.infinity, name=f"pred_{i}")
         tree_vars_sum = 0
         
         for t_idx, paths in enumerate(tree_paths):
@@ -305,7 +311,7 @@ def embed_xgb(model, model_path, X, budget=400):
                             is_feasible = False; break
                 
                 if is_feasible:
-                    z = model.addVar(vtype=GRB.BINARY, name=f"z_{i}_{t_idx}_{leaf_idx}")
+                    z = model.add_var(vtype='B', name=f"z_{i}_{t_idx}_{leaf_idx}")
                     leaf_vars.append(z)
                     leaf_vals.append(leaf_val)
                     
@@ -315,29 +321,29 @@ def embed_xgb(model, model_path, X, budget=400):
                         
                         if op == "lt":
                             # Logic: Cost < Threshold
-                            # Gurobi Implementation: Cost <= Threshold - Epsilon
+                            # MIP Implementation: Cost <= Threshold - Epsilon
                             # Safe bound prevents negative values if thr is near zero
                             bound = max(0.0, thr - EPSILON)
                             
                             M = MAX_LHS - bound
-                            model.addConstr(lhs <= bound + M * (1 - z), name=f"split_lt_{i}_{t_idx}")
+                            model.add_constr(lhs <= bound + M * (1 - z), name=f"split_lt_{i}_{t_idx}")
 
                         elif op == "ge":
                             # Logic: Cost >= Threshold
-                            # Gurobi Implementation: Cost >= Threshold (Exact Match)
+                            # MIP Implementation: Cost >= Threshold (Exact Match)
                             # No margin needed because XGBoost is inclusive for >=
                             bound = thr
                             
                             M = bound - MIN_LHS
-                            model.addConstr(lhs >= bound - M * (1 - z), name=f"split_ge_{i}_{t_idx}")
+                            model.add_constr(lhs >= bound - M * (1 - z), name=f"split_ge_{i}_{t_idx}")
 
             # Tree Aggregation
             if leaf_vars:
-                model.addConstr(gp.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
-                tree_vars_sum += gp.LinExpr(leaf_vals, leaf_vars)
+                model.add_constr(model.quicksum(leaf_vars) == 1, name=f"tree_active_{i}_{t_idx}")
+                tree_vars_sum += model.lin_expr(leaf_vals, leaf_vars)
 
         # Prediction Constraint
-        model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
+        model.add_constr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
         pred_vars.append(pred_var)
 
         # Constraint: pred_opt - pred_base < historical_searches. Preds are on clicks scale, last_month_searches is log1p.
@@ -345,7 +351,7 @@ def embed_xgb(model, model_path, X, budget=400):
         if X.iloc[i]['Match type'] == 'Exact match':
             historical_searches = X.iloc[i]['last_month_searches']
             base_pred = pred_clicks_cost0[valid_indices[i]]
-            model.addConstr(
+            model.add_constr(
                 pred_var - base_pred <= np.expm1(historical_searches),
                 name=f"search_volume_cap_{i}"
             )
@@ -353,10 +359,12 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None, solver='gurobi', time_limit=600):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
+    solver: 'gurobi' or 'scip'
+    time_limit: solver time limit in seconds (default 600)
     
     Formulation:
         max   sum_i  g_i
@@ -366,10 +374,10 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
                 g_i >= 0  for all i
     """
 
-    model = gp.Model("max_clicks")
-    # model.setParam('OutputFlag', 1)
-    model.setParam('TimeLimit', 600)
-    model.setParam('MIPGap', 0.01)
+    model = MIPSolver("max_clicks", solver=solver)
+    # model.set_param('OutputFlag', 1)
+    model.set_param('TimeLimit', time_limit)
+    model.set_param('MIPGap', 0.01)
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)
 
@@ -385,20 +393,20 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         rates = get_conversion_rates(base_dir=base_dir)
         X = X.merge(rates, on='Region', how='left')
         X['Purch_rate'] = X['Purch_rate'].fillna(0)
-        model.setObjective(gp.quicksum(pred_vars[i] * X.loc[i, 'Purch_rate'] for i in range(len(pred_vars))), GRB.MAXIMIZE)
+        model.set_objective(model.quicksum(pred_vars[i] * X.loc[i, 'Purch_rate'] for i in range(len(pred_vars))), sense='maximize')
     else:
         # Maximize clicks
-        model.setObjective(gp.quicksum(pred_vars), GRB.MAXIMIZE)
+        model.set_objective(model.quicksum(pred_vars), sense='maximize')
 
     # Create regional budget variables
     regions = ['USA', 'A', 'B']
     region_budgets = {}
     for region in regions:
-        region_budgets[region] = model.addVar(lb=0.0, name=f"Budget_{region}")
+        region_budgets[region] = model.add_var(lb=0.0, name=f"Budget_{region}")
 
     # Total budget constraint: sum(regional_budgets) == budget
-    model.addConstr(
-        gp.quicksum(region_budgets.values()) == budget,
+    model.add_constr(
+        model.quicksum(region_budgets.values()) == budget,
         name='total_budget_constraint'
     )
 
@@ -406,8 +414,8 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
     for region in regions:
         region_indices = X.index[X['Region'] == region].tolist()
         if region_indices:
-            model.addConstr(
-                gp.quicksum(cost_vars[i] for i in region_indices) <= region_budgets[region],
+            model.add_constr(
+                model.quicksum(cost_vars[i] for i in region_indices) <= region_budgets[region],
                 name=f'budget_constraint_{region}'
             )
         else:
@@ -418,40 +426,40 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
 
     if order_budget:
         # Add ordering constraints: B_{USA} >= B_{A} >= B_{B}
-        model.addConstr(region_budgets['USA'] >= region_budgets['A'], name='order_budget_USA_A')
-        model.addConstr(region_budgets['A'] >= region_budgets['B'], name='order_budget_A_B')
+        model.add_constr(region_budgets['USA'] >= region_budgets['A'], name='order_budget_USA_A')
+        model.add_constr(region_budgets['A'] >= region_budgets['B'], name='order_budget_A_B')
 
     # Optimize
     model.optimize()
 
     # If presolve returns INF_OR_UNBD, re-solve with DualReductions=0 to disambiguate.
-    if model.status == GRB.INF_OR_UNBD:
-        print("[Warning] Gurobi returned INF_OR_UNBD (status 4). Re-solving with DualReductions=0...")
+    if model.is_inf_or_unbd():
+        print(f"[Warning] Solver returned INF_OR_UNBD (status {model.raw_status}). Re-solving with DualReductions=0...")
         try:
-            model.setParam('DualReductions', 0)
-            model.setParam('InfUnbdInfo', 1)
+            model.set_param('DualReductions', 0)
+            model.set_param('InfUnbdInfo', 1)
             model.optimize()
 
-            if model.status == GRB.INFEASIBLE:
+            if model.is_infeasible():
                 report_path = Path('opt_results/analysis/infeasibility_report.ilp')
                 report_path.parent.mkdir(parents=True, exist_ok=True)
                 print("[Info] Model is infeasible after disambiguation. Computing IIS...")
-                model.computeIIS()
+                model.compute_iis()
                 model.write(str(report_path))
                 print(f"[Info] Wrote IIS report to '{report_path}'.")
         except Exception as e:
-            print(f"[Warning] Failed to disambiguate status 4: {type(e).__name__}: {e}")
+            print(f"[Warning] Failed to disambiguate infeasible/unbounded: {type(e).__name__}: {e}")
 
     return model, cost_vars, pred_vars, X
 
 def extract_solution(model, cost_vars, pred_vars, model_path, X):
     """
-    Extracts solution from Gurobi and aligns it with the original Dataframe.
+    Extracts solution from the MIP solver and aligns it with the original Dataframe.
     
     Args:
-        model: The optimized Gurobi model.
-        cost_vars: List of Gurobi variables for Cost.
-        pred_vars: List of Gurobi variables for Predicted Clicks.
+        model: The MIPSolver instance (after optimization).
+        cost_vars: List of solver variables for Cost.
+        pred_vars: List of solver variables for Predicted Clicks.
         model_path: Path to the .joblib model file.
         X: The processed DataFrame (filtered for positive predictive clicks at cost=0) used for input (must contain metadata columns).
         
@@ -460,11 +468,11 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     """
     
     # 1. Check Optimization Status
-    if model.status not in [GRB.OPTIMAL, GRB.TIME_LIMIT]:
-        print(f"[Error] Optimization failed or interrupted. Status: {model.status}")
+    if not model.is_optimal_or_limit():
+        print(f"[Error] Optimization failed or interrupted. Status: {model.raw_status}")
         return None
 
-    print(f"[Info] Optimization Success. Objective Value: {model.ObjVal:.4f}")
+    print(f"[Info] Optimization Success. Objective Value: {model.get_obj_val():.4f}")
 
     # 2. Re-calculate Valid Indices (The Alignment Fix)
     # We must replicate the exact filtering logic from 'embed_xgb' to know 
@@ -484,14 +492,19 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     # Pull metadata from the valid rows of X
     results_df = X[['Keyword', 'Region', 'Match type', 'Origin']].copy()
     
-    # Extract values from Gurobi variables
-    results_df['Optimal Cost'] = [var.X for var in cost_vars]
-    results_df['Gurobi Pred'] = [var.X for var in pred_vars]
-    results_df['Gurobi Pred over Base'] = results_df['Gurobi Pred'] - base_preds
+    # Extract values from solver variables
+    results_df['Optimal Cost'] = model.get_vals(cost_vars)
+    results_df['Solver Pred'] = model.get_vals(pred_vars)
+    results_df['Solver Pred over Base'] = results_df['Solver Pred'] - base_preds
     # Filter out rows where Optimal Cost is zero (not selected)
     filt_opt_cost = results_df['Optimal Cost'] > 5e-4
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
-    print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
+    print(f"[Info] Total clicks over base (cost=0): {results_df['Solver Pred over Base'].sum():.4f}")
+
+    if results_df.empty:
+        print("[Warning] No keywords received a non-zero cost allocation. "
+              "The solver may need more time (increase --time-limit).")
+        return results_df
 
     # 5. Validation and Boundary Adjustment
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
@@ -501,7 +514,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     
     # The pipeline prediction includes the base_score naturally
     results_df['Actual Model Pred'] = pipeline.predict(X_validate)
-    results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
+    results_df['Diff'] = results_df['Solver Pred'] - results_df['Actual Model Pred']
     
     # Identify rows with significant discrepancy and attempt adjustment
     DISCREPANCY_THRESHOLD = 0.1
@@ -513,7 +526,7 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     
     max_diff = results_df['Diff'].abs().max()
     mean_diff = results_df['Diff'].abs().mean()
-    print(f"[Info] Max discrepancy between Gurobi and XGBoost: {max_diff:.6f}")
+    print(f"[Info] Max discrepancy between solver and XGBoost: {max_diff:.6f}")
     print(f"[Info] Mean absolute discrepancy: {mean_diff:.6f}")
 
     print("[Info] Sample of Optimization Results:")
@@ -528,6 +541,8 @@ def main():
     parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
     parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
     parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
+    parser.add_argument('--solver', default='gurobi', choices=['gurobi', 'scip'], help='MIP solver backend (default: gurobi)')
+    parser.add_argument('--time-limit', type=int, default=600, help='Solver time limit in seconds (default: 600)')
     args = parser.parse_args()
 
     if args.budget is None:
@@ -540,6 +555,7 @@ def main():
     print(f"Budget(s): {args.budget}")
     print(f"Order budget: {args.order_budget}")
     print(f"Max purchases objective: {args.max_purch}")
+    print(f"Solver: {args.solver}")
 
     base_dir = Path(f'data/{args.course}')
     
@@ -565,7 +581,7 @@ def main():
 
     X = X[X['Region'] != 'C']  # Filter out region C due to low EPC
     
-    # Optimize bids using Gurobi
+    # Optimize bids using selected solver
     model_path = f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib'
 
     for b in args.budget:
@@ -573,7 +589,7 @@ def main():
         model, cost_vars, pred_vars, X_opt = optimize_bids(
             X.copy(), model_path, budget=b, kw_df=kw_df,
             order_budget=args.order_budget, max_purch=args.max_purch,
-            base_dir=base_dir
+            base_dir=base_dir, solver=args.solver, time_limit=args.time_limit
         )
 
         # Extract solution and validate predictions

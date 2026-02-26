@@ -52,6 +52,7 @@ ml_open = [
 
 optimization = [
     "gurobipy>=10.0.1",
+    "pyscipopt>=5.0.0",
 ]
 
 dev = [
