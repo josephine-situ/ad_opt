@@ -71,3 +71,38 @@ SELECT_AD_GROUPS_FOR_CAMPAIGNS = """
         WHERE campaign.name IN ('{campaign_list}')
         AND ad_group.status != 'REMOVED'
     """
+
+GET_CRITERIA_FOR_CAMPAIGNS = """
+        SELECT
+            campaign_criterion.campaign,
+            campaign_criterion.criterion_id,
+            campaign_criterion.bid_modifier,
+            campaign_criterion.type,
+            campaign_criterion.device.type,
+            campaign_criterion.ad_schedule.day_of_week,
+            campaign_criterion.ad_schedule.start_hour,
+            campaign_criterion.ad_schedule.end_hour,
+            campaign_criterion.location.geo_target_constant
+        FROM campaign_criterion
+        WHERE campaign_criterion.campaign IN ('{campaign_id_list}')
+        AND campaign_criterion.status != 'REMOVED'
+    """
+
+GET_CAMPAIGNS_FOR_COURSE = """
+        SELECT campaign.id, campaign.name
+        FROM campaign
+        WHERE campaign.name LIKE 'Course - {course_title}%'
+        AND campaign.status != 'REMOVED'
+    """
+
+GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
+        SELECT
+            campaign.id,
+            ad_group.id,
+            ad_group_criterion.criterion_id,
+            ad_group_criterion.age_range.type
+        FROM ad_group_criterion
+        WHERE campaign.id IN ({campaign_ids})
+        AND ad_group_criterion.type = 'AGE_RANGE'
+        AND ad_group_criterion.status != 'REMOVED'
+    """
