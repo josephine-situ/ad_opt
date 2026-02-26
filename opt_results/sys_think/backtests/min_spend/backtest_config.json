@@ -1,0 +1,13 @@
+{
+    "exp_name": "min_spend",
+    "course": "sys_think",
+    "courses_run": "ml sys_think",
+    "start_day": "2025-12-01",
+    "embedding_method": "bert",
+    "k_policy": "0",
+    "extra_args": "--order-budget --max-purch --min-spend 1",
+    "slurm_job_id": "9662049",
+    "submitted_at": "2026-02-25T13:58:55-05:00",
+    "submitted_by": "jositu",
+    "host": "node1614"
+}
