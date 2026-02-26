@@ -431,8 +431,8 @@ def push_device_bid_adjustments(google_ads_client, customer_id, campaigns, exist
             # Skip if no bid adjustment calculated
             if not bid_adj_decimal:
                 continue
-            
-            bid_adjustment = float(bid_adj_decimal)
+
+            bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
             device_type = device_map.get(device)
             
             if device_type is None:
@@ -498,7 +498,7 @@ def push_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, 
             if not bid_adj_decimal:
                 continue
             
-            bid_adjustment = float(bid_adj_decimal)
+            bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
             
             # Parse hour range (e.g., "15 - 17" -> start_hour=15, end_hour=17)
             hour_parts = hour_group.split(" - ")
@@ -507,7 +507,7 @@ def push_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, 
                 continue
             
             start_hour = int(hour_parts[0])
-            end_hour = int(hour_parts[1]) + 3  # End hour in Google Ads is exclusive, so 15-17 becomes 15-20
+            end_hour = int(hour_parts[1])
             
             # Apply to all campaigns for this region
             for campaign_name, campaign_id in campaigns.items():
@@ -548,6 +548,9 @@ def push_location_bid_adjustments(google_ads_client, customer_id, campaigns, exi
     geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
     operations = []
     
+    # Cache for geo target lookups to avoid repeated API calls
+    geo_target_cache = {}
+    
     with open(adj_location_filepath) as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -556,55 +559,66 @@ def push_location_bid_adjustments(google_ads_client, customer_id, campaigns, exi
             bid_adj_decimal = row.get("BidAdjustment", "")
             
             # Skip if no bid adjustment calculated
-            if not bid_adj_decimal or bid_adj_decimal == "":
+            if not bid_adj_decimal:
                 continue
             
-            bid_adjustment = float(bid_adj_decimal)
-            
-            # Search for geo target constant by location name
-            try:
-                suggestions = geo_target_service.suggest_geo_target_constants(
-                    locale="en",
-                    location_names=google_ads_client.get_type("SuggestGeoTargetConstantsRequest.LocationNames")(names=[location])
-                )
-                
-                if not suggestions.geo_target_constant_suggestions:
-                    print(f"Warning: Could not find geo target for location '{location}', skipping")
-                    continue
-                
-                # Use the first suggestion
-                geo_target_constant = suggestions.geo_target_constant_suggestions[0].geo_target_constant.resource_name
-                
-                # Apply to all campaigns for this region
-                for campaign_name, campaign_id in campaigns.items():
-                    if f" - {region} - " not in campaign_name:
+            bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
+
+            # Look up geo target constant for this location
+            if location not in geo_target_cache:
+                try:
+                    # Create request with location names
+                    request = google_ads_client.get_type("SuggestGeoTargetConstantsRequest")
+                    request.location_names.names.append(location)
+                    request.locale = "en"
+                    
+                    suggestions = geo_target_service.suggest_geo_target_constants(request=request)
+                    
+                    if not suggestions.geo_target_constant_suggestions:
+                        print(f"Warning: Could not find geo target for location '{location}', skipping")
+                        geo_target_cache[location] = None
                         continue
                     
-                    # Check if criterion exists
-                    key = (str(campaign_id), geo_target_constant)
-                    if key in existing_criteria['location']:
-                        criterion_id = existing_criteria['location'][key]
-                        
-                        # Update existing criterion
-                        operation = google_ads_client.get_type("CampaignCriterionOperation")
-                        criterion = operation.update
-                        criterion.resource_name = campaign_criterion_service.campaign_criterion_path(
-                            customer_id, campaign_id, criterion_id
-                        )
-                        criterion.bid_modifier = bid_adjustment
-                        
-                        # Set field mask
-                        field_mask = protobuf_helpers.field_mask(None, criterion._pb)
-                        google_ads_client.copy_from(operation.update_mask, field_mask)
-                        
-                        operations.append(operation)
-                        print(f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}")
-                    else:
-                        print(f"Warning: Location criterion not found for {campaign_name}, {location} - skipping")
+                    # Use the first (best) suggestion
+                    geo_target_constant = suggestions.geo_target_constant_suggestions[0].geo_target_constant.resource_name
+                    geo_target_cache[location] = geo_target_constant
+                    
+                except Exception as e:
+                    print(f"Error looking up geo target for location '{location}': {e}")
+                    geo_target_cache[location] = None
+                    continue
             
-            except Exception as e:
-                print(f"Error processing location '{location}': {e}")
+            geo_target_constant = geo_target_cache[location]
+            if geo_target_constant is None:
                 continue
+
+            # Apply to all campaigns for this region
+            for campaign_name, campaign_id in campaigns.items():
+                if should_skip_campaign(campaign_name, check_region=region):
+                    continue
+
+                # Check if criterion exists
+                key = (str(campaign_id), geo_target_constant)
+                if key in existing_criteria['location']:
+                    criterion_id = existing_criteria['location'][key]
+
+                    # Update existing criterion
+                    operation = google_ads_client.get_type("CampaignCriterionOperation")
+                    criterion = operation.update
+                    criterion.resource_name = campaign_criterion_service.campaign_criterion_path(
+                        customer_id, campaign_id, criterion_id
+                    )
+                    criterion.bid_modifier = bid_adjustment
+
+                    # Set field mask
+                    field_mask = protobuf_helpers.field_mask(None, criterion._pb)
+                    google_ads_client.copy_from(operation.update_mask, field_mask)
+
+                    operations.append(operation)
+                    print(f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}")
+                else:
+                    print(f"Warning: Location criterion not found for {campaign_name}, {location} - skipping")
+
     
     return operations
 
@@ -675,6 +689,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course):
 
     
     all_operations = []
+    # Age bid adjustments are the only one which are done on the ad-group level.
     age_ops = []
     
     # Process each type of bid adjustment
@@ -684,26 +699,26 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course):
     else:
         print(f"Age adjustment file not found: {adj_age_filepath}")
     
-    # if adj_device_filepath.exists():
-    #     print("\n--- Processing Device Bid Adjustments ---")
-    #     device_ops = push_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_device_filepath)
-    #     all_operations.extend(device_ops)
-    # else:
-    #     print(f"Device adjustment file not found: {adj_device_filepath}")
-    #
-    # if adj_hour_of_day_filepath.exists():
-    #     print("\n--- Processing Hour-of-Day Bid Adjustments ---")
-    #     hour_ops = push_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_hour_of_day_filepath)
-    #     all_operations.extend(hour_ops)
-    # else:
-    #     print(f"Hour-of-day adjustment file not found: {adj_hour_of_day_filepath}")
-    #
-    # if adj_location_filepath.exists():
-    #     print("\n--- Processing Location Bid Adjustments ---")
-    #     location_ops = push_location_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_location_filepath)
-    #     all_operations.extend(location_ops)
-    # else:
-    #     print(f"Location adjustment file not found: {adj_location_filepath}")
+    if adj_device_filepath.exists():
+        print("\n--- Processing Device Bid Adjustments ---")
+        device_ops = push_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_device_filepath)
+        all_operations.extend(device_ops)
+    else:
+        print(f"Device adjustment file not found: {adj_device_filepath}")
+
+    if adj_hour_of_day_filepath.exists():
+        print("\n--- Processing Hour-of-Day Bid Adjustments ---")
+        hour_ops = push_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_hour_of_day_filepath)
+        all_operations.extend(hour_ops)
+    else:
+        print(f"Hour-of-day adjustment file not found: {adj_hour_of_day_filepath}")
+
+    if adj_location_filepath.exists():
+        print("\n--- Processing Location Bid Adjustments ---")
+        location_ops = push_location_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_location_filepath)
+        all_operations.extend(location_ops)
+    else:
+        print(f"Location adjustment file not found: {adj_location_filepath}")
     
     # Execute all bid adjustment operations
     # Age operations use AdGroupCriterionService, others use CampaignCriterionService
