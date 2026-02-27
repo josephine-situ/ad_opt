@@ -70,7 +70,7 @@ def get_course_campaign_budget_resource_name(google_ads_client, customer_id, cam
     return results[0].campaign.campaign_budget
 
 
-def push_budget(google_ads_client, customer_id, output_course):
+def push_budget(google_ads_client, customer_id, output_course, execute):
     """Push overall budget to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bids")
     daily_budget_filepath = budget_output_dir / "daily_budget.csv"
@@ -109,14 +109,14 @@ def push_budget(google_ads_client, customer_id, output_course):
             print(f"Prepared budget update: {campaign_name} -> ${daily_budget:.2f}/day")
 
     # Execute all budget updates
-    if operations:
+    if operations and execute:
         response = campaign_budget_service.mutate_campaign_budgets(
             customer_id=customer_id, operations=operations
         )
         print(f"Successfully updated {len(response.results)} campaign budgets")
 
 
-def push_cpc(google_ads_client, customer_id, output_course):
+def push_cpc(google_ads_client, customer_id, output_course, execute):
     """
     Push keyword-level max CPC to Google Ads.
     Note that this will only be visible if the associated campaign is using a manual CPC bidding strategy.
@@ -245,7 +245,7 @@ def push_cpc(google_ads_client, customer_id, output_course):
         operations.append(operation)
 
     # Execute all keyword updates in batches as the input files can be quite large
-    if operations:
+    if operations and execute:
         print(f"Updating {len(operations)} keywords...")
 
         for i in range(0, len(operations), BATCH_SIZE):
@@ -259,7 +259,7 @@ def push_cpc(google_ads_client, customer_id, output_course):
     else:
         print("No keyword updates to perform")
 
-def push_bid_adjustments(google_ads_client, customer_id, output_course):
+def push_bid_adjustments(google_ads_client, customer_id, output_course, execute):
     """Push bid adjustments to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bid_adjustments")
     adj_age_filepath = budget_output_dir / "bid_adj_age.csv"
@@ -321,7 +321,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course):
     
     # Execute all bid adjustment operations
     # Age operations use AdGroupCriterionService, others use CampaignCriterionService
-    if age_ops:
+    if age_ops and execute:
         print(f"\n--- Executing {len(age_ops)} age bid adjustment operations ---")
         ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
         
@@ -340,7 +340,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course):
     else:
         print("No age bid adjustments to apply")
 
-    if all_operations:
+    if all_operations and execute:
         print(f"\n--- Executing {len(all_operations)} device/schedule/location bid adjustment operations ---")
         campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
 
@@ -378,6 +378,12 @@ def main():
         required=True,
         help="The course to push data for, determines the location of the file inputs.",
     )
+    parser.add_argument(
+        "--execute",
+        action="store_true",
+        default=False,
+        help="The course to push data for, determines the location of the file inputs.",
+    )
 
     args = parser.parse_args()
 
@@ -399,17 +405,18 @@ def main():
     # TODO: Map customer ID to course, if we have one manager account over all course accounts.
     customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
     output_course = args.output_course
+    execute = args.execute
 
     if BUDGET in requested_datasets:
-        push_budget(google_ads_client, customer_id, output_course)
+        push_budget(google_ads_client, customer_id, output_course, execute)
         print(f"Successfully pushed budget")
 
     if CPC in requested_datasets:
-        push_cpc(google_ads_client, customer_id, output_course)
+        push_cpc(google_ads_client, customer_id, output_course, execute)
         print(f"Successfully pushed max cpc data")
 
     if BID_ADJ in requested_datasets:
-        push_bid_adjustments(google_ads_client, customer_id, output_course)
+        push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
         print(f"Successfully pushed bid adjustments")
 
     print(f"All requested datasets pushed successfully")
