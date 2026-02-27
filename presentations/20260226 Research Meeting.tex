@@ -1,0 +1,366 @@
+\documentclass[smaller]{beamer}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{multirow}
+
+% --- THEME SETTINGS ---
+\usetheme{Madrid}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+% --- PRESENTATION INFO ---
+\title{Search Ad Optimization --- Research Update}
+\date{February 26, 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ============================================================================
+% Agenda
+% ============================================================================
+\begin{frame}{Agenda}
+
+\begin{enumerate}
+    \item \textbf{SVD dimension sweep} --- optimal number of embedding dimensions
+    \item \textbf{Minimum budget constraint} --- eliminating low-spend keywords
+    \item \textbf{SCIP vs.\ Gurobi} --- solver performance comparison
+\end{enumerate}
+
+\end{frame}
+
+% ============================================================================
+% SVD Sweep Overview
+% ============================================================================
+\begin{frame}{SVD Dimension Sweep}
+\framesubtitle{Experiment design}
+
+\textbf{Goal:} Find the optimal SVD dimensionality for MiniLM embeddings (384-d $\to$ $k$-d).
+
+\medskip
+\textbf{Setup:}
+\begin{itemize}
+    \item Courses: Sys Think and ML; backtest Dec 1--31, 2025.
+    \item $k \in \{10, 20, 50, 100, \textit{full}\}$; \textit{full} = 384 (no SVD).
+    \item SVD fitted daily on historical data only (no leakage).
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Old Eval vs Oracle Eval
+% ============================================================================
+\begin{frame}{Old Eval vs.\ Oracle Eval}
+\framesubtitle{Evaluation model used to score backtest clicks}
+
+\textbf{Oracle model:} CV over $k \in \{10, 20, 50, 100, 384\}$; selects $k{=}384$ for both courses.
+
+\medskip
+\begin{itemize}
+    \item This model evaluates the number of clicks each cost allocation produces in the backtest.
+    \item Old eval: single XGBoost with fixed $k{=}50$ SVD, trained on all data.
+    \item Oracle CV MSE: 1.73 (Sys Think), 2.62 (ML) --- lower than old eval (1.81, 2.81).
+    \item Old exp results were overstated due to SVD data leakage and worse evaluation model.
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% SVD Sweep Results - Sys Think
+% ============================================================================
+\begin{frame}{SVD Sweep Results --- Sys Think}
+\framesubtitle{Dec 1--31 backtest, \$357 budget}
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{5}{c}{Optimized (daily avg)} & \multicolumn{3}{c}{Improvement} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-9}
+Experiment & Purch & Clicks & Cost & Clicks/\$ & Kws & Purch & Clicks & Clicks/\$ \\
+\midrule
+\textcolor{gray}{Old exp (old eval)} & \textcolor{gray}{0.34 $\pm$ 0.01} & \textcolor{gray}{265.2 $\pm$ 10.5} & \textcolor{gray}{357.05} & \textcolor{gray}{0.743} & \textcolor{gray}{119} & \textcolor{gray}{+31.7\%} & \textcolor{gray}{+116.9\%} & \textcolor{gray}{+101.5\%} \\
+Old exp (Oracle) & 0.30 $\pm$ 0.01 & 189.9 $\pm$ 8.0 & 357.05 & 0.532 & 119 & +18.1\% & +56.1\% & +45.1\% \\
+\midrule
+$k{=}10$  & 0.23 $\pm$ 0.01 & 138.2 $\pm$ 5.5  & 357.01 & 0.387 &  92 & $-$6.5\%  & +15.4\% & +5.2\%  \\
+$k{=}20$  & 0.28 $\pm$ 0.01 & 171.2 $\pm$ 6.8  & 357.08 & 0.479 &  98 & +11.7\% & +42.9\% & +30.3\% \\
+$k{=}50$  & 0.29 $\pm$ 0.01 & \textbf{199.2 $\pm$ 7.2}  & 356.93 & \textbf{0.558} & 96 & +17.6\% & \textbf{+66.3\%} & \textbf{+51.7\%} \\
+$k{=}100$ & 0.28 $\pm$ 0.01 & 178.7 $\pm$ 8.0  & 356.87 & 0.501 &  94 & +13.7\% & +49.2\% & +36.1\% \\
+Full (384) & \textbf{0.34 $\pm$ 0.01} & 196.7 $\pm$ 12.4 & 357.09 & 0.551 & 122 & \textbf{+34.3\%} & +61.7\% & +50.3\% \\
+\bottomrule
+\multicolumn{9}{l}{\scriptsize \textbf{Baseline:} Purch: 0.25 $\pm$ 0.01, Clicks: 119.8 $\pm$ 2.8, Cost: \$325.62 $\pm$ 10.12, Clicks/\$: 0.368, Kws: 36 $\pm$ 1.} \\
+\end{tabular}
+}
+\end{table}
+
+\medskip
+\begin{itemize}
+    \item Old exp's results worsen with new evaluation model - similar to k=50 results.
+    \item Full embeddings maximize purchases (\textbf{+34.3\%}).
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% SVD Sweep Results - ML
+% ============================================================================
+\begin{frame}{SVD Sweep Results --- ML}
+\framesubtitle{Dec 1--31 backtest, \$353 budget}
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{5}{c}{Optimized (daily avg)} & \multicolumn{3}{c}{Improvement} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-9}
+Experiment & Purch & Clicks & Cost & Clicks/\$ & Kws & Purch & Clicks & Clicks/\$ \\
+\midrule
+\textcolor{gray}{Old exp (old eval)} & \textcolor{gray}{0.15 $\pm$ 0.01} & \textcolor{gray}{122.6 $\pm$ 10.0} & \textcolor{gray}{353.94} & \textcolor{gray}{0.346} & \textcolor{gray}{410} & \textcolor{gray}{+30.2\%} & \textcolor{gray}{$-$16.3\%} & \textcolor{gray}{$-$21.4\%} \\
+Old exp (Oracle) & 0.11 $\pm$ 0.01 & 85.4 $\pm$ 4.4 & 353.94 & 0.241 & 410 & $-$6.4\% & $-$38.4\% & $-$42.2\% \\
+\midrule
+$k{=}10$  & 0.12 $\pm$ 0.01 & 104.0 $\pm$ 5.0  & 353.95 & 0.294 & 358 & +8.2\%  & $-$24.9\% & $-$29.6\%  \\
+$k{=}20$  & 0.12 $\pm$ 0.01 & 98.1 $\pm$ 3.9   & 353.92 & 0.277 & 340 & +5.8\%  & $-$29.2\% & $-$33.5\% \\
+$k{=}50$  & 0.11 $\pm$ 0.01 & 93.1 $\pm$ 3.5   & 353.97 & 0.263 & 353 & +0.1\%  & $-$32.8\% & $-$37.0\% \\
+$k{=}100$ & 0.12 $\pm$ 0.01 & 94.6 $\pm$ 4.2   & 353.92 & 0.267 & 382 & +5.0\%  & $-$31.5\% & $-$36.0\% \\
+Full (384) & \textbf{0.14 $\pm$ 0.01} & \textbf{110.4 $\pm$ 8.4} & 353.95 & \textbf{0.312} & 472 & \textbf{+22.8\%} & \textbf{$-$20.6\%} & \textbf{$-$25.3\%} \\
+\bottomrule
+\multicolumn{9}{l}{\scriptsize \textbf{Baseline:} Purch: 0.11 $\pm$ 0.00, Clicks: 138.5 $\pm$ 4.7, Cost: \$332.00 $\pm$ 14.27, Clicks/\$: 0.417, Kws: 38 $\pm$ 1.} \\
+\end{tabular}
+}
+\end{table}
+
+\medskip
+\begin{itemize}
+    \item Full embeddings maximize purchases (\textbf{+22.8\%}).
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Regional Analysis
+% ============================================================================
+\begin{frame}{Regional Budget Allocation}
+\framesubtitle{Spend share by region}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\centering
+\textbf{Sys Think}
+\smallskip
+
+\begin{tabular}{lccc}
+\toprule
+ & USA & A & B \\
+\midrule
+Actual   & 65.7\% & 24.3\% & 10.1\% \\
+Old exp  & 35.9\% & 35.2\% & 28.9\% \\
+SVD Full & 41.4\% & 40.6\% & 18.0\% \\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+\textbf{ML}
+\smallskip
+
+\begin{tabular}{lccc}
+\toprule
+ & USA & A & B \\
+\midrule
+Actual   & 75.3\% & 15.1\% &  9.6\% \\
+Old exp  & 93.2\% &  6.8\% &  0.0\% \\
+SVD Full & 95.9\% &  4.1\% &  0.0\% \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+
+\medskip
+\begin{itemize}
+    \item Sys Think: optimizer shifts spend from USA toward cheaper regions A and B.
+    \item ML: optimizer concentrates nearly all spend in USA --- explains click loss.
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Policy vs Oracle Over-prediction
+% ============================================================================
+\begin{frame}{Policy Model Over-Prediction}
+\framesubtitle{Gurobi-predicted clicks vs.\ Oracle-evaluated clicks}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Course & Policy Clicks & Oracle Clicks & Over-prediction \\
+\midrule
+ML        & 8,839 & 3,202 & $2.76\times$ \\
+Sys Think & 9,850 & 6,099 & $1.62\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\begin{itemize}
+    \item Policy clicks = $\sum_i (\hat{f}_i^{\text{policy}}(\mathbf{x}_i^*) - \hat{f}_i^{\text{policy}}(\mathbf{0}))$.
+    \item Oracle clicks = $\sum_i (\hat{f}_i^{\text{oracle}}(\mathbf{x}_i^*) - \hat{f}_i^{\text{oracle}}(\mathbf{0}))$.
+    \item \textbf{How can we improve?} Identify where over-prediction is high and constrain the optimizer.
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Where Does Over-prediction Occur?
+% ============================================================================
+\begin{frame}{Diagnosing Over-Prediction --- By Daily Spend}
+\framesubtitle{Low daily spend drives over-prediction}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\centering
+\textbf{ML}
+\smallskip
+
+\begin{tabular}{lrr}
+\toprule
+Daily Spend & $N$ & Ovr\% \\
+\midrule
+$<$\$0.50  & 4,735 & \textbf{925\%} \\
+\$0.50--1  & 5,934 & 147\% \\
+\$1--5     & 2,980 & 109\% \\
+\$5--10    &    36 & 73\% \\
+$>$\$10    &     1 & 36\% \\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+\textbf{Sys Think}
+\smallskip
+
+\begin{tabular}{lrr}
+\toprule
+Daily Spend & $N$ & Ovr\% \\
+\midrule
+$<$\$0.50  &   108 & \textbf{$\gg$100\%} \\
+\$0.50--1  & 2,601 & 1,208\% \\
+\$1--5     &   599 & 268\% \\
+\$5--10    &    24 & 34\% \\
+$>$\$10    &   451 & 48\% \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+
+\medskip
+{\scriptsize $N$ = number of (keyword, match type, region) rows in optimal solution across 31 backtest days.\\
+Ovr\% = $(\sum\text{Policy clicks}/\sum\text{Oracle clicks} - 1)\times 100$.}
+
+\medskip
+\begin{itemize}
+    \item Daily spend $<$\$1 is rare in the historical data ($<$ 25\%).
+    \item Keywords with $<$\$1 daily spend account for the majority of over-prediction.
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Min-Spend Constraint Results
+% ============================================================================
+\begin{frame}{Min-Spend \$1 Constraint --- Results}
+\framesubtitle{Dec 1--31 backtest, Full embeddings ($k{=}384$)}
+
+\textbf{Sys Think:}
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{5}{c}{Optimized (daily avg)} & \multicolumn{3}{c}{Improvement} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-9}
+Experiment & Purch & Clicks & Cost & Clicks/\$ & Kws & Purch & Clicks & Clicks/\$ \\
+\midrule
+No floor  & 0.34 $\pm$ 0.01 & 196.7 $\pm$ 12.4 & 357.09 & 0.551 & 122 & +34.3\% & +61.7\% & +50.3\% \\
+Min \$1   & \textbf{0.36 $\pm$ 0.01} & \textbf{215.4 $\pm$ 12.0} & 356.81 & \textbf{0.604} &  81 & \textbf{+42.5\%} & \textbf{+77.1\%} & \textbf{+64.5\%} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\textbf{ML:}
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{5}{c}{Optimized (daily avg)} & \multicolumn{3}{c}{Improvement} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-9}
+Experiment & Purch & Clicks & Cost & Clicks/\$ & Kws & Purch & Clicks & Clicks/\$ \\
+\midrule
+No floor  & 0.14 $\pm$ 0.01 & 110.4 $\pm$ 8.4  & 353.95 & 0.312 & 472 & +22.8\% & $-$20.6\% & $-$25.3\% \\
+Min \$1   & \textbf{0.19 $\pm$ 0.01} & \textbf{151.8 $\pm$ 6.2}  & 353.89 & \textbf{0.429} & 266 & \textbf{+67.3\%} & \textbf{+9.5\%}  & \textbf{+2.8\%}  \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{itemize}
+    \item Improvement in both courses, for both purchases and clicks.
+    \item Active keywords reduced: 122 $\to$ 81 (Sys Think), 472 $\to$ 266 (ML).
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% SCIP vs Gurobi
+% ============================================================================
+\begin{frame}{SCIP vs.\ Gurobi}
+\framesubtitle{Solver performance comparison}
+
+\textbf{Model size:} $>$1M variables, $>$3M constraints.
+
+\medskip
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Solver & Cores & Mem (GB) & Solve Time \\
+\midrule
+SCIP   & 8 & 64 & $>$10 hours (got to 9\% optimality gap) \\
+Gurobi & 16 & 128 & $\sim$10 minutes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\begin{itemize}
+    \item Gurobi is orders of magnitude faster for our MILP formulation (though not a fair comparison - will redo).
+    \item SCIP is open-source but may be impractical at this problem scale.
+\end{itemize}
+
+\end{frame}
+
+% ============================================================================
+% Takeaways
+% ============================================================================
+\begin{frame}{Conclusions}
+
+\begin{itemize}
+    \item \textbf{Full embeddings (no SVD)} perform best for both courses.
+    \item Policy model over-predicts clicks by $1.6$--$2.8\times$, driven by low-spend keywords.
+    \item \textbf{Min-spend \$1 floor} eliminates the worst over-prediction:
+    \begin{itemize}
+        \item Sys Think: purchases \textbf{+42.5\%}, clicks \textbf{+77.1\%}.
+        \item ML: purchases \textbf{+67.3\%}, clicks \textbf{+9.5\%}.
+    \end{itemize}
+    \item \textbf{Gurobi} solves the model ($>$1M variables) in $\sim$10 min; SCIP did not finish in $>$10 hours.
+\end{itemize}
+
+\end{frame}
+
+\end{document}
