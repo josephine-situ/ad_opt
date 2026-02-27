@@ -318,48 +318,6 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Successfully generated all reports for {output_course}")
 
 
-def pull_ads_reports_legacy(google_ads_client: GoogleAdsClient, customer_id: str):
-    """Legacy pull_ads_reports function - deprecated."""
-    print(f"Pulling ads reports data...")
-    print(f"Customer ID: {customer_id}")
-    query = RAW_INPUT_TO_MODELS_QUERY.format(
-        start_date=(datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d"),
-        end_date=datetime.now().strftime("%Y-%m-%d"),
-    )
-
-    ads_service = google_ads_client.get_service("GoogleAdsService")
-    stream = ads_service.search_stream(customer_id=customer_id, query=query)
-
-    for batch in stream:
-        for row in batch.results:
-            date = row.segments.date
-            search_term = row.search_term_view.search_term
-            match_type = row.segments.search_term_match_type.name
-            campaign_name = row.campaign.name
-            clicks = row.metrics.clicks
-            conv_value = row.metrics.conversions_value
-            currency = row.customer.currency_code
-            cost = (
-                row.metrics.cost_micros / 1_000_000
-            )
-
-            print(
-                "\t".join(
-                    [
-                        date,
-                        search_term,
-                        match_type,
-                        campaign_name,
-                        str(clicks),
-                        str(conv_value),
-                        currency,
-                        str(cost),
-                    ]
-                )
-            )
-
-
-
 def generate_rows_from_gkp_response(response, date_headers):
     for result in response.results:
         metrics = result.keyword_metrics
