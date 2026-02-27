@@ -36,6 +36,28 @@ Output files:
     opt_results/<course>/bids/daily_budget.csv
     opt_results/<course>/bids/daily_budget.tex
 
+Examples:
+    # Calculate bids and bid adjustments for gen_ai course
+    python scripts/bid_post_processing.py --course gen_ai
+    
+    # Only add bid column to bids files with custom multiplier
+    python scripts/bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
+    
+    # Process a specific file or directory
+    python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
+    python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
+
+    # Use experiment name instead of bids-path
+    python scripts/bid_post_processing.py --course ml --exp-name exp107_max_conv --budget 353 --skip-adjustments
+
+    # Only calculate bid adjustments (skip adding bid column)
+    python scripts/bid_post_processing.py --course gen_ai --skip-bids
+
+Bids path resolution (mutually exclusive):
+    --exp-name  -> opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids
+    --bids-path -> user-specified path (file or directory)
+    (default)   -> opt_results/<course>/bids
+
 Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no discrete GPU):
     <1 min per course
 """
@@ -78,12 +100,12 @@ def clean_string_column(series: pd.Series) -> pd.Series:
 
 
 def group_hours(hour: int) -> str:
-    """Group hours into 3-hour bins: 0-2, 3-5, 6-8, etc."""
+    """Group hours into 4-hour bins: 0-3, 4-7, 8-11, etc."""
     if pd.isna(hour):
         return None
     hour = int(hour)
-    start = (hour // 3) * 3
-    end = start + 2
+    start = (hour // 4) * 4
+    end = start + 3
     return f"{start} - {end}"
 
 
@@ -265,13 +287,13 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     
     results = {}
     
-    # Hour of Day (grouped into 3-hour bins)
+    # Hour of Day (grouped into 4-hour bins)
     hod_clicks = bid_adj_dir / 'hod_clicks.csv'
     hod_conv = bid_adj_dir / 'hod_conv.csv'
     if hod_clicks.exists() and hod_conv.exists():
-        print("  Processing Hour of Day adjustments (grouped 0-2, 3-5, etc.)...")
+        print("  Processing Hour of Day adjustments (grouped 0-3, 4-7, etc.)...")
         df, _ = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
-        # Group hours into 3-hour bins
+        # Group hours into 4-hour bins
         df['Hour Group'] = df['Hour of the day'].apply(group_hours)
         # Aggregate by the new hour groups
         df = df.groupby(['Campaign', 'Hour Group']).agg({
@@ -704,31 +726,7 @@ def generate_daily_budget_table(
 def main():
     parser = argparse.ArgumentParser(
         description="Post-processing for bid optimization: calculate bid adjustments and add bid column.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-        Examples:
-            # Calculate bid adjustments for gen_ai course
-            python scripts/bid_post_processing.py --course gen_ai
-            
-            # Calculate with custom minimum clicks threshold
-            python scripts/bid_post_processing.py --course ml --min-clicks 500
-            
-            # Process all courses
-            python scripts/bid_post_processing.py --all-courses
-            
-            # Only add bid column to bids files with custom multiplier
-            python scripts/bid_post_processing.py --course gen_ai --bid-multiplier 1.5 --skip-adjustments
-            
-            # Process a specific file or directory
-            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/bids/optimized_costs.csv --skip-adjustments
-            python scripts/bid_post_processing.py --course gen_ai --bids-path opt_results/gen_ai/backtests --skip-adjustments
-
-            # Use experiment name instead of bids-path (resolves to opt_results/<course>/backtests/<exp-name>/budget_<budget>/bids)
-            python scripts/bid_post_processing.py --course ml --exp-name exp107_max_conv --budget 353 --skip-adjustments
-
-            # Only calculate bid adjustments (skip adding bid column)
-            python scripts/bid_post_processing.py --course gen_ai --skip-bids
-        """
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument(
