@@ -30,3 +30,4 @@ Day,k_policy,Hist_MSE,Hist_R2,Hist_Bias,CV_Score,best_params
 2025-12-29,full,1.483160138130188,0.9117082357406616,-1.0557242921416105e-05,1.6824832201004027,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
 2025-12-30,full,1.4942069053649902,0.9116495847702026,-0.00010462681027115521,1.7160783767700196,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
 2025-12-31,full,1.4910269975662231,0.9120423197746277,9.791031338292477e-06,1.733739447593689,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
+2025-12-01,full,1.4351500272750854,0.9033908843994141,1.8749506150312377e-05,1.6706175327301025,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
