@@ -20,6 +20,8 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-01-01',
         'budgets': [353.99],
+        # Customer ID for MIT xPRO - Machine Learning account
+        'customer_id': '9509089094',
     },
     'sys_eng': {
         'start_dates': [
@@ -40,6 +42,8 @@ COURSE_CONFIG = {
             '2026-04-06'
         ],
         'min_date': '2022-06-01', # Start of search history
-        'budgets': [357.14]
+        'budgets': [357.14],
+        # Customer ID for MIT xPRO - System Thinking account
+        'customer_id': '5157372594',
     }
 }
