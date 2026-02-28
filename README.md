@@ -24,6 +24,35 @@ Planner stats ───────┘        │                  │          
 6. **Optimization** — `optimization.py` embeds the trained XGBoost tree structure into a Gurobi MIP and solves for cost allocations that maximize total predicted clicks (or expected purchases) under a total budget constraint with regional sub-budgets.
 7. **Post-processing** — `bid_post_processing.py` converts optimal costs into base bids and computes bid adjustments by hour, device, location, and age segment based on conversion rate ratios.
 
+### Daily Bid Generation
+
+`run_pipeline.py` runs the full pipeline end-to-end to produce bids for tomorrow:
+
+```bash
+# Default: ml course, full BERT (no SVD), min-spend=1, max-purchases objective
+python scripts/run_pipeline.py
+
+# Multiple courses
+python scripts/run_pipeline.py --course ml sys_think
+
+# Custom date and budget
+python scripts/run_pipeline.py --course ml --date 2026-03-01 --budget 400
+
+# Skip data prep if clean data already exists
+python scripts/run_pipeline.py --skip-data-prep
+```
+
+Defaults are drawn from the `opt_results/ml/backtests/min_spend` configuration:
+BERT embeddings, no SVD (`k_policy=0`), ordered regional budgets
+(`B_USA >= B_A >= B_B`), max-purchases objective, and a $1 minimum spend per
+active keyword.
+
+Steps executed:
+1. **Data preparation** — calls `tidy_get_data.py` (cached, ~2-5 min)
+2. **Model training** — loads full BERT embeddings (384-d, L2-normalised, no SVD), trains XGBoost via `train_best_model` (~1-3 min)
+3. **Optimization** — builds feature matrix for the target date, embeds XGBoost in Gurobi MIP, solves (~5-15 min)
+4. **Post-processing** — computes base bids, bid adjustments (hour/device/location/age), and daily budgets (<1 min)
+
 ### Backtesting
 
 A rolling daily backtest validates out-of-sample performance:
@@ -247,6 +276,7 @@ This structure ensures the pipeline's output files (bids, budgets, bid adjustmen
 │   ├── interpret_xgb.py        # SHAP variable importance
 │   ├── optimization.py         # Gurobi MIP bid optimization
 │   ├── bid_post_processing.py  # Base bids & segment bid adjustments
+│   ├── run_pipeline.py         # End-to-end pipeline (data → bids for tomorrow)
 │   ├── format_bids_excel.py    # Export bids to formatted Excel
 │   ├── backtest_daily.py       # Rolling daily backtest
 │   ├── backtest_eval.py        # Backtest evaluation

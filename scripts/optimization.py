@@ -216,7 +216,18 @@ def embed_xgb(model, model_path, X, budget=400):
     # 2. Filter Logic
     # We set Cost=0 to check the intercept (base validity)
     X['Cost'] = 0.0
-    
+
+    # Guard: NaN features will silently corrupt tree pruning (both
+    # branches fail Python's comparison, causing over-pruning / infeasibility).
+    nan_cols = [c for c in X.columns if X[c].isna().any()]
+    if nan_cols:
+        nan_counts = {c: int(X[c].isna().sum()) for c in nan_cols}
+        raise ValueError(
+            f"embed_xgb received a feature matrix with NaN values.\n"
+            f"Columns with NaNs: {nan_counts}\n"
+            f"Fix upstream data (e.g. missing course start dates in config.py)."
+        )
+
     # Use the full pipeline to predict (handles float32 cast automatically)
     pred_clicks_cost0 = pipeline.predict(X)
     
@@ -371,13 +382,14 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None, min_spend=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None, min_spend=None, time_limit=600):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
     min_spend: If set, each active keyword must spend at least this amount (e.g. 1.0).
                Adds binary activation variables z_i with:
                  x_i <= budget * z_i,  x_i >= min_spend * z_i,  z_i in {0,1}
+    time_limit: Gurobi solve time limit in seconds. None or 0 for no limit.
     
     Formulation:
         max   sum_i  g_i
@@ -389,7 +401,8 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
 
     model = gp.Model("max_clicks")
     # model.setParam('OutputFlag', 1)
-    model.setParam('TimeLimit', 600)
+    if time_limit:
+        model.setParam('TimeLimit', time_limit)
     model.setParam('MIPGap', 0.01)
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)

@@ -1,0 +1,9 @@
+Region,Match type,Daily Budget
+A,Broad match,82.39999784646862
+A,Phrase match,38.139998879806434
+B,Broad match,38.86999966449157
+B,Exact match,19.069999439903217
+B,Phrase match,57.20999831970961
+USA,Broad match,115.26000082260477
+USA,Exact match,2.4300000245084883
+USA,Phrase match,3.5000000313710804
