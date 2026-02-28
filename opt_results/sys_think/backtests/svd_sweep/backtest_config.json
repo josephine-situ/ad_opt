@@ -1,0 +1,13 @@
+{
+    "exp_name": "svd_sweep",
+    "course": "sys_think",
+    "courses_run": "ml sys_think",
+    "start_day": "2025-12-01",
+    "embedding_method": "bert",
+    "k_policy": "0 10 20 50 100",
+    "extra_args": "--order-budget --max-purch",
+    "slurm_job_id": "9603077",
+    "submitted_at": "2026-02-23T23:14:46-05:00",
+    "submitted_by": "jositu",
+    "host": "node1602"
+}

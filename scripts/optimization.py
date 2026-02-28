@@ -106,7 +106,7 @@ def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
     return embedding_df
     
 
-def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai'):
+def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai', raw_emb_map=None, svd_pipeline=None):
     """
     Create feature matrix for optimization.
     
@@ -117,6 +117,11 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         base_dir: Base directory for data files.
         embedding_method: 'bert' for BERT embeddings or 'llm' for LLM relevance scores.
         course: Course identifier ('gen_ai', 'ml', 'sys_eng') - used for LLM scoring.
+        raw_emb_map: Optional dict {keyword: raw_embedding_vector}. When provided
+                     with *svd_pipeline*, embeddings are computed on-the-fly instead
+                     of loading the saved pipeline.
+        svd_pipeline: Optional fitted SVD pipeline dict (from
+                      ``fit_svd_pipeline``).  Used together with *raw_emb_map*.
     
     Returns:
         DataFrame with all features for optimization.
@@ -159,10 +164,23 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         X['llm_relevance_score'] = X['llm_relevance_score'].fillna(3)
         embedding_cols = ['llm_relevance_score']
     else:
-        print(f"[Info] Using BERT embeddings")
-        emb_df = get_emb_from_pipeline(keywords, base_dir)
-        X = X.merge(emb_df, on='Keyword', how='left')
-        embedding_cols = [col for col in X.columns if col.startswith('bert_')]
+        if raw_emb_map is not None and svd_pipeline is not None:
+            # Use provided SVD pipeline (daily backtest / oracle evaluation)
+            from utils.embeddings import apply_svd_pipeline
+            unique_kw_in_X = X['Keyword'].unique().tolist()
+            raw_matrix = np.array([raw_emb_map[kw] for kw in unique_kw_in_X])
+            transformed = apply_svd_pipeline(raw_matrix, svd_pipeline)
+            n_comp = transformed.shape[1]
+            embedding_cols = [f'bert_{i}' for i in range(n_comp)]
+            emb_df = pd.DataFrame(transformed, columns=embedding_cols)
+            emb_df['Keyword'] = unique_kw_in_X
+            X = X.merge(emb_df, on='Keyword', how='left')
+            print(f"[Info] Using provided SVD pipeline (k={n_comp})")
+        else:
+            print(f"[Info] Using BERT embeddings")
+            emb_df = get_emb_from_pipeline(keywords, base_dir)
+            X = X.merge(emb_df, on='Keyword', how='left')
+            embedding_cols = [col for col in X.columns if col.startswith('bert_')]
 
     # Features (and Keyword)
     features = [
@@ -198,7 +216,18 @@ def embed_xgb(model, model_path, X, budget=400):
     # 2. Filter Logic
     # We set Cost=0 to check the intercept (base validity)
     X['Cost'] = 0.0
-    
+
+    # Guard: NaN features will silently corrupt tree pruning (both
+    # branches fail Python's comparison, causing over-pruning / infeasibility).
+    nan_cols = [c for c in X.columns if X[c].isna().any()]
+    if nan_cols:
+        nan_counts = {c: int(X[c].isna().sum()) for c in nan_cols}
+        raise ValueError(
+            f"embed_xgb received a feature matrix with NaN values.\n"
+            f"Columns with NaNs: {nan_counts}\n"
+            f"Fix upstream data (e.g. missing course start dates in config.py)."
+        )
+
     # Use the full pipeline to predict (handles float32 cast automatically)
     pred_clicks_cost0 = pipeline.predict(X)
     
@@ -353,10 +382,14 @@ def embed_xgb(model, model_path, X, budget=400):
     model.update()
     return cost_vars, pred_vars, X
 
-def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None):
+def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max_purch=False, base_dir=None, min_spend=None, time_limit=600):
     """ Maximize clicks with embedded XGBoost model. 
 
     budget: total budget across all regions
+    min_spend: If set, each active keyword must spend at least this amount (e.g. 1.0).
+               Adds binary activation variables z_i with:
+                 x_i <= budget * z_i,  x_i >= min_spend * z_i,  z_i in {0,1}
+    time_limit: Gurobi solve time limit in seconds. None or 0 for no limit.
     
     Formulation:
         max   sum_i  g_i
@@ -368,7 +401,8 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
 
     model = gp.Model("max_clicks")
     # model.setParam('OutputFlag', 1)
-    model.setParam('TimeLimit', 600)
+    if time_limit:
+        model.setParam('TimeLimit', time_limit)
     model.setParam('MIPGap', 0.01)
 
     cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)
@@ -420,6 +454,16 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         # Add ordering constraints: B_{USA} >= B_{A} >= B_{B}
         model.addConstr(region_budgets['USA'] >= region_budgets['A'], name='order_budget_USA_A')
         model.addConstr(region_budgets['A'] >= region_budgets['B'], name='order_budget_A_B')
+
+    # Minimum-spend constraints: if keyword i is active (z_i=1), it must
+    # spend at least min_spend dollars.
+    if min_spend is not None:
+        c_min = float(min_spend)
+        print(f"[Info] Adding minimum-spend constraints: c_min = ${c_min:.2f}")
+        for i, x_i in enumerate(cost_vars):
+            z_i = model.addVar(vtype=GRB.BINARY, name=f"active_{i}")
+            model.addConstr(x_i <= budget * z_i, name=f"min_spend_ub_{i}")
+            model.addConstr(x_i >= c_min * z_i, name=f"min_spend_lb_{i}")
 
     # Optimize
     model.optimize()
@@ -528,6 +572,7 @@ def main():
     parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
     parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
     parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
+    parser.add_argument('--min-spend', type=float, default=None, help='Minimum spend per active keyword (e.g. 1.0). If not set, no minimum-spend constraint is used.')
     args = parser.parse_args()
 
     if args.budget is None:
@@ -540,6 +585,7 @@ def main():
     print(f"Budget(s): {args.budget}")
     print(f"Order budget: {args.order_budget}")
     print(f"Max purchases objective: {args.max_purch}")
+    print(f"Min spend per keyword: {args.min_spend}")
 
     base_dir = Path(f'data/{args.course}')
     
@@ -573,7 +619,7 @@ def main():
         model, cost_vars, pred_vars, X_opt = optimize_bids(
             X.copy(), model_path, budget=b, kw_df=kw_df,
             order_budget=args.order_budget, max_purch=args.max_purch,
-            base_dir=base_dir
+            base_dir=base_dir, min_spend=args.min_spend
         )
 
         # Extract solution and validate predictions
