@@ -17,7 +17,6 @@ from utils.bid_adjustments import AGE_RANGE_MAP, DEVICE_MAP
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
-    RAW_INPUT_TO_MODELS_QUERY,
     SEARCH_KEYWORD_REPORT_QUERY,
     PURCHASE_REPORT_QUERY,
     LOCATION_REPORT_QUERY,

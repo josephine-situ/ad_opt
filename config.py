@@ -45,5 +45,6 @@ COURSE_CONFIG = {
         'budgets': [357.14],
         # Customer ID for MIT xPRO - System Thinking account
         'customer_id': '5157372594',
+        'course_title_base': "System Thinking",
     }
 }
