@@ -167,7 +167,7 @@ def _generate_loc_clicks_rows(stream):
             }
 
 
-def generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_search_keyword_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate 'Search keyword - raw input to models' report."""
     output_path = Path(f"data/{output_course}/reports/Search keyword - raw input to models.csv")
     
@@ -176,8 +176,7 @@ def generate_search_keyword_report(google_ads_client, customer_id, output_course
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Day', 'Search keyword', 'Search keyword match type', 'Campaign', 'Clicks', 'Conv. value', 'Currency code', 'Cost']
@@ -185,7 +184,7 @@ def generate_search_keyword_report(google_ads_client, customer_id, output_course
     print(f"Generated: {output_path}")
 
 
-def generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_purchase_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate 'Purchase report' with conversion data."""
     output_path = Path(f"data/{output_course}/reports/Purchase report.csv")
     
@@ -194,8 +193,7 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Campaign', 'Conversion action', 'Conversions']
@@ -203,7 +201,7 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     print(f"Generated: {output_path}")
 
 
-def generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_location_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate 'Location report' with geographic performance data."""
     output_path = Path(f"data/{output_course}/reports/Location report.csv")
     
@@ -212,8 +210,7 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Location', 'Campaign', 'Bid adj.', 'Clicks', 'Currency code', 'Cost', 'Conv. rate', 'Conversions', 'Cost / conv.']
@@ -221,7 +218,7 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
     print(f"Generated: {output_path}")
 
 
-def generate_hod_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_hod_clicks_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate hour-of-day clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks.csv")
     
@@ -230,8 +227,7 @@ def generate_hod_clicks_report(google_ads_client, customer_id, output_course, st
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Campaign', 'Hour of the day', 'Clicks']
@@ -239,7 +235,7 @@ def generate_hod_clicks_report(google_ads_client, customer_id, output_course, st
     print(f"Generated: {output_path}")
 
 
-def generate_age_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_age_clicks_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate age demographics clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/age_clicks.csv")
     
@@ -248,8 +244,7 @@ def generate_age_clicks_report(google_ads_client, customer_id, output_course, st
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Campaign', 'Age', 'Clicks']
@@ -257,7 +252,7 @@ def generate_age_clicks_report(google_ads_client, customer_id, output_course, st
     print(f"Generated: {output_path}")
 
 
-def generate_device_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_device_clicks_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate device clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/device_clicks.csv")
     
@@ -266,8 +261,7 @@ def generate_device_clicks_report(google_ads_client, customer_id, output_course,
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Campaign', 'Device', 'Clicks']
@@ -275,7 +269,7 @@ def generate_device_clicks_report(google_ads_client, customer_id, output_course,
     print(f"Generated: {output_path}")
 
 
-def generate_loc_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_loc_clicks_report(ads_service, customer_id, output_course, start_date, end_date):
     """Generate location clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks.csv")
     
@@ -284,8 +278,7 @@ def generate_loc_clicks_report(google_ads_client, customer_id, output_course, st
         end_date=end_date,
         course_title=COURSE_CONFIG[output_course]['course_title_base']
     )
-    
-    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
     
     header_parts = ['Campaign', 'Targeted location', 'Clicks']
@@ -305,15 +298,16 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Pulling ads reports for course '{output_course}'...")
     print(f"Date range: {start_date} to {end_date}")
     print(f"Customer ID: {customer_id}")
-    
+    ads_service = google_ads_client.get_service("GoogleAdsService")
+
     # Generate all reports
-    generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_hod_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_age_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_device_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_loc_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_search_keyword_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_purchase_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_location_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_hod_clicks_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_age_clicks_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_device_clicks_report(ads_service, customer_id, output_course, start_date, end_date)
+    generate_loc_clicks_report(ads_service, customer_id, output_course, start_date, end_date)
     
     print(f"Successfully generated all reports for {output_course}")
 
