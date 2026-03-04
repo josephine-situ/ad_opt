@@ -45,9 +45,7 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
     Returns:
         The matching CampaignSpec or None if not found
     """
-    print(f'Searching for "{name}" in field "{field}" among {len(specs)} specs...')
     for spec in specs:
-        print(getattr(spec, field))
         if getattr(spec, field) == name:
             return spec
     return None
