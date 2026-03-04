@@ -106,3 +106,91 @@ GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
         AND ad_group_criterion.type = 'AGE_RANGE'
         AND ad_group_criterion.status != 'REMOVED'
     """
+
+# Report generation queries
+SEARCH_KEYWORD_REPORT_QUERY = """
+    SELECT
+        segments.date,
+        search_term_view.search_term,
+        segments.search_term_match_type,
+        campaign.name,
+        metrics.clicks,
+        metrics.conversions_value,
+        customer.currency_code,
+        metrics.cost_micros
+    FROM search_term_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY segments.date
+"""
+
+PURCHASE_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.conversion_action_name,
+        metrics.conversions
+    FROM campaign
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    AND metrics.conversions > 0
+    ORDER BY campaign.name, segments.conversion_action_name
+"""
+
+LOCATION_REPORT_QUERY = """
+    SELECT
+        geographic_view.location_type,
+        campaign.name,
+        metrics.clicks,
+        customer.currency_code,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.conversions_value
+    FROM geographic_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY campaign.name, geographic_view.location_type
+"""
+
+HOD_CLICKS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.hour,
+        metrics.clicks
+    FROM campaign
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY campaign.name, segments.hour
+"""
+
+AGE_CLICKS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        ad_group_criterion.age_range.type,
+        metrics.clicks
+    FROM age_range_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY campaign.name, ad_group_criterion.age_range.type
+"""
+
+DEVICE_CLICKS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.device,
+        metrics.clicks
+    FROM campaign
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY campaign.name, segments.device
+"""
+
+LOC_CLICKS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        geographic_view.location_type,
+        metrics.clicks
+    FROM geographic_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    ORDER BY campaign.name, geographic_view.location_type
+"""
