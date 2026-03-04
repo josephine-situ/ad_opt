@@ -113,7 +113,7 @@ def create_ad_schedule_operations(google_ads_client, campaign_resource_name):
     for window in range(6):
         start_hour = window * 4
         end_hour = (window + 1) * 4
-        
+
         # Create ad schedule for each day of the week
         days_of_week = [
             google_ads_client.enums.DayOfWeekEnum.MONDAY,
@@ -210,9 +210,9 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
     course_title = course_config.get("course_title_base", course.replace("_", " ").title())
     regions = course_config.get("regions", {})
     match_types = course_config.get("match_types", ["Exact", "Phrase", "Broad"])
-    default_budget = course_config.get("default_daily_budget_micros", 100_000_000)
+    default_budget = course_config.get("default_daily_budget_micros", 1_000_000)
 
-    # Collect all unique countries across all regions
+    # Collect all unique countries across all regions, deduplicate in case of manual errors in config
     all_countries = set()
     for countries in regions.values():
         all_countries.update(countries)
@@ -221,7 +221,7 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
     print(f"\n{'='*60}")
     print(f"Fetching location IDs for {len(all_countries)} countries...")
     print(f"{'='*60}")
-    location_map = get_location_ids_for_countries(google_ads_client, customer_id, list(all_countries))
+    location_map = get_location_ids_for_countries(google_ads_client, customer_id, all_countries)
     print(f"✓ Retrieved {len(location_map)} location IDs")
 
     # Prepare all campaign specifications
@@ -264,6 +264,7 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
         request = google_ads_client.get_type("MutateCampaignBudgetsRequest")
         request.customer_id = customer_id
         request.operations = budget_operations
+        # MUTABLE_RESOURCE is required for things like result.campaign_budget.name to be populated in the response.
         request.response_content_type = (
             google_ads_client.enums.ResponseContentTypeEnum.MUTABLE_RESOURCE
         )
@@ -293,7 +294,6 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
     ]
 
     try:
-        # Create request with response_content_type to get full resource data back
         request = google_ads_client.get_type("MutateCampaignsRequest")
         request.customer_id = customer_id
         request.operations = campaign_operations
@@ -304,7 +304,6 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
         campaign_response = campaign_service.mutate_campaigns(request=request)
         print(f"✓ Created {len(campaign_response.results)} campaigns")
 
-        # Map each result back to the corresponding spec using the campaign name from response
         for result in campaign_response.results:
             campaign_name = result.campaign.name
             spec = find_spec_by_name(campaign_specs, campaign_name, "campaign_name")
@@ -328,7 +327,6 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
     ]
 
     try:
-        # Create request with response_content_type to get full resource data back
         request = google_ads_client.get_type("MutateAdGroupsRequest")
         request.customer_id = customer_id
         request.operations = ad_group_operations
@@ -339,7 +337,6 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
         ad_group_response = ad_group_service.mutate_ad_groups(request=request)
         print(f"✓ Created {len(ad_group_response.results)} ad groups")
 
-        # Map each result back to the corresponding spec using the ad group name from response
         for result in ad_group_response.results:
             ad_group_name = result.ad_group.name
             spec = find_spec_by_name(campaign_specs, ad_group_name, "ad_group_name")
@@ -374,7 +371,6 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
         print(f"✗ Error creating ad schedules: {e}")
         sys.exit(1)
 
-    # Batch create location targeting for all campaigns
     print(f"\n{'='*60}")
     print(f"Creating location targeting for {len(campaign_specs)} campaigns...")
     print(f"{'='*60}")
