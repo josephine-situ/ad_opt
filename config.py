@@ -11,7 +11,11 @@ COURSE_CONFIG = {
         # Used to derive course names when pushing to Google Ads.
         # TODO: Identify the others as well and add to config.
         'course_title_base': "Generative AI",
-        'regions': ["USA", "A", "B"],
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 100_000_000,  # Can we use "budgets" or does this need to be separate?
     },
@@ -23,7 +27,11 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-01-01',
         'budgets': [353.99],
-        'regions': ["USA", "A", "B"],
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
@@ -36,7 +44,11 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-06-01', # Some campaigns name without a region early on
         'budgets': [847.46],
-        'regions': ["USA", "A", "B"],
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
     },
@@ -50,7 +62,11 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-06-01', # Start of search history
         'budgets': [357.14],
-        'regions': ["USA", "A", "B"],
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
     }
