@@ -17,7 +17,6 @@ from utils.bid_adjustments import AGE_RANGE_MAP, DEVICE_MAP
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
-    RAW_INPUT_TO_MODELS_QUERY,
     SEARCH_KEYWORD_REPORT_QUERY,
     PURCHASE_REPORT_QUERY,
     LOCATION_REPORT_QUERY,
@@ -48,9 +47,6 @@ def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
     required_vars = []
     for dataset in datasets:
-        if dataset in [ADS_REPORTS, KEYWORD_PLANNING]:
-            required_vars.extend(["GOOGLE_ADS_CUSTOMER_ID", "GOOGLE_ADS_YAML_PATH"])
-
         if dataset == SEMRUSH:
             required_vars.append("SEMRUSH_API_KEY")
 
@@ -319,48 +315,6 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
 
     print(f"Successfully generated all reports for {output_course}")
 
-
-def pull_ads_reports_legacy(google_ads_client: GoogleAdsClient, customer_id: str):
-    """Legacy pull_ads_reports function - deprecated."""
-    print(f"Pulling ads reports data...")
-    print(f"Customer ID: {customer_id}")
-    query = RAW_INPUT_TO_MODELS_QUERY.format(
-        start_date=(datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d"),
-        end_date=datetime.now().strftime("%Y-%m-%d"),
-    )
-
-    ads_service = google_ads_client.get_service("GoogleAdsService")
-    stream = ads_service.search_stream(customer_id=customer_id, query=query)
-
-    for batch in stream:
-        for row in batch.results:
-            date = row.segments.date
-            search_term = row.search_term_view.search_term
-            match_type = row.segments.search_term_match_type.name
-            campaign_name = row.campaign.name
-            clicks = row.metrics.clicks
-            conv_value = row.metrics.conversions_value
-            currency = row.customer.currency_code
-            cost = (
-                    row.metrics.cost_micros / 1_000_000
-            )
-
-            print(
-                "\t".join(
-                    [
-                        date,
-                        search_term,
-                        match_type,
-                        campaign_name,
-                        str(clicks),
-                        str(conv_value),
-                        currency,
-                        str(cost),
-                    ]
-                )
-            )
-
-
 def generate_rows_from_gkp_response(response, date_headers):
     for result in response.results:
         metrics = result.keyword_metrics
@@ -533,6 +487,18 @@ def main():
         required=True,
         help="The course to pull data for, determines the location of the file outputs.",
     )
+    parser.add_argument(
+        "--google-ads-yaml",
+        type=str,
+        required=True,
+        help="Path to Google Ads YAML configuration file",
+    )
+    parser.add_argument(
+        "--customer-id",
+        type=str,
+        required=True,
+        help="Google Ads customer ID",
+    )
 
     args = parser.parse_args()
 
@@ -549,9 +515,9 @@ def main():
     # Ensure we have necessary credentials set for the requested datasets
     validate_environment_variables(requested_datasets)
 
-    yaml_path = os.getenv("GOOGLE_ADS_YAML_PATH")
+    yaml_path = args.google_ads_yaml
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
-    customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
+    customer_id = args.customer_id
 
     if ADS_REPORTS in requested_datasets:
         pull_ads_reports(google_ads_client, customer_id, args.output_course)

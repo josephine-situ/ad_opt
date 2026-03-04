@@ -259,20 +259,23 @@ def main():
         default=False,
         help="Execute the campaign creation (without this flag, runs in dry-run mode)",
     )
+    parser.add_argument(
+        "--google-ads-yaml",
+        type=str,
+        required=True,
+        help="Path to Google Ads YAML configuration file",
+    )
+    parser.add_argument(
+        "--customer-id",
+        type=str,
+        required=True,
+        help="Google Ads customer ID",
+    )
 
     args = parser.parse_args()
 
-    # Validate environment variables
-    yaml_path = os.getenv("GOOGLE_ADS_YAML_PATH")
-    customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
-
-    if not yaml_path:
-        print("Error: GOOGLE_ADS_YAML_PATH environment variable not set")
-        sys.exit(1)
-
-    if not customer_id:
-        print("Error: GOOGLE_ADS_CUSTOMER_ID environment variable not set")
-        sys.exit(1)
+    yaml_path = args.google_ads_yaml
+    customer_id = args.customer_id
 
     # Initialize Google Ads client
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)

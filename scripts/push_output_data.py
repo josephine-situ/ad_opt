@@ -38,18 +38,7 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
 
-def validate_environment_variables(datasets):
-    """Validate that required environment variables are set for the given dataset."""
 
-    missing_vars = [
-        var for var in ["GOOGLE_ADS_CUSTOMER_ID", "GOOGLE_ADS_YAML_PATH"] if not os.getenv(var)
-    ]
-
-    if missing_vars:
-        print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
-        sys.exit(1)
-
-    return True
 
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
@@ -384,6 +373,18 @@ def main():
         default=False,
         help="The course to push data for, determines the location of the file inputs.",
     )
+    parser.add_argument(
+        "--google-ads-yaml",
+        type=str,
+        required=True,
+        help="Path to Google Ads YAML configuration file",
+    )
+    parser.add_argument(
+        "--customer-id",
+        type=str,
+        required=True,
+        help="Google Ads customer ID",
+    )
 
     args = parser.parse_args()
 
@@ -397,13 +398,10 @@ def main():
         print(f"Valid choices are: {', '.join(sorted(VALID_DATASETS))}")
         sys.exit(1)
 
-    # Ensure we have necessary credentials set for the requested datasets
-    validate_environment_variables(requested_datasets)
-
-    yaml_path = os.getenv("GOOGLE_ADS_YAML_PATH")
+    yaml_path = args.google_ads_yaml
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
     # TODO: Map customer ID to course, if we have one manager account over all course accounts.
-    customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
+    customer_id = args.customer_id
     output_course = args.output_course
     execute = args.execute
 
