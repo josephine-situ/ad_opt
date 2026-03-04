@@ -17,7 +17,7 @@ COURSE_CONFIG = {
             "B": ["Germany", "France", "Spain", "Italy"]
         },
         'match_types': ["Exact", "Phrase", "Broad"],
-        'default_daily_budget_micros': 100_000_000,  # Can we use "budgets" or does this need to be separate?
+        'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     'ml': {
         'start_dates': [

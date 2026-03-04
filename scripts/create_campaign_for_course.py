@@ -13,6 +13,10 @@ from pathlib import Path
 from typing import Optional
 
 from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.v23.services.types.campaign_budget_service import CampaignBudgetOperation
+from google.ads.googleads.v23.services.types.campaign_service import CampaignOperation
+from google.ads.googleads.v23.services.types.ad_group_service import AdGroupOperation
+from google.ads.googleads.v23.services.types.campaign_criterion_service import CampaignCriterionOperation
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import COURSE_CONFIG
@@ -53,7 +57,9 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
     return None
 
 
-def create_campaign_budget_operation(google_ads_client, budget_name, daily_budget_micros):
+def create_campaign_budget_operation(
+    google_ads_client: GoogleAdsClient, budget_name: str, daily_budget_micros: int
+) -> CampaignBudgetOperation:
     """Create a campaign budget operation."""
     operation = google_ads_client.get_type("CampaignBudgetOperation")
     campaign_budget = operation.create
@@ -67,7 +73,9 @@ def create_campaign_budget_operation(google_ads_client, budget_name, daily_budge
     return operation
 
 
-def create_campaign_operation(google_ads_client, campaign_name, budget_resource_name):
+def create_campaign_operation(
+    google_ads_client: GoogleAdsClient, campaign_name: str, budget_resource_name: str
+) -> CampaignOperation:
     """Create a Search campaign operation."""
     operation = google_ads_client.get_type("CampaignOperation")
     campaign = operation.create
@@ -91,7 +99,9 @@ def create_campaign_operation(google_ads_client, campaign_name, budget_resource_
     return operation
 
 
-def create_ad_group_operation(google_ads_client, ad_group_name, campaign_resource_name):
+def create_ad_group_operation(
+    google_ads_client: GoogleAdsClient, ad_group_name: str, campaign_resource_name: str
+) -> AdGroupOperation:
     """Create an ad group operation."""
     operation = google_ads_client.get_type("AdGroupOperation")
     ad_group = operation.create
@@ -102,7 +112,9 @@ def create_ad_group_operation(google_ads_client, ad_group_name, campaign_resourc
     return operation
 
 
-def create_ad_schedule_operations(google_ads_client, campaign_resource_name):
+def create_ad_schedule_operations(
+    google_ads_client: GoogleAdsClient, campaign_resource_name: str
+) -> list[CampaignCriterionOperation]:
     """
     Create ad schedule operations for a campaign.
     Creates 6 four-hour windows starting at 00:00 (covering the full day).
@@ -144,7 +156,9 @@ def create_ad_schedule_operations(google_ads_client, campaign_resource_name):
     return operations
 
 
-def get_location_ids_for_countries(google_ads_client, customer_id, countries):
+def get_location_ids_for_countries(
+    google_ads_client: GoogleAdsClient, customer_id: str, countries: list[str]
+) -> dict[str, int]:
     """
     Get location criterion IDs for a list of country names in a single query.
     Returns a dict mapping country name to location ID.
@@ -180,7 +194,12 @@ def get_location_ids_for_countries(google_ads_client, customer_id, countries):
     return location_map
 
 
-def create_location_operations(google_ads_client, campaign_resource_name, countries, location_map):
+def create_location_operations(
+    google_ads_client: GoogleAdsClient,
+    campaign_resource_name: str,
+    countries: list[str],
+    location_map: dict[str, int],
+) -> list[CampaignCriterionOperation]:
     """
     Create location targeting operations for a campaign using pre-fetched location IDs.
     """
@@ -200,7 +219,9 @@ def create_location_operations(google_ads_client, campaign_resource_name, countr
     return operations
 
 
-def create_campaigns_for_course(google_ads_client, customer_id, course, execute):
+def create_campaigns_for_course(
+    google_ads_client: GoogleAdsClient, customer_id: str, course: str, execute: bool
+) -> list[CampaignSpec]:
     """Create all campaigns and ad groups for a given course."""
     course_config = COURSE_CONFIG.get(course)
     if not course_config:
@@ -399,7 +420,7 @@ def create_campaigns_for_course(google_ads_client, customer_id, course, execute)
     return campaign_specs
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Create Google Ads campaigns and ad groups for a given course. Be advised that nothing in this script is transactional and it doesn't attempt to avoid collisions. Use with caution."
     )
