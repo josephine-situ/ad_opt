@@ -25,7 +25,7 @@ COURSE_CONFIG = {
         'budgets': [353.99],
         'regions': ["USA", "A", "B"],
         'match_types': ["Exact", "Phrase", "Broad"],
-        'default_daily_budget_micros': 100_000_000,  # Can we use "budgets" or does this need to be separate?
+        'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     'sys_eng': {
         'start_dates': [
@@ -38,7 +38,7 @@ COURSE_CONFIG = {
         'budgets': [847.46],
         'regions': ["USA", "A", "B"],
         'match_types': ["Exact", "Phrase", "Broad"],
-        'default_daily_budget_micros': 100_000_000,   # Can we use "budgets" or does this need to be separate?
+        'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
     },
     'sys_think': {
         'start_dates': [
@@ -52,6 +52,6 @@ COURSE_CONFIG = {
         'budgets': [357.14],
         'regions': ["USA", "A", "B"],
         'match_types': ["Exact", "Phrase", "Broad"],
-        'default_daily_budget_micros': 100_000_000,   # Can we use "budgets" or does this need to be separate?
+        'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
     }
 }
