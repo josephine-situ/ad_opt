@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
 
-from utils.bid_adjustments import AGE_RANGE_MAP, DEVICE_MAP, AGE_ENUM_TO_RANGE
+from utils.bid_adjustments import AGE_ENUM_TO_RANGE, DEVICE_ENUM_TO_NAME
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
@@ -207,8 +207,8 @@ def _generate_device_clicks_rows(stream):
 
     for batch in stream:
         for row in batch.results:
-            device_type = row.segments.device.name
-            device_display = DEVICE_MAP.get(device_type, "")
+            device_type = row.segments.device
+            device_display = DEVICE_ENUM_TO_NAME.get(device_type, "")
 
             yield {
                 'Campaign': row.campaign.name,
