@@ -136,6 +136,8 @@ def _generate_purchase_report_rows(stream):
 def _generate_location_report_rows(stream, google_ads_client, customer_id):
     """Generate rows for location report."""
     # First pass: collect all rows and criterion IDs
+    # Unfortunately this kinda screws up memory efficiency, but at the moment I don't know if I can grab the location names more efficiently
+    # This does at least perform better than a single call per row, GAQL queries are not that fast.
     rows_data = []
     criterion_ids = set()
     
