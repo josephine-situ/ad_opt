@@ -124,6 +124,7 @@ PURCHASE_REPORT_QUERY = """
 LOCATION_REPORT_QUERY = """
     SELECT
         geographic_view.location_type,
+        geographic_view.country_criterion_id,
         campaign.name,
         metrics.clicks,
         customer.currency_code,
@@ -173,6 +174,7 @@ LOC_CLICKS_REPORT_QUERY = """
     SELECT
         campaign.name,
         geographic_view.location_type,
+        geographic_view.country_criterion_id,
         metrics.clicks
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'

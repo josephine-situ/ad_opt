@@ -33,6 +33,8 @@ SEMRUSH = "semrush"
 VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
 
 
+LOCATION_CACHE = {}
+
 def write_to_file(header_parts, row_generator, output_file, delimiter="\t", restval="0"):
     """Write data to a file with the given header and rows from a generator."""
     with open(output_file, "w", newline="", encoding="utf-8") as f:
@@ -42,6 +44,51 @@ def write_to_file(header_parts, row_generator, output_file, delimiter="\t", rest
         for row in row_generator:
             writer.writerow(row)
 
+
+def build_location_cache(google_ads_client, customer_id, country_criterion_ids):
+    """Build a cache of location names for all criterion IDs with a single query.
+    
+    Only fetches IDs that are not already in the cache.
+    """
+    if not country_criterion_ids:
+        return
+    
+    # Remove None values, duplicates, and IDs already in cache
+    valid_ids = [id for id in set(country_criterion_ids) if id is not None and id not in LOCATION_CACHE]
+    
+    if not valid_ids:
+        return
+    
+    try:
+        ads_service = google_ads_client.get_service("GoogleAdsService")
+        # Build a query with all criterion IDs
+        ids_str = ', '.join(str(id) for id in valid_ids)
+        query = f"""
+            SELECT 
+                geo_target_constant.id,
+                geo_target_constant.canonical_name
+            FROM geo_target_constant
+            WHERE geo_target_constant.id IN ({ids_str})
+        """
+        response = ads_service.search(customer_id=customer_id, query=query)
+        
+        for row in response:
+            criterion_id = row.geo_target_constant.id
+            location_name = row.geo_target_constant.canonical_name
+            LOCATION_CACHE[criterion_id] = location_name
+        
+        # Add fallback for any IDs that weren't found
+        for criterion_id in valid_ids:
+            if criterion_id not in LOCATION_CACHE:
+                print(f"Warning: Could not find location name for criterion {criterion_id}")
+                LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
+                
+    except Exception as e:
+        print(f"Warning: Error fetching location names: {e}")
+        # Populate cache with fallback names
+        for criterion_id in valid_ids:
+            if criterion_id not in LOCATION_CACHE:
+                LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
 
 def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
@@ -86,27 +133,43 @@ def _generate_purchase_report_rows(stream):
             }
 
 
-def _generate_location_report_rows(stream):
+def _generate_location_report_rows(stream, google_ads_client, customer_id):
     """Generate rows for location report."""
+    # First pass: collect all rows and criterion IDs
+    rows_data = []
+    criterion_ids = set()
+    
     for batch in stream:
         for row in batch.results:
-            clicks = row.metrics.clicks
-            conversions = row.metrics.conversions
-            cost = row.metrics.cost_micros / 1_000_000
-            conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
-            cost_per_conv = (cost / conversions) if conversions > 0 else 0
+            rows_data.append(row)
+            if row.geographic_view.country_criterion_id:
+                criterion_ids.add(row.geographic_view.country_criterion_id)
+    
+    # Build location cache with a single bulk query (only for new IDs)
+    build_location_cache(google_ads_client, customer_id, criterion_ids)
+    
+    # Second pass: generate output rows with location names
+    for row in rows_data:
+        clicks = row.metrics.clicks
+        conversions = row.metrics.conversions
+        cost = row.metrics.cost_micros / 1_000_000
+        conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
+        cost_per_conv = (cost / conversions) if conversions > 0 else 0
+        
+        # Get human-readable location name
+        location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
 
-            yield {
-                'Location': row.geographic_view.location_type,
-                'Campaign': row.campaign.name,
-                'Bid adj.': '--',
-                'Clicks': clicks,
-                'Currency code': row.customer.currency_code,
-                'Cost': f"{cost:.2f}",
-                'Conv. rate': f"{conv_rate:.2f}%",
-                'Conversions': f"{conversions:.2f}",
-                'Cost / conv.': f"{cost_per_conv:.2f}"
-            }
+        yield {
+            'Location': location_name,
+            'Campaign': row.campaign.name,
+            'Bid adj.': '--',
+            'Clicks': clicks,
+            'Currency code': row.customer.currency_code,
+            'Cost': f"{cost:.2f}",
+            'Conv. rate': f"{conv_rate:.2f}%",
+            'Conversions': f"{conversions:.2f}",
+            'Cost / conv.': f"{cost_per_conv:.2f}"
+        }
 
 
 def _generate_hod_clicks_rows(stream):
@@ -152,15 +215,31 @@ def _generate_device_clicks_rows(stream):
             }
 
 
-def _generate_loc_clicks_rows(stream):
+def _generate_loc_clicks_rows(stream, google_ads_client, customer_id):
     """Generate rows for location clicks report."""
+    # First pass: collect all rows and criterion IDs
+    rows_data = []
+    criterion_ids = set()
+    
     for batch in stream:
         for row in batch.results:
-            yield {
-                'Campaign': row.campaign.name,
-                'Targeted location': row.geographic_view.location_type,
-                'Clicks': row.metrics.clicks
-            }
+            rows_data.append(row)
+            if row.geographic_view.country_criterion_id:
+                criterion_ids.add(row.geographic_view.country_criterion_id)
+    
+    # Build location cache with a single bulk query (only for new IDs)
+    build_location_cache(google_ads_client, customer_id, criterion_ids)
+    
+    # Second pass: generate output rows with location names
+    for row in rows_data:
+        # Get human-readable location name
+        location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
+        
+        yield {
+            'Campaign': row.campaign.name,
+            'Targeted location': location_name,
+            'Clicks': row.metrics.clicks
+        }
 
 
 def generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date):
@@ -215,7 +294,7 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
 
     header_parts = ['Location', 'Campaign', 'Bid adj.', 'Clicks', 'Currency code', 'Cost', 'Conv. rate', 'Conversions',
                     'Cost / conv.']
-    write_to_file(header_parts, _generate_location_report_rows(stream), output_path, delimiter=',')
+    write_to_file(header_parts, _generate_location_report_rows(stream, google_ads_client, customer_id), output_path, delimiter=',')
     print(f"Generated: {output_path}")
 
 
@@ -287,7 +366,7 @@ def generate_loc_clicks_report(google_ads_client, customer_id, output_course, st
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
     header_parts = ['Campaign', 'Targeted location', 'Clicks']
-    write_to_file(header_parts, _generate_loc_clicks_rows(stream), output_path, delimiter=',')
+    write_to_file(header_parts, _generate_loc_clicks_rows(stream, google_ads_client, customer_id), output_path, delimiter=',')
     print(f"Generated: {output_path}")
 
 
@@ -303,6 +382,9 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Pulling ads reports for course '{output_course}'...")
     print(f"Date range: {start_date} to {end_date}")
     print(f"Customer ID: {customer_id}")
+
+    # Create shared location cache for geographic reports
+    location_cache = {}
 
     # Generate all reports
     generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date)
