@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
 
-from utils.bid_adjustments import AGE_RANGE_MAP, DEVICE_MAP
+from utils.bid_adjustments import AGE_RANGE_MAP, DEVICE_MAP, AGE_ENUM_TO_RANGE
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
@@ -191,8 +191,8 @@ def _generate_age_clicks_rows(stream):
 
     for batch in stream:
         for row in batch.results:
-            age_type = row.ad_group_criterion.age_range.type_.name
-            age_display = AGE_RANGE_MAP.get(age_type, "")
+            age_type = row.ad_group_criterion.age_range.type_
+            age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
 
             yield {
                 'Campaign': row.campaign.name,

@@ -16,6 +16,8 @@ AGE_RANGE_MAP = {
     "Unknown": AgeRangeTypeEnum.AgeRangeType.AGE_RANGE_UNDETERMINED,
 }
 
+AGE_ENUM_TO_RANGE = {v: k for k, v in AGE_RANGE_MAP.items()}
+
 ALL_DAYS = [
         DayOfWeekEnum.DayOfWeek.MONDAY,
         DayOfWeekEnum.DayOfWeek.TUESDAY,
