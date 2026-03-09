@@ -190,3 +190,61 @@ LOC_CLICKS_REPORT_QUERY = """
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, geographic_view.location_type
 """
+
+HOD_CONVERSIONS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.conversion_action_name,
+        segments.hour,
+        metrics.all_conversions
+    FROM campaign
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
+    AND metrics.all_conversions > 0
+    ORDER BY campaign.name, segments.conversion_action_name, segments.hour
+"""
+
+AGE_CONVERSIONS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.conversion_action_name,
+        ad_group_criterion.age_range.type,
+        metrics.all_conversions
+    FROM age_range_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
+    AND metrics.all_conversions > 0
+    ORDER BY campaign.name, segments.conversion_action_name, ad_group_criterion.age_range.type
+"""
+
+DEVICE_CONVERSIONS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.conversion_action_name,
+        segments.device,
+        metrics.all_conversions
+    FROM campaign
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
+    AND metrics.all_conversions > 0
+    ORDER BY campaign.name, segments.conversion_action_name, segments.device
+"""
+
+LOC_CONVERSIONS_REPORT_QUERY = """
+    SELECT
+        campaign.name,
+        segments.conversion_action_name,
+        geographic_view.location_type,
+        geographic_view.country_criterion_id,
+        metrics.all_conversions,
+        campaign.advertising_channel_type
+    FROM geographic_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
+    AND metrics.all_conversions > 0
+    ORDER BY campaign.name, segments.conversion_action_name, geographic_view.location_type
+"""
