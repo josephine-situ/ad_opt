@@ -379,7 +379,7 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
     if not start_date:
-        start_date = (datetime.now() - relativedelta(months=12)).strftime("%Y-%m-%d")
+        start_date = COURSE_CONFIG[output_course]['min_date']
 
     print(f"Pulling ads reports for course '{output_course}'...")
     print(f"Date range: {start_date} to {end_date}")
