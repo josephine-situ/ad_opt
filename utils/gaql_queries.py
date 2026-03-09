@@ -99,7 +99,7 @@ SEARCH_KEYWORD_REPORT_QUERY = """
         segments.search_term_match_type,
         campaign.name,
         metrics.clicks,
-        metrics.conversions_value,
+        metrics.all_conversions_value,
         customer.currency_code,
         metrics.cost_micros
     FROM search_term_view
@@ -114,11 +114,11 @@ PURCHASE_REPORT_QUERY = """
     SELECT
         campaign.name,
         segments.conversion_action_name,
-        metrics.conversions
+        metrics.all_conversions
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
-    AND metrics.conversions > 0
+    AND metrics.all_conversions > 0
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.conversion_action_name
 """
@@ -131,8 +131,8 @@ LOCATION_REPORT_QUERY = """
         metrics.clicks,
         customer.currency_code,
         metrics.cost_micros,
-        metrics.conversions,
-        metrics.conversions_value,
+        metrics.all_conversions,
+        metrics.all_conversions_value,
         campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
