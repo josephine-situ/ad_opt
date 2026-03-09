@@ -375,7 +375,7 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
     print(f"Generated: {output_path}")
 
 
-def generate_hod_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_hod_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
     """Generate hour-of-day clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks.csv")
 
@@ -406,7 +406,7 @@ def generate_hod_clicks_report(google_ads_client, customer_id, output_course, st
 
 
 
-def generate_age_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_age_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
     """Generate age demographics clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/age_clicks.csv")
 
@@ -437,7 +437,7 @@ def generate_age_clicks_report(google_ads_client, customer_id, output_course, st
 
 
 
-def generate_device_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_device_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
     """Generate device clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/device_clicks.csv")
 
@@ -468,7 +468,7 @@ def generate_device_clicks_report(google_ads_client, customer_id, output_course,
 
 
 
-def generate_loc_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_loc_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
     """Generate location clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks.csv")
 
@@ -519,10 +519,10 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date)
     generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
     generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_hod_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_age_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_device_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_loc_clicks_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_hod_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_age_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_device_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_loc_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
 
     print(f"Successfully generated all reports for {output_course}")
 
