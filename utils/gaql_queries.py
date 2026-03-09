@@ -106,6 +106,7 @@ SEARCH_KEYWORD_REPORT_QUERY = """
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
     AND campaign.advertising_channel_type = 'SEARCH'
+    AND segments.search_term_match_type IN ('EXACT', 'PHRASE', 'BROAD')
     ORDER BY segments.date
 """
 
