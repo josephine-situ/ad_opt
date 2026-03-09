@@ -1,7 +1,7 @@
 GET_CAMPAIGNS_IN_ACCOUNT = """
     SELECT campaign.id, campaign.name
     FROM campaign
-    WHERE campaign.status != 'REMOVED'
+    WHERE campaign.advertising_channel_type = 'SEARCH'
 """
 
 GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME = """
@@ -9,7 +9,7 @@ GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME = """
         campaign.campaign_budget
     FROM campaign
     WHERE campaign.name = '{campaign_name}'
-    AND campaign.status != 'REMOVED'
+    AND campaign.advertising_channel_type = 'SEARCH'
 """
 
 GET_AD_GROUP_FOR_CAMPAIGN = """
@@ -18,7 +18,7 @@ GET_AD_GROUP_FOR_CAMPAIGN = """
         ad_group.name
     FROM ad_group
     WHERE campaign.name = '{campaign_name}'
-    AND ad_group.status != 'REMOVED'
+    AND campaign.advertising_channel_type = 'SEARCH'
     LIMIT 1
 """
 
@@ -45,7 +45,6 @@ SELECT_KEYWORD_CRITERION_IN_AD_GROUP = """
         FROM ad_group_criterion
         WHERE ad_group_criterion.ad_group IN ('{ad_group_list}')
         AND ad_group_criterion.type = 'KEYWORD'
-        AND ad_group_criterion.status != 'REMOVED'
     """
 SELECT_AD_GROUPS_FOR_CAMPAIGNS = """
         SELECT
@@ -54,7 +53,7 @@ SELECT_AD_GROUPS_FOR_CAMPAIGNS = """
             ad_group.name
         FROM ad_group
         WHERE campaign.name IN ('{campaign_list}')
-        AND ad_group.status != 'REMOVED'
+        AND campaign.advertising_channel_type = 'SEARCH'
     """
 
 GET_CRITERIA_FOR_CAMPAIGNS = """
@@ -70,14 +69,14 @@ GET_CRITERIA_FOR_CAMPAIGNS = """
             campaign_criterion.location.geo_target_constant
         FROM campaign_criterion
         WHERE campaign_criterion.campaign IN ('{campaign_id_list}')
-        AND campaign_criterion.status != 'REMOVED'
+        AND campaign.advertising_channel_type = 'SEARCH'
     """
 
 GET_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
         WHERE campaign.name LIKE 'Course - {course_title}%'
-        AND campaign.status != 'REMOVED'
+        AND campaign.advertising_channel_type = 'SEARCH'
     """
 
 GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
@@ -89,7 +88,7 @@ GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
         FROM ad_group_criterion
         WHERE campaign.id IN ({campaign_ids})
         AND ad_group_criterion.type = 'AGE_RANGE'
-        AND ad_group_criterion.status != 'REMOVED'
+        AND campaign.advertising_channel_type = 'SEARCH'
     """
 
 # Report generation queries
@@ -106,6 +105,7 @@ SEARCH_KEYWORD_REPORT_QUERY = """
     FROM search_term_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY segments.date
 """
 
@@ -118,6 +118,7 @@ PURCHASE_REPORT_QUERY = """
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
     AND metrics.conversions > 0
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.conversion_action_name
 """
 
@@ -130,10 +131,12 @@ LOCATION_REPORT_QUERY = """
         customer.currency_code,
         metrics.cost_micros,
         metrics.conversions,
-        metrics.conversions_value
+        metrics.conversions_value,
+        campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, geographic_view.location_type
 """
 
@@ -145,6 +148,7 @@ HOD_CLICKS_REPORT_QUERY = """
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.hour
 """
 
@@ -156,6 +160,7 @@ AGE_CLICKS_REPORT_QUERY = """
     FROM age_range_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, ad_group_criterion.age_range.type
 """
 
@@ -167,6 +172,7 @@ DEVICE_CLICKS_REPORT_QUERY = """
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.device
 """
 
@@ -175,9 +181,11 @@ LOC_CLICKS_REPORT_QUERY = """
         campaign.name,
         geographic_view.location_type,
         geographic_view.country_criterion_id,
-        metrics.clicks
+        metrics.clicks,
+        campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, geographic_view.location_type
 """
