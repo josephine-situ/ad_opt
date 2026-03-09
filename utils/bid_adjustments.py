@@ -16,6 +16,8 @@ AGE_RANGE_MAP = {
     "Unknown": AgeRangeTypeEnum.AgeRangeType.AGE_RANGE_UNDETERMINED,
 }
 
+AGE_ENUM_TO_RANGE = {v: k for k, v in AGE_RANGE_MAP.items()}
+
 ALL_DAYS = [
         DayOfWeekEnum.DayOfWeek.MONDAY,
         DayOfWeekEnum.DayOfWeek.TUESDAY,
@@ -31,7 +33,11 @@ DEVICE_MAP = {
     "Mobile phones": DeviceEnum.Device.MOBILE,
     "Tablets": DeviceEnum.Device.TABLET,
     "Computers": DeviceEnum.Device.DESKTOP,
+    "Connected TV": DeviceEnum.Device.CONNECTED_TV,
+    "Other": DeviceEnum.Device.OTHER
 }
+
+DEVICE_ENUM_TO_NAME = {v: k for k, v in DEVICE_MAP.items()}
 
 def get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_device_filepath):
     """Push device bid adjustments to Google Ads."""

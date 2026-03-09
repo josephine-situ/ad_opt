@@ -332,3 +332,47 @@ pip install -e ".[bert,ml_open,optimization]"
 Optional extras: `bert` (sentence-transformers), `llm` (Qwen3 scoring), `ml_open` (XGBoost), `optimization` (Gurobi), `dev` (pytest, black, pylint, mypy).
 
 **Gurobi license** required for optimization — see https://www.gurobi.com/.
+
+## Authentication
+
+### Google Ads API Setup
+
+The pipeline uses the Google Ads API to pull performance data and push bid updates. Authentication requires a YAML configuration file with your credentials.
+
+#### YAML Configuration File
+
+Create a `google-ads.yaml` file with the following structure:
+
+```yaml
+developer_token: YOUR_DEVELOPER_TOKEN_HERE
+login_customer_id: "1234567890"
+use_proto_plus: True
+json_key_file_path: "/path/to/your/service-account-credentials.json"
+```
+
+**Field descriptions:**
+
+| Field | Description |
+|-------|-------------|
+| `developer_token` | Your Google Ads API developer token (obtain from Google Ads Manager Account → API Center) |
+| `login_customer_id` | **Must match the Manager Account (MCC) for which the developer token was issued.** This is the top-level account that manages all course accounts. Format: 10-digit number without dashes (e.g., `1234567890`) |
+| `use_proto_plus` | Set to `True` to use the proto-plus library (recommended) |
+| `json_key_file_path` | Absolute path to the JSON credentials file for your service account. **This service account must have access to the Manager Account.** |
+
+**Important notes:**
+
+- **`login_customer_id`** — This is the Manager Account (MCC) ID, not an individual course account. The developer token must be issued for this account.
+- **`json_key_file_path`** — Points to credentials specific to the service account with access to the Manager Account.
+- **`customer_id` (command-line argument)** — When running scripts, pass `--customer-id` with the **specific course account ID where you want to execute API calls** (e.g., the Machine Learning Course account ID). This is different from `login_customer_id`, in practice it'll be a course account.
+- **Multiple Manager Accounts** — If you manage multiple Manager Accounts/environments, we recommend creating separate YAML files for each (e.g., `google-ads-test.yaml`, `google-ads-prod.yaml`) and specifying the appropriate file when running scripts.
+
+#### Example Usage
+
+```bash
+# Pull data from the Machine Learning course account
+python scripts/pull_input_data.py \
+  --google-ads-yaml /path/to/google-ads.yaml \
+  --customer-id 9876543210 \
+  --datasets ads_reports \
+  --output-course ml
+```
