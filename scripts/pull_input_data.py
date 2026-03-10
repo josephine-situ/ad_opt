@@ -576,9 +576,6 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Date range: {start_date} to {end_date}")
     print(f"Customer ID: {customer_id}")
 
-    # Create shared location cache for geographic reports
-    location_cache = {}
-
     # Generate all reports
     generate_search_keyword_report(
         google_ads_client, customer_id, output_course, start_date, end_date
@@ -680,13 +677,12 @@ def pull_keyword_planning(
     request = google_ads_client.get_type("GenerateKeywordHistoricalMetricsRequest")
     request.customer_id = customer_id
     request.keywords = keywords
-    # Not sure if this is actually required/desirable?
     request.keyword_plan_network = google_ads_client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
 
-    # Set historical metrics options to get trailing 12 months
     historical_metrics_options = google_ads_client.get_type("HistoricalMetricsOptions")
     current_date = datetime.now()
-    start_date = current_date - relativedelta(months=12)
+    # Start from 6 months before the course minimum date
+    start_date = datetime.strptime(COURSE_CONFIG[output_course]['min_date'], '%Y-%m-%d') - relativedelta(months=6)
     # End date is last month (since current month data isn't complete)
     end_date = current_date - relativedelta(months=1)
 
