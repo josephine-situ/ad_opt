@@ -10,7 +10,8 @@ COURSE_CONFIG = {
         'budgets': [362.91],
         # Used to derive course names when pushing to Google Ads.
         # TODO: Identify the others as well and add to config.
-        'course_title_base': "Generative AI",
+        'course_title_base': "Course - Generative AI",
+        # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
             "A": ["Canada", "United Kingdom", "Australia"],
@@ -27,6 +28,8 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-01-01',
         'budgets': [353.99],
+        'course_title_base': "Program - MLx",
+        # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
             "A": ["Canada", "United Kingdom", "Australia"],
@@ -44,6 +47,8 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-06-01', # Some campaigns name without a region early on
         'budgets': [847.46],
+        'course_title_base': "Program - SysEng",
+        # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
             "A": ["Canada", "United Kingdom", "Australia"],
@@ -62,6 +67,8 @@ COURSE_CONFIG = {
         ],
         'min_date': '2022-06-01', # Start of search history
         'budgets': [357.14],
+        'course_title_base': "Course - System Thinking",
+        # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
             "A": ["Canada", "United Kingdom", "Australia"],
