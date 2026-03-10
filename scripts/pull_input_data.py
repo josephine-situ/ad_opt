@@ -746,7 +746,6 @@ def pull_semrush(output_course, num_keywords=100):
     api_key = os.getenv("SEMRUSH_API_KEY")
     phrase = SEMRUSH_PHRASE_MAPPING[output_course]
     output_dir = Path(f"data/{output_course}/gkp")
-    # This is technically a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"semrush_new_kws.csv"
 
     print(f"Pulling SEMrush data...")
