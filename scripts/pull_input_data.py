@@ -760,7 +760,7 @@ def pull_semrush(output_course, num_keywords=100):
         # We currently only have 100k units, and this costs 40 units per keyword.
         "display_limit": num_keywords
     }
-    print(f"Executing SEMrush API request with params: {query_params}")
+    print(f"Executing SEMrush API request for phrase '{phrase}' with limit {num_keywords}...")
     response = requests.get(SEMRUSH_HOST, params=query_params)
     response.raise_for_status()
     rows = [{"Keyword": line} for line in response.text.splitlines()]
