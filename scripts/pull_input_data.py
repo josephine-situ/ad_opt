@@ -13,9 +13,9 @@ from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.bid_adjustments import AGE_ENUM_TO_RANGE, DEVICE_ENUM_TO_NAME
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.gaql_queries import (
     SEARCH_KEYWORD_REPORT_QUERY,
     PURCHASE_REPORT_QUERY,
