@@ -22,6 +22,7 @@ def should_skip_campaign(campaign_name, check_course=None, check_region=None, ch
     """
     # Parse campaign name using regex
     # Pattern: "{any course title} - {region} - {match type}"
+    # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
     pattern = r'^(.+?) - (.+?) - (.+?)$'
     match = re.match(pattern, campaign_name)
 
