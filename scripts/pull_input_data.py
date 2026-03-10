@@ -741,7 +741,7 @@ def pull_keyword_planning(
     print(f"Keyword planning data written to: {output_file}")
 
 
-def pull_semrush(output_course):
+def pull_semrush(output_course, num_keywords=100):
     """Pull data from SEMrush API."""
     api_key = os.getenv("SEMRUSH_API_KEY")
     phrase = SEMRUSH_PHRASE_MAPPING[output_course]
@@ -756,11 +756,14 @@ def pull_semrush(output_course):
         "phrase": phrase,
         "database": "us",
         "export_columns": "Ph",
+        # TODO: This is the limit returned by the API. It says it defaults to 10k in the docs but in practice it returns 100.
+        # We currently only have 100k units, and this costs 40 units per keyword.
+        "display_limit": num_keywords
     }
     print(f"Executing SEMrush API request with params: {query_params}")
     response = requests.get(SEMRUSH_HOST, params=query_params)
     response.raise_for_status()
-    rows = [{"Keyword": line} for line in response.iter_lines(decode_unicode=True)]
+    rows = [{"Keyword": line} for line in response.text.splitlines()]
     # Skip the first line since it's just the header "Keyword"
     # This outputs a CSV already, so we don't need to do much to the response.
     write_to_file(["Keyword"], rows[1:], output_file)
@@ -798,6 +801,11 @@ def main():
         type=str,
         help="Google Ads customer ID",
     )
+    parser.add_argument(
+        "--num-keywords",
+        type=int,
+        help="Number of keywords to pull from SEMRush (default 100, max 10,000). Each keyword consumes 40 api units",
+    )
 
     args = parser.parse_args()
 
@@ -833,7 +841,7 @@ def main():
         print(f"Successfully pulled keyword_planning data")
 
     if SEMRUSH in requested_datasets:
-        pull_semrush(args.output_course)
+        pull_semrush(args.output_course, args.num_keywords)
         print(f"Successfully pulled semrush data")
 
     print(f"All requested datasets pulled successfully")
