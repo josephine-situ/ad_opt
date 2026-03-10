@@ -42,7 +42,7 @@ MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match
 
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
-    return f"Course - {COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type}"
+    return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type}"
 
 
 def get_course_campaign_budget_resource_name(google_ads_client, customer_id, campaign_name):

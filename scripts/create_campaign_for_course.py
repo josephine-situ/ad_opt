@@ -249,7 +249,7 @@ def create_campaigns_for_course(
     campaign_specs = []
     for region_label, countries in regions.items():
         for match_type in match_types:
-            campaign_name = f"Course - {course_title} - {region_label} - {match_type}"
+            campaign_name = f"{course_title} - {region_label} - {match_type}"
             ad_group_name = f"{course_title} - {region_label} - {match_type}"
             budget_name = f"Budget - {course_title} - {region_label} - {match_type}"
 
