@@ -7,8 +7,11 @@ import argparse
 import csv
 import os
 import sys
+import urllib
 from pathlib import Path
 from datetime import datetime
+
+import requests
 from dateutil.relativedelta import relativedelta
 
 from google.ads.googleads.client import GoogleAdsClient
@@ -36,8 +39,16 @@ KEYWORD_PLANNING = "keyword_planning"
 SEMRUSH = "semrush"
 VALID_DATASETS = {ADS_REPORTS, KEYWORD_PLANNING, SEMRUSH}
 
+SEMRUSH_HOST = "https://api.semrush.com/{}"
+SEMRUSH_PHRASE_MAPPING = {
+    "gen_ai": "generative ai course",
+    "ml": "machine learning course",
+    "sys_eng": "systems engineering course",
+    "sys_think": "systems thinking course",
+}
 
 LOCATION_CACHE = {}
+
 
 def write_to_file(header_parts, row_generator, output_file, delimiter="\t", restval="0"):
     """Write data to a file with the given header and rows from a generator."""
@@ -51,22 +62,24 @@ def write_to_file(header_parts, row_generator, output_file, delimiter="\t", rest
 
 def build_location_cache(google_ads_client, customer_id, country_criterion_ids):
     """Build a cache of location names for all criterion IDs with a single query.
-    
+
     Only fetches IDs that are not already in the cache.
     """
     if not country_criterion_ids:
         return
-    
+
     # Remove None values, duplicates, and IDs already in cache
-    valid_ids = [id for id in set(country_criterion_ids) if id is not None and id not in LOCATION_CACHE]
-    
+    valid_ids = [
+        id for id in set(country_criterion_ids) if id is not None and id not in LOCATION_CACHE
+    ]
+
     if not valid_ids:
         return
-    
+
     try:
         ads_service = google_ads_client.get_service("GoogleAdsService")
         # Build a query with all criterion IDs
-        ids_str = ', '.join(str(id) for id in valid_ids)
+        ids_str = ", ".join(str(id) for id in valid_ids)
         query = f"""
             SELECT 
                 geo_target_constant.id,
@@ -75,24 +88,25 @@ def build_location_cache(google_ads_client, customer_id, country_criterion_ids):
             WHERE geo_target_constant.id IN ({ids_str})
         """
         response = ads_service.search(customer_id=customer_id, query=query)
-        
+
         for row in response:
             criterion_id = row.geo_target_constant.id
             location_name = row.geo_target_constant.canonical_name
             LOCATION_CACHE[criterion_id] = location_name
-        
+
         # Add fallback for any IDs that weren't found
         for criterion_id in valid_ids:
             if criterion_id not in LOCATION_CACHE:
                 print(f"Warning: Could not find location name for criterion {criterion_id}")
                 LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
-                
+
     except Exception as e:
         print(f"Warning: Error fetching location names: {e}")
         # Populate cache with fallback names
         for criterion_id in valid_ids:
             if criterion_id not in LOCATION_CACHE:
                 LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
+
 
 def validate_environment_variables(datasets):
     """Validate that required environment variables are set for the given dataset."""
@@ -115,14 +129,16 @@ def _generate_search_keyword_rows(stream):
     for batch in stream:
         for row in batch.results:
             yield {
-                'Day': row.segments.date,
-                'Search keyword': row.search_term_view.search_term,
-                'Search keyword match type': row.segments.search_term_match_type.name.replace('_', ' ').title(),
-                'Campaign': row.campaign.name,
-                'Clicks': row.metrics.clicks,
-                'Conv. value': f"{row.metrics.conversions_value:.2f}",
-                'Currency code': row.customer.currency_code,
-                'Cost': f"{row.metrics.cost_micros / 1_000_000:.2f}"
+                "Day": row.segments.date,
+                "Search keyword": row.search_term_view.search_term,
+                "Search keyword match type": row.segments.search_term_match_type.name.replace(
+                    "_", " "
+                ).title(),
+                "Campaign": row.campaign.name,
+                "Clicks": row.metrics.clicks,
+                "Conv. value": f"{row.metrics.conversions_value:.2f}",
+                "Currency code": row.customer.currency_code,
+                "Cost": f"{row.metrics.cost_micros / 1_000_000:.2f}",
             }
 
 
@@ -131,9 +147,9 @@ def _generate_purchase_report_rows(stream):
     for batch in stream:
         for row in batch.results:
             yield {
-                'Campaign': row.campaign.name,
-                'Conversion action': row.segments.conversion_action_name,
-                'Conversions': f"{row.metrics.conversions:.2f}"
+                "Campaign": row.campaign.name,
+                "Conversion action": row.segments.conversion_action_name,
+                "Conversions": f"{row.metrics.conversions:.2f}",
             }
 
 
@@ -144,16 +160,16 @@ def _generate_location_report_rows(stream, google_ads_client, customer_id):
     # This does at least perform better than a single call per row, GAQL queries are not that fast.
     rows_data = []
     criterion_ids = set()
-    
+
     for batch in stream:
         for row in batch.results:
             rows_data.append(row)
             if row.geographic_view.country_criterion_id:
                 criterion_ids.add(row.geographic_view.country_criterion_id)
-    
+
     # Build location cache with a single bulk query (only for new IDs)
     build_location_cache(google_ads_client, customer_id, criterion_ids)
-    
+
     # Second pass: generate output rows with location names
     for row in rows_data:
         clicks = row.metrics.clicks
@@ -161,20 +177,20 @@ def _generate_location_report_rows(stream, google_ads_client, customer_id):
         cost = row.metrics.cost_micros / 1_000_000
         conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
         cost_per_conv = (cost / conversions) if conversions > 0 else 0
-        
+
         # Get human-readable location name
         location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
 
         yield {
-            'Location': location_name,
-            'Campaign': row.campaign.name,
-            'Bid adj.': '--',
-            'Clicks': clicks,
-            'Currency code': row.customer.currency_code,
-            'Cost': f"{cost:.2f}",
-            'Conv. rate': f"{conv_rate:.2f}%",
-            'Conversions': f"{conversions:.2f}",
-            'Cost / conv.': f"{cost_per_conv:.2f}"
+            "Location": location_name,
+            "Campaign": row.campaign.name,
+            "Bid adj.": "--",
+            "Clicks": clicks,
+            "Currency code": row.customer.currency_code,
+            "Cost": f"{cost:.2f}",
+            "Conv. rate": f"{conv_rate:.2f}%",
+            "Conversions": f"{conversions:.2f}",
+            "Cost / conv.": f"{cost_per_conv:.2f}",
         }
 
 
@@ -183,9 +199,9 @@ def _generate_hod_clicks_rows(stream):
     for batch in stream:
         for row in batch.results:
             yield {
-                'Campaign': row.campaign.name,
-                'Hour of the day': row.segments.hour,
-                'Clicks': row.metrics.clicks
+                "Campaign": row.campaign.name,
+                "Hour of the day": row.segments.hour,
+                "Clicks": row.metrics.clicks,
             }
 
 
@@ -198,11 +214,7 @@ def _generate_age_clicks_rows(stream):
             age_type = row.ad_group_criterion.age_range.type_
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
 
-            yield {
-                'Campaign': row.campaign.name,
-                'Age': age_display,
-                'Clicks': row.metrics.clicks
-            }
+            yield {"Campaign": row.campaign.name, "Age": age_display, "Clicks": row.metrics.clicks}
 
 
 def _generate_device_clicks_rows(stream):
@@ -215,9 +227,9 @@ def _generate_device_clicks_rows(stream):
             device_display = DEVICE_ENUM_TO_NAME.get(device_type, "")
 
             yield {
-                'Campaign': row.campaign.name,
-                'Device': device_display,
-                'Clicks': row.metrics.clicks
+                "Campaign": row.campaign.name,
+                "Device": device_display,
+                "Clicks": row.metrics.clicks,
             }
 
 
@@ -226,25 +238,25 @@ def _generate_loc_clicks_rows(stream, google_ads_client, customer_id):
     # First pass: collect all rows and criterion IDs
     rows_data = []
     criterion_ids = set()
-    
+
     for batch in stream:
         for row in batch.results:
             rows_data.append(row)
             if row.geographic_view.country_criterion_id:
                 criterion_ids.add(row.geographic_view.country_criterion_id)
-    
+
     # Build location cache with a single bulk query (only for new IDs)
     build_location_cache(google_ads_client, customer_id, criterion_ids)
-    
+
     # Second pass: generate output rows with location names
     for row in rows_data:
         # Get human-readable location name
         location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
-        
+
         yield {
-            'Campaign': row.campaign.name,
-            'Targeted location': location_name,
-            'Clicks': row.metrics.clicks
+            "Campaign": row.campaign.name,
+            "Targeted location": location_name,
+            "Clicks": row.metrics.clicks,
         }
 
 
@@ -253,10 +265,10 @@ def _generate_hod_conversions_rows(stream):
     for batch in stream:
         for row in batch.results:
             yield {
-                'Campaign': row.campaign.name,
-                'Conversion action': row.segments.conversion_action_name,
-                'Hour of the day': row.segments.hour,
-                'All conv.': f"{row.metrics.all_conversions:.2f}"
+                "Campaign": row.campaign.name,
+                "Conversion action": row.segments.conversion_action_name,
+                "Hour of the day": row.segments.hour,
+                "All conv.": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -266,12 +278,12 @@ def _generate_age_conversions_rows(stream):
         for row in batch.results:
             age_type = row.ad_group_criterion.age_range.type
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
-            
+
             yield {
-                'Campaign': row.campaign.name,
-                'Conversion action': row.segments.conversion_action_name,
-                'Age': age_display,
-                'All conv.': f"{row.metrics.all_conversions:.2f}"
+                "Campaign": row.campaign.name,
+                "Conversion action": row.segments.conversion_action_name,
+                "Age": age_display,
+                "All conv.": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -281,12 +293,12 @@ def _generate_device_conversions_rows(stream):
         for row in batch.results:
             device_type = row.segments.device
             device_display = DEVICE_ENUM_TO_NAME.get(device_type, "")
-            
+
             yield {
-                'Campaign': row.campaign.name,
-                'Conversion action': row.segments.conversion_action_name,
-                'Device': device_display,
-                'All conv.': f"{row.metrics.all_conversions:.2f}"
+                "Campaign": row.campaign.name,
+                "Conversion action": row.segments.conversion_action_name,
+                "Device": device_display,
+                "All conv.": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -295,46 +307,55 @@ def _generate_loc_conversions_rows(stream, google_ads_client, customer_id):
     # First pass: collect all rows and criterion IDs
     rows_data = []
     criterion_ids = set()
-    
+
     for batch in stream:
         for row in batch.results:
             rows_data.append(row)
             if row.geographic_view.country_criterion_id:
                 criterion_ids.add(row.geographic_view.country_criterion_id)
-    
+
     # Build location cache with a single bulk query (only for new IDs)
     build_location_cache(google_ads_client, customer_id, criterion_ids)
-    
+
     # Second pass: generate output rows with location names
     for row in rows_data:
         # Get human-readable location name
         location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
-        
+
         yield {
-            'Campaign': row.campaign.name,
-            'Conversion action': row.segments.conversion_action_name,
-            'Targeted location': location_name,
-            'All conv.': f"{row.metrics.all_conversions:.2f}"
+            "Campaign": row.campaign.name,
+            "Conversion action": row.segments.conversion_action_name,
+            "Targeted location": location_name,
+            "All conv.": f"{row.metrics.all_conversions:.2f}",
         }
 
 
-
-def generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_search_keyword_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
     """Generate 'Search keyword - raw input to models' report."""
     output_path = Path(f"data/{output_course}/reports/Search keyword - raw input to models.csv")
 
     query = SEARCH_KEYWORD_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Day', 'Search keyword', 'Search keyword match type', 'Campaign', 'Clicks', 'Conv. value',
-                    'Currency code', 'Cost']
-    write_to_file(header_parts, _generate_search_keyword_rows(stream), output_path, delimiter=',')
+    header_parts = [
+        "Day",
+        "Search keyword",
+        "Search keyword match type",
+        "Campaign",
+        "Clicks",
+        "Conv. value",
+        "Currency code",
+        "Cost",
+    ]
+    write_to_file(header_parts, _generate_search_keyword_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
 
 
@@ -345,14 +366,14 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     query = PURCHASE_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Campaign', 'Conversion action', 'Conversions']
-    write_to_file(header_parts, _generate_purchase_report_rows(stream), output_path, delimiter=',')
+    header_parts = ["Campaign", "Conversion action", "Conversions"]
+    write_to_file(header_parts, _generate_purchase_report_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
 
 
@@ -363,140 +384,183 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
     query = LOCATION_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Location', 'Campaign', 'Bid adj.', 'Clicks', 'Currency code', 'Cost', 'Conv. rate', 'Conversions',
-                    'Cost / conv.']
-    write_to_file(header_parts, _generate_location_report_rows(stream, google_ads_client, customer_id), output_path, delimiter=',')
+    header_parts = [
+        "Location",
+        "Campaign",
+        "Bid adj.",
+        "Clicks",
+        "Currency code",
+        "Cost",
+        "Conv. rate",
+        "Conversions",
+        "Cost / conv.",
+    ]
+    write_to_file(
+        header_parts,
+        _generate_location_report_rows(stream, google_ads_client, customer_id),
+        output_path,
+        delimiter=",",
+    )
     print(f"Generated: {output_path}")
 
 
-def generate_hod_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_hod_clicks_and_conversion_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
     """Generate hour-of-day clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks.csv")
 
     query = HOD_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Campaign', 'Hour of the day', 'Clicks']
-    write_to_file(header_parts, _generate_hod_clicks_rows(stream), output_path, delimiter=',')
+    header_parts = ["Campaign", "Hour of the day", "Clicks"]
+    write_to_file(header_parts, _generate_hod_clicks_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
-    
+
     # Generate conversions report
     output_path_conv = Path(f"data/{output_course}/reports/bid_adj/hod_conv.csv")
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
-    header_parts_conv = ['Campaign', 'Conversion action', 'Hour of the day', 'All conv.']
-    write_to_file(header_parts_conv, _generate_hod_conversions_rows(stream_conv), output_path_conv, delimiter=',')
+    header_parts_conv = ["Campaign", "Conversion action", "Hour of the day", "All conv."]
+    write_to_file(
+        header_parts_conv,
+        _generate_hod_conversions_rows(stream_conv),
+        output_path_conv,
+        delimiter=",",
+    )
     print(f"Generated: {output_path_conv}")
 
 
-
-def generate_age_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_age_clicks_and_conversion_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
     """Generate age demographics clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/age_clicks.csv")
 
     query = AGE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Campaign', 'Age', 'Clicks']
-    write_to_file(header_parts, _generate_age_clicks_rows(stream), output_path, delimiter=',')
+    header_parts = ["Campaign", "Age", "Clicks"]
+    write_to_file(header_parts, _generate_age_clicks_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
-    
+
     # Generate conversions report
     output_path_conv = Path(f"data/{output_course}/reports/bid_adj/age_conv.csv")
     query_conv = AGE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
-    header_parts_conv = ['Campaign', 'Conversion action', 'Age', 'All conv.']
-    write_to_file(header_parts_conv, _generate_age_conversions_rows(stream_conv), output_path_conv, delimiter=',')
+    header_parts_conv = ["Campaign", "Conversion action", "Age", "All conv."]
+    write_to_file(
+        header_parts_conv,
+        _generate_age_conversions_rows(stream_conv),
+        output_path_conv,
+        delimiter=",",
+    )
     print(f"Generated: {output_path_conv}")
 
 
-
-def generate_device_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_device_clicks_and_conversion_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
     """Generate device clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/device_clicks.csv")
 
     query = DEVICE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Campaign', 'Device', 'Clicks']
-    write_to_file(header_parts, _generate_device_clicks_rows(stream), output_path, delimiter=',')
+    header_parts = ["Campaign", "Device", "Clicks"]
+    write_to_file(header_parts, _generate_device_clicks_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
-    
+
     # Generate conversions report
     output_path_conv = Path(f"data/{output_course}/reports/bid_adj/device_conv.csv")
     query_conv = DEVICE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
-    header_parts_conv = ['Campaign', 'Conversion action', 'Device', 'All conv.']
-    write_to_file(header_parts_conv, _generate_device_conversions_rows(stream_conv), output_path_conv, delimiter=',')
+    header_parts_conv = ["Campaign", "Conversion action", "Device", "All conv."]
+    write_to_file(
+        header_parts_conv,
+        _generate_device_conversions_rows(stream_conv),
+        output_path_conv,
+        delimiter=",",
+    )
     print(f"Generated: {output_path_conv}")
 
 
-
-def generate_loc_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date):
+def generate_loc_clicks_and_conversion_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
     """Generate location clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks.csv")
 
     query = LOC_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ['Campaign', 'Targeted location', 'Clicks']
-    write_to_file(header_parts, _generate_loc_clicks_rows(stream, google_ads_client, customer_id), output_path, delimiter=',')
+    header_parts = ["Campaign", "Targeted location", "Clicks"]
+    write_to_file(
+        header_parts,
+        _generate_loc_clicks_rows(stream, google_ads_client, customer_id),
+        output_path,
+        delimiter=",",
+    )
     print(f"Generated: {output_path}")
-    
+
     # Generate conversions report
     output_path_conv = Path(f"data/{output_course}/reports/bid_adj/loc_conv.csv")
     query_conv = LOC_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]['course_title_base']
+        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
-    header_parts_conv = ['Campaign', 'Conversion action', 'Targeted location', 'All conv.']
-    write_to_file(header_parts_conv, _generate_loc_conversions_rows(stream_conv, google_ads_client, customer_id), output_path_conv, delimiter=',')
+    header_parts_conv = ["Campaign", "Conversion action", "Targeted location", "All conv."]
+    write_to_file(
+        header_parts_conv,
+        _generate_loc_conversions_rows(stream_conv, google_ads_client, customer_id),
+        output_path_conv,
+        delimiter=",",
+    )
     print(f"Generated: {output_path_conv}")
-
 
 
 def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=None, end_date=None):
@@ -506,7 +570,7 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
     if not start_date:
-        start_date = COURSE_CONFIG[output_course]['min_date']
+        start_date = COURSE_CONFIG[output_course]["min_date"]
 
     print(f"Pulling ads reports for course '{output_course}'...")
     print(f"Date range: {start_date} to {end_date}")
@@ -516,15 +580,26 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     location_cache = {}
 
     # Generate all reports
-    generate_search_keyword_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_search_keyword_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
     generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
     generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_hod_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_age_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_device_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_loc_clicks_and_conversion_report(google_ads_client, customer_id, output_course, start_date, end_date)
+    generate_hod_clicks_and_conversion_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
+    generate_age_clicks_and_conversion_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
+    generate_device_clicks_and_conversion_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
+    generate_loc_clicks_and_conversion_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
 
     print(f"Successfully generated all reports for {output_course}")
+
 
 def generate_rows_from_gkp_response(response, date_headers):
     for result in response.results:
@@ -567,10 +642,10 @@ def generate_rows_from_gkp_response(response, date_headers):
 
 
 def pull_keyword_planning(
-        google_ads_client: GoogleAdsClient,
-        customer_id: str,
-        keyword_planning_input_file: str,
-        output_course: str,
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    keyword_planning_input_file: str,
+    output_course: str,
 ):
     """Pull keyword planning data from Google Ads using generate_keyword_historical_metrics.
 
@@ -666,16 +741,33 @@ def pull_keyword_planning(
     print(f"Keyword planning data written to: {output_file}")
 
 
-def pull_semrush():
+def pull_semrush(output_course, num_keywords=100):
     """Pull data from SEMrush API."""
     api_key = os.getenv("SEMRUSH_API_KEY")
+    phrase = SEMRUSH_PHRASE_MAPPING[output_course]
+    output_dir = Path(f"data/{output_course}/gkp")
+    output_file = output_dir / f"semrush_new_kws.csv"
 
     print(f"Pulling SEMrush data...")
-    raise NotImplementedError
-    # TODO: Implement SEMrush pull logic - blocked on API access atm
+    query_params = {
+        "type": "phrase_related",
+        "key": api_key,
+        "phrase": phrase,
+        "database": "us",
+        "export_columns": "Ph",
+        # TODO: This is the limit returned by the API. It says it defaults to 10k in the docs but in practice it returns 100.
+        # We currently only have 100k units, and this costs 40 units per keyword.
+        "display_limit": num_keywords
+    }
+    print(f"Executing SEMrush API request for phrase '{phrase}' with limit {num_keywords}...")
+    response = requests.get(SEMRUSH_HOST, params=query_params)
+    response.raise_for_status()
+    rows = [{"Keyword": line} for line in response.text.splitlines()]
+    # Skip the first line since it's just the header "Keyword"
+    # This outputs a CSV already, so we don't need to do much to the response.
+    write_to_file(["Keyword"], rows[1:], output_file)
 
 
-# TODO: Need to figure out if all courses are in one account (and if so, how they're organized) or if we have one course per like in the example I've got
 def main():
     parser = argparse.ArgumentParser(description="Pull input data from various sources")
     parser.add_argument(
@@ -701,14 +793,17 @@ def main():
     parser.add_argument(
         "--google-ads-yaml",
         type=str,
-        required=True,
         help="Path to Google Ads YAML configuration file",
     )
     parser.add_argument(
         "--customer-id",
         type=str,
-        required=True,
         help="Google Ads customer ID",
+    )
+    parser.add_argument(
+        "--num-keywords",
+        type=int,
+        help="Number of keywords to pull from SEMRush (default 100, max 10,000). Each keyword consumes 40 api units",
     )
 
     args = parser.parse_args()
@@ -725,9 +820,13 @@ def main():
 
     # Ensure we have necessary credentials set for the requested datasets
     validate_environment_variables(requested_datasets)
-
     yaml_path = args.google_ads_yaml
-    google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
+
+    if yaml_path:
+        google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
+    else:
+        google_ads_client = None
+
     customer_id = args.customer_id
 
     if ADS_REPORTS in requested_datasets:
@@ -741,7 +840,7 @@ def main():
         print(f"Successfully pulled keyword_planning data")
 
     if SEMRUSH in requested_datasets:
-        pull_semrush()
+        pull_semrush(args.output_course, args.num_keywords)
         print(f"Successfully pulled semrush data")
 
     print(f"All requested datasets pulled successfully")
