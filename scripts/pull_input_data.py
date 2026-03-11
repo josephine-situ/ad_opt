@@ -135,7 +135,7 @@ def _generate_search_keyword_rows(stream):
                 ).title(),
                 "Campaign": row.campaign.name,
                 "Clicks": row.metrics.clicks,
-                "Conv. value": f"{row.metrics.conversions_value:.2f}",
+                "Conv. value": f"{row.metrics.all_conversions_value:.2f}",
                 "Currency code": row.customer.currency_code,
                 "Cost": f"{row.metrics.cost_micros / 1_000_000:.2f}",
             }
