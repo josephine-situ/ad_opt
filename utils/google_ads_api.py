@@ -17,12 +17,13 @@ def normalize_bid_adjustment(bid_adj):
 def should_skip_campaign(campaign_name, check_course=None, check_region=None, check_match_type=None):
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
-    Campaign name format: "Course - {course_title} - {region} - {match_type}"
+    Campaign name format: "{course_title} - {region} - {match_type}"
     Uses regex to validate exact position of each component.
     """
     # Parse campaign name using regex
-    # Pattern: "Course - {any course title} - {region} - {match type}"
-    pattern = r'^Course - (.+?) - (.+?) - (.+?)$'
+    # Pattern: "{any course title} - {region} - {match type}"
+    # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
+    pattern = r'^(.+?) - (.+?) - (.+?)$'
     match = re.match(pattern, campaign_name)
 
     if not match:

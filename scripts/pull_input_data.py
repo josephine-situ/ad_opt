@@ -7,7 +7,6 @@ import argparse
 import csv
 import os
 import sys
-import urllib
 from pathlib import Path
 from datetime import datetime
 
@@ -136,7 +135,7 @@ def _generate_search_keyword_rows(stream):
                 ).title(),
                 "Campaign": row.campaign.name,
                 "Clicks": row.metrics.clicks,
-                "Conv. value": f"{row.metrics.conversions_value:.2f}",
+                "Conv. value": f"{row.metrics.all_conversions_value:.2f}",
                 "Currency code": row.customer.currency_code,
                 "Cost": f"{row.metrics.cost_micros / 1_000_000:.2f}",
             }
@@ -149,7 +148,7 @@ def _generate_purchase_report_rows(stream):
             yield {
                 "Campaign": row.campaign.name,
                 "Conversion action": row.segments.conversion_action_name,
-                "Conversions": f"{row.metrics.conversions:.2f}",
+                "Conversions": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -173,7 +172,7 @@ def _generate_location_report_rows(stream, google_ads_client, customer_id):
     # Second pass: generate output rows with location names
     for row in rows_data:
         clicks = row.metrics.clicks
-        conversions = row.metrics.conversions
+        conversions = row.metrics.all_conversions
         cost = row.metrics.cost_micros / 1_000_000
         conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
         cost_per_conv = (cost / conversions) if conversions > 0 else 0
@@ -339,7 +338,6 @@ def generate_search_keyword_report(
     query = SEARCH_KEYWORD_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -366,7 +364,6 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     query = PURCHASE_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -384,7 +381,6 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
     query = LOCATION_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -419,7 +415,6 @@ def generate_hod_clicks_and_conversion_report(
     query = HOD_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -434,7 +429,6 @@ def generate_hod_clicks_and_conversion_report(
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Hour of the day", "All conv."]
@@ -456,7 +450,6 @@ def generate_age_clicks_and_conversion_report(
     query = AGE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -471,7 +464,6 @@ def generate_age_clicks_and_conversion_report(
     query_conv = AGE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Age", "All conv."]
@@ -493,7 +485,6 @@ def generate_device_clicks_and_conversion_report(
     query = DEVICE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -508,7 +499,6 @@ def generate_device_clicks_and_conversion_report(
     query_conv = DEVICE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Device", "All conv."]
@@ -530,7 +520,6 @@ def generate_loc_clicks_and_conversion_report(
     query = LOC_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -550,7 +539,6 @@ def generate_loc_clicks_and_conversion_report(
     query_conv = LOC_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Targeted location", "All conv."]
@@ -575,9 +563,6 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Pulling ads reports for course '{output_course}'...")
     print(f"Date range: {start_date} to {end_date}")
     print(f"Customer ID: {customer_id}")
-
-    # Create shared location cache for geographic reports
-    location_cache = {}
 
     # Generate all reports
     generate_search_keyword_report(
@@ -680,13 +665,12 @@ def pull_keyword_planning(
     request = google_ads_client.get_type("GenerateKeywordHistoricalMetricsRequest")
     request.customer_id = customer_id
     request.keywords = keywords
-    # Not sure if this is actually required/desirable?
     request.keyword_plan_network = google_ads_client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
 
-    # Set historical metrics options to get trailing 12 months
     historical_metrics_options = google_ads_client.get_type("HistoricalMetricsOptions")
     current_date = datetime.now()
-    start_date = current_date - relativedelta(months=12)
+    # Start from 6 months before the course minimum date
+    start_date = datetime.strptime(COURSE_CONFIG[output_course]['min_date'], '%Y-%m-%d') - relativedelta(months=6)
     # End date is last month (since current month data isn't complete)
     end_date = current_date - relativedelta(months=1)
 

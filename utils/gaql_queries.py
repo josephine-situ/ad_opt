@@ -75,7 +75,7 @@ GET_CRITERIA_FOR_CAMPAIGNS = """
 GET_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
-        WHERE campaign.name LIKE 'Course - {course_title}%'
+        AND campaign.name NOT LIKE 'EXCLUDE%'
         AND campaign.advertising_channel_type = 'SEARCH'
     """
 
@@ -104,7 +104,7 @@ SEARCH_KEYWORD_REPORT_QUERY = """
         metrics.cost_micros
     FROM search_term_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND segments.search_term_match_type IN ('EXACT', 'PHRASE', 'BROAD')
     ORDER BY segments.date
@@ -117,7 +117,7 @@ PURCHASE_REPORT_QUERY = """
         metrics.all_conversions
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND metrics.all_conversions > 0
     AND campaign.advertising_channel_type = 'SEARCH'
     AND segments.conversion_action_name LIKE '%Purchase%'
@@ -137,7 +137,7 @@ LOCATION_REPORT_QUERY = """
         campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, geographic_view.location_type
 """
@@ -149,7 +149,7 @@ HOD_CLICKS_REPORT_QUERY = """
         metrics.clicks
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.hour
 """
@@ -161,7 +161,7 @@ AGE_CLICKS_REPORT_QUERY = """
         metrics.clicks
     FROM age_range_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, ad_group_criterion.age_range.type
 """
@@ -173,7 +173,7 @@ DEVICE_CLICKS_REPORT_QUERY = """
         metrics.clicks
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, segments.device
 """
@@ -187,7 +187,7 @@ LOC_CLICKS_REPORT_QUERY = """
         campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     ORDER BY campaign.name, geographic_view.location_type
 """
@@ -200,7 +200,7 @@ HOD_CONVERSIONS_REPORT_QUERY = """
         metrics.all_conversions
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
     AND segments.conversion_action_name LIKE '%Purchase%'
@@ -215,7 +215,7 @@ AGE_CONVERSIONS_REPORT_QUERY = """
         metrics.all_conversions
     FROM age_range_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
     AND segments.conversion_action_name LIKE '%Purchase%'
@@ -230,7 +230,7 @@ DEVICE_CONVERSIONS_REPORT_QUERY = """
         metrics.all_conversions
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
     AND segments.conversion_action_name LIKE '%Purchase%'
@@ -247,7 +247,7 @@ LOC_CONVERSIONS_REPORT_QUERY = """
         campaign.advertising_channel_type
     FROM geographic_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name LIKE 'Course - {course_title}%'
+    AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
     AND segments.conversion_action_name LIKE '%Purchase%'
