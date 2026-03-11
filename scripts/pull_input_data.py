@@ -148,7 +148,7 @@ def _generate_purchase_report_rows(stream):
             yield {
                 "Campaign": row.campaign.name,
                 "Conversion action": row.segments.conversion_action_name,
-                "Conversions": f"{row.metrics.conversions:.2f}",
+                "Conversions": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -172,7 +172,7 @@ def _generate_location_report_rows(stream, google_ads_client, customer_id):
     # Second pass: generate output rows with location names
     for row in rows_data:
         clicks = row.metrics.clicks
-        conversions = row.metrics.conversions
+        conversions = row.metrics.all_conversions
         cost = row.metrics.cost_micros / 1_000_000
         conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
         cost_per_conv = (cost / conversions) if conversions > 0 else 0
