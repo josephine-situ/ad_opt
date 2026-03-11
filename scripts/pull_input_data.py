@@ -338,7 +338,6 @@ def generate_search_keyword_report(
     query = SEARCH_KEYWORD_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -365,7 +364,6 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     query = PURCHASE_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -383,7 +381,6 @@ def generate_location_report(google_ads_client, customer_id, output_course, star
     query = LOCATION_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -418,7 +415,6 @@ def generate_hod_clicks_and_conversion_report(
     query = HOD_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -433,7 +429,6 @@ def generate_hod_clicks_and_conversion_report(
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Hour of the day", "All conv."]
@@ -455,7 +450,6 @@ def generate_age_clicks_and_conversion_report(
     query = AGE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -470,7 +464,6 @@ def generate_age_clicks_and_conversion_report(
     query_conv = AGE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Age", "All conv."]
@@ -492,7 +485,6 @@ def generate_device_clicks_and_conversion_report(
     query = DEVICE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -507,7 +499,6 @@ def generate_device_clicks_and_conversion_report(
     query_conv = DEVICE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Device", "All conv."]
@@ -529,7 +520,6 @@ def generate_loc_clicks_and_conversion_report(
     query = LOC_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -549,7 +539,6 @@ def generate_loc_clicks_and_conversion_report(
     query_conv = LOC_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
-        course_title=COURSE_CONFIG[output_course]["course_title_base"],
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Targeted location", "All conv."]
