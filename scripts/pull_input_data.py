@@ -10,6 +10,7 @@ import sys
 from decimal import Decimal
 from pathlib import Path
 from datetime import datetime
+from collections import defaultdict
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -208,7 +209,6 @@ def _generate_hod_clicks_rows(stream):
 def _generate_age_clicks_rows(stream):
     """Generate rows for age clicks report."""
     # Aggregate by campaign and age range (since age_range_view segments by ad group)
-    from collections import defaultdict
     aggregated = defaultdict(int)
     
     for batch in stream:
