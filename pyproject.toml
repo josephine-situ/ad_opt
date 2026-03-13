@@ -7,7 +7,7 @@ name = "ad-bid-optimizer"
 version = "0.1.0"
 description = "Machine Learning Optimization for Google Ads Bid Management"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 authors = [
     {name = "Author Name", email = "author@example.com"}
 ]
@@ -97,7 +97,7 @@ disable = [
 max-line-length = 100
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
