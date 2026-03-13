@@ -207,14 +207,19 @@ def _generate_hod_clicks_rows(stream):
 
 def _generate_age_clicks_rows(stream):
     """Generate rows for age clicks report."""
-    # Map age range enum values to display names
-
+    # Aggregate by campaign and age range (since age_range_view segments by ad group)
+    from collections import defaultdict
+    aggregated = defaultdict(int)
+    
     for batch in stream:
         for row in batch.results:
             age_type = row.ad_group_criterion.age_range.type_
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
-
-            yield {"Campaign": row.campaign.name, "Age": age_display, "Clicks": row.metrics.clicks}
+            key = (row.campaign.name, age_display)
+            aggregated[key] += row.metrics.clicks
+    
+    for (campaign, age), clicks in sorted(aggregated.items()):
+        yield {"Campaign": campaign, "Age": age, "Clicks": clicks}
 
 
 def _generate_device_clicks_rows(stream):
@@ -274,17 +279,24 @@ def _generate_hod_conversions_rows(stream):
 
 def _generate_age_conversions_rows(stream):
     """Generate rows for age demographics conversions report."""
+    # Aggregate by campaign, conversion action, and age range
+    from collections import defaultdict
+    aggregated = defaultdict(float)
+    
     for batch in stream:
         for row in batch.results:
             age_type = row.ad_group_criterion.age_range.type
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
-
-            yield {
-                "Campaign": row.campaign.name,
-                "Conversion action": row.segments.conversion_action_name,
-                "Age": age_display,
-                "All conv.": f"{row.metrics.all_conversions:.2f}",
-            }
+            key = (row.campaign.name, row.segments.conversion_action_name, age_display)
+            aggregated[key] += row.metrics.all_conversions
+    
+    for (campaign, conversion_action, age), conversions in sorted(aggregated.items()):
+        yield {
+            "Campaign": campaign,
+            "Conversion action": conversion_action,
+            "Age": age,
+            "All conv.": f"{conversions:.2f}",
+        }
 
 
 def _generate_device_conversions_rows(stream):
