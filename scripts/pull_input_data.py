@@ -7,6 +7,7 @@ import argparse
 import csv
 import os
 import sys
+from decimal import Decimal
 from pathlib import Path
 from datetime import datetime
 
@@ -129,15 +130,15 @@ def _generate_search_keyword_rows(stream):
         for row in batch.results:
             yield {
                 "Day": row.segments.date,
-                "Search keyword": row.search_term_view.search_term,
-                "Search keyword match type": row.segments.search_term_match_type.name.replace(
+                "Search keyword": row.ad_group_criterion.keyword.text,
+                "Search keyword match type": row.ad_group_criterion.keyword.match_type.name.replace(
                     "_", " "
                 ).title(),
                 "Campaign": row.campaign.name,
                 "Clicks": row.metrics.clicks,
                 "Conv. value": f"{row.metrics.all_conversions_value:.2f}",
                 "Currency code": row.customer.currency_code,
-                "Cost": f"{row.metrics.cost_micros / 1_000_000:.2f}",
+                "Cost": f"{Decimal(row.metrics.cost_micros) / 1_000_000:.2f}",
             }
 
 
@@ -171,9 +172,9 @@ def _generate_location_report_rows(stream, google_ads_client, customer_id):
 
     # Second pass: generate output rows with location names
     for row in rows_data:
-        clicks = row.metrics.clicks
-        conversions = row.metrics.all_conversions
-        cost = row.metrics.cost_micros / 1_000_000
+        clicks = Decimal(row.metrics.clicks)
+        conversions = Decimal(row.metrics.all_conversions)
+        cost = Decimal(row.metrics.cost_micros) / 1_000_000
         conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
         cost_per_conv = (cost / conversions) if conversions > 0 else 0
 
@@ -594,12 +595,12 @@ def generate_rows_from_gkp_response(response, date_headers):
         competition = metrics.competition.name.capitalize() if metrics.competition else ""
         competition_index = metrics.competition_index if metrics.competition_index else ""
         low_bid = (
-            metrics.low_top_of_page_bid_micros / 1_000_000
+            Decimal(metrics.low_top_of_page_bid_micros) / 1_000_000
             if metrics.low_top_of_page_bid_micros
             else ""
         )
         high_bid = (
-            metrics.high_top_of_page_bid_micros / 1_000_000
+            Decimal(metrics.high_top_of_page_bid_micros) / 1_000_000
             if metrics.high_top_of_page_bid_micros
             else ""
         )
