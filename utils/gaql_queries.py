@@ -95,18 +95,19 @@ GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
 SEARCH_KEYWORD_REPORT_QUERY = """
     SELECT
         segments.date,
-        search_term_view.search_term,
-        segments.search_term_match_type,
+        ad_group_criterion.keyword.text,
+        ad_group_criterion.keyword.match_type,
         campaign.name,
         metrics.clicks,
         metrics.all_conversions_value,
         customer.currency_code,
         metrics.cost_micros
-    FROM search_term_view
+    FROM keyword_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
-    AND segments.search_term_match_type IN ('EXACT', 'PHRASE', 'BROAD')
+    AND ad_group_criterion.keyword.match_type IN ('EXACT', 'PHRASE', 'BROAD')
+    AND metrics.clicks > 0
     ORDER BY segments.date
 """
 
