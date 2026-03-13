@@ -125,24 +125,6 @@ PURCHASE_REPORT_QUERY = """
     ORDER BY campaign.name, segments.conversion_action_name
 """
 
-LOCATION_REPORT_QUERY = """
-    SELECT
-        geographic_view.location_type,
-        geographic_view.country_criterion_id,
-        campaign.name,
-        metrics.clicks,
-        customer.currency_code,
-        metrics.cost_micros,
-        metrics.all_conversions,
-        metrics.all_conversions_value,
-        campaign.advertising_channel_type
-    FROM geographic_view
-    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-    AND campaign.name NOT LIKE 'EXCLUDE%'
-    AND campaign.advertising_channel_type = 'SEARCH'
-    ORDER BY campaign.name, geographic_view.location_type
-"""
-
 HOD_CLICKS_REPORT_QUERY = """
     SELECT
         campaign.name,

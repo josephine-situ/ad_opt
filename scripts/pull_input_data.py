@@ -22,7 +22,6 @@ from utils.bid_adjustments import AGE_ENUM_TO_RANGE, DEVICE_ENUM_TO_NAME
 from utils.gaql_queries import (
     SEARCH_KEYWORD_REPORT_QUERY,
     PURCHASE_REPORT_QUERY,
-    LOCATION_REPORT_QUERY,
     HOD_CLICKS_REPORT_QUERY,
     AGE_CLICKS_REPORT_QUERY,
     DEVICE_CLICKS_REPORT_QUERY,
@@ -151,47 +150,6 @@ def _generate_purchase_report_rows(stream):
                 "Conversion action": row.segments.conversion_action_name,
                 "Conversions": f"{row.metrics.all_conversions:.2f}",
             }
-
-
-def _generate_location_report_rows(stream, google_ads_client, customer_id):
-    """Generate rows for location report."""
-    # First pass: collect all rows and criterion IDs
-    # Unfortunately this kinda screws up memory efficiency, but at the moment I don't know if I can grab the location names more efficiently
-    # This does at least perform better than a single call per row, GAQL queries are not that fast.
-    rows_data = []
-    criterion_ids = set()
-
-    for batch in stream:
-        for row in batch.results:
-            rows_data.append(row)
-            if row.geographic_view.country_criterion_id:
-                criterion_ids.add(row.geographic_view.country_criterion_id)
-
-    # Build location cache with a single bulk query (only for new IDs)
-    build_location_cache(google_ads_client, customer_id, criterion_ids)
-
-    # Second pass: generate output rows with location names
-    for row in rows_data:
-        clicks = Decimal(row.metrics.clicks)
-        conversions = Decimal(row.metrics.all_conversions)
-        cost = Decimal(row.metrics.cost_micros) / 1_000_000
-        conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
-        cost_per_conv = (cost / conversions) if conversions > 0 else 0
-
-        # Get human-readable location name
-        location_name = LOCATION_CACHE[row.geographic_view.country_criterion_id]
-
-        yield {
-            "Location": location_name,
-            "Campaign": row.campaign.name,
-            "Bid adj.": "--",
-            "Clicks": clicks,
-            "Currency code": row.customer.currency_code,
-            "Cost": f"{cost:.2f}",
-            "Conv. rate": f"{conv_rate:.2f}%",
-            "Conversions": f"{conversions:.2f}",
-            "Cost / conv.": f"{cost_per_conv:.2f}",
-        }
 
 
 def _generate_hod_clicks_rows(stream):
@@ -374,39 +332,6 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     write_to_file(header_parts, _generate_purchase_report_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
 
-
-def generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date):
-    """Generate 'Location report' with geographic performance data."""
-    output_path = Path(f"data/{output_course}/reports/Location report.csv")
-
-    query = LOCATION_REPORT_QUERY.format(
-        start_date=start_date,
-        end_date=end_date,
-    )
-
-    ads_service = google_ads_client.get_service("GoogleAdsService")
-    stream = ads_service.search_stream(customer_id=customer_id, query=query)
-
-    header_parts = [
-        "Location",
-        "Campaign",
-        "Bid adj.",
-        "Clicks",
-        "Currency code",
-        "Cost",
-        "Conv. rate",
-        "Conversions",
-        "Cost / conv.",
-    ]
-    write_to_file(
-        header_parts,
-        _generate_location_report_rows(stream, google_ads_client, customer_id),
-        output_path,
-        delimiter=",",
-    )
-    print(f"Generated: {output_path}")
-
-
 def generate_hod_clicks_and_conversion_report(
     google_ads_client, customer_id, output_course, start_date, end_date
 ):
@@ -570,7 +495,6 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
         google_ads_client, customer_id, output_course, start_date, end_date
     )
     generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_location_report(google_ads_client, customer_id, output_course, start_date, end_date)
     generate_hod_clicks_and_conversion_report(
         google_ads_client, customer_id, output_course, start_date, end_date
     )
