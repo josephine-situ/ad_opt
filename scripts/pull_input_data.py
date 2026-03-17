@@ -353,6 +353,7 @@ def generate_search_terms_report(
     query = SEARCH_TERM_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -375,6 +376,7 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     query = PURCHASE_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -408,6 +410,7 @@ def generate_hod_clicks_and_conversion_report(
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Hour of the day", "All conv."]
@@ -443,6 +446,7 @@ def generate_age_clicks_and_conversion_report(
     query_conv = AGE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Age", "All conv."]
@@ -478,6 +482,7 @@ def generate_device_clicks_and_conversion_report(
     query_conv = DEVICE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Device", "All conv."]
@@ -518,6 +523,7 @@ def generate_loc_clicks_and_conversion_report(
     query_conv = LOC_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        conversion_action_list="', '".join(COURSE_CONFIG[output_course]["conversion_actions"]),
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Targeted location", "All conv."]
