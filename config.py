@@ -69,6 +69,7 @@ COURSE_CONFIG = {
         'min_date': '2022-06-01', # Start of search history
         'budgets': [357.14],
         'course_title_base': "Course - System Thinking",
+        'conversion_actions': ['Purchase', 'System Thinking - Add to cart', 'idimension - account create', 'Add to cart - iDimension'],
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
