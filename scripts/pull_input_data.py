@@ -31,6 +31,7 @@ from utils.gaql_queries import (
     AGE_CONVERSIONS_REPORT_QUERY,
     DEVICE_CONVERSIONS_REPORT_QUERY,
     LOC_CONVERSIONS_REPORT_QUERY,
+    SEARCH_TERM_REPORT_QUERY,
 )
 from config import COURSE_CONFIG
 
@@ -168,14 +169,14 @@ def _generate_age_clicks_rows(stream):
     """Generate rows for age clicks report."""
     # Aggregate by campaign and age range (since age_range_view segments by ad group)
     aggregated = defaultdict(int)
-    
+
     for batch in stream:
         for row in batch.results:
             age_type = row.ad_group_criterion.age_range.type_
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
             key = (row.campaign.name, age_display)
             aggregated[key] += row.metrics.clicks
-    
+
     for (campaign, age), clicks in sorted(aggregated.items()):
         yield {"Campaign": campaign, "Age": age, "Clicks": clicks}
 
@@ -239,15 +240,16 @@ def _generate_age_conversions_rows(stream):
     """Generate rows for age demographics conversions report."""
     # Aggregate by campaign, conversion action, and age range
     from collections import defaultdict
+
     aggregated = defaultdict(float)
-    
+
     for batch in stream:
         for row in batch.results:
             age_type = row.ad_group_criterion.age_range.type
             age_display = AGE_ENUM_TO_RANGE.get(age_type, "")
             key = (row.campaign.name, row.segments.conversion_action_name, age_display)
             aggregated[key] += row.metrics.all_conversions
-    
+
     for (campaign, conversion_action, age), conversions in sorted(aggregated.items()):
         yield {
             "Campaign": campaign,
@@ -300,6 +302,21 @@ def _generate_loc_conversions_rows(stream, google_ads_client, customer_id):
         }
 
 
+def _generate_search_terms_row(stream):
+    """Generate rows for search terms report."""
+    for batch in stream:
+        for row in batch.results:
+            yield {
+                "Search keyword": row.segments.keyword.info.text,
+                "Search keyword match type": row.segments.keyword.info.match_type.name.replace(
+                    "_", " "
+                ).title(),
+                "Search term": row.search_term_view.search_term,
+                "Conversion action": row.segments.conversion_action_name,
+                "Conversions": f"{row.metrics.all_conversions:.2f}",
+            }
+
+
 def generate_search_keyword_report(
     google_ads_client, customer_id, output_course, start_date, end_date
 ):
@@ -328,6 +345,29 @@ def generate_search_keyword_report(
     print(f"Generated: {output_path}")
 
 
+def generate_search_terms_report(
+    google_ads_client, customer_id, output_course, start_date, end_date
+):
+    """Generate 'Search keyword - search terms' report."""
+    output_path = Path(f"data/{output_course}/reports/Search keyword - search terms.csv")
+    query = SEARCH_TERM_REPORT_QUERY.format(
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    ads_service = google_ads_client.get_service("GoogleAdsService")
+    stream = ads_service.search_stream(customer_id=customer_id, query=query)
+    header_parts = [
+        "Search keyword",
+        "Search keyword match type",
+        "Search term",
+        "Conversion action",
+        "Conversions",
+    ]
+    write_to_file(header_parts, _generate_search_terms_row(stream), output_path, delimiter=",")
+    print(f"Generated: {output_path}")
+
+
 def generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date):
     """Generate 'Purchase report' with conversion data."""
     output_path = Path(f"data/{output_course}/reports/Purchase report.csv")
@@ -343,6 +383,7 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     header_parts = ["Campaign", "Conversion action", "Conversions"]
     write_to_file(header_parts, _generate_purchase_report_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
+
 
 def generate_hod_clicks_and_conversion_report(
     google_ads_client, customer_id, output_course, start_date, end_date
@@ -506,6 +547,10 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     generate_search_keyword_report(
         google_ads_client, customer_id, output_course, start_date, end_date
     )
+
+    generate_search_terms_report(
+        google_ads_client, customer_id, output_course, start_date, end_date
+    )
     generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
     generate_hod_clicks_and_conversion_report(
         google_ads_client, customer_id, output_course, start_date, end_date
@@ -607,7 +652,9 @@ def pull_keyword_planning(
     historical_metrics_options = google_ads_client.get_type("HistoricalMetricsOptions")
     current_date = datetime.now()
     # Start from 6 months before the course minimum date
-    start_date = datetime.strptime(COURSE_CONFIG[output_course]['min_date'], '%Y-%m-%d') - relativedelta(months=6)
+    start_date = datetime.strptime(
+        COURSE_CONFIG[output_course]["min_date"], "%Y-%m-%d"
+    ) - relativedelta(months=6)
     # End date is last month (since current month data isn't complete)
     end_date = current_date - relativedelta(months=1)
 
@@ -678,7 +725,7 @@ def pull_semrush(output_course, num_keywords=100):
         "export_columns": "Ph",
         # TODO: This is the limit returned by the API. It says it defaults to 10k in the docs but in practice it returns 100.
         # We currently only have 100k units, and this costs 40 units per keyword.
-        "display_limit": num_keywords
+        "display_limit": num_keywords,
     }
     print(f"Executing SEMrush API request for phrase '{phrase}' with limit {num_keywords}...")
     response = requests.get(SEMRUSH_HOST, params=query_params)

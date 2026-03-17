@@ -236,3 +236,18 @@ LOC_CONVERSIONS_REPORT_QUERY = """
     AND segments.conversion_action_name LIKE '%Purchase%'
     ORDER BY campaign.name, segments.conversion_action_name, geographic_view.location_type
 """
+
+SEARCH_TERM_REPORT_QUERY = """
+    SELECT
+        search_term_view.search_term,
+        segments.keyword.info.text,
+        segments.keyword.info.match_type,
+        segments.conversion_action_name,
+        metrics.all_conversions
+    FROM search_term_view
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    AND metrics.all_conversions > 0
+    AND segments.conversion_action_name LIKE '%Purchase%'
+    AND segments.keyword.info.match_type IN ('EXACT', 'PHRASE', 'BROAD')
+    ORDER BY segments.keyword.info.text
+"""
