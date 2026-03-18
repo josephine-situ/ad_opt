@@ -23,13 +23,11 @@ from utils.google_ads_api import (
     get_existing_campaign_criteria,
     get_campaigns_for_course,
     get_location_bid_adjustments,
-    get_existing_ad_group_age_for_campaigns,
+    get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_campaigns,
 )
 
 from utils.gaql_queries import (
-    GET_CAMPAIGN_BUDGETS_BY_NAMES,
     SELECT_KEYWORD_CRITERION_IN_AD_GROUP,
-    SELECT_AD_GROUPS_FOR_CAMPAIGNS,
 )
 from config import COURSE_CONFIG
 
@@ -59,23 +57,6 @@ def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
                 print(f"WARNING: Large budget change detected for {campaign_name}:")
                 print(f"  Current: ${current_budget:.2f}/day, New: ${new_budget:.2f}/day")
                 print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
-
-
-def get_campaign_budget_info(google_ads_service, customer_id, campaign_names_list):
-    campaign_names = "', '".join(campaign_names_list)
-    query = GET_CAMPAIGN_BUDGETS_BY_NAMES.format(campaign_names=campaign_names)
-
-    response = google_ads_service.search(customer_id=customer_id, query=query)
-    campaign_budget_resources = {}
-
-    for row in response:
-        campaign_name = row.campaign.name
-        # TODO: Starting to look like this may want to be a dataclass
-        campaign_budget_resources[campaign_name] = {
-            "current_budget_amount": row.campaign_budget.amount_micros / 1_000_000,
-            "budget_resource_id": row.campaign.campaign_budget,
-        }
-    return campaign_budget_resources
 
 
 def push_budget(google_ads_client, customer_id, output_course, execute):
@@ -171,24 +152,13 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
 
     # Bulk query: Get all ad groups for the campaigns we need
     print(f"Fetching ad groups for {len(campaign_names)} campaigns...")
-    campaign_list = "', '".join(campaign_names)
-    query = SELECT_AD_GROUPS_FOR_CAMPAIGNS.format(campaign_list=campaign_list)
-
-    response = google_ads_service.search(customer_id=customer_id, query=query)
-    campaign_to_ad_group = {}
-    ad_group_ids = set()
-
-    for result in response:
-        campaign_name = result.campaign.name
-        ad_group_id = result.ad_group.id
-        # Take first ad group per campaign
-        if campaign_name not in campaign_to_ad_group:
-            campaign_to_ad_group[campaign_name] = ad_group_id
-            ad_group_ids.add(ad_group_id)
+    campaign_to_ad_group = get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names)
+    ad_group_ids = set(campaign_to_ad_group.values())
 
     print(f"Found {len(campaign_to_ad_group)} ad groups")
 
     # Get all keyword criteria for all ad groups
+    # TODO: Pull this into a function in google_ads_api.py, clean up the returned data structure in a subsequent PR
     print(f"Fetching keywords for {len(ad_group_ids)} ad groups...")
     ad_group_list = "', '".join(
         f"customers/{customer_id}/adGroups/{ag_id}" for ag_id in ad_group_ids
