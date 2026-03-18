@@ -4,11 +4,13 @@ GET_CAMPAIGNS_IN_ACCOUNT = """
     WHERE campaign.advertising_channel_type = 'SEARCH'
 """
 
-GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME = """
+GET_CAMPAIGN_BUDGETS_BY_NAMES = """
     SELECT
-        campaign.campaign_budget
+        campaign.name,
+        campaign.campaign_budget,
+        campaign_budget.amount_micros
     FROM campaign
-    WHERE campaign.name = '{campaign_name}'
+    WHERE campaign.name IN ('{campaign_names}')
     AND campaign.advertising_channel_type = 'SEARCH'
 """
 
