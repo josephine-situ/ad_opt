@@ -36,6 +36,7 @@ COURSE_CONFIG = {
         },
         # TODO: We need to add these for all other accounts too.
         'conversion_actions': ['Purchase', 'Add to cart - MLx - iDimension', 'idimension - account create'],
+        'purchase_actions': ['Purchase'],
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
@@ -70,6 +71,7 @@ COURSE_CONFIG = {
         'budgets': [357.14],
         'course_title_base': "Course - System Thinking",
         'conversion_actions': ['Purchase', 'System Thinking - Add to cart', 'idimension - account create', 'Add to cart - iDimension'],
+        'purchase_actions': ['Purchase'],
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],

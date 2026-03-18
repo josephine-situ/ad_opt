@@ -121,7 +121,7 @@ PURCHASE_REPORT_QUERY = """
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND metrics.all_conversions > 0
     AND campaign.advertising_channel_type = 'SEARCH'
-    AND segments.conversion_action_name IN ('{conversion_action_list}')
+    AND segments.conversion_action_name IN ('{purchase_action_list}')
     ORDER BY campaign.name, segments.conversion_action_name
 """
 
@@ -186,7 +186,7 @@ HOD_CONVERSIONS_REPORT_QUERY = """
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
-    AND segments.conversion_action_name IN ('{conversion_action_list}')
+    AND segments.conversion_action_name IN ('{purchase_action_list}')
     ORDER BY campaign.name, segments.conversion_action_name, segments.hour
 """
 
@@ -201,7 +201,7 @@ AGE_CONVERSIONS_REPORT_QUERY = """
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
-    AND segments.conversion_action_name IN ('{conversion_action_list}')
+    AND segments.conversion_action_name IN ('{purchase_action_list}')
     ORDER BY campaign.name, segments.conversion_action_name, ad_group_criterion.age_range.type
 """
 
@@ -216,7 +216,7 @@ DEVICE_CONVERSIONS_REPORT_QUERY = """
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
-    AND segments.conversion_action_name IN ('{conversion_action_list}')
+    AND segments.conversion_action_name IN ('{purchase_action_list}')
     ORDER BY campaign.name, segments.conversion_action_name, segments.device
 """
 
@@ -233,7 +233,7 @@ LOC_CONVERSIONS_REPORT_QUERY = """
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
-    AND segments.conversion_action_name IN ('{conversion_action_list}')
+    AND segments.conversion_action_name IN ('{purchase_action_list}')
     ORDER BY campaign.name, segments.conversion_action_name, geographic_view.location_type
 """
 
