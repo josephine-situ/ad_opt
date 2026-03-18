@@ -50,7 +50,7 @@ def should_skip_campaign(
 
     return False
 
-
+# TODO: Should swap all the calls to `search` w/ `search_stream` in this file.
 def get_campaigns_for_course(google_ads_service, customer_id, output_course):
     """Get all campaign IDs for a given course."""
     course_title = COURSE_CONFIG[output_course]["course_title_base"]
