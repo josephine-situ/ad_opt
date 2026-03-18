@@ -9,7 +9,6 @@ COURSE_CONFIG = {
         'min_date': '2024-11-03',
         'budgets': [362.91],
         # Used to derive course names when pushing to Google Ads.
-        # TODO: Identify the others as well and add to config.
         'course_title_base': "Course - Generative AI",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
@@ -35,6 +34,9 @@ COURSE_CONFIG = {
             "A": ["Canada", "United Kingdom", "Australia"],
             "B": ["Germany", "France", "Spain", "Italy"]
         },
+        # TODO: We need to add these for all other accounts too.
+        'conversion_actions': ['Purchase', 'Add to cart - MLx - iDimension', 'idimension - account create'],
+        'purchase_actions': ['Purchase'],
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
@@ -68,6 +70,8 @@ COURSE_CONFIG = {
         'min_date': '2022-06-01', # Start of search history
         'budgets': [357.14],
         'course_title_base': "Course - System Thinking",
+        'conversion_actions': ['Purchase', 'System Thinking - Add to cart', 'idimension - account create', 'Add to cart - iDimension'],
+        'purchase_actions': ['Purchase'],
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
