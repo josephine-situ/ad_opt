@@ -205,7 +205,6 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
 
         # Look up keyword criterion
         key = (ad_group_id, keyword.lower(), match_type_enum)
-        # TODO: We may want to conditionally create missing keywords in the future.
         # For now, we'll assume that manual ad groups have been set up and just need statuses to be flipped.
         if key not in gaql_keyword_lookup:
             print(
