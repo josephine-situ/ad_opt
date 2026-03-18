@@ -239,7 +239,6 @@ def get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names)
 
     response = google_ads_service.search(customer_id=customer_id, query=query)
     campaign_to_ad_group = {}
-    ad_group_ids = set()
 
     for result in response:
         campaign_name = result.campaign.name
@@ -247,4 +246,4 @@ def get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names)
         # Take first ad group per campaign
         if campaign_name not in campaign_to_ad_group:
             campaign_to_ad_group[campaign_name] = ad_group_id
-            ad_group_ids.add(ad_group_id)
+    return campaign_to_ad_group
