@@ -67,7 +67,6 @@ def get_campaigns_for_course(google_ads_service, customer_id, output_course):
 
 def get_existing_campaign_criteria(google_ads_service, customer_id, campaign_ids):
     """Get all existing campaign criteria for the specified campaigns."""
-    # Build query to get all campaign criteria
     campaign_id_list = "', '".join(
         [f"customers/{customer_id}/campaigns/{cid}" for cid in campaign_ids]
     )
