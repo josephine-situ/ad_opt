@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN uv sync --no-dev --extra optimization
+RUN uv sync --no-dev --extra optimization --extra ml_open --extra bert
 
 
 CMD ["uv", "run", "python"]
