@@ -150,7 +150,7 @@ def _generate_purchase_report_rows(stream):
             yield {
                 "Campaign": row.campaign.name,
                 "Conversion action": row.segments.conversion_action_name,
-                "Conversions": f"{row.metrics.all_conversions:.2f}",
+                "All Conv.": f"{row.metrics.all_conversions:.2f}",
             }
 
 
