@@ -131,12 +131,12 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
         Tuple of (DataFrame with Campaign, segment, Clicks, and All conv. columns,
                   resolved segment column name)
     """
-    # Read clicks file (skip header rows)
-    clicks_df = pd.read_csv(clicks_file, skiprows=2)
+    # Read clicks file
+    clicks_df = pd.read_csv(clicks_file)
     clicks_df['Clicks'] = clicks_df['Clicks'].apply(parse_clicks_value)
     
-    # Read conversions file (skip header rows)
-    conv_df = pd.read_csv(conv_file, skiprows=2)
+    # Read conversions file
+    conv_df = pd.read_csv(conv_file)
     
     # Resolve segment column: use fallback if primary not found
     if segment_col not in clicks_df.columns and fallback_segment_col and fallback_segment_col in clicks_df.columns:
