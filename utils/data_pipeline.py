@@ -41,8 +41,7 @@ def load_and_combine_keyword_data(data_dir=None):
             "Expected the consolidated export 'Search keyword - raw input to models.csv' in the reports directory."
         )
 
-    # The first 2 rows are metadata lines (title + date range). The 3rd row is the real header.
-    kw_df = pd.read_csv(report_path, skiprows=2)
+    kw_df = pd.read_csv(report_path)
     kw_df.columns = kw_df.columns.astype(str).str.strip()
 
     # Normalize to the pipeline's expected raw schema
@@ -224,10 +223,9 @@ def get_gkp_data(gkp_dir=None):
     # Use the most recent file (by modification time)
     gkp_file = max(gkp_files, key=lambda f: f.stat().st_mtime)
     print(f"  Found GKP file: {gkp_file.name}")
-    
-    # Read file, skipping header rows (first 2 rows contain metadata)
+
     # File is UTF-16 encoded (like the 2025 keyword report)
-    gkp_df = pd.read_csv(gkp_file, sep='\t', skiprows=2, encoding='utf-16')
+    gkp_df = pd.read_csv(gkp_file, sep='\t', encoding='utf-16')
     
     print(f"  Loaded {len(gkp_df)} rows from {gkp_file.name}")
     
@@ -801,7 +799,7 @@ def get_conversion_rates(base_dir=None):
     if not purch_file.exists():
         raise FileNotFoundError(f"Purchase report not found at {purch_file}")
 
-    purch_df = pd.read_csv(purch_file, skiprows=2)
+    purch_df = pd.read_csv(purch_file)
     purch_df.columns = purch_df.columns.str.strip()
     purch_df['Region'] = purch_df['Campaign'].apply(_extract_region_from_campaign)
     purch_df['All conv.'] = pd.to_numeric(purch_df['All conv.'], errors='coerce').fillna(0)
