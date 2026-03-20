@@ -150,7 +150,7 @@ def _generate_purchase_report_rows(stream):
             yield {
                 "Campaign": row.campaign.name,
                 "Conversion action": row.segments.conversion_action_name,
-                "All Conv.": f"{row.metrics.all_conversions:.2f}",
+                "All conv.": f"{row.metrics.all_conversions:.2f}",
             }
 
 
@@ -382,7 +382,7 @@ def generate_purchase_report(google_ads_client, customer_id, output_course, star
     ads_service = google_ads_client.get_service("GoogleAdsService")
     stream = ads_service.search_stream(customer_id=customer_id, query=query)
 
-    header_parts = ["Campaign", "Conversion action", "All Conv."]
+    header_parts = ["Campaign", "Conversion action", "All conv."]
     write_to_file(header_parts, _generate_purchase_report_rows(stream), output_path, delimiter=",")
     print(f"Generated: {output_path}")
 
