@@ -4,11 +4,13 @@ GET_CAMPAIGNS_IN_ACCOUNT = """
     WHERE campaign.advertising_channel_type = 'SEARCH'
 """
 
-GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME = """
+GET_CAMPAIGN_BUDGETS_BY_NAMES = """
     SELECT
-        campaign.campaign_budget
+        campaign.name,
+        campaign.campaign_budget,
+        campaign_budget.amount_micros
     FROM campaign
-    WHERE campaign.name = '{campaign_name}'
+    WHERE campaign.name IN ('{campaign_names}')
     AND campaign.advertising_channel_type = 'SEARCH'
 """
 
@@ -75,10 +77,13 @@ GET_CRITERIA_FOR_CAMPAIGNS = """
 GET_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
-        AND campaign.name NOT LIKE 'EXCLUDE%'
+        WHERE campaign.name NOT LIKE 'EXCLUDE%'
         AND campaign.advertising_channel_type = 'SEARCH'
     """
 
+# TODO: It only appears that you have age range criteria provisioned if you've set a bid adjustment for age ranges once.
+# As soon as I set it, even to 0, they show up, but before that they don't appear to exist at all.
+# We'll need to address this somehow.
 GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
         SELECT
             campaign.id,

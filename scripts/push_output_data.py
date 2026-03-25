@@ -5,9 +5,6 @@ Script to output to Google Ads. Can set overall budget, kw level max cpc and bid
 
 import argparse
 import csv
-import decimal
-import os
-import re
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -15,15 +12,22 @@ from pathlib import Path
 from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
-from utils.bid_adjustments import get_device_bid_adjustments, get_age_bid_adjustments, get_hour_of_day_bid_adjustments
-from utils.google_ads_api import get_existing_campaign_criteria, get_campaigns_for_course, get_location_bid_adjustments, \
-    get_existing_ad_group_age_for_campaigns
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from utils.bid_adjustments import (
+    get_device_bid_adjustments,
+    get_age_bid_adjustments,
+    get_hour_of_day_bid_adjustments,
+)
+from utils.google_ads_api import (
+    get_existing_campaign_criteria,
+    get_campaigns_for_course,
+    get_location_bid_adjustments,
+    get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_campaigns,
+)
+
 from utils.gaql_queries import (
-    GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME,
     SELECT_KEYWORD_CRITERION_IN_AD_GROUP,
-    SELECT_AD_GROUPS_FOR_CAMPAIGNS
 )
 from config import COURSE_CONFIG
 
@@ -38,25 +42,21 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
 
-
-
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
-    return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type}"
+    return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type.split()[0]}"
 
 
-def get_course_campaign_budget_resource_name(google_ads_client, customer_id, campaign_name):
-    """Get campaign budget resource name for a given campaign name."""
-
-    ga_service = google_ads_client.get_service("GoogleAdsService")
-    query = GET_CAMPAIGN_BUDGET_FOR_CAMPAIGN_NAME.format(campaign_name=campaign_name)
-
-    response = ga_service.search(customer_id=customer_id, query=query)
-    results = list(response)
-    if not results:
-        print(f"Error: No campaign found with name {campaign_name}")
-        return None
-    return results[0].campaign.campaign_budget
+def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
+    # Compare with current budget and warn if change is too large
+    for campaign_name, new_budget in new_budgets.items():
+        current_budget = current_budgets[campaign_name]["current_budget_amount"]
+        if current_budget > 0:
+            pct_change = abs(new_budget - current_budget) / current_budget
+            if pct_change > threshold:
+                print(f"WARNING: Large budget change detected for {campaign_name}:")
+                print(f"  Current: ${current_budget:.2f}/day, New: ${new_budget:.2f}/day")
+                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
 
 
 def push_budget(google_ads_client, customer_id, output_course, execute):
@@ -65,37 +65,58 @@ def push_budget(google_ads_client, customer_id, output_course, execute):
     daily_budget_filepath = budget_output_dir / "daily_budget.csv"
 
     campaign_budget_service = google_ads_client.get_service("CampaignBudgetService")
-    operations = []
+    google_ads_service = google_ads_client.get_service("GoogleAdsService")
 
+    # First pass: collect campaign names and new budgets
+    campaign_data = {}
     with open(daily_budget_filepath) as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             region = row["Region"]
             match_type = row["Match type"]
             daily_budget = float(row["Daily Budget"])
-
             campaign_name = construct_campaign_name_for_args(output_course, match_type, region)
-            campaign_budget_resource_name = get_course_campaign_budget_resource_name(
-                google_ads_client, customer_id, campaign_name
-            )
+            campaign_data[campaign_name] = daily_budget
 
-            if not campaign_budget_resource_name:
-                print(f"Skipping budget update for {campaign_name} - campaign not found")
-                continue
+    if not campaign_data:
+        print("No budget data to push")
+        return
 
-            # Create update operation
-            operation = google_ads_client.get_type("CampaignBudgetOperation")
-            campaign_budget = operation.update
-            campaign_budget.resource_name = campaign_budget_resource_name
-            campaign_budget.amount_micros = int(round(Decimal(daily_budget), 2) * 1_000_000)
+    # Fetch current budgets for all campaigns
+    current_campaign_budget_resources = get_campaign_budget_info(
+        google_ads_service, customer_id, campaign_data.keys()
+    )
 
-            # See https://developers.google.com/google-ads/api/docs/client-libs/python/field-masks
-            # This is the preferred way to use field masks with the Google Ads API client.
-            field_mask = protobuf_helpers.field_mask(None, campaign_budget._pb)
-            google_ads_client.copy_from(operation.update_mask, field_mask)
+    # Get budget change threshold from config
+    budget_change_threshold = COURSE_CONFIG[output_course]["budget_change_threshold"]
 
-            operations.append(operation)
-            print(f"Prepared budget update: {campaign_name} -> ${daily_budget:.2f}/day")
+    # Iterate through existing campaign budgets and warn if there are any which are above the configured threshold
+    warn_on_large_budget_changes(
+        campaign_data, current_campaign_budget_resources, budget_change_threshold
+    )
+
+    operations = []
+    for campaign_name, new_budget in campaign_data.items():
+
+        if campaign_name not in current_campaign_budget_resources:
+            print(f"Skipping budget update for {campaign_name} - campaign not found")
+            continue
+
+        # Create update operation
+        operation = google_ads_client.get_type("CampaignBudgetOperation")
+        campaign_budget = operation.update
+        campaign_budget.resource_name = current_campaign_budget_resources[campaign_name][
+            "budget_resource_id"
+        ]
+        campaign_budget.amount_micros = int(round(Decimal(new_budget), 2) * 1_000_000)
+
+        # See https://developers.google.com/google-ads/api/docs/client-libs/python/field-masks
+        # This is the preferred way to use field masks with the Google Ads API client.
+        field_mask = protobuf_helpers.field_mask(None, campaign_budget._pb)
+        google_ads_client.copy_from(operation.update_mask, field_mask)
+
+        operations.append(operation)
+        print(f"Prepared budget update: {campaign_name} -> ${new_budget:.2f}/day")
 
     # Execute all budget updates
     if operations and execute:
@@ -131,24 +152,13 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
 
     # Bulk query: Get all ad groups for the campaigns we need
     print(f"Fetching ad groups for {len(campaign_names)} campaigns...")
-    campaign_list = "', '".join(campaign_names)
-    query = SELECT_AD_GROUPS_FOR_CAMPAIGNS.format(campaign_list=campaign_list)
-
-    response = google_ads_service.search(customer_id=customer_id, query=query)
-    campaign_to_ad_group = {}
-    ad_group_ids = set()
-
-    for result in response:
-        campaign_name = result.campaign.name
-        ad_group_id = result.ad_group.id
-        # Take first ad group per campaign
-        if campaign_name not in campaign_to_ad_group:
-            campaign_to_ad_group[campaign_name] = ad_group_id
-            ad_group_ids.add(ad_group_id)
+    campaign_to_ad_group = get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names)
+    ad_group_ids = set(campaign_to_ad_group.values())
 
     print(f"Found {len(campaign_to_ad_group)} ad groups")
 
     # Get all keyword criteria for all ad groups
+    # TODO: Pull this into a function in google_ads_api.py, clean up the returned data structure in a subsequent PR
     print(f"Fetching keywords for {len(ad_group_ids)} ad groups...")
     ad_group_list = "', '".join(
         f"customers/{customer_id}/adGroups/{ag_id}" for ag_id in ad_group_ids
@@ -195,7 +205,6 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
 
         # Look up keyword criterion
         key = (ad_group_id, keyword.lower(), match_type_enum)
-        # TODO: We may want to conditionally create missing keywords in the future.
         # For now, we'll assume that manual ad groups have been set up and just need statuses to be flipped.
         if key not in gaql_keyword_lookup:
             print(
@@ -248,6 +257,7 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
     else:
         print("No keyword updates to perform")
 
+
 def push_bid_adjustments(google_ads_client, customer_id, output_course, execute):
     """Push bid adjustments to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bid_adjustments")
@@ -255,65 +265,96 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
     adj_device_filepath = budget_output_dir / "bid_adj_device.csv"
     adj_hour_of_day_filepath = budget_output_dir / "bid_adj_hour_of_day.csv"
     adj_location_filepath = budget_output_dir / "bid_adj_location.csv"
-    
+
     # Get all campaigns for this course
     ga_service = google_ads_client.get_service("GoogleAdsService")
     campaigns = get_campaigns_for_course(ga_service, customer_id, output_course)
-    
+
     if not campaigns:
         print(f"Warning: No campaigns found for course {output_course}")
         return
-    
+
     print(f"Found {len(campaigns)} campaigns for {output_course}")
-    
+
     # Get existing campaign criteria
     print("Fetching existing campaign criteria...")
-    existing_campaign_criteria = get_existing_campaign_criteria(ga_service, customer_id, campaigns.values())
-    print(f"Found {len(existing_campaign_criteria['device'])} device criteria, "
-          f"{len(existing_campaign_criteria['schedule'])} schedule criteria, {len(existing_campaign_criteria['location'])} location criteria")
+    existing_campaign_criteria = get_existing_campaign_criteria(
+        ga_service, customer_id, campaigns.values()
+    )
+    print(
+        f"Found {len(existing_campaign_criteria['device'])} device criteria, "
+        f"{len(existing_campaign_criteria['schedule'])} schedule criteria, {len(existing_campaign_criteria['location'])} location criteria"
+    )
 
     print("Fetching existing ad group age criteria...")
-    existing_ad_group_age_criteria = get_existing_ad_group_age_for_campaigns(ga_service, customer_id, map(str, campaigns.values()))
+    existing_ad_group_age_criteria = get_existing_ad_group_age_for_campaigns(
+        ga_service, customer_id, map(str, campaigns.values())
+    )
 
-    
     all_operations = []
     # Age bid adjustments are the only one which are done on the ad-group level.
     age_ops = []
-    
+
     # Process each type of bid adjustment
     if adj_age_filepath.exists():
         print("\n--- Processing Age Bid Adjustments ---")
-        age_ops.extend(get_age_bid_adjustments(google_ads_client, customer_id, campaigns, existing_ad_group_age_criteria, adj_age_filepath))
+        age_ops.extend(
+            get_age_bid_adjustments(
+                google_ads_client,
+                customer_id,
+                campaigns,
+                existing_ad_group_age_criteria,
+                adj_age_filepath,
+            )
+        )
     else:
         print(f"Age adjustment file not found: {adj_age_filepath}")
-    
+
     if adj_device_filepath.exists():
         print("\n--- Processing Device Bid Adjustments ---")
-        device_ops = get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_device_filepath)
+        device_ops = get_device_bid_adjustments(
+            google_ads_client,
+            customer_id,
+            campaigns,
+            existing_campaign_criteria,
+            adj_device_filepath,
+        )
         all_operations.extend(device_ops)
     else:
         print(f"Device adjustment file not found: {adj_device_filepath}")
 
     if adj_hour_of_day_filepath.exists():
         print("\n--- Processing Hour-of-Day Bid Adjustments ---")
-        hour_ops = get_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_hour_of_day_filepath)
+        hour_ops = get_hour_of_day_bid_adjustments(
+            google_ads_client,
+            customer_id,
+            campaigns,
+            existing_campaign_criteria,
+            adj_hour_of_day_filepath,
+        )
         all_operations.extend(hour_ops)
     else:
         print(f"Hour-of-day adjustment file not found: {adj_hour_of_day_filepath}")
 
     if adj_location_filepath.exists():
         print("\n--- Processing Location Bid Adjustments ---")
-        location_ops = get_location_bid_adjustments(google_ads_client, customer_id, campaigns, existing_campaign_criteria, adj_location_filepath)
+        location_ops = get_location_bid_adjustments(
+            google_ads_client,
+            customer_id,
+            campaigns,
+            existing_campaign_criteria,
+            adj_location_filepath,
+        )
         all_operations.extend(location_ops)
     else:
         print(f"Location adjustment file not found: {adj_location_filepath}")
-    
+
     # Execute all bid adjustment operations
     # Age operations use AdGroupCriterionService, others use CampaignCriterionService
     if age_ops and execute:
         print(f"\n--- Executing {len(age_ops)} age bid adjustment operations ---")
         ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
-        
+
         # Process in batches
         for i in range(0, len(age_ops), BATCH_SIZE):
             batch = age_ops[i : i + BATCH_SIZE]
@@ -321,16 +362,20 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
                 response = ad_group_criterion_service.mutate_ad_group_criteria(
                     customer_id=customer_id, operations=batch
                 )
-                print(f"Successfully applied {len(response.results)} age bid adjustments (batch {i//BATCH_SIZE + 1})")
+                print(
+                    f"Successfully applied {len(response.results)} age bid adjustments (batch {i//BATCH_SIZE + 1})"
+                )
             except Exception as e:
                 print(f"Error applying age bid adjustments in batch {i//BATCH_SIZE + 1}: {e}")
-        
+
         print(f"Successfully processed {len(age_ops)} total age bid adjustments")
     else:
         print("No age bid adjustments to apply")
 
     if all_operations and execute:
-        print(f"\n--- Executing {len(all_operations)} device/schedule/location bid adjustment operations ---")
+        print(
+            f"\n--- Executing {len(all_operations)} device/schedule/location bid adjustment operations ---"
+        )
         campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
 
         # Process in batches
@@ -340,15 +385,19 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
                 response = campaign_criterion_service.mutate_campaign_criteria(
                     customer_id=customer_id, operations=batch
                 )
-                print(f"Successfully applied {len(response.results)} device/schedule/location bid adjustments (batch {i//BATCH_SIZE + 1})")
+                print(
+                    f"Successfully applied {len(response.results)} device/schedule/location bid adjustments (batch {i//BATCH_SIZE + 1})"
+                )
             except Exception as e:
-                print(f"Error applying device/schedule/location bid adjustments in batch {i//BATCH_SIZE + 1}: {e}")
+                print(
+                    f"Error applying device/schedule/location bid adjustments in batch {i//BATCH_SIZE + 1}: {e}"
+                )
 
-        print(f"Successfully processed {len(all_operations)} total device/schedule/location bid adjustments")
+        print(
+            f"Successfully processed {len(all_operations)} total device/schedule/location bid adjustments"
+        )
     else:
         print("No device/schedule/location bid adjustments to apply")
-
-
 
 
 def main():
@@ -400,7 +449,6 @@ def main():
 
     yaml_path = args.google_ads_yaml
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
-    # TODO: Map customer ID to course, if we have one manager account over all course accounts.
     customer_id = args.customer_id
     output_course = args.output_course
     execute = args.execute

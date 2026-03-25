@@ -5,7 +5,13 @@ from decimal import Decimal
 from google.api_core import protobuf_helpers
 
 from config import COURSE_CONFIG
-from utils.gaql_queries import GET_CAMPAIGNS_FOR_COURSE, GET_CRITERIA_FOR_CAMPAIGNS, GET_AGE_CRITERIA_FOR_CAMPAIGNS
+from utils.gaql_queries import (
+    GET_CAMPAIGNS_FOR_COURSE,
+    GET_CRITERIA_FOR_CAMPAIGNS,
+    GET_AGE_CRITERIA_FOR_CAMPAIGNS,
+    GET_CAMPAIGN_BUDGETS_BY_NAMES,
+    SELECT_AD_GROUPS_FOR_CAMPAIGNS,
+)
 
 
 def normalize_bid_adjustment(bid_adj):
@@ -14,7 +20,9 @@ def normalize_bid_adjustment(bid_adj):
     return Decimal(1.0) + bid_adj_decimal
 
 
-def should_skip_campaign(campaign_name, check_course=None, check_region=None, check_match_type=None):
+def should_skip_campaign(
+    campaign_name, check_course=None, check_region=None, check_match_type=None
+):
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
     Campaign name format: "{course_title} - {region} - {match_type}"
@@ -23,14 +31,14 @@ def should_skip_campaign(campaign_name, check_course=None, check_region=None, ch
     # Parse campaign name using regex
     # Pattern: "{any course title} - {region} - {match type}"
     # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
-    pattern = r'^(.+?) - (.+?) - (.+?)$'
+    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?)$"
     match = re.match(pattern, campaign_name)
 
     if not match:
         # Campaign name doesn't match expected format, skip it
         return True
 
-    course_title, region, match_type = match.groups()
+    _, course_title, region, match_type = match.groups()
 
     # Check each component if specified
     if check_course and check_course not in course_title:
@@ -44,47 +52,54 @@ def should_skip_campaign(campaign_name, check_course=None, check_region=None, ch
 
 def get_campaigns_for_course(google_ads_service, customer_id, output_course):
     """Get all campaign IDs for a given course."""
-    course_title = COURSE_CONFIG[output_course]['course_title_base']
+    course_title = COURSE_CONFIG[output_course]["course_title_base"]
 
     query = GET_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
 
-    response = google_ads_service.search(customer_id=customer_id, query=query)
-    return {row.campaign.name: row.campaign.id for row in response}
+    stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
+    
+    campaigns = {}
+    for batch in stream:
+        for row in batch.results:
+            campaigns[row.campaign.name] = row.campaign.id
+    return campaigns
 
 
 def get_existing_campaign_criteria(google_ads_service, customer_id, campaign_ids):
     """Get all existing campaign criteria for the specified campaigns."""
-    # Build query to get all campaign criteria
-    campaign_id_list = "', '".join([f"customers/{customer_id}/campaigns/{cid}" for cid in campaign_ids])
+    campaign_id_list = "', '".join(
+        [f"customers/{customer_id}/campaigns/{cid}" for cid in campaign_ids]
+    )
 
     query = GET_CRITERIA_FOR_CAMPAIGNS.format(campaign_id_list=campaign_id_list)
 
-    response = google_ads_service.search(customer_id=customer_id, query=query)
+    stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
 
     # Organize criteria by type and campaign
     criteria = {
-        'device': {},  # (campaign_id, device_type) -> criterion_id
-        'schedule': {},  # (campaign_id, day, start_hour, end_hour) -> criterion_id
-        'location': {},  # (campaign_id, geo_target) -> criterion_id
+        "device": {},  # (campaign_id, device_type) -> criterion_id
+        "schedule": {},  # (campaign_id, day, start_hour, end_hour) -> criterion_id
+        "location": {},  # (campaign_id, geo_target) -> criterion_id
     }
 
-    for row in response:
-        campaign_path = row.campaign_criterion.campaign
-        campaign_id = campaign_path.split('/')[-1]
-        criterion_id = row.campaign_criterion.criterion_id
-        criterion_type = row.campaign_criterion.type_
+    for batch in stream:
+        for row in batch.results:
+            campaign_path = row.campaign_criterion.campaign
+            campaign_id = campaign_path.split("/")[-1]
+            criterion_id = row.campaign_criterion.criterion_id
+            criterion_type = row.campaign_criterion.type_
 
-        if criterion_type.name == 'DEVICE':
-            device_type = row.campaign_criterion.device.type_
-            criteria['device'][(campaign_id, device_type)] = criterion_id
-        elif criterion_type.name == 'AD_SCHEDULE':
-            day = row.campaign_criterion.ad_schedule.day_of_week
-            start_hour = row.campaign_criterion.ad_schedule.start_hour
-            end_hour = row.campaign_criterion.ad_schedule.end_hour
-            criteria['schedule'][(campaign_id, day, start_hour, end_hour)] = criterion_id
-        elif criterion_type.name == 'LOCATION':
-            geo_target = row.campaign_criterion.location.geo_target_constant
-            criteria['location'][(campaign_id, geo_target)] = criterion_id
+            if criterion_type.name == "DEVICE":
+                device_type = row.campaign_criterion.device.type_
+                criteria["device"][(campaign_id, device_type)] = criterion_id
+            elif criterion_type.name == "AD_SCHEDULE":
+                day = row.campaign_criterion.ad_schedule.day_of_week
+                start_hour = row.campaign_criterion.ad_schedule.start_hour
+                end_hour = row.campaign_criterion.ad_schedule.end_hour
+                criteria["schedule"][(campaign_id, day, start_hour, end_hour)] = criterion_id
+            elif criterion_type.name == "LOCATION":
+                geo_target = row.campaign_criterion.location.geo_target_constant
+                criteria["location"][(campaign_id, geo_target)] = criterion_id
 
     return criteria
 
@@ -96,26 +111,29 @@ def get_existing_ad_group_age_for_campaigns(google_ads_service, customer_id, cam
         dict: Map of (campaign_id, age_range_type) -> (ad_group_id, criterion_id)
     """
 
-    query = GET_AGE_CRITERIA_FOR_CAMPAIGNS.format(campaign_ids=','.join(campaign_ids))
+    query = GET_AGE_CRITERIA_FOR_CAMPAIGNS.format(campaign_ids=",".join(campaign_ids))
 
-    response = google_ads_service.search(customer_id=customer_id, query=query)
+    stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
 
     # Organize criteria by (campaign_id, age_range_type) -> (ad_group_id, criterion_id)
     criteria = {}
 
-    for row in response:
-        campaign_id = str(row.campaign.id)
-        ad_group_id = str(row.ad_group.id)
-        criterion_id = row.ad_group_criterion.criterion_id
-        age_range_type = row.ad_group_criterion.age_range.type_
+    for batch in stream:
+        for row in batch.results:
+            campaign_id = str(row.campaign.id)
+            ad_group_id = str(row.ad_group.id)
+            criterion_id = row.ad_group_criterion.criterion_id
+            age_range_type = row.ad_group_criterion.age_range.type_
 
-        key = (campaign_id, age_range_type)
-        criteria[key] = (ad_group_id, criterion_id)
+            key = (campaign_id, age_range_type)
+            criteria[key] = (ad_group_id, criterion_id)
 
     return criteria
 
 
-def get_location_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_location_filepath):
+def get_location_bid_adjustments(
+    google_ads_client, customer_id, campaigns, existing_criteria, adj_location_filepath
+):
     """Push location bid adjustments to Google Ads."""
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
     geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
@@ -148,13 +166,16 @@ def get_location_bid_adjustments(google_ads_client, customer_id, campaigns, exis
                     suggestions = geo_target_service.suggest_geo_target_constants(request=request)
 
                     if not suggestions.geo_target_constant_suggestions:
-                        print(f"Warning: Could not find geo target for location '{location}', skipping")
+                        print(
+                            f"Warning: Could not find geo target for location '{location}', skipping"
+                        )
                         geo_target_cache[location] = None
                         continue
 
                     # Use the first (best) suggestion
                     geo_target_constant = suggestions.geo_target_constant_suggestions[
-                        0].geo_target_constant.resource_name
+                        0
+                    ].geo_target_constant.resource_name
                     geo_target_cache[location] = geo_target_constant
 
                 except Exception as e:
@@ -173,8 +194,8 @@ def get_location_bid_adjustments(google_ads_client, customer_id, campaigns, exis
 
                 # Check if criterion exists
                 key = (str(campaign_id), geo_target_constant)
-                if key in existing_criteria['location']:
-                    criterion_id = existing_criteria['location'][key]
+                if key in existing_criteria["location"]:
+                    criterion_id = existing_criteria["location"][key]
 
                     # Update existing criterion
                     operation = google_ads_client.get_type("CampaignCriterionOperation")
@@ -189,8 +210,47 @@ def get_location_bid_adjustments(google_ads_client, customer_id, campaigns, exis
                     google_ads_client.copy_from(operation.update_mask, field_mask)
 
                     operations.append(operation)
-                    print(f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}")
+                    print(
+                        f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}"
+                    )
                 else:
-                    print(f"Warning: Location criterion not found for {campaign_name}, {location} - skipping")
+                    print(
+                        f"Warning: Location criterion not found for {campaign_name}, {location} - skipping"
+                    )
 
     return operations
+
+
+def get_campaign_budget_info(google_ads_service, customer_id, campaign_names_list):
+    campaign_names = "', '".join(campaign_names_list)
+    query = GET_CAMPAIGN_BUDGETS_BY_NAMES.format(campaign_names=campaign_names)
+
+    stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
+    campaign_budget_resources = {}
+
+    for batch in stream:
+        for row in batch.results:
+            campaign_name = row.campaign.name
+            # TODO: Starting to look like this may want to be a dataclass
+            campaign_budget_resources[campaign_name] = {
+                "current_budget_amount": row.campaign_budget.amount_micros / 1_000_000,
+                "budget_resource_id": row.campaign.campaign_budget,
+            }
+    return campaign_budget_resources
+
+
+def get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names):
+    campaign_list = "', '".join(campaign_names)
+    query = SELECT_AD_GROUPS_FOR_CAMPAIGNS.format(campaign_list=campaign_list)
+
+    stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
+    campaign_to_ad_group = {}
+
+    for batch in stream:
+        for result in batch.results:
+            campaign_name = result.campaign.name
+            ad_group_id = result.ad_group.id
+            # Take first ad group per campaign
+            if campaign_name not in campaign_to_ad_group:
+                campaign_to_ad_group[campaign_name] = ad_group_id
+    return campaign_to_ad_group
