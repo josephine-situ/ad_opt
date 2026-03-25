@@ -3,13 +3,14 @@
 Compare Semrush Keywords with Existing Keywords
 
 This script:
-1. Loads new keywords from data/gkp/semrush_new_kws.csv
-2. Loads existing search terms from data/reports/Search keyword - search terms.csv
-3. Loads existing keywords from the data pipeline
-4. Compares and marks keywords as 'new', 'existing searches', or 'existing'
-5. Removes duplicates (prioritizes 'existing', then 'existing searches', then 'new')
-6. Outputs results to data/gkp
-7. Prints summary statistics (tee-logged)
+1. Loads new keywords from data/gkp/semrush_new_kws.csv and filters for commercial/transactional intent.
+2. Loads existing search terms from data/reports/Search keyword - search terms.csv (these should already be filtered for positive conversions by pull_input_data).
+3. Loads existing keywords from the data pipeline.
+4. Excludes keywords that are already used in other courses (based on all the Search term - raw input to models reports). Note: Keywords used in other courses are treated as fixed (so keywords_classified is not updated each daily run).
+5. Compares and marks keywords as 'new', 'existing searches', or 'existing'
+6. Removes duplicates (prioritizes 'existing', then 'existing searches', then 'new'), excluding any keywords from the course's excl_list.csv, and then cross-course overlaps.
+7. Outputs results to data/gkp
+8. Prints summary statistics (tee-logged)
 
 Usage:
     python scripts/compare_keywords.py --course gen_ai
@@ -106,7 +107,8 @@ def _find_csv_header_row(path: Path, header_prefix: str = "Search keyword,") -> 
 
     with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
         for idx, line in enumerate(f):
-            if line.strip().startswith(header_prefix):
+            # Check for generic Google Ads report headers
+            if line.strip().startswith(header_prefix) or line.strip().startswith("Day,Search keyword") or line.strip().startswith("Search keyword,"):
                 return idx
             if idx >= 50:
                 break
@@ -122,6 +124,7 @@ def load_search_terms_report(path: Path) -> pd.DataFrame:
 
 
 def main():
+    from config import COURSE_CONFIG
     parser = argparse.ArgumentParser(
         description="Compare Semrush keywords with existing keywords in the pipeline."
     )
@@ -220,6 +223,15 @@ def main():
         sys.exit(1)
     
     print(f"  Using keyword column: '{kw_col}'")
+    
+    # Filter for commercial/transactional intent
+    intent_col = next((col for col in semrush_df.columns if col.lower() == 'intent'), None)
+    if intent_col:
+        initial_len = len(semrush_df)
+        semrush_df = semrush_df[semrush_df[intent_col].fillna('').str.contains('commercial|transactional', case=False, regex=True)]
+        print(f"  Filtered by intent (Commercial/Transactional): {len(semrush_df)} rows remaining (from {initial_len})")
+    else:
+        print("  WARNING: 'Intent' column not found in Semrush data. Skipping intent filter.")
     
     # Extract keywords, clean, and normalize
     print(f"\n[Step 2] Cleaning and normalizing new keywords...")
@@ -329,9 +341,63 @@ def main():
         print(f"  ERROR: Could not load existing keywords: {e}")
         sys.exit(1)
     
+    print(f"\n[Step 4b] Loading cross-course raw keywords to exclude...")
+    excluded_kws_norm = set()
+    all_courses = list(COURSE_CONFIG.keys())
+    
+    for c in all_courses:
+        if c == args.course:
+            continue
+        c_reports = Path(f"data/{c}/reports")
+        raw_files = list(c_reports.glob("Search keyword - raw input to models*.csv"))
+        if not raw_files:
+            continue
+        
+        for rf in raw_files:
+            try:
+                idx = _find_csv_header_row(rf, header_prefix="Search keyword,")
+                rf_df = pd.read_csv(rf, skiprows=idx, encoding="utf-8-sig")
+                if "Search keyword" in rf_df.columns:
+                    raw_kws = rf_df["Search keyword"].dropna().unique()
+                    for kw in raw_kws:
+                        kw_norm = normalize_keyword(kw)
+                        if kw_norm:
+                            excluded_kws_norm.add(kw_norm)
+            except Exception as e:
+                # If reading fails, just skip
+                pass
+                
+    print(f"  Found {len(excluded_kws_norm)} unique normalized keywords from other courses.")
+
     # Classify keywords (dedupe priority: existing > existing searches > new)
-    print(f"\n[Step 5] Classifying keywords and de-duplicating...")
-    all_keywords = existing_kws_norm | search_terms_norm | semrush_kws_norm
+    print(f"\n[Step 5] Classifying keywords, de-duplicating, and removing exclusions/cross-course overlaps...")
+    all_keywords = (existing_kws_norm | search_terms_norm | semrush_kws_norm)
+    
+    # Exclude from course's own excl_list.csv
+    excl_file = base_dir / "gkp/excl_list.csv"
+    if excl_file.exists():
+        try:
+            excl_df = pd.read_csv(excl_file)
+            excl_col = None
+            for col_name in ['Keyword', 'keyword', 'Kw', 'kw', 'KEYWORD', 'Keywords', 'keywords']:
+                if col_name in excl_df.columns:
+                    excl_col = col_name
+                    break
+            if excl_col:
+                course_excl_raw = excl_df[excl_col].dropna().unique()
+                course_excl_norm = set(normalize_keyword(kw) for kw in course_excl_raw)
+                course_excl_norm.discard('')
+                initial_all = len(all_keywords)
+                all_keywords = all_keywords - course_excl_norm
+                print(f"  Excluded {initial_all - len(all_keywords)} keywords from {excl_file.name}.")
+        except Exception as e:
+            print(f"  WARNING: Could not read {excl_file}: {e}")
+    else:
+        print(f"  No excl_list.csv found at {excl_file}. Skipping course exclusion list.")
+
+    initial_all = len(all_keywords)
+    all_keywords = all_keywords - excluded_kws_norm
+    print(f"  Excluded {initial_all - len(all_keywords)} keywords that are used in other courses from the combined list.")
 
     def origin_for(kw: str) -> str:
         if kw in existing_kws_norm:
