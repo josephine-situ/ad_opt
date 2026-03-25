@@ -77,7 +77,7 @@ GET_CRITERIA_FOR_CAMPAIGNS = """
 GET_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
-        AND campaign.name NOT LIKE 'EXCLUDE%'
+        WHERE campaign.name NOT LIKE 'EXCLUDE%'
         AND campaign.advertising_channel_type = 'SEARCH'
     """
 
