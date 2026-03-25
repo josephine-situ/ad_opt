@@ -62,7 +62,11 @@ def get_args():
 
     args = p.parse_args()
     if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
+        try:
+            from scripts.run_pipeline import calculate_daily_budget
+            args.budget = [calculate_daily_budget(args.course)]
+        except ImportError as e:
+            raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
     # Map sentinel 0 → None (no SVD, full BERT embeddings)
     args.k_policy = [None if k == 0 else k for k in args.k_policy]
     return args

@@ -576,7 +576,9 @@ def main():
     args = parser.parse_args()
 
     if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
+
+        from scripts.run_pipeline import calculate_daily_budget
+        args.budget = [calculate_daily_budget(args.course)]
 
     embedding_method = args.embedding_method
 

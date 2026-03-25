@@ -152,7 +152,11 @@ def main():
     args = p.parse_args()
 
     if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
+        try:
+            from scripts.run_pipeline import calculate_daily_budget
+            args.budget = [calculate_daily_budget(args.course)]
+        except ImportError as e:
+            raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
     min_spend = args.min_spend

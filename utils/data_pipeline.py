@@ -240,7 +240,6 @@ def get_gkp_data(gkp_dir=None):
     search_cols = [col for col in gkp_df.columns if col.startswith('Searches:')]
     
     # Parse dates from search columns and sort to find most recent
-    from datetime import datetime
     search_dates = []
     for col in search_cols:
         # Format is "Searches: Mon YYYY"
@@ -831,3 +830,4 @@ def get_conversion_rates(base_dir=None):
     print(f"[Sense-check] Conversion rates saved to {out_path}")
 
     return result
+

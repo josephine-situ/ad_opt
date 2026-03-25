@@ -7,7 +7,9 @@ COURSE_CONFIG = {
             '2024-10-15', '2025-02-10', '2025-09-29', '2026-02-09'
         ],
         'min_date': '2024-11-03',
-        'budgets': [362.91],
+        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-09',
+        'current_campaign_end_date': '2026-04-15',
         # Used to derive course names when pushing to Google Ads.
         'course_title_base': "Course - Generative AI",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
@@ -29,7 +31,9 @@ COURSE_CONFIG = {
             '2025-09-29', '2026-02-02', '2026-04-27'
         ],
         'min_date': '2022-07-01',
-        'budgets': [353.99],
+        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-02',
+        'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Program - MLx",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
@@ -52,7 +56,9 @@ COURSE_CONFIG = {
             '2026-02-02', '2026-04-06'
         ],
         'min_date': '2022-07-01', # Some campaigns name without a region early on
-        'budgets': [847.46],
+        'campaign_budget': 20000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-02',
+        'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Program - SysEng",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
@@ -75,7 +81,9 @@ COURSE_CONFIG = {
             '2026-04-06'
         ],
         'min_date': '2022-07-01', # Start of search history
-        'budgets': [357.14],
+        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-02',
+        'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Course - System Thinking",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
@@ -92,7 +100,9 @@ COURSE_CONFIG = {
     'quant_comp': {
         'start_dates': [], # TODO: add start dates
         'min_date': '2022-07-01', # TODO: configure min date
-        'budgets': [500.00], # TODO: configure budget
+        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-02',
+        'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Course - Quantum Computing",
         'regions': {
             "USA": ["United States"],
@@ -108,7 +118,9 @@ COURSE_CONFIG = {
     'dai': {
         'start_dates': [], # TODO: add start dates
         'min_date': '2022-07-01', # TODO: configure min date
-        'budgets': [500.00], # TODO: configure budget
+        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-02',
+        'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Course - Deploying AI",
         'conversion_actions': ['Purchase', 'Add to Cart', 'idimension - account create', 'Account Creation'],
         'purchase_actions': ['Purchase'],
