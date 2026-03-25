@@ -44,7 +44,7 @@ MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match
 
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
-    return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type}"
+    return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type.split()[0]}"
 
 
 def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
@@ -449,7 +449,6 @@ def main():
 
     yaml_path = args.google_ads_yaml
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
-    # TODO: Map customer ID to course, if we have one manager account over all course accounts.
     customer_id = args.customer_id
     output_course = args.output_course
     execute = args.execute
