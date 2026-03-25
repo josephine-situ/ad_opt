@@ -74,15 +74,15 @@ from utils.embeddings import (
 from utils import setup_tee_logging
 
 
-def run_data_preparation(course: str, force_reload: bool = False) -> None:
+def run_data_preparation(course: str, use_cache: bool = False) -> None:
     """Run tidy_get_data.py as a subprocess for the given course."""
     cmd = [
         sys.executable, "scripts/tidy_get_data.py",
         "--course", course,
         "--embedding-method", "bert",
     ]
-    if force_reload:
-        cmd.append("--force-reload")
+    if use_cache:
+        cmd.append("--use-cache")
 
     print(f"\n{'='*70}")
     print(f"[Step 1] Data Preparation — {course}")
@@ -339,8 +339,8 @@ def main():
         help="Skip data preparation (use existing clean data)",
     )
     parser.add_argument(
-        "--force-reload", action="store_true",
-        help="Force reload source data (ignore caches)",
+        "--use-cache", action="store_true",
+        help="Use cached intermediate data (ignoring cache by default)",
     )
 
     args = parser.parse_args()
@@ -380,7 +380,7 @@ def main():
 
         # ── Step 1: Data Preparation ────────────────────────────────────
         if not args.skip_data_prep:
-            run_data_preparation(course, force_reload=args.force_reload)
+            run_data_preparation(course, use_cache=args.use_cache)
         else:
             print(f"\n[Step 1] Skipping data preparation (--skip-data-prep)")
 

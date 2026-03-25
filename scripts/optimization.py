@@ -602,7 +602,7 @@ def main():
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
-        False,  # force_reload
+        False,  # use_cache (defaults to False, meaning it will recompute)
         keywords,
         None, # opt_date (defaults to now)
         COURSE_START_DATES_MAP.get(args.course, []),
