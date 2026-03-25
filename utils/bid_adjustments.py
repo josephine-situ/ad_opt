@@ -120,6 +120,7 @@ def get_age_bid_adjustments(google_ads_client, customer_id, campaigns, existing_
             # Apply to all campaigns for this region
             for campaign_name, campaign_id in campaigns.items():
                 if should_skip_campaign(campaign_name, check_region=region):
+                    print('Skipping campaign due to region filter: ', campaign_name, region)
                     continue
 
                 # Check if criterion exists (age criteria are stored as (campaign_id, age_type) -> (ad_group_id, criterion_id))

@@ -31,14 +31,14 @@ def should_skip_campaign(
     # Parse campaign name using regex
     # Pattern: "{any course title} - {region} - {match type}"
     # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
-    pattern = r"^(.+?) - (.+?) - (.+?)$"
+    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?)$"
     match = re.match(pattern, campaign_name)
 
     if not match:
         # Campaign name doesn't match expected format, skip it
         return True
 
-    course_title, region, match_type = match.groups()
+    _, course_title, region, match_type = match.groups()
 
     # Check each component if specified
     if check_course and check_course not in course_title:
