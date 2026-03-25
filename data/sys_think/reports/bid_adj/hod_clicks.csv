@@ -1,673 +1,361 @@
 Campaign,Hour of the day,Clicks
-Lifetime Campaign - Leadership Principles  - US (Run 3),0,198
-Lifetime Campaign - Leadership Principles  - A (Run 3),0,126
-Lifetime Campaign - Leadership Principles  - B (Run 3),0,975
-Lifetime Campaign - Leadership Principles  - C (Run 3),0,232
-Lifetime Campaign - Organizational Strategy  - US (Run 1),0,155
-Lifetime Campaign - Organizational Strategy  - A (Run 1),0,51
-Lifetime Campaign - Organizational Strategy  - C (Run 1),0,90
-Lifetime Campaign - Organizational Strategy  - B (Run 1),0,116
-Course - System Thinking - Run 12 - Search - Lead Gen - US,0,"1,491"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,0,"1,046"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,0,"1,675"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,0,225
-Lifetime Campaign - Technical Innovation  - B (Run 1),0,38
-Lifetime Campaign - Technical Innovation  - US (Run 1),0,69
-Lifetime Campaign - Technical Innovation  - A (Run 1),0,27
-Lifetime Campaign - Technical Innovation  - C (Run 1),0,51
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,0,330
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,0,288
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,0,557
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,0,311
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,0,104
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,0,670
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,1,842
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,2,1068
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,3,1393
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,4,1641
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,5,1542
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,6,1467
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,7,1492
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,8,1554
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,9,1602
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,10,1458
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,11,1299
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,12,1176
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,13,1149
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,14,1143
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,15,1227
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,16,1348
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,17,1209
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,18,891
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,19,649
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,20,543
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,21,469
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,22,425
+Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,23,405
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,0,1089
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,1,1329
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,2,1426
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,3,1470
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,4,1501
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,5,1395
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,6,1486
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,7,1755
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,8,1966
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,9,1961
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,10,1873
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,11,1783
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,12,1724
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,13,1736
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,14,1719
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,15,1720
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,16,1572
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,17,1330
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,18,1060
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,19,1100
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,20,1134
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,21,1043
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,22,870
+Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,23,713
+Course - System Thinking - Run 12 - Search - Lead Gen - US,0,853
+Course - System Thinking - Run 12 - Search - Lead Gen - US,1,746
+Course - System Thinking - Run 12 - Search - Lead Gen - US,2,547
+Course - System Thinking - Run 12 - Search - Lead Gen - US,3,374
+Course - System Thinking - Run 12 - Search - Lead Gen - US,4,328
+Course - System Thinking - Run 12 - Search - Lead Gen - US,5,345
+Course - System Thinking - Run 12 - Search - Lead Gen - US,6,404
+Course - System Thinking - Run 12 - Search - Lead Gen - US,7,625
+Course - System Thinking - Run 12 - Search - Lead Gen - US,8,945
+Course - System Thinking - Run 12 - Search - Lead Gen - US,9,1356
+Course - System Thinking - Run 12 - Search - Lead Gen - US,10,1561
+Course - System Thinking - Run 12 - Search - Lead Gen - US,11,1733
+Course - System Thinking - Run 12 - Search - Lead Gen - US,12,1692
+Course - System Thinking - Run 12 - Search - Lead Gen - US,13,1732
+Course - System Thinking - Run 12 - Search - Lead Gen - US,14,1696
+Course - System Thinking - Run 12 - Search - Lead Gen - US,15,1568
+Course - System Thinking - Run 12 - Search - Lead Gen - US,16,1536
+Course - System Thinking - Run 12 - Search - Lead Gen - US,17,1321
+Course - System Thinking - Run 12 - Search - Lead Gen - US,18,1231
+Course - System Thinking - Run 12 - Search - Lead Gen - US,19,1076
+Course - System Thinking - Run 12 - Search - Lead Gen - US,20,1025
+Course - System Thinking - Run 12 - Search - Lead Gen - US,21,1037
+Course - System Thinking - Run 12 - Search - Lead Gen - US,22,922
+Course - System Thinking - Run 12 - Search - Lead Gen - US,23,715
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,0,24
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,0,73
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,0,88
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,0,52
-Course - System Thinking - Run 17 - Search - Prospecting - USA,0,206
-Course - System Thinking - Run 17 - Search - Prospecting - A,0,197
-Course - System Thinking - Run 17 - Search - Prospecting - B,0,405
-Lifetime Campaign - Leadership Principles  - US (Run 3),1,149
-Lifetime Campaign - Leadership Principles  - A (Run 3),1,174
-Lifetime Campaign - Leadership Principles  - B (Run 3),1,"1,062"
-Lifetime Campaign - Leadership Principles  - C (Run 3),1,310
-Lifetime Campaign - Organizational Strategy  - US (Run 1),1,180
-Lifetime Campaign - Organizational Strategy  - A (Run 1),1,61
-Lifetime Campaign - Organizational Strategy  - C (Run 1),1,128
-Lifetime Campaign - Organizational Strategy  - B (Run 1),1,172
-Course - System Thinking - Run 12 - Search - Lead Gen - US,1,"1,292"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,1,"1,378"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,1,"2,036"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,1,236
-Lifetime Campaign - Technical Innovation  - B (Run 1),1,51
-Lifetime Campaign - Technical Innovation  - US (Run 1),1,53
-Lifetime Campaign - Technical Innovation  - A (Run 1),1,32
-Lifetime Campaign - Technical Innovation  - C (Run 1),1,69
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,1,267
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,1,433
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,1,742
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,1,282
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,1,77
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,1,27
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,1,76
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,1,86
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,1,39
-Course - System Thinking - Run 17 - Search - Prospecting - USA,1,195
-Course - System Thinking - Run 17 - Search - Prospecting - A,1,248
-Course - System Thinking - Run 17 - Search - Prospecting - B,1,440
-Lifetime Campaign - Leadership Principles  - US (Run 3),2,113
-Lifetime Campaign - Leadership Principles  - A (Run 3),2,214
-Lifetime Campaign - Leadership Principles  - B (Run 3),2,"1,070"
-Lifetime Campaign - Leadership Principles  - C (Run 3),2,349
-Lifetime Campaign - Organizational Strategy  - US (Run 1),2,151
-Lifetime Campaign - Organizational Strategy  - A (Run 1),2,68
-Lifetime Campaign - Organizational Strategy  - C (Run 1),2,142
-Lifetime Campaign - Organizational Strategy  - B (Run 1),2,217
-Course - System Thinking - Run 12 - Search - Lead Gen - US,2,963
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,2,"1,728"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,2,"2,213"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,2,195
-Lifetime Campaign - Technical Innovation  - B (Run 1),2,61
-Lifetime Campaign - Technical Innovation  - US (Run 1),2,57
-Lifetime Campaign - Technical Innovation  - A (Run 1),2,34
-Lifetime Campaign - Technical Innovation  - C (Run 1),2,51
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,2,220
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,2,554
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,2,855
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,2,308
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,2,57
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,2,35
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,2,81
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,2,68
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,2,26
-Course - System Thinking - Run 17 - Search - Prospecting - USA,2,114
-Course - System Thinking - Run 17 - Search - Prospecting - A,2,263
-Course - System Thinking - Run 17 - Search - Prospecting - B,2,472
-Lifetime Campaign - Leadership Principles  - US (Run 3),3,93
-Lifetime Campaign - Leadership Principles  - A (Run 3),3,238
-Lifetime Campaign - Leadership Principles  - B (Run 3),3,"1,054"
-Lifetime Campaign - Leadership Principles  - C (Run 3),3,281
-Lifetime Campaign - Organizational Strategy  - US (Run 1),3,154
-Lifetime Campaign - Organizational Strategy  - A (Run 1),3,87
-Lifetime Campaign - Organizational Strategy  - C (Run 1),3,106
-Lifetime Campaign - Organizational Strategy  - B (Run 1),3,218
-Course - System Thinking - Run 12 - Search - Lead Gen - US,3,683
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,3,"2,247"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,3,"2,255"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,3,200
-Lifetime Campaign - Technical Innovation  - B (Run 1),3,75
-Lifetime Campaign - Technical Innovation  - US (Run 1),3,55
-Lifetime Campaign - Technical Innovation  - A (Run 1),3,48
-Lifetime Campaign - Technical Innovation  - C (Run 1),3,61
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,3,153
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,3,739
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,3,891
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,3,265
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,3,34
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,3,38
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,3,86
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,3,67
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,3,27
-Course - System Thinking - Run 17 - Search - Prospecting - USA,3,92
-Course - System Thinking - Run 17 - Search - Prospecting - A,3,286
-Course - System Thinking - Run 17 - Search - Prospecting - B,3,454
-Lifetime Campaign - Leadership Principles  - US (Run 3),4,100
-Lifetime Campaign - Leadership Principles  - A (Run 3),4,259
-Lifetime Campaign - Leadership Principles  - B (Run 3),4,"1,132"
-Lifetime Campaign - Leadership Principles  - C (Run 3),4,298
-Lifetime Campaign - Organizational Strategy  - US (Run 1),4,131
-Lifetime Campaign - Organizational Strategy  - A (Run 1),4,84
-Lifetime Campaign - Organizational Strategy  - C (Run 1),4,94
-Lifetime Campaign - Organizational Strategy  - B (Run 1),4,259
-Course - System Thinking - Run 12 - Search - Lead Gen - US,4,610
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,4,"2,636"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,4,"2,313"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,4,185
-Lifetime Campaign - Technical Innovation  - B (Run 1),4,102
-Lifetime Campaign - Technical Innovation  - US (Run 1),4,50
-Lifetime Campaign - Technical Innovation  - A (Run 1),4,42
-Lifetime Campaign - Technical Innovation  - C (Run 1),4,33
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,4,120
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,4,740
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,4,944
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,4,281
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,4,31
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,4,41
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,4,97
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,4,50
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,4,13
-Course - System Thinking - Run 17 - Search - Prospecting - USA,4,75
-Course - System Thinking - Run 17 - Search - Prospecting - A,4,269
-Course - System Thinking - Run 17 - Search - Prospecting - B,4,486
-Lifetime Campaign - Leadership Principles  - US (Run 3),5,96
-Lifetime Campaign - Leadership Principles  - A (Run 3),5,286
-Lifetime Campaign - Leadership Principles  - B (Run 3),5,"1,025"
-Lifetime Campaign - Leadership Principles  - C (Run 3),5,334
-Lifetime Campaign - Organizational Strategy  - US (Run 1),5,132
-Lifetime Campaign - Organizational Strategy  - A (Run 1),5,85
-Lifetime Campaign - Organizational Strategy  - C (Run 1),5,121
-Lifetime Campaign - Organizational Strategy  - B (Run 1),5,259
-Course - System Thinking - Run 12 - Search - Lead Gen - US,5,603
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,5,"2,548"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,5,"2,200"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,5,231
-Lifetime Campaign - Technical Innovation  - B (Run 1),5,75
-Lifetime Campaign - Technical Innovation  - US (Run 1),5,54
-Lifetime Campaign - Technical Innovation  - A (Run 1),5,57
-Lifetime Campaign - Technical Innovation  - C (Run 1),5,46
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,5,124
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,5,795
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,5,949
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,5,246
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,5,33
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,5,23
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,5,75
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,5,44
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,5,16
-Course - System Thinking - Run 17 - Search - Prospecting - USA,5,81
-Course - System Thinking - Run 17 - Search - Prospecting - A,5,314
-Course - System Thinking - Run 17 - Search - Prospecting - B,5,465
-Lifetime Campaign - Leadership Principles  - US (Run 3),6,124
-Lifetime Campaign - Leadership Principles  - A (Run 3),6,276
-Lifetime Campaign - Leadership Principles  - B (Run 3),6,898
-Lifetime Campaign - Leadership Principles  - C (Run 3),6,296
-Lifetime Campaign - Organizational Strategy  - US (Run 1),6,167
-Lifetime Campaign - Organizational Strategy  - A (Run 1),6,77
-Lifetime Campaign - Organizational Strategy  - C (Run 1),6,125
-Lifetime Campaign - Organizational Strategy  - B (Run 1),6,249
-Course - System Thinking - Run 12 - Search - Lead Gen - US,6,682
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,6,"2,367"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,6,"2,285"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,6,277
-Lifetime Campaign - Technical Innovation  - B (Run 1),6,67
-Lifetime Campaign - Technical Innovation  - US (Run 1),6,71
-Lifetime Campaign - Technical Innovation  - A (Run 1),6,49
-Lifetime Campaign - Technical Innovation  - C (Run 1),6,64
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,6,177
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,6,761
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,6,910
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,6,289
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,6,38
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,6,27
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,6,79
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,6,38
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,6,18
-Course - System Thinking - Run 17 - Search - Prospecting - USA,6,113
-Course - System Thinking - Run 17 - Search - Prospecting - A,6,294
-Course - System Thinking - Run 17 - Search - Prospecting - B,6,475
-Lifetime Campaign - Leadership Principles  - US (Run 3),7,141
-Lifetime Campaign - Leadership Principles  - A (Run 3),7,260
-Lifetime Campaign - Leadership Principles  - B (Run 3),7,865
-Lifetime Campaign - Leadership Principles  - C (Run 3),7,264
-Lifetime Campaign - Organizational Strategy  - US (Run 1),7,172
-Lifetime Campaign - Organizational Strategy  - A (Run 1),7,95
-Lifetime Campaign - Organizational Strategy  - C (Run 1),7,110
-Lifetime Campaign - Organizational Strategy  - B (Run 1),7,262
-Course - System Thinking - Run 12 - Search - Lead Gen - US,7,"1,090"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,7,"2,420"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,7,"2,533"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,7,283
-Lifetime Campaign - Technical Innovation  - B (Run 1),7,88
-Lifetime Campaign - Technical Innovation  - US (Run 1),7,81
-Lifetime Campaign - Technical Innovation  - A (Run 1),7,41
-Lifetime Campaign - Technical Innovation  - C (Run 1),7,56
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,7,237
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,7,683
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,7,954
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,7,273
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,7,70
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,7,31
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,7,95
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,7,54
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,7,36
-Course - System Thinking - Run 17 - Search - Prospecting - USA,7,156
-Course - System Thinking - Run 17 - Search - Prospecting - A,7,331
-Course - System Thinking - Run 17 - Search - Prospecting - B,7,524
-Lifetime Campaign - Leadership Principles  - US (Run 3),8,200
-Lifetime Campaign - Leadership Principles  - A (Run 3),8,267
-Lifetime Campaign - Leadership Principles  - B (Run 3),8,851
-Lifetime Campaign - Leadership Principles  - C (Run 3),8,299
-Lifetime Campaign - Organizational Strategy  - US (Run 1),8,158
-Lifetime Campaign - Organizational Strategy  - A (Run 1),8,83
-Lifetime Campaign - Organizational Strategy  - C (Run 1),8,90
-Lifetime Campaign - Organizational Strategy  - B (Run 1),8,295
-Course - System Thinking - Run 12 - Search - Lead Gen - US,8,"1,606"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,8,"2,528"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,8,"2,828"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,8,352
-Lifetime Campaign - Technical Innovation  - B (Run 1),8,77
-Lifetime Campaign - Technical Innovation  - US (Run 1),8,73
-Lifetime Campaign - Technical Innovation  - A (Run 1),8,38
-Lifetime Campaign - Technical Innovation  - C (Run 1),8,62
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,8,395
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,8,761
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,8,917
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,8,339
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,8,106
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,8,36
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,8,85
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,8,59
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,8,75
-Course - System Thinking - Run 17 - Search - Prospecting - USA,8,210
-Course - System Thinking - Run 17 - Search - Prospecting - A,8,293
-Course - System Thinking - Run 17 - Search - Prospecting - B,8,521
-Lifetime Campaign - Leadership Principles  - US (Run 3),9,264
-Lifetime Campaign - Leadership Principles  - A (Run 3),9,287
-Lifetime Campaign - Leadership Principles  - B (Run 3),9,783
-Lifetime Campaign - Leadership Principles  - C (Run 3),9,285
-Lifetime Campaign - Organizational Strategy  - US (Run 1),9,202
-Lifetime Campaign - Organizational Strategy  - A (Run 1),9,94
-Lifetime Campaign - Organizational Strategy  - C (Run 1),9,79
-Lifetime Campaign - Organizational Strategy  - B (Run 1),9,226
-Course - System Thinking - Run 12 - Search - Lead Gen - US,9,"2,280"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,9,"2,598"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,9,"2,845"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,9,349
-Lifetime Campaign - Technical Innovation  - B (Run 1),9,72
-Lifetime Campaign - Technical Innovation  - US (Run 1),9,80
-Lifetime Campaign - Technical Innovation  - A (Run 1),9,48
-Lifetime Campaign - Technical Innovation  - C (Run 1),9,49
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,9,583
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,9,693
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,9,954
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,9,280
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,9,151
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,9,30
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,9,68
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,9,57
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,9,95
-Course - System Thinking - Run 17 - Search - Prospecting - USA,9,293
-Course - System Thinking - Run 17 - Search - Prospecting - A,9,325
-Course - System Thinking - Run 17 - Search - Prospecting - B,9,589
-Lifetime Campaign - Leadership Principles  - US (Run 3),10,291
-Lifetime Campaign - Leadership Principles  - A (Run 3),10,265
-Lifetime Campaign - Leadership Principles  - B (Run 3),10,673
-Lifetime Campaign - Leadership Principles  - C (Run 3),10,308
-Lifetime Campaign - Organizational Strategy  - US (Run 1),10,216
-Lifetime Campaign - Organizational Strategy  - A (Run 1),10,89
-Lifetime Campaign - Organizational Strategy  - C (Run 1),10,100
-Lifetime Campaign - Organizational Strategy  - B (Run 1),10,200
-Course - System Thinking - Run 12 - Search - Lead Gen - US,10,"2,725"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,10,"2,363"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,10,"2,713"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,10,304
-Lifetime Campaign - Technical Innovation  - B (Run 1),10,72
-Lifetime Campaign - Technical Innovation  - US (Run 1),10,136
-Lifetime Campaign - Technical Innovation  - A (Run 1),10,57
-Lifetime Campaign - Technical Innovation  - C (Run 1),10,42
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,10,671
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,10,737
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,10,867
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,10,303
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,10,195
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,10,20
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,10,111
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,10,67
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,10,96
-Course - System Thinking - Run 17 - Search - Prospecting - USA,10,305
-Course - System Thinking - Run 17 - Search - Prospecting - A,10,286
-Course - System Thinking - Run 17 - Search - Prospecting - B,10,522
-Lifetime Campaign - Leadership Principles  - US (Run 3),11,291
-Lifetime Campaign - Leadership Principles  - A (Run 3),11,205
-Lifetime Campaign - Leadership Principles  - B (Run 3),11,667
-Lifetime Campaign - Leadership Principles  - C (Run 3),11,302
-Lifetime Campaign - Organizational Strategy  - US (Run 1),11,208
-Lifetime Campaign - Organizational Strategy  - A (Run 1),11,95
-Lifetime Campaign - Organizational Strategy  - C (Run 1),11,85
-Lifetime Campaign - Organizational Strategy  - B (Run 1),11,244
-Course - System Thinking - Run 12 - Search - Lead Gen - US,11,"2,915"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,11,"2,116"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,11,"2,581"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,11,295
-Lifetime Campaign - Technical Innovation  - B (Run 1),11,66
-Lifetime Campaign - Technical Innovation  - US (Run 1),11,112
-Lifetime Campaign - Technical Innovation  - A (Run 1),11,66
-Lifetime Campaign - Technical Innovation  - C (Run 1),11,48
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,11,732
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,11,626
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,11,889
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,11,317
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,11,204
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,11,27
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,11,86
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,11,67
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,11,108
-Course - System Thinking - Run 17 - Search - Prospecting - USA,11,349
-Course - System Thinking - Run 17 - Search - Prospecting - A,11,317
-Course - System Thinking - Run 17 - Search - Prospecting - B,11,545
-Lifetime Campaign - Leadership Principles  - US (Run 3),12,304
-Lifetime Campaign - Leadership Principles  - A (Run 3),12,165
-Lifetime Campaign - Leadership Principles  - B (Run 3),12,635
-Lifetime Campaign - Leadership Principles  - C (Run 3),12,266
-Lifetime Campaign - Organizational Strategy  - US (Run 1),12,223
-Lifetime Campaign - Organizational Strategy  - A (Run 1),12,64
-Lifetime Campaign - Organizational Strategy  - C (Run 1),12,77
-Lifetime Campaign - Organizational Strategy  - B (Run 1),12,226
-Course - System Thinking - Run 12 - Search - Lead Gen - US,12,"2,944"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,12,"1,985"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,12,"2,419"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,12,323
-Lifetime Campaign - Technical Innovation  - B (Run 1),12,56
-Lifetime Campaign - Technical Innovation  - US (Run 1),12,109
-Lifetime Campaign - Technical Innovation  - A (Run 1),12,36
-Lifetime Campaign - Technical Innovation  - C (Run 1),12,49
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,12,773
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,12,567
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,12,831
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,12,335
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,12,209
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,12,33
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,12,68
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,12,75
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,12,120
-Course - System Thinking - Run 17 - Search - Prospecting - USA,12,374
-Course - System Thinking - Run 17 - Search - Prospecting - A,12,298
-Course - System Thinking - Run 17 - Search - Prospecting - B,12,583
-Lifetime Campaign - Leadership Principles  - US (Run 3),13,261
-Lifetime Campaign - Leadership Principles  - A (Run 3),13,167
-Lifetime Campaign - Leadership Principles  - B (Run 3),13,537
-Lifetime Campaign - Leadership Principles  - C (Run 3),13,190
-Lifetime Campaign - Organizational Strategy  - US (Run 1),13,211
-Lifetime Campaign - Organizational Strategy  - A (Run 1),13,72
-Lifetime Campaign - Organizational Strategy  - C (Run 1),13,113
-Lifetime Campaign - Organizational Strategy  - B (Run 1),13,220
-Course - System Thinking - Run 12 - Search - Lead Gen - US,13,"2,981"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,13,"1,859"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,13,"2,452"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,13,316
-Lifetime Campaign - Technical Innovation  - B (Run 1),13,72
-Lifetime Campaign - Technical Innovation  - US (Run 1),13,91
-Lifetime Campaign - Technical Innovation  - A (Run 1),13,53
-Lifetime Campaign - Technical Innovation  - C (Run 1),13,50
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,13,730
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,13,578
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,13,835
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,13,309
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,13,175
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,13,31
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,13,61
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,13,47
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,13,105
-Course - System Thinking - Run 17 - Search - Prospecting - USA,13,337
-Course - System Thinking - Run 17 - Search - Prospecting - A,13,341
-Course - System Thinking - Run 17 - Search - Prospecting - B,13,516
-Lifetime Campaign - Leadership Principles  - US (Run 3),14,318
-Lifetime Campaign - Leadership Principles  - A (Run 3),14,148
-Lifetime Campaign - Leadership Principles  - B (Run 3),14,549
-Lifetime Campaign - Leadership Principles  - C (Run 3),14,110
-Lifetime Campaign - Organizational Strategy  - US (Run 1),14,238
-Lifetime Campaign - Organizational Strategy  - A (Run 1),14,67
-Lifetime Campaign - Organizational Strategy  - C (Run 1),14,69
-Lifetime Campaign - Organizational Strategy  - B (Run 1),14,197
-Course - System Thinking - Run 12 - Search - Lead Gen - US,14,"2,913"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,14,"1,921"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,14,"2,419"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,14,307
-Lifetime Campaign - Technical Innovation  - B (Run 1),14,69
-Lifetime Campaign - Technical Innovation  - US (Run 1),14,98
-Lifetime Campaign - Technical Innovation  - A (Run 1),14,43
-Lifetime Campaign - Technical Innovation  - C (Run 1),14,32
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,14,669
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,14,621
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,14,810
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,14,201
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,14,165
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,14,48
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,14,70
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,14,42
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,14,105
-Course - System Thinking - Run 17 - Search - Prospecting - USA,14,362
-Course - System Thinking - Run 17 - Search - Prospecting - A,14,370
-Course - System Thinking - Run 17 - Search - Prospecting - B,14,461
-Lifetime Campaign - Leadership Principles  - US (Run 3),15,260
-Lifetime Campaign - Leadership Principles  - A (Run 3),15,197
-Lifetime Campaign - Leadership Principles  - B (Run 3),15,498
-Lifetime Campaign - Leadership Principles  - C (Run 3),15,56
-Lifetime Campaign - Organizational Strategy  - US (Run 1),15,216
-Lifetime Campaign - Organizational Strategy  - A (Run 1),15,52
-Lifetime Campaign - Organizational Strategy  - C (Run 1),15,60
-Lifetime Campaign - Organizational Strategy  - B (Run 1),15,218
-Course - System Thinking - Run 12 - Search - Lead Gen - US,15,"2,743"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,15,"1,968"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,15,"2,396"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,15,250
-Lifetime Campaign - Technical Innovation  - B (Run 1),15,66
-Lifetime Campaign - Technical Innovation  - US (Run 1),15,89
-Lifetime Campaign - Technical Innovation  - A (Run 1),15,50
-Lifetime Campaign - Technical Innovation  - C (Run 1),15,23
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,15,712
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,15,615
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,15,749
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,15,161
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,15,182
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,15,37
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,15,71
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,15,16
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,15,103
-Course - System Thinking - Run 17 - Search - Prospecting - USA,15,364
-Course - System Thinking - Run 17 - Search - Prospecting - A,15,315
-Course - System Thinking - Run 17 - Search - Prospecting - B,15,408
-Lifetime Campaign - Leadership Principles  - US (Run 3),16,240
-Lifetime Campaign - Leadership Principles  - A (Run 3),16,157
-Lifetime Campaign - Leadership Principles  - B (Run 3),16,398
-Lifetime Campaign - Leadership Principles  - C (Run 3),16,21
-Lifetime Campaign - Organizational Strategy  - US (Run 1),16,198
-Lifetime Campaign - Organizational Strategy  - A (Run 1),16,58
-Lifetime Campaign - Organizational Strategy  - C (Run 1),16,44
-Lifetime Campaign - Organizational Strategy  - B (Run 1),16,207
-Course - System Thinking - Run 12 - Search - Lead Gen - US,16,"2,584"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,16,"2,184"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,16,"2,207"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,16,195
-Lifetime Campaign - Technical Innovation  - B (Run 1),16,69
-Lifetime Campaign - Technical Innovation  - US (Run 1),16,91
-Lifetime Campaign - Technical Innovation  - A (Run 1),16,39
-Lifetime Campaign - Technical Innovation  - C (Run 1),16,21
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,16,683
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,16,622
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,16,697
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,16,102
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,16,161
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,16,38
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,16,54
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,16,12
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,16,99
-Course - System Thinking - Run 17 - Search - Prospecting - USA,16,353
-Course - System Thinking - Run 17 - Search - Prospecting - A,16,283
-Course - System Thinking - Run 17 - Search - Prospecting - B,16,333
-Lifetime Campaign - Leadership Principles  - US (Run 3),17,210
-Lifetime Campaign - Leadership Principles  - A (Run 3),17,117
-Lifetime Campaign - Leadership Principles  - B (Run 3),17,278
-Lifetime Campaign - Leadership Principles  - C (Run 3),17,30
-Lifetime Campaign - Organizational Strategy  - US (Run 1),17,174
-Lifetime Campaign - Organizational Strategy  - A (Run 1),17,54
-Lifetime Campaign - Organizational Strategy  - C (Run 1),17,11
-Lifetime Campaign - Organizational Strategy  - B (Run 1),17,162
-Course - System Thinking - Run 12 - Search - Lead Gen - US,17,"2,261"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,17,"1,897"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,17,"1,866"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,17,179
-Lifetime Campaign - Technical Innovation  - B (Run 1),17,78
-Lifetime Campaign - Technical Innovation  - US (Run 1),17,75
-Lifetime Campaign - Technical Innovation  - A (Run 1),17,33
-Lifetime Campaign - Technical Innovation  - C (Run 1),17,19
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,17,494
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,17,461
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,17,577
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,17,61
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,17,115
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,17,35
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,17,45
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,17,7
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,17,67
-Course - System Thinking - Run 17 - Search - Prospecting - USA,17,305
-Course - System Thinking - Run 17 - Search - Prospecting - A,17,197
-Course - System Thinking - Run 17 - Search - Prospecting - B,17,288
-Lifetime Campaign - Leadership Principles  - US (Run 3),18,208
-Lifetime Campaign - Leadership Principles  - A (Run 3),18,113
-Lifetime Campaign - Leadership Principles  - B (Run 3),18,255
-Lifetime Campaign - Leadership Principles  - C (Run 3),18,26
-Lifetime Campaign - Organizational Strategy  - US (Run 1),18,130
-Lifetime Campaign - Organizational Strategy  - A (Run 1),18,35
-Lifetime Campaign - Organizational Strategy  - C (Run 1),18,20
-Lifetime Campaign - Organizational Strategy  - B (Run 1),18,161
-Course - System Thinking - Run 12 - Search - Lead Gen - US,18,"2,026"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,18,"1,370"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,18,"1,516"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,18,166
-Lifetime Campaign - Technical Innovation  - B (Run 1),18,60
-Lifetime Campaign - Technical Innovation  - US (Run 1),18,61
-Lifetime Campaign - Technical Innovation  - A (Run 1),18,34
-Lifetime Campaign - Technical Innovation  - C (Run 1),18,10
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,18,462
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,18,366
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,18,469
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,18,56
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,18,102
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,18,15
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,18,41
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,18,14
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,18,55
-Course - System Thinking - Run 17 - Search - Prospecting - USA,18,292
-Course - System Thinking - Run 17 - Search - Prospecting - A,18,133
-Course - System Thinking - Run 17 - Search - Prospecting - B,18,174
-Lifetime Campaign - Leadership Principles  - US (Run 3),19,174
-Lifetime Campaign - Leadership Principles  - A (Run 3),19,95
-Lifetime Campaign - Leadership Principles  - B (Run 3),19,243
-Lifetime Campaign - Leadership Principles  - C (Run 3),19,31
-Lifetime Campaign - Organizational Strategy  - US (Run 1),19,137
-Lifetime Campaign - Organizational Strategy  - A (Run 1),19,32
-Lifetime Campaign - Organizational Strategy  - C (Run 1),19,13
-Lifetime Campaign - Organizational Strategy  - B (Run 1),19,139
-Course - System Thinking - Run 12 - Search - Lead Gen - US,19,"1,832"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,19,"1,022"
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,19,"1,502"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,19,143
-Lifetime Campaign - Technical Innovation  - B (Run 1),19,64
-Lifetime Campaign - Technical Innovation  - US (Run 1),19,43
-Lifetime Campaign - Technical Innovation  - A (Run 1),19,20
-Lifetime Campaign - Technical Innovation  - C (Run 1),19,8
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,19,409
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,19,252
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,19,299
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,19,57
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,19,91
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,19,17
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,19,28
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,19,16
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,19,53
-Course - System Thinking - Run 17 - Search - Prospecting - USA,19,310
-Course - System Thinking - Run 17 - Search - Prospecting - A,19,85
-Course - System Thinking - Run 17 - Search - Prospecting - B,19,111
-Lifetime Campaign - Leadership Principles  - US (Run 3),20,198
-Lifetime Campaign - Leadership Principles  - A (Run 3),20,95
-Lifetime Campaign - Leadership Principles  - B (Run 3),20,201
-Lifetime Campaign - Leadership Principles  - C (Run 3),20,51
-Lifetime Campaign - Organizational Strategy  - US (Run 1),20,139
-Lifetime Campaign - Organizational Strategy  - A (Run 1),20,30
-Lifetime Campaign - Organizational Strategy  - C (Run 1),20,16
-Lifetime Campaign - Organizational Strategy  - B (Run 1),20,101
-Course - System Thinking - Run 12 - Search - Lead Gen - US,20,"1,717"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,20,844
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,20,"1,555"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,20,144
-Lifetime Campaign - Technical Innovation  - B (Run 1),20,48
-Lifetime Campaign - Technical Innovation  - US (Run 1),20,58
-Lifetime Campaign - Technical Innovation  - A (Run 1),20,19
-Lifetime Campaign - Technical Innovation  - C (Run 1),20,19
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,20,396
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,20,224
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,20,277
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,20,63
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,20,90
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,20,12
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,20,20
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,20,25
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,20,48
-Course - System Thinking - Run 17 - Search - Prospecting - USA,20,276
-Course - System Thinking - Run 17 - Search - Prospecting - A,20,78
-Course - System Thinking - Run 17 - Search - Prospecting - B,20,162
-Lifetime Campaign - Leadership Principles  - US (Run 3),21,182
-Lifetime Campaign - Leadership Principles  - A (Run 3),21,105
-Lifetime Campaign - Leadership Principles  - B (Run 3),21,205
-Lifetime Campaign - Leadership Principles  - C (Run 3),21,112
-Lifetime Campaign - Organizational Strategy  - US (Run 1),21,146
-Lifetime Campaign - Organizational Strategy  - A (Run 1),21,51
-Lifetime Campaign - Organizational Strategy  - C (Run 1),21,27
-Lifetime Campaign - Organizational Strategy  - B (Run 1),21,85
-Course - System Thinking - Run 12 - Search - Lead Gen - US,21,"1,741"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,21,733
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,21,"1,457"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,21,173
-Lifetime Campaign - Technical Innovation  - B (Run 1),21,47
-Lifetime Campaign - Technical Innovation  - US (Run 1),21,65
-Lifetime Campaign - Technical Innovation  - A (Run 1),21,15
-Lifetime Campaign - Technical Innovation  - C (Run 1),21,19
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,21,344
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,21,180
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,21,264
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,21,108
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,21,100
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,21,6
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,21,26
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,21,32
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,21,48
-Course - System Thinking - Run 17 - Search - Prospecting - USA,21,268
-Course - System Thinking - Run 17 - Search - Prospecting - A,21,76
-Course - System Thinking - Run 17 - Search - Prospecting - B,21,140
-Lifetime Campaign - Leadership Principles  - US (Run 3),22,178
-Lifetime Campaign - Leadership Principles  - A (Run 3),22,86
-Lifetime Campaign - Leadership Principles  - B (Run 3),22,231
-Lifetime Campaign - Leadership Principles  - C (Run 3),22,163
-Lifetime Campaign - Organizational Strategy  - US (Run 1),22,132
-Lifetime Campaign - Organizational Strategy  - A (Run 1),22,41
-Lifetime Campaign - Organizational Strategy  - C (Run 1),22,47
-Lifetime Campaign - Organizational Strategy  - B (Run 1),22,94
-Course - System Thinking - Run 12 - Search - Lead Gen - US,22,"1,530"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,22,674
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,22,"1,304"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,22,142
-Lifetime Campaign - Technical Innovation  - B (Run 1),22,19
-Lifetime Campaign - Technical Innovation  - US (Run 1),22,67
-Lifetime Campaign - Technical Innovation  - A (Run 1),22,12
-Lifetime Campaign - Technical Innovation  - C (Run 1),22,33
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,22,311
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,22,181
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,22,262
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,22,143
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,22,100
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,22,13
-Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,22,38
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,22,42
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,22,46
-Course - System Thinking - Run 17 - Search - Prospecting - USA,22,190
-Course - System Thinking - Run 17 - Search - Prospecting - A,22,66
-Course - System Thinking - Run 17 - Search - Prospecting - B,22,145
-Lifetime Campaign - Leadership Principles  - US (Run 3),23,171
-Lifetime Campaign - Leadership Principles  - A (Run 3),23,89
-Lifetime Campaign - Leadership Principles  - B (Run 3),23,242
-Lifetime Campaign - Leadership Principles  - C (Run 3),23,247
-Lifetime Campaign - Organizational Strategy  - US (Run 1),23,109
-Lifetime Campaign - Organizational Strategy  - A (Run 1),23,32
-Lifetime Campaign - Organizational Strategy  - C (Run 1),23,59
-Lifetime Campaign - Organizational Strategy  - B (Run 1),23,63
-Course - System Thinking - Run 12 - Search - Lead Gen - US,23,"1,239"
-Course - System Thinking - Run 12 - Search - Lead Gen - A/Developed,23,635
-Course - System Thinking - Run 12 - Search - Lead Gen - B/Developing,23,"1,059"
-System Thinking Course - xPRO - C - Search Lead Gen - Run 6 - 2T2022,23,155
-Lifetime Campaign - Technical Innovation  - B (Run 1),23,39
-Lifetime Campaign - Technical Innovation  - US (Run 1),23,68
-Lifetime Campaign - Technical Innovation  - A (Run 1),23,26
-Lifetime Campaign - Technical Innovation  - C (Run 1),23,33
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,23,242
-Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,23,156
-Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,23,301
-Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,23,124
-Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,23,61
 Course - System Thinking - Run 14 - Search - Lead Gen - A - Broad,23,8
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,0,73
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,1,76
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,2,81
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,3,86
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,4,97
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,5,75
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,6,79
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,7,95
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,8,85
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,9,68
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,10,111
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,11,86
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,12,68
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,13,61
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,14,70
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,15,71
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,16,54
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,17,45
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,18,41
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,19,28
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,20,20
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,21,26
+Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,22,38
 Course - System Thinking - Run 14 - Search - Lead Gen - B - Broad,23,45
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,0,88
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,1,86
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,2,68
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,3,67
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,4,50
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,5,44
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,6,38
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,7,54
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,8,59
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,9,57
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,10,67
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,11,67
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,12,75
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,13,47
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,14,42
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,15,16
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,16,12
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,17,7
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,18,14
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,19,16
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,20,25
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,21,32
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,22,42
 Course - System Thinking - Run 14 - Search - Lead Gen - C - Broad,23,35
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,0,311
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,1,282
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,2,308
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,3,265
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,4,281
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,5,246
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,6,289
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,7,273
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,8,339
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,9,280
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,10,303
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,11,317
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,12,335
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,13,309
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,14,201
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,15,161
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,16,102
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,17,61
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,18,56
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,19,57
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,20,63
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,21,108
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,22,143
+Course - System Thinking - Run 14 - Search - Lead Gen - C - Exact & Phrase,23,124
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,0,288
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,1,433
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,2,554
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,3,739
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,4,740
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,5,795
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,6,761
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,7,683
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,8,761
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,9,693
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,10,737
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,11,626
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,12,567
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,13,578
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,14,621
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,15,615
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,16,622
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,17,461
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,18,366
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,19,252
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,20,224
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,21,180
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,22,181
+Course - System Thinking - Run 16 - Search - Lead Gen - A - Exact & Phrase,23,156
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,0,557
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,1,742
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,2,855
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,3,891
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,4,944
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,5,949
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,6,910
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,7,954
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,8,917
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,9,954
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,10,867
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,11,889
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,12,831
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,13,835
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,14,810
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,15,749
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,16,697
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,17,577
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,18,469
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,19,299
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,20,277
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,21,264
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,22,262
+Course - System Thinking - Run 16 - Search - Lead Gen - B - Exact & Phrase,23,301
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,0,104
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,1,77
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,2,57
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,3,34
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,4,31
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,5,33
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,6,38
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,7,70
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,8,106
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,9,151
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,10,195
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,11,204
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,12,209
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,13,175
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,14,165
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,15,182
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,16,161
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,17,115
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,18,102
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,19,91
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,20,90
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,21,100
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,22,100
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Broad,23,61
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,0,330
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,1,267
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,2,220
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,3,153
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,4,120
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,5,124
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,6,177
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,7,237
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,8,395
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,9,583
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,10,671
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,11,732
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,12,773
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,13,730
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,14,669
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,15,712
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,16,683
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,17,494
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,18,462
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,19,409
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,20,396
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,21,344
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,22,311
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Exact,23,242
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,0,52
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,1,39
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,2,26
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,3,27
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,4,13
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,5,16
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,6,18
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,7,36
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,8,75
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,9,95
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,10,96
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,11,108
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,12,120
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,13,105
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,14,105
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,15,103
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,16,99
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,17,67
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,18,55
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,19,53
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,20,48
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,21,48
+Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,22,46
 Course - System Thinking - Run 16 - Search - Lead Gen - US - Phrase,23,32
-Course - System Thinking - Run 17 - Search - Prospecting - USA,23,168
-Course - System Thinking - Run 17 - Search - Prospecting - A,23,85
-Course - System Thinking - Run 17 - Search - Prospecting - B,23,149
+Course - System Thinking - Run 18 - Search - Prospecting - A,0,269
+Course - System Thinking - Run 18 - Search - Prospecting - A,1,324
+Course - System Thinking - Run 18 - Search - Prospecting - A,2,376
+Course - System Thinking - Run 18 - Search - Prospecting - A,3,409
+Course - System Thinking - Run 18 - Search - Prospecting - A,4,409
+Course - System Thinking - Run 18 - Search - Prospecting - A,5,473
+Course - System Thinking - Run 18 - Search - Prospecting - A,6,471
+Course - System Thinking - Run 18 - Search - Prospecting - A,7,456
+Course - System Thinking - Run 18 - Search - Prospecting - A,8,430
+Course - System Thinking - Run 18 - Search - Prospecting - A,9,456
+Course - System Thinking - Run 18 - Search - Prospecting - A,10,425
+Course - System Thinking - Run 18 - Search - Prospecting - A,11,424
+Course - System Thinking - Run 18 - Search - Prospecting - A,12,429
+Course - System Thinking - Run 18 - Search - Prospecting - A,13,469
+Course - System Thinking - Run 18 - Search - Prospecting - A,14,532
+Course - System Thinking - Run 18 - Search - Prospecting - A,15,445
+Course - System Thinking - Run 18 - Search - Prospecting - A,16,404
+Course - System Thinking - Run 18 - Search - Prospecting - A,17,276
+Course - System Thinking - Run 18 - Search - Prospecting - A,18,204
+Course - System Thinking - Run 18 - Search - Prospecting - A,19,141
+Course - System Thinking - Run 18 - Search - Prospecting - A,20,108
+Course - System Thinking - Run 18 - Search - Prospecting - A,21,111
+Course - System Thinking - Run 18 - Search - Prospecting - A,22,95
+Course - System Thinking - Run 18 - Search - Prospecting - A,23,108
+Course - System Thinking - Run 18 - Search - Prospecting - B,0,510
+Course - System Thinking - Run 18 - Search - Prospecting - B,1,582
+Course - System Thinking - Run 18 - Search - Prospecting - B,2,647
+Course - System Thinking - Run 18 - Search - Prospecting - B,3,622
+Course - System Thinking - Run 18 - Search - Prospecting - B,4,617
+Course - System Thinking - Run 18 - Search - Prospecting - B,5,632
+Course - System Thinking - Run 18 - Search - Prospecting - B,6,630
+Course - System Thinking - Run 18 - Search - Prospecting - B,7,678
+Course - System Thinking - Run 18 - Search - Prospecting - B,8,673
+Course - System Thinking - Run 18 - Search - Prospecting - B,9,739
+Course - System Thinking - Run 18 - Search - Prospecting - B,10,675
+Course - System Thinking - Run 18 - Search - Prospecting - B,11,701
+Course - System Thinking - Run 18 - Search - Prospecting - B,12,736
+Course - System Thinking - Run 18 - Search - Prospecting - B,13,658
+Course - System Thinking - Run 18 - Search - Prospecting - B,14,616
+Course - System Thinking - Run 18 - Search - Prospecting - B,15,530
+Course - System Thinking - Run 18 - Search - Prospecting - B,16,434
+Course - System Thinking - Run 18 - Search - Prospecting - B,17,366
+Course - System Thinking - Run 18 - Search - Prospecting - B,18,246
+Course - System Thinking - Run 18 - Search - Prospecting - B,19,199
+Course - System Thinking - Run 18 - Search - Prospecting - B,20,236
+Course - System Thinking - Run 18 - Search - Prospecting - B,21,200
+Course - System Thinking - Run 18 - Search - Prospecting - B,22,198
+Course - System Thinking - Run 18 - Search - Prospecting - B,23,204
+Course - System Thinking - Run 18 - Search - Prospecting - USA,0,246
+Course - System Thinking - Run 18 - Search - Prospecting - USA,1,221
+Course - System Thinking - Run 18 - Search - Prospecting - USA,2,129
+Course - System Thinking - Run 18 - Search - Prospecting - USA,3,108
+Course - System Thinking - Run 18 - Search - Prospecting - USA,4,96
+Course - System Thinking - Run 18 - Search - Prospecting - USA,5,88
+Course - System Thinking - Run 18 - Search - Prospecting - USA,6,124
+Course - System Thinking - Run 18 - Search - Prospecting - USA,7,176
+Course - System Thinking - Run 18 - Search - Prospecting - USA,8,241
+Course - System Thinking - Run 18 - Search - Prospecting - USA,9,341
+Course - System Thinking - Run 18 - Search - Prospecting - USA,10,381
+Course - System Thinking - Run 18 - Search - Prospecting - USA,11,441
+Course - System Thinking - Run 18 - Search - Prospecting - USA,12,445
+Course - System Thinking - Run 18 - Search - Prospecting - USA,13,424
+Course - System Thinking - Run 18 - Search - Prospecting - USA,14,443
+Course - System Thinking - Run 18 - Search - Prospecting - USA,15,446
+Course - System Thinking - Run 18 - Search - Prospecting - USA,16,426
+Course - System Thinking - Run 18 - Search - Prospecting - USA,17,364
+Course - System Thinking - Run 18 - Search - Prospecting - USA,18,346
+Course - System Thinking - Run 18 - Search - Prospecting - USA,19,348
+Course - System Thinking - Run 18 - Search - Prospecting - USA,20,323
+Course - System Thinking - Run 18 - Search - Prospecting - USA,21,306
+Course - System Thinking - Run 18 - Search - Prospecting - USA,22,225
+Course - System Thinking - Run 18 - Search - Prospecting - USA,23,201

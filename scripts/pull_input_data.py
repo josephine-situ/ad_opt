@@ -46,6 +46,8 @@ SEMRUSH_PHRASE_MAPPING = {
     "ml": "machine learning course",
     "sys_eng": "systems engineering course",
     "sys_think": "systems thinking course",
+    "quant_comp": "quantum computing course",
+    "dai": "deploying ai course",
 }
 
 LOCATION_CACHE = {}
@@ -53,6 +55,7 @@ LOCATION_CACHE = {}
 
 def write_to_file(header_parts, row_generator, output_file, delimiter="\t", restval="0"):
     """Write data to a file with the given header and rows from a generator."""
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=header_parts, delimiter=delimiter, restval=restval)
         # Write header
@@ -760,7 +763,7 @@ def main():
         "--output-course",
         type=str,
         default="",
-        choices=["gen_ai", "ml", "sys_eng", "sys_think"],
+        choices=["gen_ai", "ml", "sys_eng", "sys_think", "quant_comp", "dai"],
         required=True,
         help="The course to pull data for, determines the location of the file outputs.",
     )

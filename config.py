@@ -16,6 +16,8 @@ COURSE_CONFIG = {
             "A": ["Canada", "United Kingdom", "Australia"],
             "B": ["Germany", "France", "Spain", "Italy"]
         },
+        'conversion_actions': ['Purchase - Gen AI', 'Add to Cart - Gen AI', 'idimension - account create'],
+        'purchase_actions': ['Purchase - Gen AI'],
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
@@ -26,7 +28,7 @@ COURSE_CONFIG = {
             '2024-03-29', '2024-09-16', '2025-02-03', '2025-04-28', 
             '2025-09-29', '2026-02-02', '2026-04-27'
         ],
-        'min_date': '2022-01-01',
+        'min_date': '2022-07-01',
         'budgets': [353.99],
         'course_title_base': "Program - MLx",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
@@ -49,7 +51,7 @@ COURSE_CONFIG = {
             '2024-09-23', '2024-02-03', '2025-04-07', '2025-09-29', 
             '2026-02-02', '2026-04-06'
         ],
-        'min_date': '2022-06-01', # Some campaigns name without a region early on
+        'min_date': '2022-07-01', # Some campaigns name without a region early on
         'budgets': [847.46],
         'course_title_base': "Program - SysEng",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
@@ -58,6 +60,8 @@ COURSE_CONFIG = {
             "A": ["Canada", "United Kingdom", "Australia"],
             "B": ["Germany", "France", "Spain", "Italy"]
         },
+        'conversion_actions': ['Purchase', 'SysEng - Add to cart - iDimension', 'idimension - account create'],
+        'purchase_actions': ['Purchase'],
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
@@ -70,19 +74,51 @@ COURSE_CONFIG = {
             '2025-02-10', '2025-04-14', '2025-10-06', '2026-02-02',
             '2026-04-06'
         ],
-        'min_date': '2022-06-01', # Start of search history
+        'min_date': '2022-07-01', # Start of search history
         'budgets': [357.14],
         'course_title_base': "Course - System Thinking",
-        'conversion_actions': ['Purchase', 'System Thinking - Add to cart', 'idimension - account create', 'Add to cart - iDimension'],
-        'purchase_actions': ['Purchase'],
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
             "USA": ["United States"],
             "A": ["Canada", "United Kingdom", "Australia"],
             "B": ["Germany", "France", "Spain", "Italy"]
         },
+        'conversion_actions': ['Purchase', 'System Thinking - Add to cart', 'idimension - account create', 'Add to cart - iDimension'],
+        'purchase_actions': ['Purchase'],
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
+        'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+    },
+    'quant_comp': {
+        'start_dates': [], # TODO: add start dates
+        'min_date': '2022-07-01', # TODO: configure min date
+        'budgets': [500.00], # TODO: configure budget
+        'course_title_base': "Course - Quantum Computing",
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
+        'conversion_actions': ['idimension - Purchase', 'idimension - QCX = Add to cart', 'idimension - account create'],
+        'purchase_actions': ['idimension - Purchase'],
+        'match_types': ["Exact", "Phrase", "Broad"],
+        'default_daily_budget_micros': 1_000_000,
+        'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+    },
+    'dai': {
+        'start_dates': [], # TODO: add start dates
+        'min_date': '2022-07-01', # TODO: configure min date
+        'budgets': [500.00], # TODO: configure budget
+        'course_title_base': "Course - Deploying AI",
+        'conversion_actions': ['Purchase', 'Add to Cart', 'idimension - account create', 'Account Creation'],
+        'purchase_actions': ['Purchase'],
+        'regions': {
+            "USA": ["United States"],
+            "A": ["Canada", "United Kingdom", "Australia"],
+            "B": ["Germany", "France", "Spain", "Italy"]
+        },
+        'match_types': ["Exact", "Phrase", "Broad"],
+        'default_daily_budget_micros': 1_000_000,
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
     }
 }

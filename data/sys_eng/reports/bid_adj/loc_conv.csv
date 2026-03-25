@@ -1,0 +1,96 @@
+Campaign,Conversion action,Targeted location,All conv.
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Australia,16.92
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Belgium,3.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Canada,22.40
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Denmark,11.50
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Finland,1.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,France,4.42
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Germany,10.09
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Hong Kong,1.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Ireland,2.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Italy,2.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Japan,0.20
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Luxembourg,1.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Netherlands,6.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Norway,2.71
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Spain,3.00
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Sweden,5.50
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Switzerland,4.04
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,United Kingdom,5.10
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Brazil,22.70
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Chile,1.00
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Poland,4.00
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Saudi Arabia,2.50
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Singapore,7.00
+Program - SysEng - Run 21 - Search - Lead Gen - US,Purchase,United States,216.97
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Australia,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Denmark,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,France,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Germany,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Israel,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Japan,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Mexico,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Norway,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Spain,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Sweden,1.00
+Program - SysEng - Run 22 - Search - Lead Gen - B,Purchase,Saudi Arabia,2.07
+Program - SysEng - Run 22 - Search - Lead Gen - C,Purchase,Brazil,21.00
+Program - SysEng - Run 22 - Search - Lead Gen - C,Purchase,India,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,Purchase,Canada,4.00
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,Purchase,United States,39.00
+Program - SysEng - Run 24 - Search - Remarketing - A,Purchase,Norway,1.00
+Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,Brazil,1.00
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,United States,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Canada,1.33
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Denmark,4.33
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,France,2.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Germany,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Netherlands,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Switzerland,0.40
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Australia,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Belgium,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Canada,2.67
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Denmark,4.67
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,France,4.96
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Germany,5.95
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Ireland,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Israel,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Italy,1.50
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Japan,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Mexico,2.92
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Netherlands,5.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Norway,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Switzerland,1.60
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,Romania,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Austria,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Chile,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Colombia,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Hungary,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Poland,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Portugal,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Saudi Arabia,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Singapore,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,South Africa,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,United Arab Emirates,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Turkiye,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,Brazil,3.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,India,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,Brazil,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,India,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,Canada,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,United States,24.60
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,Canada,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,United States,80.18
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),Purchase,United States,4.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),Purchase,United States,1.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Australia,1.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Canada,4.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,France,2.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Germany,2.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Ireland,1.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Netherlands,1.00
+Program - SysEng - Run 27 - Search - Prospecting - B,Purchase,Singapore,1.00
+Program - SysEng - Run 27 - Search - Prospecting - B,Purchase,Turkiye,3.00
+Program - SysEng - Run 27 - Search - Prospecting - C,Purchase,Brazil,1.00
+Program - SysEng - Run 27 - Search - Prospecting - USA,Purchase,United States,26.00
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,Purchase,United States,4.00

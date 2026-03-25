@@ -1,1321 +1,625 @@
 Campaign,Hour of the day,Clicks
-Sysengx3 - Run 2 - Text - US,0,0
-Sysengx3 - Run 2 - Other - Text,0,0
-Systems Engineering Program - Run 3 - US - Text,0,0
-Systems Engineering Program - Run 3 - Other - Text,0,0
-Sysengx - Run 4 - Other (SEM),0,0
-Sysengx - Run 4 - US (SEM),0,0
-Sysengx - Run 4 - US - Remarketing,0,0
-Sysengx - Run 4 - Other B - Remarketing,0,0
-Sysengx - Run 4 - Other A - Remarketing,0,0
-Syseng - FL18 - US,0,0
-Syseng - FL18 - Other A,0,0
-Syseng - FL18 - Other B,0,0
-System Engineering - FL18 - US - Revamped,0,0
-System Engineering - FL18 - Other A - Revamped,0,0
-System Engineering - FL18 - Other B - Revamped,0,0
-System Engineering - SP19 - US - Broad,0,0
-System Engineering - SP19 - Other A - Broad,0,0
-System Engineering - SP19 - Other B - Broad,0,0
-System Engineering - SP19 - Other A - BMM,0,0
-System Engineering - SP19 - Other B - Phrase,0,0
-System Engineering - SP19 - Other B - Exact,0,0
-System Engineering - SP19 - US - Exact,0,0
-System Engineering - SP19 - Other A - Exact,0,0
-System Engineering - SP19 - Other A - Phrase,0,0
-System Engineering - SP19 - US - BMM,0,0
-System Engineering - SP19 - US - Phrase,0,0
-System Engineering - SP19 - Other B - BMM,0,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,0,"2,698"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,0,"1,481"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,0,"2,497"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),0,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,0,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,0,869
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,0,2409
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,1,2979
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,2,3741
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,3,4588
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,4,5066
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,5,5144
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,6,4988
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,7,5171
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,8,5471
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,9,5707
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,10,5516
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,11,5253
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,12,4761
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,13,4716
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,14,4809
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,15,5380
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,16,5554
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,17,5088
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,18,3952
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,19,2755
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,20,2069
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,21,1307
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,22,1146
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,23,1000
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,0,1421
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,1,1503
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,2,1673
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,3,1660
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,4,1669
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,5,1880
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,6,1987
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,7,2419
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,8,2831
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,9,3061
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,10,2917
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,11,2750
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,12,2727
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,13,2761
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,14,2653
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,15,2608
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,16,2291
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,17,2128
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,18,1971
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,19,1970
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,20,1991
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,21,1810
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,22,1350
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,23,987
+Program - SysEng - Run 21 - Search - Lead Gen - US,0,2600
+Program - SysEng - Run 21 - Search - Lead Gen - US,1,2015
+Program - SysEng - Run 21 - Search - Lead Gen - US,2,1511
+Program - SysEng - Run 21 - Search - Lead Gen - US,3,1045
+Program - SysEng - Run 21 - Search - Lead Gen - US,4,822
+Program - SysEng - Run 21 - Search - Lead Gen - US,5,823
+Program - SysEng - Run 21 - Search - Lead Gen - US,6,1013
+Program - SysEng - Run 21 - Search - Lead Gen - US,7,1473
+Program - SysEng - Run 21 - Search - Lead Gen - US,8,2529
+Program - SysEng - Run 21 - Search - Lead Gen - US,9,3638
+Program - SysEng - Run 21 - Search - Lead Gen - US,10,4382
+Program - SysEng - Run 21 - Search - Lead Gen - US,11,4712
+Program - SysEng - Run 21 - Search - Lead Gen - US,12,4769
+Program - SysEng - Run 21 - Search - Lead Gen - US,13,5021
+Program - SysEng - Run 21 - Search - Lead Gen - US,14,5072
+Program - SysEng - Run 21 - Search - Lead Gen - US,15,4885
+Program - SysEng - Run 21 - Search - Lead Gen - US,16,4681
+Program - SysEng - Run 21 - Search - Lead Gen - US,17,4147
+Program - SysEng - Run 21 - Search - Lead Gen - US,18,3677
+Program - SysEng - Run 21 - Search - Lead Gen - US,19,3643
+Program - SysEng - Run 21 - Search - Lead Gen - US,20,3502
+Program - SysEng - Run 21 - Search - Lead Gen - US,21,2681
+Program - SysEng - Run 21 - Search - Lead Gen - US,22,1311
+Program - SysEng - Run 21 - Search - Lead Gen - US,23,857
 Program - SysEng - Run 22 - Search - Lead Gen - A,0,217
-Program - SysEng - Run 22 - Search - Lead Gen - B,0,215
-Program - SysEng - Run 22 - Search - Lead Gen - C,0,656
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),0,683
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),0,303
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),0,"1,157"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),0,279
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),0,464
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),0,166
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),0,262
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),0,168
-Program - SysEng - Run 24 - Search - Remarketing - B,0,5
-Program - SysEng - Run 24 - Search - Remarketing - C,0,24
-Program - SysEng - Run 24 - Search - Remarketing - A,0,5
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,0,13
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),0,63
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),0,44
-Program - SysEng - Run 26 - Search - Prospecting - USA,0,407
-Program - SysEng - Run 26 - Search - Prospecting - A,0,179
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,0,89
-Program - SysEng - Run 26 - Search - Prospecting - B,0,160
-Program - SysEng - Run 26 - Search - Prospecting - C,0,492
-Sysengx3 - Run 2 - Text - US,1,0
-Sysengx3 - Run 2 - Other - Text,1,0
-Systems Engineering Program - Run 3 - US - Text,1,0
-Systems Engineering Program - Run 3 - Other - Text,1,0
-Sysengx - Run 4 - Other (SEM),1,0
-Sysengx - Run 4 - US (SEM),1,0
-Sysengx - Run 4 - US - Remarketing,1,0
-Sysengx - Run 4 - Other B - Remarketing,1,0
-Sysengx - Run 4 - Other A - Remarketing,1,0
-Syseng - FL18 - US,1,0
-Syseng - FL18 - Other A,1,0
-Syseng - FL18 - Other B,1,0
-System Engineering - FL18 - US - Revamped,1,0
-System Engineering - FL18 - Other A - Revamped,1,0
-System Engineering - FL18 - Other B - Revamped,1,0
-System Engineering - SP19 - US - Broad,1,0
-System Engineering - SP19 - Other A - Broad,1,0
-System Engineering - SP19 - Other B - Broad,1,0
-System Engineering - SP19 - Other A - BMM,1,0
-System Engineering - SP19 - Other B - Phrase,1,0
-System Engineering - SP19 - Other B - Exact,1,0
-System Engineering - SP19 - US - Exact,1,0
-System Engineering - SP19 - Other A - Exact,1,0
-System Engineering - SP19 - Other A - Phrase,1,0
-System Engineering - SP19 - US - BMM,1,0
-System Engineering - SP19 - US - Phrase,1,0
-System Engineering - SP19 - Other B - BMM,1,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,1,"2,134"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,1,"1,543"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,1,"3,098"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),1,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,1,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,1,673
 Program - SysEng - Run 22 - Search - Lead Gen - A,1,295
-Program - SysEng - Run 22 - Search - Lead Gen - B,1,267
-Program - SysEng - Run 22 - Search - Lead Gen - C,1,801
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),1,519
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),1,293
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),1,"1,371"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),1,417
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),1,446
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),1,218
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),1,307
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),1,214
-Program - SysEng - Run 24 - Search - Remarketing - B,1,10
-Program - SysEng - Run 24 - Search - Remarketing - C,1,16
-Program - SysEng - Run 24 - Search - Remarketing - A,1,8
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,1,15
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),1,52
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),1,28
-Program - SysEng - Run 26 - Search - Prospecting - USA,1,325
-Program - SysEng - Run 26 - Search - Prospecting - A,1,174
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,1,73
-Program - SysEng - Run 26 - Search - Prospecting - B,1,212
-Program - SysEng - Run 26 - Search - Prospecting - C,1,499
-Sysengx3 - Run 2 - Text - US,2,0
-Sysengx3 - Run 2 - Other - Text,2,0
-Systems Engineering Program - Run 3 - US - Text,2,0
-Systems Engineering Program - Run 3 - Other - Text,2,0
-Sysengx - Run 4 - Other (SEM),2,0
-Sysengx - Run 4 - US (SEM),2,0
-Sysengx - Run 4 - US - Remarketing,2,0
-Sysengx - Run 4 - Other B - Remarketing,2,0
-Sysengx - Run 4 - Other A - Remarketing,2,0
-Syseng - FL18 - US,2,0
-Syseng - FL18 - Other A,2,0
-Syseng - FL18 - Other B,2,0
-System Engineering - FL18 - US - Revamped,2,0
-System Engineering - FL18 - Other A - Revamped,2,0
-System Engineering - FL18 - Other B - Revamped,2,0
-System Engineering - SP19 - US - Broad,2,0
-System Engineering - SP19 - Other A - Broad,2,0
-System Engineering - SP19 - Other B - Broad,2,0
-System Engineering - SP19 - Other A - BMM,2,0
-System Engineering - SP19 - Other B - Phrase,2,0
-System Engineering - SP19 - Other B - Exact,2,0
-System Engineering - SP19 - US - Exact,2,0
-System Engineering - SP19 - Other A - Exact,2,0
-System Engineering - SP19 - Other A - Phrase,2,0
-System Engineering - SP19 - US - BMM,2,0
-System Engineering - SP19 - US - Phrase,2,0
-System Engineering - SP19 - Other B - BMM,2,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,2,"1,602"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,2,"1,729"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,2,"3,915"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),2,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,2,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,2,503
 Program - SysEng - Run 22 - Search - Lead Gen - A,2,316
-Program - SysEng - Run 22 - Search - Lead Gen - B,2,365
-Program - SysEng - Run 22 - Search - Lead Gen - C,2,793
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),2,360
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),2,219
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),2,"1,202"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),2,471
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),2,417
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),2,256
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),2,369
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),2,277
-Program - SysEng - Run 24 - Search - Remarketing - B,2,9
-Program - SysEng - Run 24 - Search - Remarketing - C,2,8
-Program - SysEng - Run 24 - Search - Remarketing - A,2,3
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,2,6
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),2,23
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),2,17
-Program - SysEng - Run 26 - Search - Prospecting - USA,2,208
-Program - SysEng - Run 26 - Search - Prospecting - A,2,199
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,2,61
-Program - SysEng - Run 26 - Search - Prospecting - B,2,268
-Program - SysEng - Run 26 - Search - Prospecting - C,2,445
-Sysengx3 - Run 2 - Text - US,3,0
-Sysengx3 - Run 2 - Other - Text,3,0
-Systems Engineering Program - Run 3 - US - Text,3,0
-Systems Engineering Program - Run 3 - Other - Text,3,0
-Sysengx - Run 4 - Other (SEM),3,0
-Sysengx - Run 4 - US (SEM),3,0
-Sysengx - Run 4 - US - Remarketing,3,0
-Sysengx - Run 4 - Other B - Remarketing,3,0
-Sysengx - Run 4 - Other A - Remarketing,3,0
-Syseng - FL18 - US,3,0
-Syseng - FL18 - Other A,3,0
-Syseng - FL18 - Other B,3,0
-System Engineering - FL18 - US - Revamped,3,0
-System Engineering - FL18 - Other A - Revamped,3,0
-System Engineering - FL18 - Other B - Revamped,3,0
-System Engineering - SP19 - US - Broad,3,0
-System Engineering - SP19 - Other A - Broad,3,0
-System Engineering - SP19 - Other B - Broad,3,0
-System Engineering - SP19 - Other A - BMM,3,0
-System Engineering - SP19 - Other B - Phrase,3,0
-System Engineering - SP19 - Other B - Exact,3,0
-System Engineering - SP19 - US - Exact,3,0
-System Engineering - SP19 - Other A - Exact,3,0
-System Engineering - SP19 - Other A - Phrase,3,0
-System Engineering - SP19 - US - BMM,3,0
-System Engineering - SP19 - US - Phrase,3,0
-System Engineering - SP19 - Other B - BMM,3,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,3,"1,103"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,3,"1,732"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,3,"4,778"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),3,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,3,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,3,354
 Program - SysEng - Run 22 - Search - Lead Gen - A,3,427
-Program - SysEng - Run 22 - Search - Lead Gen - B,3,401
-Program - SysEng - Run 22 - Search - Lead Gen - C,3,699
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),3,256
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),3,142
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),3,"1,073"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),3,568
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),3,331
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),3,277
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),3,465
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),3,272
-Program - SysEng - Run 24 - Search - Remarketing - B,3,13
-Program - SysEng - Run 24 - Search - Remarketing - C,3,13
-Program - SysEng - Run 24 - Search - Remarketing - A,3,9
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,3,6
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),3,26
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),3,10
-Program - SysEng - Run 26 - Search - Prospecting - USA,3,170
-Program - SysEng - Run 26 - Search - Prospecting - A,3,262
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,3,37
-Program - SysEng - Run 26 - Search - Prospecting - B,3,329
-Program - SysEng - Run 26 - Search - Prospecting - C,3,391
-Sysengx3 - Run 2 - Text - US,4,0
-Sysengx3 - Run 2 - Other - Text,4,0
-Systems Engineering Program - Run 3 - US - Text,4,0
-Systems Engineering Program - Run 3 - Other - Text,4,0
-Sysengx - Run 4 - Other (SEM),4,0
-Sysengx - Run 4 - US (SEM),4,0
-Sysengx - Run 4 - US - Remarketing,4,0
-Sysengx - Run 4 - Other B - Remarketing,4,0
-Sysengx - Run 4 - Other A - Remarketing,4,0
-Syseng - FL18 - US,4,0
-Syseng - FL18 - Other A,4,0
-Syseng - FL18 - Other B,4,0
-System Engineering - FL18 - US - Revamped,4,0
-System Engineering - FL18 - Other A - Revamped,4,0
-System Engineering - FL18 - Other B - Revamped,4,0
-System Engineering - SP19 - US - Broad,4,0
-System Engineering - SP19 - Other A - Broad,4,0
-System Engineering - SP19 - Other B - Broad,4,0
-System Engineering - SP19 - Other A - BMM,4,0
-System Engineering - SP19 - Other B - Phrase,4,0
-System Engineering - SP19 - Other B - Exact,4,0
-System Engineering - SP19 - US - Exact,4,0
-System Engineering - SP19 - Other A - Exact,4,0
-System Engineering - SP19 - Other A - Phrase,4,0
-System Engineering - SP19 - US - BMM,4,0
-System Engineering - SP19 - US - Phrase,4,0
-System Engineering - SP19 - Other B - BMM,4,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,4,860
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,4,"1,744"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,4,"5,268"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),4,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,4,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,4,292
 Program - SysEng - Run 22 - Search - Lead Gen - A,4,436
-Program - SysEng - Run 22 - Search - Lead Gen - B,4,446
-Program - SysEng - Run 22 - Search - Lead Gen - C,4,651
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),4,190
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),4,123
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),4,"1,047"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),4,532
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),4,378
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),4,320
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),4,506
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),4,283
-Program - SysEng - Run 24 - Search - Remarketing - B,4,5
-Program - SysEng - Run 24 - Search - Remarketing - C,4,8
-Program - SysEng - Run 24 - Search - Remarketing - A,4,7
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,4,4
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),4,23
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),4,4
-Program - SysEng - Run 26 - Search - Prospecting - USA,4,117
-Program - SysEng - Run 26 - Search - Prospecting - A,4,265
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,4,16
-Program - SysEng - Run 26 - Search - Prospecting - B,4,293
-Program - SysEng - Run 26 - Search - Prospecting - C,4,385
-Sysengx3 - Run 2 - Text - US,5,0
-Sysengx3 - Run 2 - Other - Text,5,0
-Systems Engineering Program - Run 3 - US - Text,5,0
-Systems Engineering Program - Run 3 - Other - Text,5,0
-Sysengx - Run 4 - Other (SEM),5,0
-Sysengx - Run 4 - US (SEM),5,0
-Sysengx - Run 4 - US - Remarketing,5,0
-Sysengx - Run 4 - Other B - Remarketing,5,0
-Sysengx - Run 4 - Other A - Remarketing,5,0
-Syseng - FL18 - US,5,0
-Syseng - FL18 - Other A,5,0
-Syseng - FL18 - Other B,5,0
-System Engineering - FL18 - US - Revamped,5,0
-System Engineering - FL18 - Other A - Revamped,5,0
-System Engineering - FL18 - Other B - Revamped,5,0
-System Engineering - SP19 - US - Broad,5,0
-System Engineering - SP19 - Other A - Broad,5,0
-System Engineering - SP19 - Other B - Broad,5,0
-System Engineering - SP19 - Other A - BMM,5,0
-System Engineering - SP19 - Other B - Phrase,5,0
-System Engineering - SP19 - Other B - Exact,5,0
-System Engineering - SP19 - US - Exact,5,0
-System Engineering - SP19 - Other A - Exact,5,0
-System Engineering - SP19 - Other A - Phrase,5,0
-System Engineering - SP19 - US - BMM,5,0
-System Engineering - SP19 - US - Phrase,5,0
-System Engineering - SP19 - Other B - BMM,5,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,5,866
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,5,"1,965"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,5,"5,361"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),5,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,5,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,5,277
 Program - SysEng - Run 22 - Search - Lead Gen - A,5,394
-Program - SysEng - Run 22 - Search - Lead Gen - B,5,413
-Program - SysEng - Run 22 - Search - Lead Gen - C,5,640
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),5,167
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),5,96
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),5,"1,001"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),5,586
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),5,374
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),5,316
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),5,504
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),5,294
-Program - SysEng - Run 24 - Search - Remarketing - B,5,7
-Program - SysEng - Run 24 - Search - Remarketing - C,5,14
-Program - SysEng - Run 24 - Search - Remarketing - A,5,2
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,5,4
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),5,15
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),5,8
-Program - SysEng - Run 26 - Search - Prospecting - USA,5,113
-Program - SysEng - Run 26 - Search - Prospecting - A,5,284
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,5,22
-Program - SysEng - Run 26 - Search - Prospecting - B,5,314
-Program - SysEng - Run 26 - Search - Prospecting - C,5,441
-Sysengx3 - Run 2 - Text - US,6,0
-Sysengx3 - Run 2 - Other - Text,6,0
-Systems Engineering Program - Run 3 - US - Text,6,0
-Systems Engineering Program - Run 3 - Other - Text,6,0
-Sysengx - Run 4 - Other (SEM),6,0
-Sysengx - Run 4 - US (SEM),6,0
-Sysengx - Run 4 - US - Remarketing,6,0
-Sysengx - Run 4 - Other B - Remarketing,6,0
-Sysengx - Run 4 - Other A - Remarketing,6,0
-Syseng - FL18 - US,6,0
-Syseng - FL18 - Other A,6,0
-Syseng - FL18 - Other B,6,0
-System Engineering - FL18 - US - Revamped,6,0
-System Engineering - FL18 - Other A - Revamped,6,0
-System Engineering - FL18 - Other B - Revamped,6,0
-System Engineering - SP19 - US - Broad,6,0
-System Engineering - SP19 - Other A - Broad,6,0
-System Engineering - SP19 - Other B - Broad,6,0
-System Engineering - SP19 - Other A - BMM,6,0
-System Engineering - SP19 - Other B - Phrase,6,0
-System Engineering - SP19 - Other B - Exact,6,0
-System Engineering - SP19 - US - Exact,6,0
-System Engineering - SP19 - Other A - Exact,6,0
-System Engineering - SP19 - Other A - Phrase,6,0
-System Engineering - SP19 - US - BMM,6,0
-System Engineering - SP19 - US - Phrase,6,0
-System Engineering - SP19 - Other B - BMM,6,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,6,"1,056"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,6,"2,066"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,6,"5,186"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),6,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,6,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,6,315
 Program - SysEng - Run 22 - Search - Lead Gen - A,6,370
-Program - SysEng - Run 22 - Search - Lead Gen - B,6,484
-Program - SysEng - Run 22 - Search - Lead Gen - C,6,617
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),6,241
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),6,130
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),6,"1,010"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),6,607
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),6,391
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),6,269
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),6,425
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),6,300
-Program - SysEng - Run 24 - Search - Remarketing - B,6,20
-Program - SysEng - Run 24 - Search - Remarketing - C,6,9
-Program - SysEng - Run 24 - Search - Remarketing - A,6,8
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,6,6
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),6,30
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),6,8
-Program - SysEng - Run 26 - Search - Prospecting - USA,6,135
-Program - SysEng - Run 26 - Search - Prospecting - A,6,260
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,6,29
-Program - SysEng - Run 26 - Search - Prospecting - B,6,357
-Program - SysEng - Run 26 - Search - Prospecting - C,6,406
-Sysengx3 - Run 2 - Text - US,7,0
-Sysengx3 - Run 2 - Other - Text,7,0
-Systems Engineering Program - Run 3 - US - Text,7,0
-Systems Engineering Program - Run 3 - Other - Text,7,0
-Sysengx - Run 4 - Other (SEM),7,0
-Sysengx - Run 4 - US (SEM),7,0
-Sysengx - Run 4 - US - Remarketing,7,0
-Sysengx - Run 4 - Other B - Remarketing,7,0
-Sysengx - Run 4 - Other A - Remarketing,7,0
-Syseng - FL18 - US,7,0
-Syseng - FL18 - Other A,7,0
-Syseng - FL18 - Other B,7,0
-System Engineering - FL18 - US - Revamped,7,0
-System Engineering - FL18 - Other A - Revamped,7,0
-System Engineering - FL18 - Other B - Revamped,7,0
-System Engineering - SP19 - US - Broad,7,0
-System Engineering - SP19 - Other A - Broad,7,0
-System Engineering - SP19 - Other B - Broad,7,0
-System Engineering - SP19 - Other A - BMM,7,0
-System Engineering - SP19 - Other B - Phrase,7,0
-System Engineering - SP19 - Other B - Exact,7,0
-System Engineering - SP19 - US - Exact,7,0
-System Engineering - SP19 - Other A - Exact,7,0
-System Engineering - SP19 - Other A - Phrase,7,0
-System Engineering - SP19 - US - BMM,7,0
-System Engineering - SP19 - US - Phrase,7,0
-System Engineering - SP19 - Other B - BMM,7,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,7,"1,561"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,7,"2,511"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,7,"5,424"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),7,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,7,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,7,529
 Program - SysEng - Run 22 - Search - Lead Gen - A,7,389
-Program - SysEng - Run 22 - Search - Lead Gen - B,7,519
-Program - SysEng - Run 22 - Search - Lead Gen - C,7,677
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),7,355
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),7,211
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),7,"1,024"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),7,682
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),7,405
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),7,247
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),7,471
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),7,332
-Program - SysEng - Run 24 - Search - Remarketing - B,7,10
-Program - SysEng - Run 24 - Search - Remarketing - C,7,7
-Program - SysEng - Run 24 - Search - Remarketing - A,7,5
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,7,7
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),7,28
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),7,21
-Program - SysEng - Run 26 - Search - Prospecting - USA,7,223
-Program - SysEng - Run 26 - Search - Prospecting - A,7,278
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,7,40
-Program - SysEng - Run 26 - Search - Prospecting - B,7,358
-Program - SysEng - Run 26 - Search - Prospecting - C,7,468
-Sysengx3 - Run 2 - Text - US,8,0
-Sysengx3 - Run 2 - Other - Text,8,0
-Systems Engineering Program - Run 3 - US - Text,8,0
-Systems Engineering Program - Run 3 - Other - Text,8,0
-Sysengx - Run 4 - Other (SEM),8,0
-Sysengx - Run 4 - US (SEM),8,0
-Sysengx - Run 4 - US - Remarketing,8,0
-Sysengx - Run 4 - Other B - Remarketing,8,0
-Sysengx - Run 4 - Other A - Remarketing,8,0
-Syseng - FL18 - US,8,0
-Syseng - FL18 - Other A,8,0
-Syseng - FL18 - Other B,8,0
-System Engineering - FL18 - US - Revamped,8,0
-System Engineering - FL18 - Other A - Revamped,8,0
-System Engineering - FL18 - Other B - Revamped,8,0
-System Engineering - SP19 - US - Broad,8,0
-System Engineering - SP19 - Other A - Broad,8,0
-System Engineering - SP19 - Other B - Broad,8,0
-System Engineering - SP19 - Other A - BMM,8,0
-System Engineering - SP19 - Other B - Phrase,8,0
-System Engineering - SP19 - Other B - Exact,8,0
-System Engineering - SP19 - US - Exact,8,0
-System Engineering - SP19 - Other A - Exact,8,0
-System Engineering - SP19 - Other A - Phrase,8,0
-System Engineering - SP19 - US - BMM,8,0
-System Engineering - SP19 - US - Phrase,8,0
-System Engineering - SP19 - Other B - BMM,8,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,8,"2,635"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,8,"2,942"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,8,"5,718"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),8,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,8,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,8,812
 Program - SysEng - Run 22 - Search - Lead Gen - A,8,417
-Program - SysEng - Run 22 - Search - Lead Gen - B,8,511
-Program - SysEng - Run 22 - Search - Lead Gen - C,8,707
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),8,627
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),8,338
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),8,"1,235"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),8,710
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),8,479
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),8,286
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),8,517
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),8,375
-Program - SysEng - Run 24 - Search - Remarketing - B,8,9
-Program - SysEng - Run 24 - Search - Remarketing - C,8,14
-Program - SysEng - Run 24 - Search - Remarketing - A,8,8
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,8,11
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),8,63
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),8,20
-Program - SysEng - Run 26 - Search - Prospecting - USA,8,350
-Program - SysEng - Run 26 - Search - Prospecting - A,8,255
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,8,85
-Program - SysEng - Run 26 - Search - Prospecting - B,8,383
-Program - SysEng - Run 26 - Search - Prospecting - C,8,592
-Sysengx3 - Run 2 - Text - US,9,0
-Sysengx3 - Run 2 - Other - Text,9,0
-Systems Engineering Program - Run 3 - US - Text,9,0
-Systems Engineering Program - Run 3 - Other - Text,9,0
-Sysengx - Run 4 - Other (SEM),9,0
-Sysengx - Run 4 - US (SEM),9,0
-Sysengx - Run 4 - US - Remarketing,9,0
-Sysengx - Run 4 - Other B - Remarketing,9,0
-Sysengx - Run 4 - Other A - Remarketing,9,0
-Syseng - FL18 - US,9,0
-Syseng - FL18 - Other A,9,0
-Syseng - FL18 - Other B,9,0
-System Engineering - FL18 - US - Revamped,9,0
-System Engineering - FL18 - Other A - Revamped,9,0
-System Engineering - FL18 - Other B - Revamped,9,0
-System Engineering - SP19 - US - Broad,9,0
-System Engineering - SP19 - Other A - Broad,9,0
-System Engineering - SP19 - Other B - Broad,9,0
-System Engineering - SP19 - Other A - BMM,9,0
-System Engineering - SP19 - Other B - Phrase,9,0
-System Engineering - SP19 - Other B - Exact,9,0
-System Engineering - SP19 - US - Exact,9,0
-System Engineering - SP19 - Other A - Exact,9,0
-System Engineering - SP19 - Other A - Phrase,9,0
-System Engineering - SP19 - US - BMM,9,0
-System Engineering - SP19 - US - Phrase,9,0
-System Engineering - SP19 - Other B - BMM,9,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,9,"3,764"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,9,"3,192"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,9,"5,973"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),9,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,9,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,9,"1,263"
 Program - SysEng - Run 22 - Search - Lead Gen - A,9,431
-Program - SysEng - Run 22 - Search - Lead Gen - B,9,500
-Program - SysEng - Run 22 - Search - Lead Gen - C,9,841
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),9,942
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),9,469
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),9,"1,501"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),9,585
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),9,531
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),9,313
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),9,528
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),9,363
-Program - SysEng - Run 24 - Search - Remarketing - B,9,20
-Program - SysEng - Run 24 - Search - Remarketing - C,9,8
-Program - SysEng - Run 24 - Search - Remarketing - A,9,8
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,9,22
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),9,75
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),9,39
-Program - SysEng - Run 26 - Search - Prospecting - USA,9,549
-Program - SysEng - Run 26 - Search - Prospecting - A,9,358
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,9,139
-Program - SysEng - Run 26 - Search - Prospecting - B,9,335
-Program - SysEng - Run 26 - Search - Prospecting - C,9,571
-Sysengx3 - Run 2 - Text - US,10,0
-Sysengx3 - Run 2 - Other - Text,10,0
-Systems Engineering Program - Run 3 - US - Text,10,0
-Systems Engineering Program - Run 3 - Other - Text,10,0
-Sysengx - Run 4 - Other (SEM),10,0
-Sysengx - Run 4 - US (SEM),10,0
-Sysengx - Run 4 - US - Remarketing,10,0
-Sysengx - Run 4 - Other B - Remarketing,10,0
-Sysengx - Run 4 - Other A - Remarketing,10,0
-Syseng - FL18 - US,10,0
-Syseng - FL18 - Other A,10,0
-Syseng - FL18 - Other B,10,0
-System Engineering - FL18 - US - Revamped,10,0
-System Engineering - FL18 - Other A - Revamped,10,0
-System Engineering - FL18 - Other B - Revamped,10,0
-System Engineering - SP19 - US - Broad,10,0
-System Engineering - SP19 - Other A - Broad,10,0
-System Engineering - SP19 - Other B - Broad,10,0
-System Engineering - SP19 - Other A - BMM,10,0
-System Engineering - SP19 - Other B - Phrase,10,0
-System Engineering - SP19 - Other B - Exact,10,0
-System Engineering - SP19 - US - Exact,10,0
-System Engineering - SP19 - Other A - Exact,10,0
-System Engineering - SP19 - Other A - Phrase,10,0
-System Engineering - SP19 - US - BMM,10,0
-System Engineering - SP19 - US - Phrase,10,0
-System Engineering - SP19 - Other B - BMM,10,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,10,"4,553"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,10,"3,098"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,10,"5,754"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),10,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,10,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,10,"1,517"
 Program - SysEng - Run 22 - Search - Lead Gen - A,10,437
-Program - SysEng - Run 22 - Search - Lead Gen - B,10,469
-Program - SysEng - Run 22 - Search - Lead Gen - C,10,951
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),10,"1,115"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),10,604
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),10,"1,580"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),10,515
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),10,575
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),10,302
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),10,450
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),10,329
-Program - SysEng - Run 24 - Search - Remarketing - B,10,7
-Program - SysEng - Run 24 - Search - Remarketing - C,10,12
-Program - SysEng - Run 24 - Search - Remarketing - A,10,1
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,10,37
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),10,95
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),10,65
-Program - SysEng - Run 26 - Search - Prospecting - USA,10,672
-Program - SysEng - Run 26 - Search - Prospecting - A,10,284
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,10,166
-Program - SysEng - Run 26 - Search - Prospecting - B,10,328
-Program - SysEng - Run 26 - Search - Prospecting - C,10,605
-Sysengx3 - Run 2 - Text - US,11,0
-Sysengx3 - Run 2 - Other - Text,11,0
-Systems Engineering Program - Run 3 - US - Text,11,0
-Systems Engineering Program - Run 3 - Other - Text,11,0
-Sysengx - Run 4 - Other (SEM),11,0
-Sysengx - Run 4 - US (SEM),11,0
-Sysengx - Run 4 - US - Remarketing,11,0
-Sysengx - Run 4 - Other B - Remarketing,11,0
-Sysengx - Run 4 - Other A - Remarketing,11,0
-Syseng - FL18 - US,11,0
-Syseng - FL18 - Other A,11,0
-Syseng - FL18 - Other B,11,0
-System Engineering - FL18 - US - Revamped,11,0
-System Engineering - FL18 - Other A - Revamped,11,0
-System Engineering - FL18 - Other B - Revamped,11,0
-System Engineering - SP19 - US - Broad,11,0
-System Engineering - SP19 - Other A - Broad,11,0
-System Engineering - SP19 - Other B - Broad,11,0
-System Engineering - SP19 - Other A - BMM,11,0
-System Engineering - SP19 - Other B - Phrase,11,0
-System Engineering - SP19 - Other B - Exact,11,0
-System Engineering - SP19 - US - Exact,11,0
-System Engineering - SP19 - Other A - Exact,11,0
-System Engineering - SP19 - Other A - Phrase,11,0
-System Engineering - SP19 - US - BMM,11,0
-System Engineering - SP19 - US - Phrase,11,0
-System Engineering - SP19 - Other B - BMM,11,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,11,"4,938"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,11,"2,881"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,11,"5,490"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),11,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,11,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,11,"1,791"
 Program - SysEng - Run 22 - Search - Lead Gen - A,11,395
-Program - SysEng - Run 22 - Search - Lead Gen - B,11,504
-Program - SysEng - Run 22 - Search - Lead Gen - C,11,936
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),11,"1,227"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),11,620
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),11,"1,567"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),11,524
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),11,557
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),11,330
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),11,401
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),11,309
-Program - SysEng - Run 24 - Search - Remarketing - B,11,6
-Program - SysEng - Run 24 - Search - Remarketing - C,11,26
-Program - SysEng - Run 24 - Search - Remarketing - A,11,3
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,11,28
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),11,124
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),11,67
-Program - SysEng - Run 26 - Search - Prospecting - USA,11,823
-Program - SysEng - Run 26 - Search - Prospecting - A,11,315
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,11,210
-Program - SysEng - Run 26 - Search - Prospecting - B,11,325
-Program - SysEng - Run 26 - Search - Prospecting - C,11,564
-Sysengx3 - Run 2 - Text - US,12,0
-Sysengx3 - Run 2 - Other - Text,12,0
-Systems Engineering Program - Run 3 - US - Text,12,0
-Systems Engineering Program - Run 3 - Other - Text,12,0
-Sysengx - Run 4 - Other (SEM),12,0
-Sysengx - Run 4 - US (SEM),12,0
-Sysengx - Run 4 - US - Remarketing,12,0
-Sysengx - Run 4 - Other B - Remarketing,12,0
-Sysengx - Run 4 - Other A - Remarketing,12,0
-Syseng - FL18 - US,12,0
-Syseng - FL18 - Other A,12,0
-Syseng - FL18 - Other B,12,0
-System Engineering - FL18 - US - Revamped,12,0
-System Engineering - FL18 - Other A - Revamped,12,0
-System Engineering - FL18 - Other B - Revamped,12,0
-System Engineering - SP19 - US - Broad,12,0
-System Engineering - SP19 - Other A - Broad,12,0
-System Engineering - SP19 - Other B - Broad,12,0
-System Engineering - SP19 - Other A - BMM,12,0
-System Engineering - SP19 - Other B - Phrase,12,0
-System Engineering - SP19 - Other B - Exact,12,0
-System Engineering - SP19 - US - Exact,12,0
-System Engineering - SP19 - Other A - Exact,12,0
-System Engineering - SP19 - Other A - Phrase,12,0
-System Engineering - SP19 - US - BMM,12,0
-System Engineering - SP19 - US - Phrase,12,0
-System Engineering - SP19 - Other B - BMM,12,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,12,"4,969"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,12,"2,826"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,12,"4,946"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),12,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,12,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,12,"1,691"
 Program - SysEng - Run 22 - Search - Lead Gen - A,12,395
-Program - SysEng - Run 22 - Search - Lead Gen - B,12,463
-Program - SysEng - Run 22 - Search - Lead Gen - C,12,"1,034"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),12,"1,215"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),12,606
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),12,"1,553"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),12,541
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),12,511
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),12,268
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),12,385
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),12,302
-Program - SysEng - Run 24 - Search - Remarketing - B,12,12
-Program - SysEng - Run 24 - Search - Remarketing - C,12,22
-Program - SysEng - Run 24 - Search - Remarketing - A,12,7
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,12,13
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),12,119
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),12,71
-Program - SysEng - Run 26 - Search - Prospecting - USA,12,846
-Program - SysEng - Run 26 - Search - Prospecting - A,12,286
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,12,154
-Program - SysEng - Run 26 - Search - Prospecting - B,12,341
-Program - SysEng - Run 26 - Search - Prospecting - C,12,604
-Sysengx3 - Run 2 - Text - US,13,0
-Sysengx3 - Run 2 - Other - Text,13,0
-Systems Engineering Program - Run 3 - US - Text,13,0
-Systems Engineering Program - Run 3 - Other - Text,13,0
-Sysengx - Run 4 - Other (SEM),13,0
-Sysengx - Run 4 - US (SEM),13,0
-Sysengx - Run 4 - US - Remarketing,13,0
-Sysengx - Run 4 - Other B - Remarketing,13,0
-Sysengx - Run 4 - Other A - Remarketing,13,0
-Syseng - FL18 - US,13,0
-Syseng - FL18 - Other A,13,0
-Syseng - FL18 - Other B,13,0
-System Engineering - FL18 - US - Revamped,13,0
-System Engineering - FL18 - Other A - Revamped,13,0
-System Engineering - FL18 - Other B - Revamped,13,0
-System Engineering - SP19 - US - Broad,13,0
-System Engineering - SP19 - Other A - Broad,13,0
-System Engineering - SP19 - Other B - Broad,13,0
-System Engineering - SP19 - Other A - BMM,13,0
-System Engineering - SP19 - Other B - Phrase,13,0
-System Engineering - SP19 - Other B - Exact,13,0
-System Engineering - SP19 - US - Exact,13,0
-System Engineering - SP19 - Other A - Exact,13,0
-System Engineering - SP19 - Other A - Phrase,13,0
-System Engineering - SP19 - US - BMM,13,0
-System Engineering - SP19 - US - Phrase,13,0
-System Engineering - SP19 - Other B - BMM,13,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,13,"5,228"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,13,"2,884"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,13,"4,866"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),13,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,13,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,13,"1,554"
 Program - SysEng - Run 22 - Search - Lead Gen - A,13,359
-Program - SysEng - Run 22 - Search - Lead Gen - B,13,439
-Program - SysEng - Run 22 - Search - Lead Gen - C,13,979
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),13,"1,244"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),13,599
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),13,"1,317"
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),13,602
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),13,476
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),13,289
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),13,362
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),13,326
-Program - SysEng - Run 24 - Search - Remarketing - B,13,8
-Program - SysEng - Run 24 - Search - Remarketing - C,13,14
-Program - SysEng - Run 24 - Search - Remarketing - A,13,2
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,13,28
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),13,121
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),13,65
-Program - SysEng - Run 26 - Search - Prospecting - USA,13,817
-Program - SysEng - Run 26 - Search - Prospecting - A,13,268
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,13,212
-Program - SysEng - Run 26 - Search - Prospecting - B,13,348
-Program - SysEng - Run 26 - Search - Prospecting - C,13,428
-Sysengx3 - Run 2 - Text - US,14,0
-Sysengx3 - Run 2 - Other - Text,14,0
-Systems Engineering Program - Run 3 - US - Text,14,0
-Systems Engineering Program - Run 3 - Other - Text,14,0
-Sysengx - Run 4 - Other (SEM),14,0
-Sysengx - Run 4 - US (SEM),14,0
-Sysengx - Run 4 - US - Remarketing,14,0
-Sysengx - Run 4 - Other B - Remarketing,14,0
-Sysengx - Run 4 - Other A - Remarketing,14,0
-Syseng - FL18 - US,14,0
-Syseng - FL18 - Other A,14,0
-Syseng - FL18 - Other B,14,0
-System Engineering - FL18 - US - Revamped,14,0
-System Engineering - FL18 - Other A - Revamped,14,0
-System Engineering - FL18 - Other B - Revamped,14,0
-System Engineering - SP19 - US - Broad,14,0
-System Engineering - SP19 - Other A - Broad,14,0
-System Engineering - SP19 - Other B - Broad,14,0
-System Engineering - SP19 - Other A - BMM,14,0
-System Engineering - SP19 - Other B - Phrase,14,0
-System Engineering - SP19 - Other B - Exact,14,0
-System Engineering - SP19 - US - Exact,14,0
-System Engineering - SP19 - Other A - Exact,14,0
-System Engineering - SP19 - Other A - Phrase,14,0
-System Engineering - SP19 - US - BMM,14,0
-System Engineering - SP19 - US - Phrase,14,0
-System Engineering - SP19 - Other B - BMM,14,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,14,"5,276"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,14,"2,770"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,14,"4,977"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),14,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,14,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,14,"1,640"
 Program - SysEng - Run 22 - Search - Lead Gen - A,14,361
-Program - SysEng - Run 22 - Search - Lead Gen - B,14,386
-Program - SysEng - Run 22 - Search - Lead Gen - C,14,669
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),14,"1,317"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),14,664
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),14,856
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),14,646
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),14,332
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),14,299
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),14,408
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),14,302
-Program - SysEng - Run 24 - Search - Remarketing - B,14,11
-Program - SysEng - Run 24 - Search - Remarketing - C,14,11
-Program - SysEng - Run 24 - Search - Remarketing - A,14,5
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,14,32
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),14,88
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),14,42
-Program - SysEng - Run 26 - Search - Prospecting - USA,14,815
-Program - SysEng - Run 26 - Search - Prospecting - A,14,239
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,14,174
-Program - SysEng - Run 26 - Search - Prospecting - B,14,342
-Program - SysEng - Run 26 - Search - Prospecting - C,14,248
-Sysengx3 - Run 2 - Text - US,15,0
-Sysengx3 - Run 2 - Other - Text,15,0
-Systems Engineering Program - Run 3 - US - Text,15,0
-Systems Engineering Program - Run 3 - Other - Text,15,0
-Sysengx - Run 4 - Other (SEM),15,0
-Sysengx - Run 4 - US (SEM),15,0
-Sysengx - Run 4 - US - Remarketing,15,0
-Sysengx - Run 4 - Other B - Remarketing,15,0
-Sysengx - Run 4 - Other A - Remarketing,15,0
-Syseng - FL18 - US,15,0
-Syseng - FL18 - Other A,15,0
-Syseng - FL18 - Other B,15,0
-System Engineering - FL18 - US - Revamped,15,0
-System Engineering - FL18 - Other A - Revamped,15,0
-System Engineering - FL18 - Other B - Revamped,15,0
-System Engineering - SP19 - US - Broad,15,0
-System Engineering - SP19 - Other A - Broad,15,0
-System Engineering - SP19 - Other B - Broad,15,0
-System Engineering - SP19 - Other A - BMM,15,0
-System Engineering - SP19 - Other B - Phrase,15,0
-System Engineering - SP19 - Other B - Exact,15,0
-System Engineering - SP19 - US - Exact,15,0
-System Engineering - SP19 - Other A - Exact,15,0
-System Engineering - SP19 - Other A - Phrase,15,0
-System Engineering - SP19 - US - BMM,15,0
-System Engineering - SP19 - US - Phrase,15,0
-System Engineering - SP19 - Other B - BMM,15,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,15,"5,089"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,15,"2,734"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,15,"5,566"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),15,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,15,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,15,"1,531"
 Program - SysEng - Run 22 - Search - Lead Gen - A,15,327
-Program - SysEng - Run 22 - Search - Lead Gen - B,15,498
-Program - SysEng - Run 22 - Search - Lead Gen - C,15,475
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),15,"1,220"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),15,506
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),15,537
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),15,624
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),15,251
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),15,274
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),15,422
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),15,301
-Program - SysEng - Run 24 - Search - Remarketing - B,15,11
-Program - SysEng - Run 24 - Search - Remarketing - C,15,11
-Program - SysEng - Run 24 - Search - Remarketing - A,15,6
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,15,34
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),15,102
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),15,42
-Program - SysEng - Run 26 - Search - Prospecting - USA,15,828
-Program - SysEng - Run 26 - Search - Prospecting - A,15,276
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,15,144
-Program - SysEng - Run 26 - Search - Prospecting - B,15,309
-Program - SysEng - Run 26 - Search - Prospecting - C,15,189
-Sysengx3 - Run 2 - Text - US,16,0
-Sysengx3 - Run 2 - Other - Text,16,0
-Systems Engineering Program - Run 3 - US - Text,16,0
-Systems Engineering Program - Run 3 - Other - Text,16,0
-Sysengx - Run 4 - Other (SEM),16,0
-Sysengx - Run 4 - US (SEM),16,0
-Sysengx - Run 4 - US - Remarketing,16,0
-Sysengx - Run 4 - Other B - Remarketing,16,0
-Sysengx - Run 4 - Other A - Remarketing,16,0
-Syseng - FL18 - US,16,0
-Syseng - FL18 - Other A,16,0
-Syseng - FL18 - Other B,16,0
-System Engineering - FL18 - US - Revamped,16,0
-System Engineering - FL18 - Other A - Revamped,16,0
-System Engineering - FL18 - Other B - Revamped,16,0
-System Engineering - SP19 - US - Broad,16,0
-System Engineering - SP19 - Other A - Broad,16,0
-System Engineering - SP19 - Other B - Broad,16,0
-System Engineering - SP19 - Other A - BMM,16,0
-System Engineering - SP19 - Other B - Phrase,16,0
-System Engineering - SP19 - Other B - Exact,16,0
-System Engineering - SP19 - US - Exact,16,0
-System Engineering - SP19 - Other A - Exact,16,0
-System Engineering - SP19 - Other A - Phrase,16,0
-System Engineering - SP19 - US - BMM,16,0
-System Engineering - SP19 - US - Phrase,16,0
-System Engineering - SP19 - Other B - BMM,16,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,16,"4,892"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,16,"2,381"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,16,"5,740"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),16,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,16,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,16,"1,487"
 Program - SysEng - Run 22 - Search - Lead Gen - A,16,331
-Program - SysEng - Run 22 - Search - Lead Gen - B,16,453
-Program - SysEng - Run 22 - Search - Lead Gen - C,16,295
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),16,"1,137"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),16,523
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),16,370
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),16,620
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),16,155
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),16,310
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),16,417
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),16,273
-Program - SysEng - Run 24 - Search - Remarketing - B,16,10
-Program - SysEng - Run 24 - Search - Remarketing - C,16,11
-Program - SysEng - Run 24 - Search - Remarketing - A,16,7
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,16,30
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),16,94
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),16,24
-Program - SysEng - Run 26 - Search - Prospecting - USA,16,777
-Program - SysEng - Run 26 - Search - Prospecting - A,16,259
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,16,139
-Program - SysEng - Run 26 - Search - Prospecting - B,16,310
-Program - SysEng - Run 26 - Search - Prospecting - C,16,112
-Sysengx3 - Run 2 - Text - US,17,0
-Sysengx3 - Run 2 - Other - Text,17,0
-Systems Engineering Program - Run 3 - US - Text,17,0
-Systems Engineering Program - Run 3 - Other - Text,17,0
-Sysengx - Run 4 - Other (SEM),17,0
-Sysengx - Run 4 - US (SEM),17,0
-Sysengx - Run 4 - US - Remarketing,17,0
-Sysengx - Run 4 - Other B - Remarketing,17,0
-Sysengx - Run 4 - Other A - Remarketing,17,0
-Syseng - FL18 - US,17,0
-Syseng - FL18 - Other A,17,0
-Syseng - FL18 - Other B,17,0
-System Engineering - FL18 - US - Revamped,17,0
-System Engineering - FL18 - Other A - Revamped,17,0
-System Engineering - FL18 - Other B - Revamped,17,0
-System Engineering - SP19 - US - Broad,17,0
-System Engineering - SP19 - Other A - Broad,17,0
-System Engineering - SP19 - Other B - Broad,17,0
-System Engineering - SP19 - Other A - BMM,17,0
-System Engineering - SP19 - Other B - Phrase,17,0
-System Engineering - SP19 - Other B - Exact,17,0
-System Engineering - SP19 - US - Exact,17,0
-System Engineering - SP19 - Other A - Exact,17,0
-System Engineering - SP19 - Other A - Phrase,17,0
-System Engineering - SP19 - US - BMM,17,0
-System Engineering - SP19 - US - Phrase,17,0
-System Engineering - SP19 - Other B - BMM,17,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,17,"4,310"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,17,"2,217"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,17,"5,263"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),17,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,17,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,17,"1,480"
 Program - SysEng - Run 22 - Search - Lead Gen - A,17,305
-Program - SysEng - Run 22 - Search - Lead Gen - B,17,366
-Program - SysEng - Run 22 - Search - Lead Gen - C,17,188
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),17,"1,013"
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),17,476
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),17,219
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),17,419
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),17,141
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),17,259
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),17,368
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),17,240
-Program - SysEng - Run 24 - Search - Remarketing - B,17,6
-Program - SysEng - Run 24 - Search - Remarketing - C,17,6
-Program - SysEng - Run 24 - Search - Remarketing - A,17,3
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,17,21
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),17,60
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),17,19
-Program - SysEng - Run 26 - Search - Prospecting - USA,17,781
-Program - SysEng - Run 26 - Search - Prospecting - A,17,258
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,17,110
-Program - SysEng - Run 26 - Search - Prospecting - B,17,271
-Program - SysEng - Run 26 - Search - Prospecting - C,17,104
-Sysengx3 - Run 2 - Text - US,18,0
-Sysengx3 - Run 2 - Other - Text,18,0
-Systems Engineering Program - Run 3 - US - Text,18,0
-Systems Engineering Program - Run 3 - Other - Text,18,0
-Sysengx - Run 4 - Other (SEM),18,0
-Sysengx - Run 4 - US (SEM),18,0
-Sysengx - Run 4 - US - Remarketing,18,0
-Sysengx - Run 4 - Other B - Remarketing,18,0
-Sysengx - Run 4 - Other A - Remarketing,18,0
-Syseng - FL18 - US,18,0
-Syseng - FL18 - Other A,18,0
-Syseng - FL18 - Other B,18,0
-System Engineering - FL18 - US - Revamped,18,0
-System Engineering - FL18 - Other A - Revamped,18,0
-System Engineering - FL18 - Other B - Revamped,18,0
-System Engineering - SP19 - US - Broad,18,0
-System Engineering - SP19 - Other A - Broad,18,0
-System Engineering - SP19 - Other B - Broad,18,0
-System Engineering - SP19 - Other A - BMM,18,0
-System Engineering - SP19 - Other B - Phrase,18,0
-System Engineering - SP19 - Other B - Exact,18,0
-System Engineering - SP19 - US - Exact,18,0
-System Engineering - SP19 - Other A - Exact,18,0
-System Engineering - SP19 - Other A - Phrase,18,0
-System Engineering - SP19 - US - BMM,18,0
-System Engineering - SP19 - US - Phrase,18,0
-System Engineering - SP19 - Other B - BMM,18,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,18,"3,829"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,18,"2,050"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,18,"4,075"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),18,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,18,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,18,"1,212"
 Program - SysEng - Run 22 - Search - Lead Gen - A,18,259
-Program - SysEng - Run 22 - Search - Lead Gen - B,18,314
-Program - SysEng - Run 22 - Search - Lead Gen - C,18,136
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),18,951
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),18,411
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),18,184
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),18,346
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),18,105
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),18,205
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),18,281
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),18,183
-Program - SysEng - Run 24 - Search - Remarketing - B,18,2
-Program - SysEng - Run 24 - Search - Remarketing - C,18,7
-Program - SysEng - Run 24 - Search - Remarketing - A,18,6
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,18,16
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),18,53
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),18,29
-Program - SysEng - Run 26 - Search - Prospecting - USA,18,634
-Program - SysEng - Run 26 - Search - Prospecting - A,18,181
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,18,114
-Program - SysEng - Run 26 - Search - Prospecting - B,18,219
-Program - SysEng - Run 26 - Search - Prospecting - C,18,102
-Sysengx3 - Run 2 - Text - US,19,0
-Sysengx3 - Run 2 - Other - Text,19,0
-Systems Engineering Program - Run 3 - US - Text,19,0
-Systems Engineering Program - Run 3 - Other - Text,19,0
-Sysengx - Run 4 - Other (SEM),19,0
-Sysengx - Run 4 - US (SEM),19,0
-Sysengx - Run 4 - US - Remarketing,19,0
-Sysengx - Run 4 - Other B - Remarketing,19,0
-Sysengx - Run 4 - Other A - Remarketing,19,0
-Syseng - FL18 - US,19,0
-Syseng - FL18 - Other A,19,0
-Syseng - FL18 - Other B,19,0
-System Engineering - FL18 - US - Revamped,19,0
-System Engineering - FL18 - Other A - Revamped,19,0
-System Engineering - FL18 - Other B - Revamped,19,0
-System Engineering - SP19 - US - Broad,19,0
-System Engineering - SP19 - Other A - Broad,19,0
-System Engineering - SP19 - Other B - Broad,19,0
-System Engineering - SP19 - Other A - BMM,19,0
-System Engineering - SP19 - Other B - Phrase,19,0
-System Engineering - SP19 - Other B - Exact,19,0
-System Engineering - SP19 - US - Exact,19,0
-System Engineering - SP19 - Other A - Exact,19,0
-System Engineering - SP19 - Other A - Phrase,19,0
-System Engineering - SP19 - US - BMM,19,0
-System Engineering - SP19 - US - Phrase,19,0
-System Engineering - SP19 - Other B - BMM,19,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,19,"3,782"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,19,"2,060"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,19,"2,852"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),19,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,19,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,19,"1,197"
 Program - SysEng - Run 22 - Search - Lead Gen - A,19,179
-Program - SysEng - Run 22 - Search - Lead Gen - B,19,227
-Program - SysEng - Run 22 - Search - Lead Gen - C,19,112
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),19,913
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),19,353
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),19,224
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),19,268
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),19,122
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),19,170
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),19,246
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),19,118
-Program - SysEng - Run 24 - Search - Remarketing - B,19,5
-Program - SysEng - Run 24 - Search - Remarketing - C,19,12
-Program - SysEng - Run 24 - Search - Remarketing - A,19,9
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,19,23
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),19,61
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),19,19
-Program - SysEng - Run 26 - Search - Prospecting - USA,19,604
-Program - SysEng - Run 26 - Search - Prospecting - A,19,152
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,19,93
-Program - SysEng - Run 26 - Search - Prospecting - B,19,149
-Program - SysEng - Run 26 - Search - Prospecting - C,19,154
-Sysengx3 - Run 2 - Text - US,20,0
-Sysengx3 - Run 2 - Other - Text,20,0
-Systems Engineering Program - Run 3 - US - Text,20,0
-Systems Engineering Program - Run 3 - Other - Text,20,0
-Sysengx - Run 4 - Other (SEM),20,0
-Sysengx - Run 4 - US (SEM),20,0
-Sysengx - Run 4 - US - Remarketing,20,0
-Sysengx - Run 4 - Other B - Remarketing,20,0
-Sysengx - Run 4 - Other A - Remarketing,20,0
-Syseng - FL18 - US,20,0
-Syseng - FL18 - Other A,20,0
-Syseng - FL18 - Other B,20,0
-System Engineering - FL18 - US - Revamped,20,0
-System Engineering - FL18 - Other A - Revamped,20,0
-System Engineering - FL18 - Other B - Revamped,20,0
-System Engineering - SP19 - US - Broad,20,0
-System Engineering - SP19 - Other A - Broad,20,0
-System Engineering - SP19 - Other B - Broad,20,0
-System Engineering - SP19 - Other A - BMM,20,0
-System Engineering - SP19 - Other B - Phrase,20,0
-System Engineering - SP19 - Other B - Exact,20,0
-System Engineering - SP19 - US - Exact,20,0
-System Engineering - SP19 - Other A - Exact,20,0
-System Engineering - SP19 - Other A - Phrase,20,0
-System Engineering - SP19 - US - BMM,20,0
-System Engineering - SP19 - US - Phrase,20,0
-System Engineering - SP19 - Other B - BMM,20,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,20,"3,606"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,20,"2,052"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,20,"2,112"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),20,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,20,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,20,"1,159"
 Program - SysEng - Run 22 - Search - Lead Gen - A,20,161
-Program - SysEng - Run 22 - Search - Lead Gen - B,20,167
-Program - SysEng - Run 22 - Search - Lead Gen - C,20,116
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),20,915
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),20,372
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),20,286
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),20,206
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),20,179
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),20,125
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),20,190
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),20,127
-Program - SysEng - Run 24 - Search - Remarketing - B,20,4
-Program - SysEng - Run 24 - Search - Remarketing - C,20,11
-Program - SysEng - Run 24 - Search - Remarketing - A,20,3
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,20,14
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),20,53
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),20,21
-Program - SysEng - Run 26 - Search - Prospecting - USA,20,566
-Program - SysEng - Run 26 - Search - Prospecting - A,20,131
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,20,74
-Program - SysEng - Run 26 - Search - Prospecting - B,20,112
-Program - SysEng - Run 26 - Search - Prospecting - C,20,215
-Sysengx3 - Run 2 - Text - US,21,0
-Sysengx3 - Run 2 - Other - Text,21,0
-Systems Engineering Program - Run 3 - US - Text,21,0
-Systems Engineering Program - Run 3 - Other - Text,21,0
-Sysengx - Run 4 - Other (SEM),21,0
-Sysengx - Run 4 - US (SEM),21,0
-Sysengx - Run 4 - US - Remarketing,21,0
-Sysengx - Run 4 - Other B - Remarketing,21,0
-Sysengx - Run 4 - Other A - Remarketing,21,0
-Syseng - FL18 - US,21,0
-Syseng - FL18 - Other A,21,0
-Syseng - FL18 - Other B,21,0
-System Engineering - FL18 - US - Revamped,21,0
-System Engineering - FL18 - Other A - Revamped,21,0
-System Engineering - FL18 - Other B - Revamped,21,0
-System Engineering - SP19 - US - Broad,21,0
-System Engineering - SP19 - Other A - Broad,21,0
-System Engineering - SP19 - Other B - Broad,21,0
-System Engineering - SP19 - Other A - BMM,21,0
-System Engineering - SP19 - Other B - Phrase,21,0
-System Engineering - SP19 - Other B - Exact,21,0
-System Engineering - SP19 - US - Exact,21,0
-System Engineering - SP19 - Other A - Exact,21,0
-System Engineering - SP19 - Other A - Phrase,21,0
-System Engineering - SP19 - US - BMM,21,0
-System Engineering - SP19 - US - Phrase,21,0
-System Engineering - SP19 - Other B - BMM,21,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,21,"2,768"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,21,"1,883"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,21,"1,369"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),21,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,21,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,21,906
 Program - SysEng - Run 22 - Search - Lead Gen - A,21,152
-Program - SysEng - Run 22 - Search - Lead Gen - B,21,115
-Program - SysEng - Run 22 - Search - Lead Gen - C,21,178
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),21,850
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),21,327
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),21,405
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),21,197
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),21,245
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),21,93
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),21,172
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),21,92
-Program - SysEng - Run 24 - Search - Remarketing - B,21,5
-Program - SysEng - Run 24 - Search - Remarketing - C,21,6
-Program - SysEng - Run 24 - Search - Remarketing - A,21,7
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,21,15
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),21,47
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),21,32
-Program - SysEng - Run 26 - Search - Prospecting - USA,21,542
-Program - SysEng - Run 26 - Search - Prospecting - A,21,113
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,21,82
-Program - SysEng - Run 26 - Search - Prospecting - B,21,78
-Program - SysEng - Run 26 - Search - Prospecting - C,21,291
-Sysengx3 - Run 2 - Text - US,22,0
-Sysengx3 - Run 2 - Other - Text,22,0
-Systems Engineering Program - Run 3 - US - Text,22,0
-Systems Engineering Program - Run 3 - Other - Text,22,0
-Sysengx - Run 4 - Other (SEM),22,0
-Sysengx - Run 4 - US (SEM),22,0
-Sysengx - Run 4 - US - Remarketing,22,0
-Sysengx - Run 4 - Other B - Remarketing,22,0
-Sysengx - Run 4 - Other A - Remarketing,22,0
-Syseng - FL18 - US,22,0
-Syseng - FL18 - Other A,22,0
-Syseng - FL18 - Other B,22,0
-System Engineering - FL18 - US - Revamped,22,0
-System Engineering - FL18 - Other A - Revamped,22,0
-System Engineering - FL18 - Other B - Revamped,22,0
-System Engineering - SP19 - US - Broad,22,0
-System Engineering - SP19 - Other A - Broad,22,0
-System Engineering - SP19 - Other B - Broad,22,0
-System Engineering - SP19 - Other A - BMM,22,0
-System Engineering - SP19 - Other B - Phrase,22,0
-System Engineering - SP19 - Other B - Exact,22,0
-System Engineering - SP19 - US - Exact,22,0
-System Engineering - SP19 - Other A - Exact,22,0
-System Engineering - SP19 - Other A - Phrase,22,0
-System Engineering - SP19 - US - BMM,22,0
-System Engineering - SP19 - US - Phrase,22,0
-System Engineering - SP19 - Other B - BMM,22,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,22,"1,396"
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,22,"1,408"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,22,"1,173"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),22,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,22,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,22,744
 Program - SysEng - Run 22 - Search - Lead Gen - A,22,137
-Program - SysEng - Run 22 - Search - Lead Gen - B,22,105
-Program - SysEng - Run 22 - Search - Lead Gen - C,22,222
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),22,679
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),22,276
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),22,488
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),22,149
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),22,260
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),22,119
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),22,131
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),22,107
-Program - SysEng - Run 24 - Search - Remarketing - B,22,3
-Program - SysEng - Run 24 - Search - Remarketing - C,22,5
-Program - SysEng - Run 24 - Search - Remarketing - A,22,2
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,22,12
-Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),22,46
-Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),22,15
-Program - SysEng - Run 26 - Search - Prospecting - USA,22,382
-Program - SysEng - Run 26 - Search - Prospecting - A,22,106
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,22,77
-Program - SysEng - Run 26 - Search - Prospecting - B,22,64
-Program - SysEng - Run 26 - Search - Prospecting - C,22,271
-Sysengx3 - Run 2 - Text - US,23,0
-Sysengx3 - Run 2 - Other - Text,23,0
-Systems Engineering Program - Run 3 - US - Text,23,0
-Systems Engineering Program - Run 3 - Other - Text,23,0
-Sysengx - Run 4 - Other (SEM),23,0
-Sysengx - Run 4 - US (SEM),23,0
-Sysengx - Run 4 - US - Remarketing,23,0
-Sysengx - Run 4 - Other B - Remarketing,23,0
-Sysengx - Run 4 - Other A - Remarketing,23,0
-Syseng - FL18 - US,23,0
-Syseng - FL18 - Other A,23,0
-Syseng - FL18 - Other B,23,0
-System Engineering - FL18 - US - Revamped,23,0
-System Engineering - FL18 - Other A - Revamped,23,0
-System Engineering - FL18 - Other B - Revamped,23,0
-System Engineering - SP19 - US - Broad,23,0
-System Engineering - SP19 - Other A - Broad,23,0
-System Engineering - SP19 - Other B - Broad,23,0
-System Engineering - SP19 - Other A - BMM,23,0
-System Engineering - SP19 - Other B - Phrase,23,0
-System Engineering - SP19 - Other B - Exact,23,0
-System Engineering - SP19 - US - Exact,23,0
-System Engineering - SP19 - Other A - Exact,23,0
-System Engineering - SP19 - Other A - Phrase,23,0
-System Engineering - SP19 - US - BMM,23,0
-System Engineering - SP19 - US - Phrase,23,0
-System Engineering - SP19 - Other B - BMM,23,0
-Program - SysEng - Run 21 - Search - Lead Gen - US,23,940
-Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,23,"1,042"
-Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,23,"1,034"
-Lifetime Campaign - System Engineering - C (Run 12 SU21),23,0
-Systems Engineering Program - xPRO - WW - Remarketing Search - Run 15 - 2T2022,23,0
-Program - SysEng - Run 22 - Search - Lead Gen - US + CA,23,566
 Program - SysEng - Run 22 - Search - Lead Gen - A,23,116
+Program - SysEng - Run 22 - Search - Lead Gen - B,0,215
+Program - SysEng - Run 22 - Search - Lead Gen - B,1,267
+Program - SysEng - Run 22 - Search - Lead Gen - B,2,365
+Program - SysEng - Run 22 - Search - Lead Gen - B,3,401
+Program - SysEng - Run 22 - Search - Lead Gen - B,4,446
+Program - SysEng - Run 22 - Search - Lead Gen - B,5,413
+Program - SysEng - Run 22 - Search - Lead Gen - B,6,484
+Program - SysEng - Run 22 - Search - Lead Gen - B,7,519
+Program - SysEng - Run 22 - Search - Lead Gen - B,8,511
+Program - SysEng - Run 22 - Search - Lead Gen - B,9,500
+Program - SysEng - Run 22 - Search - Lead Gen - B,10,469
+Program - SysEng - Run 22 - Search - Lead Gen - B,11,504
+Program - SysEng - Run 22 - Search - Lead Gen - B,12,463
+Program - SysEng - Run 22 - Search - Lead Gen - B,13,439
+Program - SysEng - Run 22 - Search - Lead Gen - B,14,386
+Program - SysEng - Run 22 - Search - Lead Gen - B,15,498
+Program - SysEng - Run 22 - Search - Lead Gen - B,16,453
+Program - SysEng - Run 22 - Search - Lead Gen - B,17,366
+Program - SysEng - Run 22 - Search - Lead Gen - B,18,314
+Program - SysEng - Run 22 - Search - Lead Gen - B,19,227
+Program - SysEng - Run 22 - Search - Lead Gen - B,20,167
+Program - SysEng - Run 22 - Search - Lead Gen - B,21,115
+Program - SysEng - Run 22 - Search - Lead Gen - B,22,105
 Program - SysEng - Run 22 - Search - Lead Gen - B,23,142
+Program - SysEng - Run 22 - Search - Lead Gen - C,0,656
+Program - SysEng - Run 22 - Search - Lead Gen - C,1,801
+Program - SysEng - Run 22 - Search - Lead Gen - C,2,793
+Program - SysEng - Run 22 - Search - Lead Gen - C,3,699
+Program - SysEng - Run 22 - Search - Lead Gen - C,4,651
+Program - SysEng - Run 22 - Search - Lead Gen - C,5,640
+Program - SysEng - Run 22 - Search - Lead Gen - C,6,617
+Program - SysEng - Run 22 - Search - Lead Gen - C,7,677
+Program - SysEng - Run 22 - Search - Lead Gen - C,8,707
+Program - SysEng - Run 22 - Search - Lead Gen - C,9,841
+Program - SysEng - Run 22 - Search - Lead Gen - C,10,951
+Program - SysEng - Run 22 - Search - Lead Gen - C,11,936
+Program - SysEng - Run 22 - Search - Lead Gen - C,12,1034
+Program - SysEng - Run 22 - Search - Lead Gen - C,13,979
+Program - SysEng - Run 22 - Search - Lead Gen - C,14,669
+Program - SysEng - Run 22 - Search - Lead Gen - C,15,475
+Program - SysEng - Run 22 - Search - Lead Gen - C,16,295
+Program - SysEng - Run 22 - Search - Lead Gen - C,17,188
+Program - SysEng - Run 22 - Search - Lead Gen - C,18,136
+Program - SysEng - Run 22 - Search - Lead Gen - C,19,112
+Program - SysEng - Run 22 - Search - Lead Gen - C,20,116
+Program - SysEng - Run 22 - Search - Lead Gen - C,21,178
+Program - SysEng - Run 22 - Search - Lead Gen - C,22,222
 Program - SysEng - Run 22 - Search - Lead Gen - C,23,241
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),23,519
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),23,209
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),23,473
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),23,153
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),23,273
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),23,114
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),23,150
-Program - SysEng - Run 25 - Search - Lead Gen - B (broad),23,78
-Program - SysEng - Run 24 - Search - Remarketing - B,23,8
-Program - SysEng - Run 24 - Search - Remarketing - C,23,8
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,0,869
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,1,673
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,2,503
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,3,354
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,4,292
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,5,277
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,6,315
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,7,529
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,8,812
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,9,1263
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,10,1517
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,11,1791
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,12,1691
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,13,1554
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,14,1640
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,15,1531
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,16,1487
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,17,1480
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,18,1212
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,19,1197
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,20,1159
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,21,906
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,22,744
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,23,566
+Program - SysEng - Run 24 - Search - Remarketing - A,0,5
+Program - SysEng - Run 24 - Search - Remarketing - A,1,8
+Program - SysEng - Run 24 - Search - Remarketing - A,2,3
+Program - SysEng - Run 24 - Search - Remarketing - A,3,9
+Program - SysEng - Run 24 - Search - Remarketing - A,4,7
+Program - SysEng - Run 24 - Search - Remarketing - A,5,2
+Program - SysEng - Run 24 - Search - Remarketing - A,6,8
+Program - SysEng - Run 24 - Search - Remarketing - A,7,5
+Program - SysEng - Run 24 - Search - Remarketing - A,8,8
+Program - SysEng - Run 24 - Search - Remarketing - A,9,8
+Program - SysEng - Run 24 - Search - Remarketing - A,10,1
+Program - SysEng - Run 24 - Search - Remarketing - A,11,3
+Program - SysEng - Run 24 - Search - Remarketing - A,12,7
+Program - SysEng - Run 24 - Search - Remarketing - A,13,2
+Program - SysEng - Run 24 - Search - Remarketing - A,14,5
+Program - SysEng - Run 24 - Search - Remarketing - A,15,6
+Program - SysEng - Run 24 - Search - Remarketing - A,16,7
+Program - SysEng - Run 24 - Search - Remarketing - A,17,3
+Program - SysEng - Run 24 - Search - Remarketing - A,18,6
+Program - SysEng - Run 24 - Search - Remarketing - A,19,9
+Program - SysEng - Run 24 - Search - Remarketing - A,20,3
+Program - SysEng - Run 24 - Search - Remarketing - A,21,7
+Program - SysEng - Run 24 - Search - Remarketing - A,22,2
 Program - SysEng - Run 24 - Search - Remarketing - A,23,6
+Program - SysEng - Run 24 - Search - Remarketing - B,0,5
+Program - SysEng - Run 24 - Search - Remarketing - B,1,10
+Program - SysEng - Run 24 - Search - Remarketing - B,2,9
+Program - SysEng - Run 24 - Search - Remarketing - B,3,13
+Program - SysEng - Run 24 - Search - Remarketing - B,4,5
+Program - SysEng - Run 24 - Search - Remarketing - B,5,7
+Program - SysEng - Run 24 - Search - Remarketing - B,6,20
+Program - SysEng - Run 24 - Search - Remarketing - B,7,10
+Program - SysEng - Run 24 - Search - Remarketing - B,8,9
+Program - SysEng - Run 24 - Search - Remarketing - B,9,20
+Program - SysEng - Run 24 - Search - Remarketing - B,10,7
+Program - SysEng - Run 24 - Search - Remarketing - B,11,6
+Program - SysEng - Run 24 - Search - Remarketing - B,12,12
+Program - SysEng - Run 24 - Search - Remarketing - B,13,8
+Program - SysEng - Run 24 - Search - Remarketing - B,14,11
+Program - SysEng - Run 24 - Search - Remarketing - B,15,11
+Program - SysEng - Run 24 - Search - Remarketing - B,16,10
+Program - SysEng - Run 24 - Search - Remarketing - B,17,6
+Program - SysEng - Run 24 - Search - Remarketing - B,18,2
+Program - SysEng - Run 24 - Search - Remarketing - B,19,5
+Program - SysEng - Run 24 - Search - Remarketing - B,20,4
+Program - SysEng - Run 24 - Search - Remarketing - B,21,5
+Program - SysEng - Run 24 - Search - Remarketing - B,22,3
+Program - SysEng - Run 24 - Search - Remarketing - B,23,8
+Program - SysEng - Run 24 - Search - Remarketing - C,0,24
+Program - SysEng - Run 24 - Search - Remarketing - C,1,16
+Program - SysEng - Run 24 - Search - Remarketing - C,2,8
+Program - SysEng - Run 24 - Search - Remarketing - C,3,13
+Program - SysEng - Run 24 - Search - Remarketing - C,4,8
+Program - SysEng - Run 24 - Search - Remarketing - C,5,14
+Program - SysEng - Run 24 - Search - Remarketing - C,6,9
+Program - SysEng - Run 24 - Search - Remarketing - C,7,7
+Program - SysEng - Run 24 - Search - Remarketing - C,8,14
+Program - SysEng - Run 24 - Search - Remarketing - C,9,8
+Program - SysEng - Run 24 - Search - Remarketing - C,10,12
+Program - SysEng - Run 24 - Search - Remarketing - C,11,26
+Program - SysEng - Run 24 - Search - Remarketing - C,12,22
+Program - SysEng - Run 24 - Search - Remarketing - C,13,14
+Program - SysEng - Run 24 - Search - Remarketing - C,14,11
+Program - SysEng - Run 24 - Search - Remarketing - C,15,11
+Program - SysEng - Run 24 - Search - Remarketing - C,16,11
+Program - SysEng - Run 24 - Search - Remarketing - C,17,6
+Program - SysEng - Run 24 - Search - Remarketing - C,18,7
+Program - SysEng - Run 24 - Search - Remarketing - C,19,12
+Program - SysEng - Run 24 - Search - Remarketing - C,20,11
+Program - SysEng - Run 24 - Search - Remarketing - C,21,6
+Program - SysEng - Run 24 - Search - Remarketing - C,22,5
+Program - SysEng - Run 24 - Search - Remarketing - C,23,8
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,0,13
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,1,15
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,2,6
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,3,6
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,4,4
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,5,4
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,6,6
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,7,7
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,8,11
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,9,22
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,10,37
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,11,28
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,12,13
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,13,28
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,14,32
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,15,34
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,16,30
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,17,21
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,18,16
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,19,23
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,20,14
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,21,15
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,22,12
 Program - SysEng - Run 24 - Search - Remarketing - US + CA,23,13
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),0,166
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),1,218
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),2,256
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),3,277
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),4,320
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),5,316
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),6,269
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),7,247
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),8,286
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),9,313
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),10,302
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),11,330
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),12,268
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),13,289
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),14,299
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),15,274
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),16,310
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),17,259
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),18,205
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),19,170
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),20,125
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),21,93
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),22,119
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),23,114
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),0,262
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),1,307
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),2,369
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),3,465
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),4,506
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),5,504
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),6,425
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),7,471
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),8,517
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),9,528
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),10,450
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),11,401
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),12,385
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),13,362
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),14,408
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),15,422
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),16,417
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),17,368
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),18,281
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),19,246
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),20,190
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),21,172
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),22,131
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),23,150
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),0,168
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),1,214
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),2,277
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),3,272
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),4,283
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),5,294
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),6,300
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),7,332
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),8,375
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),9,363
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),10,329
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),11,309
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),12,302
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),13,326
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),14,302
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),15,301
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),16,273
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),17,240
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),18,183
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),19,118
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),20,127
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),21,92
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),22,107
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),23,78
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),0,279
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),1,417
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),2,471
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),3,568
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),4,532
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),5,586
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),6,607
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),7,682
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),8,710
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),9,585
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),10,515
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),11,524
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),12,541
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),13,602
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),14,646
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),15,624
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),16,620
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),17,419
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),18,346
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),19,268
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),20,206
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),21,197
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),22,149
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),23,153
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),0,464
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),1,446
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),2,417
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),3,331
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),4,378
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),5,374
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),6,391
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),7,405
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),8,479
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),9,531
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),10,575
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),11,557
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),12,511
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),13,476
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),14,332
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),15,251
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),16,155
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),17,141
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),18,105
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),19,122
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),20,179
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),21,245
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),22,260
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),23,273
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),0,1157
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),1,1371
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),2,1202
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),3,1073
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),4,1047
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),5,1001
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),6,1010
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),7,1024
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),8,1235
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),9,1501
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),10,1580
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),11,1567
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),12,1553
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),13,1317
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),14,856
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),15,537
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),16,370
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),17,219
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),18,184
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),19,224
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),20,286
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),21,405
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),22,488
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),23,473
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),0,303
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),1,293
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),2,219
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),3,142
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),4,123
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),5,96
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),6,130
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),7,211
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),8,338
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),9,469
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),10,604
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),11,620
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),12,606
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),13,599
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),14,664
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),15,506
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),16,523
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),17,476
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),18,411
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),19,353
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),20,372
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),21,327
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),22,276
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),23,209
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),0,683
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),1,519
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),2,360
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),3,256
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),4,190
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),5,167
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),6,241
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),7,355
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),8,627
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),9,942
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),10,1115
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),11,1227
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),12,1215
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),13,1244
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),14,1317
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),15,1220
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),16,1137
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),17,1013
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),18,951
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),19,913
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),20,915
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),21,850
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),22,679
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),23,519
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),0,63
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),1,52
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),2,23
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),3,26
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),4,23
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),5,15
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),6,30
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),7,28
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),8,63
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),9,75
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),10,95
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),11,124
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),12,119
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),13,121
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),14,88
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),15,102
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),16,94
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),17,60
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),18,53
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),19,61
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),20,53
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),21,47
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),22,46
 Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),23,37
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),0,44
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),1,28
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),2,17
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),3,10
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),4,4
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),5,8
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),6,8
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),7,21
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),8,20
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),9,39
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),10,65
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),11,67
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),12,71
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),13,65
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),14,42
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),15,42
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),16,24
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),17,19
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),18,29
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),19,19
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),20,21
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),21,32
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),22,15
 Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),23,6
-Program - SysEng - Run 26 - Search - Prospecting - USA,23,239
-Program - SysEng - Run 26 - Search - Prospecting - A,23,83
-Program - SysEng - Run 26 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,23,61
-Program - SysEng - Run 26 - Search - Prospecting - B,23,81
-Program - SysEng - Run 26 - Search - Prospecting - C,23,248
+Program - SysEng - Run 27 - Search - Prospecting - A,0,243
+Program - SysEng - Run 27 - Search - Prospecting - A,1,260
+Program - SysEng - Run 27 - Search - Prospecting - A,2,301
+Program - SysEng - Run 27 - Search - Prospecting - A,3,402
+Program - SysEng - Run 27 - Search - Prospecting - A,4,431
+Program - SysEng - Run 27 - Search - Prospecting - A,5,456
+Program - SysEng - Run 27 - Search - Prospecting - A,6,420
+Program - SysEng - Run 27 - Search - Prospecting - A,7,418
+Program - SysEng - Run 27 - Search - Prospecting - A,8,414
+Program - SysEng - Run 27 - Search - Prospecting - A,9,553
+Program - SysEng - Run 27 - Search - Prospecting - A,10,465
+Program - SysEng - Run 27 - Search - Prospecting - A,11,471
+Program - SysEng - Run 27 - Search - Prospecting - A,12,415
+Program - SysEng - Run 27 - Search - Prospecting - A,13,385
+Program - SysEng - Run 27 - Search - Prospecting - A,14,376
+Program - SysEng - Run 27 - Search - Prospecting - A,15,386
+Program - SysEng - Run 27 - Search - Prospecting - A,16,396
+Program - SysEng - Run 27 - Search - Prospecting - A,17,378
+Program - SysEng - Run 27 - Search - Prospecting - A,18,267
+Program - SysEng - Run 27 - Search - Prospecting - A,19,228
+Program - SysEng - Run 27 - Search - Prospecting - A,20,196
+Program - SysEng - Run 27 - Search - Prospecting - A,21,154
+Program - SysEng - Run 27 - Search - Prospecting - A,22,150
+Program - SysEng - Run 27 - Search - Prospecting - A,23,116
+Program - SysEng - Run 27 - Search - Prospecting - B,0,235
+Program - SysEng - Run 27 - Search - Prospecting - B,1,311
+Program - SysEng - Run 27 - Search - Prospecting - B,2,375
+Program - SysEng - Run 27 - Search - Prospecting - B,3,435
+Program - SysEng - Run 27 - Search - Prospecting - B,4,437
+Program - SysEng - Run 27 - Search - Prospecting - B,5,449
+Program - SysEng - Run 27 - Search - Prospecting - B,6,502
+Program - SysEng - Run 27 - Search - Prospecting - B,7,499
+Program - SysEng - Run 27 - Search - Prospecting - B,8,521
+Program - SysEng - Run 27 - Search - Prospecting - B,9,467
+Program - SysEng - Run 27 - Search - Prospecting - B,10,449
+Program - SysEng - Run 27 - Search - Prospecting - B,11,453
+Program - SysEng - Run 27 - Search - Prospecting - B,12,461
+Program - SysEng - Run 27 - Search - Prospecting - B,13,442
+Program - SysEng - Run 27 - Search - Prospecting - B,14,507
+Program - SysEng - Run 27 - Search - Prospecting - B,15,466
+Program - SysEng - Run 27 - Search - Prospecting - B,16,422
+Program - SysEng - Run 27 - Search - Prospecting - B,17,373
+Program - SysEng - Run 27 - Search - Prospecting - B,18,300
+Program - SysEng - Run 27 - Search - Prospecting - B,19,211
+Program - SysEng - Run 27 - Search - Prospecting - B,20,168
+Program - SysEng - Run 27 - Search - Prospecting - B,21,128
+Program - SysEng - Run 27 - Search - Prospecting - B,22,101
+Program - SysEng - Run 27 - Search - Prospecting - B,23,116
+Program - SysEng - Run 27 - Search - Prospecting - C,0,724
+Program - SysEng - Run 27 - Search - Prospecting - C,1,766
+Program - SysEng - Run 27 - Search - Prospecting - C,2,660
+Program - SysEng - Run 27 - Search - Prospecting - C,3,557
+Program - SysEng - Run 27 - Search - Prospecting - C,4,567
+Program - SysEng - Run 27 - Search - Prospecting - C,5,629
+Program - SysEng - Run 27 - Search - Prospecting - C,6,603
+Program - SysEng - Run 27 - Search - Prospecting - C,7,659
+Program - SysEng - Run 27 - Search - Prospecting - C,8,820
+Program - SysEng - Run 27 - Search - Prospecting - C,9,832
+Program - SysEng - Run 27 - Search - Prospecting - C,10,872
+Program - SysEng - Run 27 - Search - Prospecting - C,11,844
+Program - SysEng - Run 27 - Search - Prospecting - C,12,894
+Program - SysEng - Run 27 - Search - Prospecting - C,13,632
+Program - SysEng - Run 27 - Search - Prospecting - C,14,380
+Program - SysEng - Run 27 - Search - Prospecting - C,15,278
+Program - SysEng - Run 27 - Search - Prospecting - C,16,173
+Program - SysEng - Run 27 - Search - Prospecting - C,17,144
+Program - SysEng - Run 27 - Search - Prospecting - C,18,143
+Program - SysEng - Run 27 - Search - Prospecting - C,19,203
+Program - SysEng - Run 27 - Search - Prospecting - C,20,281
+Program - SysEng - Run 27 - Search - Prospecting - C,21,377
+Program - SysEng - Run 27 - Search - Prospecting - C,22,366
+Program - SysEng - Run 27 - Search - Prospecting - C,23,343
+Program - SysEng - Run 27 - Search - Prospecting - USA,0,577
+Program - SysEng - Run 27 - Search - Prospecting - USA,1,474
+Program - SysEng - Run 27 - Search - Prospecting - USA,2,290
+Program - SysEng - Run 27 - Search - Prospecting - USA,3,231
+Program - SysEng - Run 27 - Search - Prospecting - USA,4,166
+Program - SysEng - Run 27 - Search - Prospecting - USA,5,145
+Program - SysEng - Run 27 - Search - Prospecting - USA,6,199
+Program - SysEng - Run 27 - Search - Prospecting - USA,7,294
+Program - SysEng - Run 27 - Search - Prospecting - USA,8,479
+Program - SysEng - Run 27 - Search - Prospecting - USA,9,762
+Program - SysEng - Run 27 - Search - Prospecting - USA,10,968
+Program - SysEng - Run 27 - Search - Prospecting - USA,11,1129
+Program - SysEng - Run 27 - Search - Prospecting - USA,12,1190
+Program - SysEng - Run 27 - Search - Prospecting - USA,13,1162
+Program - SysEng - Run 27 - Search - Prospecting - USA,14,1160
+Program - SysEng - Run 27 - Search - Prospecting - USA,15,1127
+Program - SysEng - Run 27 - Search - Prospecting - USA,16,1101
+Program - SysEng - Run 27 - Search - Prospecting - USA,17,1018
+Program - SysEng - Run 27 - Search - Prospecting - USA,18,872
+Program - SysEng - Run 27 - Search - Prospecting - USA,19,847
+Program - SysEng - Run 27 - Search - Prospecting - USA,20,814
+Program - SysEng - Run 27 - Search - Prospecting - USA,21,791
+Program - SysEng - Run 27 - Search - Prospecting - USA,22,581
+Program - SysEng - Run 27 - Search - Prospecting - USA,23,357
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,0,184
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,1,167
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,2,118
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,3,79
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,4,45
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,5,54
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,6,52
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,7,73
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,8,153
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,9,224
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,10,269
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,11,348
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,12,293
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,13,362
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,14,324
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,15,296
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,16,275
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,17,253
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,18,262
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,19,235
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,20,217
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,21,202
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,22,186
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,23,119
