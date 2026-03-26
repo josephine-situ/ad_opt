@@ -43,7 +43,8 @@ SELECT_KEYWORD_CRITERION_IN_AD_GROUP = """
             ad_group_criterion.criterion_id,
             ad_group_criterion.keyword.text,
             ad_group_criterion.keyword.match_type,
-            ad_group_criterion.status
+            ad_group_criterion.status,
+            ad_group_criterion.cpc_bid_micros
         FROM ad_group_criterion
         WHERE ad_group_criterion.ad_group IN ('{ad_group_list}')
         AND ad_group_criterion.type = 'KEYWORD'
