@@ -1,0 +1,16 @@
+{
+    "exp_name": "dynamic_daily_budget",
+    "course": "sys_think",
+    "courses_run": "ml sys_think",
+    "start_day": "2025-10-01",
+    "end_day": "2026-02-10",
+    "embedding_method": "bert",
+    "k_policy": "0",
+    "extra_args": "--order-budget --max-purch --min-spend 1",
+    "dynamic_budget": true,
+    "campaign_budget": 43396.990000000005,
+    "slurm_job_id": "11012023",
+    "submitted_at": "2026-03-26T09:58:51-04:00",
+    "submitted_by": "jositu",
+    "host": "node1612"
+}
