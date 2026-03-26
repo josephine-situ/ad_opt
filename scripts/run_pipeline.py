@@ -340,7 +340,10 @@ def calculate_daily_budget(course: str, opt_date: datetime | None = None) -> flo
             
     # The additional term (1/8 * campaign budget / num days) accounts for delays in reporting (up to 3 hours).
     budget_used = budget_used_from_report + (campaign_budget / 8.0) / number_of_days_in_campaign
-    
+
+    if campaign_budget - budget_used <= 0:
+        raise ValueError(f"[Warning] No more campaign budget remaining for {course}. Campaign Budget: ${campaign_budget:.2f}, Used: ${budget_used:.2f}")
+
     # / 2 is because Google Ads can spend up to 2x the daily budget in a given day.
     daily_budget = min(
         (campaign_budget - budget_used) / days_remaining,

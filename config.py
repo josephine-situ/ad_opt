@@ -81,7 +81,7 @@ COURSE_CONFIG = {
             '2026-04-06'
         ],
         'min_date': '2022-07-01', # Start of search history
-        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
+        'campaign_budget': 50000.0, # TODO: update campaign config with actuals
         'current_campaign_start_date': '2026-02-02',
         'current_campaign_end_date': '2026-04-15',
         'course_title_base': "Course - System Thinking",
