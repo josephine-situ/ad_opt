@@ -577,7 +577,16 @@ def pull_ads_reports(google_ads_client, customer_id, output_course, start_date=N
     print(f"Successfully generated all reports for {output_course}")
 
 
-def generate_rows_from_gkp_response(response, date_headers):
+def _gkp_month_header_sort_key(header):
+    month_str, year_str = header.replace("Searches: ", "", 1).rsplit(" ", 1)
+    month_number = datetime.strptime(month_str, "%b").month
+    return int(year_str), month_number
+
+
+def generate_rows_from_gkp_response(response):
+    rows = []
+    monthly_headers = set()
+
     for result in response.results:
         metrics = result.keyword_metrics
         keyword = result.text
@@ -607,14 +616,13 @@ def generate_rows_from_gkp_response(response, date_headers):
         # Add monthly search volumes (one column per month). If no monthly search volume is available, we don't zero pad it for consistency w/ the UI
         if metrics.monthly_search_volumes:
             for monthly_vol in metrics.monthly_search_volumes:
-                row_parts[
-                    f"Searches: {monthly_vol.month.name[:3].capitalize()} {monthly_vol.year}"
-                ] = (monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0)
-        else:
-            for header in date_headers:
-                row_parts[header] = ""
+                header = f"Searches: {monthly_vol.month.name[:3].capitalize()} {monthly_vol.year}"
+                monthly_headers.add(header)
+                row_parts[header] = monthly_vol.monthly_searches if monthly_vol.monthly_searches else 0
 
-        yield row_parts
+        rows.append(row_parts)
+
+    return rows, sorted(monthly_headers, key=_gkp_month_header_sort_key)
 
 
 def pull_keyword_planning(
@@ -628,16 +636,21 @@ def pull_keyword_planning(
     Args:
         google_ads_client: GoogleAdsClient instance
         customer_id: Google Ads customer ID
-        keyword_planning_input_file: Path to file containing keywords (one per line)
+        keyword_planning_input_file: Path to file containing keywords (one per line). Defaults to
+            data/{output_course}/gkp/keywords_classified.csv when not provided.
         output_course: {gen_ai, ml, sys_eng, sys_think} - determines output location for the pulled data
     """
     # Read keywords from file
     if not keyword_planning_input_file:
-        print(
-            f"Error: --keyword-planning-input-file is required when pulling keyword_planning dataset"
-        )
-        sys.exit(1)
-    keywords = Path(keyword_planning_input_file).read_text().splitlines()
+        keyword_planning_input_file = f"data/{output_course}/gkp/keywords_classified.csv"
+
+    keywords = []
+    with open(keyword_planning_input_file, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            keyword = (row.get("Keyword") or "").strip()
+            if keyword:
+                keywords.append(keyword)
 
     print(f"Pulling keyword planning data...")
     print(f"Customer ID: {customer_id}")
@@ -692,16 +705,7 @@ def pull_keyword_planning(
         "Top of page bid (high range)",
     ]
 
-    # This is a bit squirrely. We observed that the data coming out of the API is pretty sparse
-    # We can't rely on it having an entry for each month in the range we've asked it for, so instead we construct all
-    # possible headers and rely on the DictWriter to fill in missing values with 0s as a restval.
-    date_header_parts = []
-    for i in range(12, 0, -1):
-        month_date = current_date - relativedelta(months=i)
-        month_name = month_date.strftime("%b")
-        year = month_date.year
-        date_header_parts.append(f"Searches: {month_name} {year}")
-
+    rows, date_header_parts = generate_rows_from_gkp_response(response)
     header_parts.extend(date_header_parts)
 
     # Create output directory and filename
@@ -712,9 +716,7 @@ def pull_keyword_planning(
     # This is technically a TSV, but the rest of the code picks up csvs. We can change that later
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
-    write_to_file(
-        header_parts, generate_rows_from_gkp_response(response, date_header_parts), output_file
-    )
+    write_to_file(header_parts, rows, output_file)
     print(f"Keyword planning data written to: {output_file}")
 
 
@@ -757,7 +759,7 @@ def main():
         "--keyword-planning-input-file",
         type=str,
         default="",
-        help="Location of a list of keywords to pull planning data for (required if keyword_planning dataset is selected). File should be a single keyword per line",
+        help="Location of a list of keywords to pull planning data for. Defaults to data/<output-course>/gkp/keywords_classified.csv when keyword_planning is selected. File should be a single keyword per line",
     )
     parser.add_argument(
         "--output-course",

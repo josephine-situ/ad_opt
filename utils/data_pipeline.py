@@ -214,18 +214,46 @@ def get_gkp_data(gkp_dir=None):
         return pd.DataFrame()  # Return empty dataframe
     
     # Find files matching the pattern
-    gkp_files = list(gkp_path.glob('Saved Keywords Stats*.csv'))
+    gkp_files = list(gkp_path.glob('Saved Keyword* Stats*.csv'))
     
     if not gkp_files:
-        print(f"  Warning: No 'Saved Keywords Stats*.csv' files found in {gkp_path}")
+        print(f"  Warning: No 'Saved Keyword* Stats*.csv' files found in {gkp_path}")
         return pd.DataFrame()  # Return empty dataframe
     
     # Use the most recent file (by modification time)
     gkp_file = max(gkp_files, key=lambda f: f.stat().st_mtime)
     print(f"  Found GKP file: {gkp_file.name}")
 
-    # File is UTF-16 encoded (like the 2025 keyword report)
-    gkp_df = pd.read_csv(gkp_file, sep='\t', encoding='utf-16')
+    # Support both legacy UTF-16 exports and the current UTF-8 tab-delimited
+    # files written by scripts/pull_input_data.py.
+    gkp_df = None
+    read_attempts = [
+        {"encoding": "utf-8-sig", "sep": "\t"},
+        {"encoding": "utf-8", "sep": "\t"},
+        {"encoding": "utf-8-sig", "sep": ","},
+        {"encoding": "utf-8", "sep": ","},
+        {"encoding": "utf-16", "sep": "\t"},
+        {"encoding": "utf-16", "sep": ","},
+    ]
+
+    last_error = None
+    for read_kwargs in read_attempts:
+        try:
+            gkp_df = pd.read_csv(gkp_file, **read_kwargs)
+            if 'Keyword' in gkp_df.columns:
+                break
+        except Exception as exc:
+            last_error = exc
+            gkp_df = None
+
+    if gkp_df is None:
+        raise UnicodeDecodeError(
+            'utf-8',
+            b'',
+            0,
+            0,
+            f"Unable to read GKP file {gkp_file.name} with supported encodings/delimiters: {last_error}",
+        )
     
     print(f"  Loaded {len(gkp_df)} rows from {gkp_file.name}")
     
