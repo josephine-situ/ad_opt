@@ -123,6 +123,8 @@ for COURSE in $COURSES; do
         --day "$DAY" \
         --exp-name "$EXP_NAME" \
         --course "$COURSE" \
+        --start "$START_DAY" \
+        --end "$END_DAY" \
         --embedding-method "$EMBEDDING_METHOD" \
         --k-policy $K_POLICY \
         $EXTRA_ARGS \
