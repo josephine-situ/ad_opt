@@ -19,6 +19,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'ml': {
         'start_dates': [
@@ -41,6 +42,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'sys_eng': {
         'start_dates': [
@@ -61,6 +63,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'sys_think': {
         'start_dates': [
@@ -84,5 +87,6 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     }
 }

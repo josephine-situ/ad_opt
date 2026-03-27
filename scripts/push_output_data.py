@@ -21,9 +21,9 @@ from utils.bid_adjustments import (
 )
 from utils.google_ads_api import (
     get_existing_campaign_criteria,
-    get_campaigns_for_course,
+    get_enabled_campaigns_for_course,
     get_location_bid_adjustments,
-    get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_campaigns,
+    get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_enabled_campaigns,
 )
 
 from utils.gaql_queries import (
@@ -45,6 +45,22 @@ MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match
 def construct_campaign_name_for_args(course, match_type, region):
     """Construct campaign name based on course, match type and region."""
     return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type.split()[0]}"
+
+
+def warn_on_large_cpc_changes(new_cpc_bids, current_cpc_lookup, threshold):
+    # Compare with current CPC and warn if change is too large
+    for key, new_bid in new_cpc_bids.items():
+        if key not in current_cpc_lookup:
+            continue
+        ad_group_id, keyword_text, match_type = key
+        _, _, current_cpc_micros = current_cpc_lookup[key]
+        current_bid = current_cpc_micros / 1_000_000
+        if current_bid > 0:
+            pct_change = abs(new_bid - current_bid) / current_bid
+            if pct_change > threshold:
+                print(f"WARNING: Large CPC change detected for keyword '{keyword_text}' ({match_type}) in ad group {ad_group_id}:")
+                print(f"  Current: ${current_bid:.2f}, New: ${new_bid:.2f}")
+                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
 
 
 def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
@@ -152,7 +168,7 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
 
     # Bulk query: Get all ad groups for the campaigns we need
     print(f"Fetching ad groups for {len(campaign_names)} campaigns...")
-    campaign_to_ad_group = get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names)
+    campaign_to_ad_group = get_ad_groups_for_enabled_campaigns(google_ads_service, customer_id, campaign_names)
     ad_group_ids = set(campaign_to_ad_group.values())
 
     print(f"Found {len(campaign_to_ad_group)} ad groups")
@@ -166,7 +182,7 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
     query = SELECT_KEYWORD_CRITERION_IN_AD_GROUP.format(ad_group_list=ad_group_list)
     response = google_ads_service.search(customer_id=customer_id, query=query)
 
-    # Build lookup: (ad_group_id, keyword_text, match_type) -> (criterion_id, status)
+    # Build lookup: (ad_group_id, keyword_text, match_type) -> (criterion_id, status, cpc_bid_micros)
     # This represents the keywords in google ads for the specified campaigns.
     gaql_keyword_lookup = {}
     for result in response:
@@ -176,10 +192,28 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
         match_type = result.ad_group_criterion.keyword.match_type.name
         status = result.ad_group_criterion.status
 
+        cpc_bid_micros = result.ad_group_criterion.cpc_bid_micros
         key = (ad_group_id, keyword_text.lower(), match_type)
-        gaql_keyword_lookup[key] = (criterion_id, status)
+        gaql_keyword_lookup[key] = (criterion_id, status, cpc_bid_micros)
 
     print(f"Found {len(gaql_keyword_lookup)} keywords")
+
+    # Warn if any keyword CPC would change by more than the configured threshold
+    cpc_change_threshold = COURSE_CONFIG[output_course]["cpc_change_threshold"]
+    new_cpc_bids = {}
+    for row in rows:
+        if row["Status"] == "PAUSED":
+            continue
+        campaign_name = construct_campaign_name_for_args(output_course, row["Match type"], row["Region"])
+        if campaign_name not in campaign_to_ad_group:
+            continue
+        ad_group_id = campaign_to_ad_group[campaign_name]
+        match_type_enum = MATCH_TYPE_MAP[row["Match type"]]
+        key = (ad_group_id, row["Keyword"].lower(), match_type_enum)
+        new_cpc_bids[key] = float(row["Bid"])
+
+    # Note that this won't catch increases if you've never set a bid on a keyword or it's currently set to 0.
+    warn_on_large_cpc_changes(new_cpc_bids, gaql_keyword_lookup, cpc_change_threshold)
 
     # Process each row and create operations
     operations = []
@@ -212,7 +246,7 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
             )
             continue
 
-        criterion_id, current_status = gaql_keyword_lookup[key]
+        criterion_id, current_status, _ = gaql_keyword_lookup[key]
 
         # Create update operation
         operation = google_ads_client.get_type("AdGroupCriterionOperation")
@@ -268,7 +302,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
 
     # Get all campaigns for this course
     ga_service = google_ads_client.get_service("GoogleAdsService")
-    campaigns = get_campaigns_for_course(ga_service, customer_id, output_course)
+    campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, output_course)
 
     if not campaigns:
         print(f"Warning: No campaigns found for course {output_course}")

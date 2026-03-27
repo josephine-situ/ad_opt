@@ -43,12 +43,14 @@ SELECT_KEYWORD_CRITERION_IN_AD_GROUP = """
             ad_group_criterion.criterion_id,
             ad_group_criterion.keyword.text,
             ad_group_criterion.keyword.match_type,
-            ad_group_criterion.status
+            ad_group_criterion.status,
+            ad_group_criterion.cpc_bid_micros
         FROM ad_group_criterion
         WHERE ad_group_criterion.ad_group IN ('{ad_group_list}')
         AND ad_group_criterion.type = 'KEYWORD'
     """
-SELECT_AD_GROUPS_FOR_CAMPAIGNS = """
+
+SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS = """
         SELECT
             campaign.name,
             ad_group.id,
@@ -56,6 +58,7 @@ SELECT_AD_GROUPS_FOR_CAMPAIGNS = """
         FROM ad_group
         WHERE campaign.name IN ('{campaign_list}')
         AND campaign.advertising_channel_type = 'SEARCH'
+        AND campaign.status = 'ENABLED'
     """
 
 GET_CRITERIA_FOR_CAMPAIGNS = """
@@ -74,11 +77,12 @@ GET_CRITERIA_FOR_CAMPAIGNS = """
         AND campaign.advertising_channel_type = 'SEARCH'
     """
 
-GET_CAMPAIGNS_FOR_COURSE = """
+GET_ENABLED_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
         WHERE campaign.name NOT LIKE 'EXCLUDE%'
         AND campaign.advertising_channel_type = 'SEARCH'
+        AND campaign.status = 'ENABLED'
     """
 
 # TODO: It only appears that you have age range criteria provisioned if you've set a bid adjustment for age ranges once.

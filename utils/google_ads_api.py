@@ -6,11 +6,11 @@ from google.api_core import protobuf_helpers
 
 from config import COURSE_CONFIG
 from utils.gaql_queries import (
-    GET_CAMPAIGNS_FOR_COURSE,
+    GET_ENABLED_CAMPAIGNS_FOR_COURSE,
     GET_CRITERIA_FOR_CAMPAIGNS,
     GET_AGE_CRITERIA_FOR_CAMPAIGNS,
     GET_CAMPAIGN_BUDGETS_BY_NAMES,
-    SELECT_AD_GROUPS_FOR_CAMPAIGNS,
+    SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS,
 )
 
 
@@ -50,11 +50,11 @@ def should_skip_campaign(
 
     return False
 
-def get_campaigns_for_course(google_ads_service, customer_id, output_course):
+def get_enabled_campaigns_for_course(google_ads_service, customer_id, output_course):
     """Get all campaign IDs for a given course."""
     course_title = COURSE_CONFIG[output_course]["course_title_base"]
 
-    query = GET_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
+    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
     
@@ -239,9 +239,9 @@ def get_campaign_budget_info(google_ads_service, customer_id, campaign_names_lis
     return campaign_budget_resources
 
 
-def get_ad_groups_for_campaigns(google_ads_service, customer_id, campaign_names):
+def get_ad_groups_for_enabled_campaigns(google_ads_service, customer_id, campaign_names):
     campaign_list = "', '".join(campaign_names)
-    query = SELECT_AD_GROUPS_FOR_CAMPAIGNS.format(campaign_list=campaign_list)
+    query = SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS.format(campaign_list=campaign_list)
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
     campaign_to_ad_group = {}
