@@ -67,18 +67,20 @@ start_day = pd.to_datetime(cfg["start_day"])
 end_day = pd.to_datetime(cfg["end_day"])
 campaign_budget = int(float(cfg["campaign_budget"]))
 
-bids_dir = Path(f"opt_results/{course}/backtests/{exp_name}/budget_{campaign_budget}/bids")
-if not bids_dir.exists():
-    for candidate in sorted(Path(f"opt_results/{course}/backtests/{exp_name}").glob("budget_*/bids")):
-        if list(candidate.glob("optimized_costs_*.csv")):
-            bids_dir = candidate
-            break
+bids_dir = Path(f"opt_results/{course}/backtests/{exp_name}")
+bids_dirs = list(bids_dir.rglob("budget_*/bids"))
+bids_dir_target = None
 
-if not bids_dir.exists():
+for candidate in bids_dirs:
+    if list(candidate.glob("optimized_costs_*.csv")):
+        bids_dir_target = candidate
+        break
+
+if not bids_dir_target:
     raise SystemExit(f"No bids directory found for {course}")
 
 observed = set()
-for file_path in bids_dir.glob("optimized_costs_*.csv"):
+for file_path in bids_dir_target.glob("optimized_costs_*.csv"):
     date_part = file_path.stem.replace("optimized_costs_", "")
     try:
         observed.add(pd.to_datetime(date_part).date())
