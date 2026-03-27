@@ -8,6 +8,30 @@ import pandas as pd
 import argparse
 from pathlib import Path
 import numpy as np
+import json
+
+
+def _load_backtest_config(base_results_dir):
+    cfg_path = base_results_dir / "backtest_config.json"
+    if not cfg_path.exists():
+        return {}
+
+    try:
+        return json.loads(cfg_path.read_text())
+    except Exception:
+        return {}
+
+
+def _find_skipped_dates(base_results_dir, eval_df):
+    config = _load_backtest_config(base_results_dir)
+    start_day = config.get("start_day")
+    end_day = config.get("end_day")
+    if not start_day or not end_day or "Day" not in eval_df.columns:
+        return []
+
+    expected_days = pd.date_range(pd.to_datetime(start_day), pd.to_datetime(end_day), freq="D")
+    observed_days = set(pd.to_datetime(eval_df["Day"]).dt.normalize().dt.date)
+    return [day.date().isoformat() for day in expected_days if day.date() not in observed_days]
 
 def generate_performance_table(summary_df):
     # Create a copy to avoid SettingWithCopyWarning on the original df
@@ -586,6 +610,11 @@ def main():
         return
 
     full_results = pd.read_csv(eval_csv)
+    skipped_dates = _find_skipped_dates(base_results_dir, full_results)
+    if skipped_dates:
+        print(f"Skipped dates: {', '.join(skipped_dates)}")
+    else:
+        print("Skipped dates: none")
     
     # Handle different evaluation formats
     if 'Budget' not in full_results.columns:
@@ -755,6 +784,8 @@ def main():
 
     # --- Output Performance Table ---
     summary_df = pd.DataFrame(summary_rows)
+    summary_df["n_skipped_days"] = len(skipped_dates)
+    summary_df["skipped_dates"] = ", ".join(skipped_dates)
     out_csv = base_results_dir / "backtest_summary.csv"
     summary_df.to_csv(out_csv, index=False)
     

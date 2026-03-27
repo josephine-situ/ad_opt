@@ -61,21 +61,48 @@ def get_args():
                    help="SVD dim candidates for Oracle CV (default: 10 20 50 100 384).")
 
     args = p.parse_args()
-    if args.budget is None:
-        try:
-            from scripts.run_pipeline import calculate_daily_budget
-            args.budget = [calculate_daily_budget(args.course)]
-        except ImportError as e:
-            raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
     # Map sentinel 0 → None (no SVD, full BERT embeddings)
     args.k_policy = [None if k == 0 else k for k in args.k_policy]
     return args
+
+
+def _load_campaign_budget(base_results_dir: Path) -> float | None:
+    """Load the campaign budget saved by the backtest launcher, if present."""
+    cfg_path = base_results_dir / "backtest_config.json"
+    if not cfg_path.exists():
+        return None
+
+    try:
+        cfg = json.loads(cfg_path.read_text())
+    except Exception:
+        return None
+
+    budget = cfg.get("campaign_budget")
+    if budget is None:
+        return None
+
+    try:
+        return float(budget)
+    except Exception:
+        return None
 
 
 def main():
     args = get_args()
 
     base_dir = Path(f"data/{args.course}")
+    base_results_root = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
+
+    if args.budget is None:
+        campaign_budget = _load_campaign_budget(base_results_root)
+        if campaign_budget is not None:
+            args.budget = [campaign_budget]
+        else:
+            try:
+                from scripts.run_pipeline import calculate_daily_budget
+                args.budget = [calculate_daily_budget(args.course)]
+            except ImportError as e:
+                raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
 
     start_dt = pd.to_datetime(args.start)
     end_dt = pd.to_datetime(args.end)
@@ -261,7 +288,23 @@ def main():
 
                 if not bids_file.exists():
                     print(f"File not found: {bids_file}")
-                    continue
+                    if len(args.budget) == 1:
+                        fallback_budget = _load_campaign_budget(base_results_root)
+                        if fallback_budget is not None:
+                            fallback_run_dir = base_results_root / f"budget_{int(fallback_budget)}"
+                            fallback_bids_file = fallback_run_dir / "bids" / f"optimized_costs_{day.date()}.csv"
+                            if fallback_bids_file.exists():
+                                print(f"  Using campaign budget directory instead: {fallback_run_dir.name}")
+                                run_dir = fallback_run_dir
+                                bids_dir = fallback_run_dir / "bids"
+                                bids_file = fallback_bids_file
+                                act_file = bids_dir / f"actual_costs_{day.date()}.csv"
+                            else:
+                                continue
+                        else:
+                            continue
+                    else:
+                        continue
 
                 sol = pd.read_csv(bids_file)
 
