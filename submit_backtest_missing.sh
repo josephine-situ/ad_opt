@@ -38,7 +38,8 @@ from pathlib import Path
 import json
 
 course = "$course"
-cfg_path = Path(f"opt_results/{course}/backtests/{EXP_NAME}/backtest_config.json")
+exp_name = "$EXP_NAME"
+cfg_path = Path(f"opt_results/{course}/backtests/{exp_name}/backtest_config.json")
 if not cfg_path.exists():
     raise SystemExit(f"Missing config: {cfg_path}")
 
