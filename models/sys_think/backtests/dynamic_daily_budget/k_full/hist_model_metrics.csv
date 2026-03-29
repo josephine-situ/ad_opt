@@ -128,3 +128,7 @@ Day,k_policy,Hist_MSE,Hist_R2,Hist_Bias,CV_Score,best_params
 2026-02-06,full,1.6139798164367676,0.9180443286895752,8.28031975105272e-06,1.8699604272842407,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
 2026-02-07,full,1.6027052402496338,0.9185442924499512,-0.00013288483793130556,1.8401519536972046,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
 2026-02-08,full,1.640607237815857,0.916573166847229,8.467861283373074e-07,1.8739911556243896,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
+2025-11-22,full,1.4742518663406372,0.9008063673973083,-7.534364621344555e-05,1.6990190982818603,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
+2026-02-04,full,1.627205729484558,0.9174187183380127,-8.790564705640322e-05,1.807337999343872,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
+2026-02-09,full,1.6496796607971191,0.9160551428794861,-0.00010959697260594412,1.825941252708435,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
+2026-02-10,full,1.6496796607971191,0.9160551428794861,-0.00010959697260594412,1.8584343194961548,"{'model__learning_rate': 0.3, 'model__max_depth': 4, 'model__n_estimators': 20}"
