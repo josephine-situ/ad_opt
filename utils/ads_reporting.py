@@ -1,8 +1,6 @@
 import csv
 from pathlib import Path
-from typing import Protocol, Iterable, Any
-
-from google.ads.googleads.client import GoogleAdsClient
+from typing import Protocol, Iterable
 
 from config import COURSE_CONFIG
 from utils.gaql_queries import (
@@ -19,6 +17,13 @@ from utils.gaql_queries import (
     SEARCH_TERM_REPORT_QUERY,
 )
 from utils.report_row_generators import *
+
+"""
+This module contains functions to generate Google Ads reports which are used as input to the optimization model.
+These functions are "standard" in that they follow a common pattern of deriving their output path, 
+performing one or more queries via Google Ads API, and persisting the results to a file.
+They all adhere to a common interface defined by the ReportFunction protocol.
+"""
 
 
 def write_to_file(
@@ -39,7 +44,8 @@ def write_to_file(
 class ReportFunction(Protocol):
     """
     Protocol defining the common interface for all ads report generator functions.
-    Each function is responsible for deriving it output path, performing any queries necessary
+    Each function is responsible for deriving it output path,
+    performing any queries necessary and persisting the results to a file
     """
 
     def __call__(
