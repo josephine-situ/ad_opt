@@ -1,7 +1,11 @@
 import csv
 import re
+from collections.abc import Iterable
 from decimal import Decimal
+from pathlib import Path
+from typing import Any
 
+from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
 from config import COURSE_CONFIG
@@ -14,15 +18,18 @@ from utils.gaql_queries import (
 )
 
 
-def normalize_bid_adjustment(bid_adj):
+def normalize_bid_adjustment(bid_adj: str | float | Decimal) -> Decimal:
     """Normalize bid adjustment to be within Google Ads limits (0.1 to 10.0, or exactly 0 for device criteria)."""
     bid_adj_decimal = Decimal(bid_adj)
     return Decimal(1.0) + bid_adj_decimal
 
 
 def should_skip_campaign(
-    campaign_name, check_course=None, check_region=None, check_match_type=None
-):
+    campaign_name: str,
+    check_course: str | None = None,
+    check_region: str | None = None,
+    check_match_type: str | None = None,
+) -> bool:
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
     Campaign name format: "{course_title} - {region} - {match_type}"
@@ -50,7 +57,9 @@ def should_skip_campaign(
 
     return False
 
-def get_enabled_campaigns_for_course(google_ads_service, customer_id, output_course):
+def get_enabled_campaigns_for_course(
+    google_ads_service: Any, customer_id: str, output_course: str
+) -> dict[str, int]:
     """Get all campaign IDs for a given course."""
     course_title = COURSE_CONFIG[output_course]["course_title_base"]
 
@@ -65,7 +74,9 @@ def get_enabled_campaigns_for_course(google_ads_service, customer_id, output_cou
     return campaigns
 
 
-def get_existing_campaign_criteria(google_ads_service, customer_id, campaign_ids):
+def get_existing_campaign_criteria(
+    google_ads_service: Any, customer_id: str, campaign_ids: Iterable[int | str]
+) -> dict[str, dict[Any, int]]:
     """Get all existing campaign criteria for the specified campaigns."""
     campaign_id_list = "', '".join(
         [f"customers/{customer_id}/campaigns/{cid}" for cid in campaign_ids]
@@ -76,7 +87,7 @@ def get_existing_campaign_criteria(google_ads_service, customer_id, campaign_ids
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
 
     # Organize criteria by type and campaign
-    criteria = {
+    criteria: dict[str, dict[tuple, int]] = {
         "device": {},  # (campaign_id, device_type) -> criterion_id
         "schedule": {},  # (campaign_id, day, start_hour, end_hour) -> criterion_id
         "location": {},  # (campaign_id, geo_target) -> criterion_id
@@ -104,7 +115,9 @@ def get_existing_campaign_criteria(google_ads_service, customer_id, campaign_ids
     return criteria
 
 
-def get_existing_ad_group_age_for_campaigns(google_ads_service, customer_id, campaign_ids):
+def get_existing_ad_group_age_for_campaigns(
+    google_ads_service: Any, customer_id: str, campaign_ids: Iterable[int | str]
+) -> dict[tuple[str, Any], tuple[str, int]]:
     """Get existing ad group age criteria for the specified campaigns.
 
     Returns:
@@ -132,15 +145,19 @@ def get_existing_ad_group_age_for_campaigns(google_ads_service, customer_id, cam
 
 
 def get_location_bid_adjustments(
-    google_ads_client, customer_id, campaigns, existing_criteria, adj_location_filepath
-):
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    campaigns: dict[str, int],
+    existing_criteria: dict[str, dict[Any, int]],
+    adj_location_filepath: str | Path,
+) -> list[Any]:
     """Push location bid adjustments to Google Ads."""
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
     geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
     operations = []
 
     # Cache for geo target lookups to avoid repeated API calls
-    geo_target_cache = {}
+    geo_target_cache: dict[str, str | None] = {}
 
     with open(adj_location_filepath) as csvfile:
         reader = csv.DictReader(csvfile)
@@ -221,7 +238,9 @@ def get_location_bid_adjustments(
     return operations
 
 
-def get_campaign_budget_info(google_ads_service, customer_id, campaign_names_list):
+def get_campaign_budget_info(
+    google_ads_service: Any, customer_id: str, campaign_names_list: Iterable[str]
+) -> dict[str, dict[str, Any]]:
     campaign_names = "', '".join(campaign_names_list)
     query = GET_CAMPAIGN_BUDGETS_BY_NAMES.format(campaign_names=campaign_names)
 
@@ -239,7 +258,9 @@ def get_campaign_budget_info(google_ads_service, customer_id, campaign_names_lis
     return campaign_budget_resources
 
 
-def get_ad_groups_for_enabled_campaigns(google_ads_service, customer_id, campaign_names):
+def get_ad_groups_for_enabled_campaigns(
+    google_ads_service: Any, customer_id: str, campaign_names: Iterable[str]
+) -> dict[str, int]:
     campaign_list = "', '".join(campaign_names)
     query = SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS.format(campaign_list=campaign_list)
 

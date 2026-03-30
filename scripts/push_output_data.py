@@ -8,6 +8,7 @@ import csv
 import sys
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
@@ -42,12 +43,16 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
 
-def construct_campaign_name_for_args(course, match_type, region):
+def construct_campaign_name_for_args(course: str, match_type: str, region: str) -> str:
     """Construct campaign name based on course, match type and region."""
     return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type.split()[0]}"
 
 
-def warn_on_large_cpc_changes(new_cpc_bids, current_cpc_lookup, threshold):
+def warn_on_large_cpc_changes(
+    new_cpc_bids: dict[tuple[int, str, str], float],
+    current_cpc_lookup: dict[tuple[int, str, str], tuple[int, Any, int]],
+    threshold: float,
+) -> None:
     # Compare with current CPC and warn if change is too large
     for key, new_bid in new_cpc_bids.items():
         if key not in current_cpc_lookup:
@@ -63,7 +68,11 @@ def warn_on_large_cpc_changes(new_cpc_bids, current_cpc_lookup, threshold):
                 print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
 
 
-def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
+def warn_on_large_budget_changes(
+    new_budgets: dict[str, float],
+    current_budgets: dict[str, dict[str, Any]],
+    threshold: float,
+) -> None:
     # Compare with current budget and warn if change is too large
     for campaign_name, new_budget in new_budgets.items():
         current_budget = current_budgets[campaign_name]["current_budget_amount"]
@@ -75,7 +84,12 @@ def warn_on_large_budget_changes(new_budgets, current_budgets, threshold):
                 print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
 
 
-def push_budget(google_ads_client, customer_id, output_course, execute):
+def push_budget(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    output_course: str,
+    execute: bool,
+) -> None:
     """Push overall budget to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bids")
     daily_budget_filepath = budget_output_dir / "daily_budget.csv"
@@ -142,7 +156,12 @@ def push_budget(google_ads_client, customer_id, output_course, execute):
         print(f"Successfully updated {len(response.results)} campaign budgets")
 
 
-def push_cpc(google_ads_client, customer_id, output_course, execute):
+def push_cpc(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    output_course: str,
+    execute: bool,
+) -> None:
     """
     Push keyword-level max CPC to Google Ads.
     Note that this will only be visible if the associated campaign is using a manual CPC bidding strategy.
@@ -292,7 +311,12 @@ def push_cpc(google_ads_client, customer_id, output_course, execute):
         print("No keyword updates to perform")
 
 
-def push_bid_adjustments(google_ads_client, customer_id, output_course, execute):
+def push_bid_adjustments(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    output_course: str,
+    execute: bool,
+) -> None:
     """Push bid adjustments to Google Ads."""
     budget_output_dir = Path(f"opt_results/{output_course}/bid_adjustments")
     adj_age_filepath = budget_output_dir / "bid_adj_age.csv"
@@ -434,7 +458,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
         print("No device/schedule/location bid adjustments to apply")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Pull input data from various sources")
     parser.add_argument(
         "--datasets",
