@@ -260,3 +260,11 @@ SEARCH_TERM_REPORT_QUERY = """
     AND segments.keyword.info.match_type IN ('EXACT', 'PHRASE', 'BROAD')
     ORDER BY segments.keyword.info.text
 """
+
+BUILD_LOCATION_CACHE_QUERY = """
+            SELECT 
+                geo_target_constant.id,
+                geo_target_constant.canonical_name
+            FROM geo_target_constant
+            WHERE geo_target_constant.id IN ({ids_str})
+        """

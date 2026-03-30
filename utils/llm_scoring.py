@@ -303,7 +303,7 @@ def _score_keywords_with_llm(
 def get_llm_scores_cached(
     keywords: list,
     course: str = 'gen_ai',
-    cache_path: str = None,
+    cache_path: str | None = None,
     model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
     debug: bool = True,
@@ -394,7 +394,7 @@ def add_llm_scores_to_df(
     course: str = 'gen_ai',
     model_name: str = "Qwen/Qwen3-8B",
     batch_size: int = 1,
-    cache_dir: str = None,
+    cache_dir: str | None = None,
 ) -> pd.DataFrame:
     """
     Add LLM relevance scores to a DataFrame.

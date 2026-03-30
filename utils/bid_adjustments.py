@@ -1,5 +1,8 @@
 import csv
+from pathlib import Path
+from typing import Any
 
+from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.v23.enums import AgeRangeTypeEnum, DayOfWeekEnum, DeviceEnum
 from google.api_core import protobuf_helpers
 
@@ -39,7 +42,13 @@ DEVICE_MAP = {
 
 DEVICE_ENUM_TO_NAME = {v: k for k, v in DEVICE_MAP.items()}
 
-def get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_device_filepath):
+def get_device_bid_adjustments(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    campaigns: dict[str, int],
+    existing_criteria: dict[str, dict[Any, int]],
+    adj_device_filepath: str | Path,
+) -> list[Any]:
     """Push device bid adjustments to Google Ads."""
 
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
@@ -93,7 +102,13 @@ def get_device_bid_adjustments(google_ads_client, customer_id, campaigns, existi
     return operations
 
 
-def get_age_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria, adj_age_filepath):
+def get_age_bid_adjustments(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    campaigns: dict[str, int],
+    existing_criteria: dict[tuple[str, Any], tuple[str, int]],
+    adj_age_filepath: str | Path,
+) -> list[Any]:
     """Push age bid adjustments to Google Ads (applied at ad group level)."""
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     operations = []
@@ -146,8 +161,13 @@ def get_age_bid_adjustments(google_ads_client, customer_id, campaigns, existing_
     return operations
 
 
-def get_hour_of_day_bid_adjustments(google_ads_client, customer_id, campaigns, existing_criteria,
-                                     adj_hour_of_day_filepath):
+def get_hour_of_day_bid_adjustments(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    campaigns: dict[str, int],
+    existing_criteria: dict[str, dict[Any, int]],
+    adj_hour_of_day_filepath: str | Path,
+) -> list[Any]:
     """Push hour-of-day (ad schedule) bid adjustments to Google Ads."""
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
     operations = []
