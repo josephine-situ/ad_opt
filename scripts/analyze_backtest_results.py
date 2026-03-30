@@ -34,7 +34,7 @@ def _resolve_results_dir(course, exp_name):
     return base_dir
 
 
-def _find_skipped_dates(base_results_dir, eval_df):
+def _find_no_observation_dates(base_results_dir, eval_df):
     if "No_Observations" in eval_df.columns and "Day" in eval_df.columns:
         no_obs_days = (
             pd.to_datetime(eval_df.loc[eval_df["No_Observations"].eq(True), "Day"])
@@ -628,9 +628,9 @@ def main():
         return
 
     full_results = pd.read_csv(eval_csv)
-    skipped_dates = _find_skipped_dates(base_results_dir, full_results)
-    if skipped_dates:
-        print(f"No-observation dates: {', '.join(skipped_dates)}")
+    no_observation_dates = _find_no_observation_dates(base_results_dir, full_results)
+    if no_observation_dates:
+        print(f"No-observation dates: {', '.join(no_observation_dates)}")
     else:
         print("No-observation dates: none")
     
@@ -802,11 +802,9 @@ def main():
 
     # --- Output Performance Table ---
     summary_df = pd.DataFrame(summary_rows)
-    skipped_dates_str = ", ".join(skipped_dates)
-    summary_df["n_skipped_days"] = len(skipped_dates)
-    summary_df["skipped_dates"] = skipped_dates_str
-    summary_df["n_no_observation_days"] = len(skipped_dates)
-    summary_df["no_observation_dates"] = skipped_dates_str
+    no_observation_dates_str = ", ".join(no_observation_dates)
+    summary_df["n_no_observation_days"] = len(no_observation_dates)
+    summary_df["no_observation_dates"] = no_observation_dates_str
     out_csv = base_results_dir / "backtest_summary.csv"
     summary_df.to_csv(out_csv, index=False)
     

@@ -563,8 +563,8 @@ def main():
                 prev_day = day - pd.Timedelta(days=1)
                 prev_bids_file = bids_dir / f"optimized_costs_{prev_day.date()}.csv"
 
-                avg_cost_change = np.nan
-                pct_new_keywords = np.nan
+                avg_cost_change = 0.0
+                pct_new_keywords = 0.0
 
                 if prev_bids_file.exists():
                     prev_sol = pd.read_csv(prev_bids_file)
