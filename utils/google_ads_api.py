@@ -111,7 +111,7 @@ def get_existing_ad_group_age_for_campaigns(google_ads_service, customer_id, cam
         dict: Map of (campaign_id, age_range_type) -> (ad_group_id, criterion_id)
     """
 
-    query = GET_AGE_CRITERIA_FOR_CAMPAIGNS.format(campaign_ids=",".join(campaign_ids))
+    query = GET_AGE_CRITERIA_FOR_CAMPAIGNS.format(campaign_ids=",".join(str(cid) for cid in campaign_ids))
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
 

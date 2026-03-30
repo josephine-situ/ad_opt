@@ -322,7 +322,7 @@ def push_bid_adjustments(google_ads_client, customer_id, output_course, execute)
 
     print("Fetching existing ad group age criteria...")
     existing_ad_group_age_criteria = get_existing_ad_group_age_for_campaigns(
-        ga_service, customer_id, map(str, campaigns.values())
+        ga_service, customer_id, campaigns.values()
     )
 
     all_operations = []
