@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 from collections.abc import Iterator, Iterable
-from typing import Any
+from typing import Any, Protocol
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -33,7 +33,7 @@ from utils.gaql_queries import (
     AGE_CONVERSIONS_REPORT_QUERY,
     DEVICE_CONVERSIONS_REPORT_QUERY,
     LOC_CONVERSIONS_REPORT_QUERY,
-    SEARCH_TERM_REPORT_QUERY,
+    SEARCH_TERM_REPORT_QUERY, BUILD_LOCATION_CACHE_QUERY,
 )
 from config import COURSE_CONFIG
 
@@ -56,7 +56,7 @@ LOCATION_CACHE = {}
 def write_to_file(
     header_parts: list[str],
     row_generator: Iterable[dict[str, Any]],
-    output_file: str | Path,
+    output_file: Path,
     delimiter: str = "\t",
     restval: str = "0",
 ) -> None:
@@ -69,10 +69,12 @@ def write_to_file(
             writer.writerow(row)
 
 
+# TODO: Pull this out into google_ads_api.py.
+# This is only here for the moment because it directly modifies the shared cache
 def build_location_cache(
     google_ads_client: GoogleAdsClient,
     customer_id: str,
-    country_criterion_ids: Iterable[int | None],
+    country_criterion_ids: Iterable[int],
 ) -> None:
     """Build a cache of location names for all criterion IDs with a single query.
 
@@ -93,13 +95,7 @@ def build_location_cache(
         ads_service = google_ads_client.get_service("GoogleAdsService")
         # Build a query with all criterion IDs
         ids_str = ", ".join(str(id) for id in valid_ids)
-        query = f"""
-            SELECT 
-                geo_target_constant.id,
-                geo_target_constant.canonical_name
-            FROM geo_target_constant
-            WHERE geo_target_constant.id IN ({ids_str})
-        """
+        query = BUILD_LOCATION_CACHE_QUERY.format(ids_str=ids_str)
         response = ads_service.search(customer_id=customer_id, query=query)
 
         for row in response:
@@ -335,6 +331,19 @@ def _generate_search_terms_row(stream: Any) -> Iterator[dict[str, Any]]:
                 "Conversion action": row.segments.conversion_action_name,
                 "Conversions": f"{row.metrics.all_conversions:.2f}",
             }
+
+
+class ReportFunction(Protocol):
+    """Protocol defining the common interface for all ads report generator functions."""
+
+    def __call__(
+        self,
+        google_ads_client: GoogleAdsClient,
+        customer_id: str,
+        output_course: str,
+        start_date: str,
+        end_date: str,
+    ) -> None: ...
 
 
 def generate_search_keyword_report(
@@ -606,27 +615,18 @@ def pull_ads_reports(
     print(f"Date range: {start_date} to {end_date}")
     print(f"Customer ID: {customer_id}")
 
-    # Generate all reports
-    generate_search_keyword_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
+    report_functions: list[ReportFunction] = [
+        generate_search_keyword_report,
+        generate_search_terms_report,
+        generate_purchase_report,
+        generate_hod_clicks_and_conversion_report,
+        generate_age_clicks_and_conversion_report,
+        generate_device_clicks_and_conversion_report,
+        generate_loc_clicks_and_conversion_report
+    ]
 
-    generate_search_terms_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
-    generate_purchase_report(google_ads_client, customer_id, output_course, start_date, end_date)
-    generate_hod_clicks_and_conversion_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
-    generate_age_clicks_and_conversion_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
-    generate_device_clicks_and_conversion_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
-    generate_loc_clicks_and_conversion_report(
-        google_ads_client, customer_id, output_course, start_date, end_date
-    )
+    for report in report_functions:
+        report(google_ads_client, customer_id, output_course, start_date, end_date)
 
     print(f"Successfully generated all reports for {output_course}")
 
