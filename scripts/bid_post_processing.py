@@ -382,7 +382,10 @@ def add_bid_column_to_file(
     Returns:
         DataFrame with Bid and Status columns added.
     """
-    df = pd.read_csv(file_path)
+    try:
+        df = pd.read_csv(file_path)
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame(columns=['Keyword', 'Region', 'Match type', 'Origin', 'Optimal Cost', 'Gurobi Pred over Base'])
 
     # Check if required columns exist
     if 'Optimal Cost' not in df.columns:
@@ -506,19 +509,30 @@ def generate_daily_budget_csv(
         files = sorted(bids_path.rglob("optimized_costs*.csv"))
         if not files:
             print(f"  No optimized_costs*.csv files found in {bids_path}")
+            budget_df = pd.DataFrame(columns=['Region', 'Match type', 'Daily Budget'])
+            output_dir.mkdir(parents=True, exist_ok=True)
+            csv_path = output_dir / 'daily_budget.csv'
+            budget_df.to_csv(csv_path, index=False)
+            print(f"  Saved empty daily budget CSV to {csv_path}")
             return
         first_file = files[0]
 
     print(f"  Generating daily budget CSV from {first_file.name} ...")
-    df = pd.read_csv(first_file)
+    try:
+        df = pd.read_csv(first_file)
+    except pd.errors.EmptyDataError:
+        df = pd.DataFrame(columns=['Region', 'Match type', 'Optimal Cost'])
 
-    budget_df = (
-        df.groupby(['Region', 'Match type'])['Optimal Cost']
-        .sum()
-        .reset_index()
-        .rename(columns={'Optimal Cost': 'Daily Budget'})
-        .sort_values(['Region', 'Match type'])
-    )
+    if df.empty:
+        budget_df = pd.DataFrame(columns=['Region', 'Match type', 'Daily Budget'])
+    else:
+        budget_df = (
+            df.groupby(['Region', 'Match type'])['Optimal Cost']
+            .sum()
+            .reset_index()
+            .rename(columns={'Optimal Cost': 'Daily Budget'})
+            .sort_values(['Region', 'Match type'])
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / 'daily_budget.csv'

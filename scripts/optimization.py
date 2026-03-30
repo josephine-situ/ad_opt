@@ -537,6 +537,12 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
+    if results_df.empty:
+        results_df['Actual Model Pred'] = pd.Series(dtype=float)
+        results_df['Diff'] = pd.Series(dtype=float)
+        print("[Info] Zero-bid optimum detected; returning empty optimization results.")
+        return results_df
+
     # 5. Validation and Boundary Adjustment
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
     # If discrepancy is large, slightly adjust costs to move away from tree boundaries

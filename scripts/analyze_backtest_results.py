@@ -22,7 +22,28 @@ def _load_backtest_config(base_results_dir):
         return {}
 
 
+def _resolve_results_dir(course, exp_name):
+    base_dir = Path(f"opt_results/{course}/backtests/{exp_name}")
+    if (base_dir / "evaluation_results.csv").exists():
+        return base_dir
+
+    k_full_dir = base_dir / "k_full"
+    if (k_full_dir / "evaluation_results.csv").exists():
+        return k_full_dir
+
+    return base_dir
+
+
 def _find_skipped_dates(base_results_dir, eval_df):
+    if "No_Observations" in eval_df.columns and "Day" in eval_df.columns:
+        no_obs_days = (
+            pd.to_datetime(eval_df.loc[eval_df["No_Observations"].eq(True), "Day"])
+            .dt.normalize()
+            .dt.date
+            .unique()
+        )
+        return sorted(day.isoformat() for day in no_obs_days)
+
     config = _load_backtest_config(base_results_dir)
     start_day = config.get("start_day")
     end_day = config.get("end_day")
@@ -37,9 +58,7 @@ def generate_performance_table(summary_df):
     # Create a copy to avoid SettingWithCopyWarning on the original df
     df = summary_df.copy()
     df = df.sort_values(by=['Budget'], ascending=[True], na_position='last')
-
-    # Identify "Best" Row (max improvement in clicks)
-    best_idx = df['improvement in clicks'].idxmax()
+    best_idx = pd.to_numeric(summary_df['improvement in clicks'], errors='coerce').idxmax()
 
     # --- FORMATTING ---
     df['Budget'] = df['Budget'].apply(lambda x: f"{x:.0f}")
@@ -64,7 +83,6 @@ def generate_performance_table(summary_df):
     
     # Bold best improvement in clicks
     if 'improvement in clicks' in df.columns:
-        best_idx = df['improvement in clicks'].str.rstrip(r'\%').astype(float).idxmax()
         for col in df.columns:
             current_val = df.at[best_idx, col]
             df.at[best_idx, col] = f"\\textbf{{{str(current_val)}}}"
@@ -602,7 +620,7 @@ def main():
     p.add_argument("--course", default="gen_ai", help="Course name")
     args = p.parse_args()
     
-    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
+    base_results_dir = _resolve_results_dir(args.course, args.exp_name)
     eval_csv = base_results_dir / "evaluation_results.csv"
 
     if not eval_csv.exists():
@@ -612,9 +630,9 @@ def main():
     full_results = pd.read_csv(eval_csv)
     skipped_dates = _find_skipped_dates(base_results_dir, full_results)
     if skipped_dates:
-        print(f"Skipped dates: {', '.join(skipped_dates)}")
+        print(f"No-observation dates: {', '.join(skipped_dates)}")
     else:
-        print("Skipped dates: none")
+        print("No-observation dates: none")
     
     # Handle different evaluation formats
     if 'Budget' not in full_results.columns:
@@ -784,8 +802,11 @@ def main():
 
     # --- Output Performance Table ---
     summary_df = pd.DataFrame(summary_rows)
+    skipped_dates_str = ", ".join(skipped_dates)
     summary_df["n_skipped_days"] = len(skipped_dates)
-    summary_df["skipped_dates"] = ", ".join(skipped_dates)
+    summary_df["skipped_dates"] = skipped_dates_str
+    summary_df["n_no_observation_days"] = len(skipped_dates)
+    summary_df["no_observation_dates"] = skipped_dates_str
     out_csv = base_results_dir / "backtest_summary.csv"
     summary_df.to_csv(out_csv, index=False)
     
