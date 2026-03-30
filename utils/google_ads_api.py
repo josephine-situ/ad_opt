@@ -14,8 +14,16 @@ from utils.gaql_queries import (
     GET_CRITERIA_FOR_CAMPAIGNS,
     GET_AGE_CRITERIA_FOR_CAMPAIGNS,
     GET_CAMPAIGN_BUDGETS_BY_NAMES,
-    SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS,
+    SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS, BUILD_LOCATION_CACHE_QUERY,
 )
+
+LOCATION_CACHE = {}
+
+"""
+This file contains utility functions for interacting with the Google Ads account state
+These functions should not persist their results or modify state within a google ads account, 
+but may read state from a specified account. 
+"""
 
 
 def normalize_bid_adjustment(bid_adj: str | float | Decimal) -> Decimal:
@@ -275,3 +283,53 @@ def get_ad_groups_for_enabled_campaigns(
             if campaign_name not in campaign_to_ad_group:
                 campaign_to_ad_group[campaign_name] = ad_group_id
     return campaign_to_ad_group
+
+# TODO: Pull this out into google_ads_api.py.
+# This is only here for the moment because it directly modifies the shared cache
+def build_location_cache(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    country_criterion_ids: Iterable[int],
+) -> None:
+    """Build a cache of location names for all criterion IDs with a single query.
+
+    Only fetches IDs that are not already in the cache.
+    """
+    if not country_criterion_ids:
+        return
+
+    # Remove None values, duplicates, and IDs already in cache
+    valid_ids = [
+        id for id in set(country_criterion_ids) if id is not None and id not in LOCATION_CACHE
+    ]
+
+    if not valid_ids:
+        return
+
+    try:
+        ads_service = google_ads_client.get_service("GoogleAdsService")
+        # Build a query with all criterion IDs
+        ids_str = ", ".join(str(id) for id in valid_ids)
+        query = BUILD_LOCATION_CACHE_QUERY.format(ids_str=ids_str)
+        response = ads_service.search(customer_id=customer_id, query=query)
+
+        for row in response:
+            criterion_id = row.geo_target_constant.id
+            location_name = row.geo_target_constant.canonical_name
+            LOCATION_CACHE[criterion_id] = location_name
+
+        # Add fallback for any IDs that weren't found
+        for criterion_id in valid_ids:
+            if criterion_id not in LOCATION_CACHE:
+                print(f"Warning: Could not find location name for criterion {criterion_id}")
+                LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
+
+    except Exception as e:
+        print(f"Warning: Error fetching location names: {e}")
+        # Populate cache with fallback names
+        for criterion_id in valid_ids:
+            if criterion_id not in LOCATION_CACHE:
+                LOCATION_CACHE[criterion_id] = f"Location {criterion_id}"
+
+def get_from_location_cache(criterion_id: int) -> Any:
+    return LOCATION_CACHE[criterion_id]
