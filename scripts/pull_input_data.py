@@ -147,7 +147,7 @@ def pull_keyword_planning(
     with open(keyword_planning_input_file, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            keyword = (row.get("Keyword") or "").strip()
+            keyword = row.get("Keyword", "").strip()
             if keyword:
                 keywords.append(keyword)
 
