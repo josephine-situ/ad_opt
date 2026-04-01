@@ -12,7 +12,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Iterable
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.v23.services.types.campaign_budget_service import CampaignBudgetOperation
@@ -224,7 +224,7 @@ def create_ad_schedule_operations(
 
 
 def get_location_ids_for_countries(
-    google_ads_client: GoogleAdsClient, customer_id: str, countries: list[str]
+    google_ads_client: GoogleAdsClient, customer_id: str, countries: Iterable[str]
 ) -> dict[str, int]:
     """
     Get location criterion IDs for a list of country names in a single query.
@@ -246,7 +246,6 @@ def get_location_ids_for_countries(
             geo_target_constant.target_type
         FROM geo_target_constant
         WHERE geo_target_constant.name IN ('{country_names}')
-        AND geo_target_constant.target_type = 'Country'
     """
     
     response = ga_service.search(customer_id=customer_id, query=query)
@@ -295,7 +294,6 @@ def create_campaigns_for_course(
         print(f"Error: Course '{course}' not found in config")
         sys.exit(1)
 
-    course_title = course_config.get("course_title_base", course.replace("_", " ").title())
     regions = course_config.get("regions", {})
     match_types = course_config.get("match_types", ["Exact", "Phrase", "Broad"])
     default_budget = course_config.get("default_daily_budget_micros", 1_000_000)
@@ -316,9 +314,9 @@ def create_campaigns_for_course(
     campaign_specs = []
     for region_label, countries in regions.items():
         for match_type in match_types:
-            campaign_name = construct_campaign_name_for_args(course_title, match_type, region_label)
-            ad_group_name = construct_ad_group_name_for_args(course_title, match_type, region_label)
-            budget_name = construct_budget_name_for_args(course_title, match_type, region_label)
+            campaign_name = construct_campaign_name_for_args(course, match_type, region_label)
+            ad_group_name = construct_ad_group_name_for_args(course, match_type, region_label)
+            budget_name = construct_budget_name_for_args(course, match_type, region_label)
 
             spec = CampaignSpec(
                 campaign_name=campaign_name,
@@ -446,7 +444,7 @@ def create_campaigns_for_course(
     # - Each row will have a region, match type and keyword
     # - Group keywords by region, match type then batch create ad group criteria for each campaign
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
-    region_match_type_to_keywords = get_keywords_to_create(course_title)
+    region_match_type_to_keywords = get_keywords_to_create(course)
     keyword_operations = []
     for spec in campaign_specs:
         ad_group_resource_name = spec.ad_group_resource_name
