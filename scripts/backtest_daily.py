@@ -39,6 +39,70 @@ from utils.embeddings import (
 from config import COURSE_CONFIG
 
 
+def calculate_dynamic_daily_budget(
+    *,
+    campaign_budget: float,
+    start_dt: pd.Timestamp,
+    end_dt: pd.Timestamp,
+    opt_date: pd.Timestamp,
+    bids_dir: Path,
+    buffer_fraction: float = 1.0 / 8.0,
+) -> float:
+    """Compute a day-specific budget from prior optimized spend.
+
+    Mirrors the logic used by run_pipeline.py, but treats the spend from
+    previous optimized days as the source of truth instead of the raw report.
+    """
+    if opt_date > end_dt:
+        raise ValueError(f"Optimization date ({opt_date.date()}) is after campaign end_date ({end_dt.date()}).")
+
+    total_days = (end_dt - start_dt).days + 1
+    if total_days <= 0:
+        raise ValueError(f"Campaign start date ({start_dt.date()}) is after end date ({end_dt.date()}).")
+
+    days_remaining = (end_dt - opt_date).days + 1
+    if days_remaining <= 0:
+        raise ValueError(f"Days remaining is {days_remaining}, but should be > 0.")
+
+    budget_used_from_history = 0.0
+    for prior_file in sorted(bids_dir.glob("optimized_costs_*.csv")):
+        try:
+            prior_day_str = prior_file.stem.replace("optimized_costs_", "")
+            prior_day = pd.to_datetime(prior_day_str)
+        except Exception:
+            continue
+
+        if prior_day < opt_date:
+            prior_df = pd.read_csv(prior_file)
+            if "Optimal Cost" in prior_df.columns:
+                budget_used_from_history += pd.to_numeric(prior_df["Optimal Cost"], errors="coerce").fillna(0.0).sum()
+
+    budget_used = budget_used_from_history + (campaign_budget / 8.0) / total_days
+
+    if campaign_budget - budget_used <= 0:
+        raise ValueError(
+            f"[Warning] No more campaign budget remaining. Campaign Budget: ${campaign_budget:.2f}, Used: ${budget_used:.2f}"
+        )
+
+    daily_budget = min(
+        (campaign_budget - budget_used) / days_remaining,
+        (campaign_budget - budget_used) / 2.0,
+    )
+    return max(0.0, daily_budget)
+
+
+def write_empty_optimized_costs(opt_path: Path, template_df: pd.DataFrame) -> None:
+    """Write a headered empty optimized-costs file for downstream scripts."""
+    empty_df = template_df.head(0).copy()
+    for col in ["Optimal Cost", "Gurobi Pred", "Gurobi Pred over Base", "Actual Model Pred", "Diff"]:
+        if col not in empty_df.columns:
+            empty_df[col] = pd.Series(dtype=float)
+
+    opt_path.parent.mkdir(parents=True, exist_ok=True)
+    empty_df.to_csv(opt_path, index=False)
+    print(f"  Saved empty placeholder to {opt_path}")
+
+
 def feature_matrix_cached(
     *,
     keywords: list[str],
@@ -141,6 +205,8 @@ def main():
     p.add_argument("--order-budget", action="store_true", help="Use B_{USA} >= B_{A} >= B_{B}")
     p.add_argument("--max-purch", action="store_true", help="Use max purchases objective instead of clicks")
     p.add_argument("--min-spend", type=float, default=None, help="Minimum spend per active keyword (e.g. 1.0)")
+    p.add_argument("--dynamic-budget", action="store_true", help="Recompute the daily budget from prior optimized spend")
+    p.add_argument("--campaign-budget", type=float, default=None, help="Total campaign budget used when --dynamic-budget is set")
     p.add_argument("--exp-name", default="backtests", help="Experiment name for output folder")
     p.add_argument("--course", default="gen_ai", help="Course name")
     p.add_argument("--embedding-method", default="bert", choices=["bert", "llm"], help="Embedding method: bert or llm (default: bert)")
@@ -151,8 +217,16 @@ def main():
 
     args = p.parse_args()
 
-    if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
+    if args.dynamic_budget:
+        if args.campaign_budget is None:
+            raise ValueError("--campaign-budget is required when --dynamic-budget is set")
+        args.budget = [args.campaign_budget]
+    elif args.budget is None:
+        try:
+            from scripts.run_pipeline import calculate_daily_budget
+            args.budget = [calculate_daily_budget(args.course)]
+        except ImportError as e:
+            raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
 
     start_dt, end_dt, budget_list, masked, keywords_n, order_budget, mask_frac, max_purch = args.start, args.end, args.budget, args.masked, args.keywords_n, args.order_budget, args.mask_frac, args.max_purch
     min_spend = args.min_spend
@@ -228,6 +302,7 @@ def main():
         cache_dir = base_results_dir / "cache"
         models_dir.mkdir(parents=True, exist_ok=True)
         cache_dir.mkdir(parents=True, exist_ok=True)
+        budget_exhausted = {b: False for b in budget_list}
 
         for day in opt_days:
             print(f"\n=== Day {day.date()} | k={k_label} ===")
@@ -251,7 +326,7 @@ def main():
                 raw_matrix = np.array([raw_emb_map[kw] for kw in hist_keywords])
                 daily_svd = fit_svd_pipeline(raw_matrix, n_components=k)
                 actual_k = daily_svd['n_components']
-                print(f"  SVD fit on {len(hist_keywords)} hist keywords → {actual_k}D")
+                print(f"  SVD fit on {len(hist_keywords)} hist keywords -> {actual_k}D")
 
                 # Replace embedding columns in training data
                 hist, emb_cols = replace_embeddings(hist, raw_emb_map, daily_svd)
@@ -319,11 +394,41 @@ def main():
                     print(f"Skipping {day.date()} budget={b} - already exists")
                     continue
 
+                if budget_exhausted[b]:
+                    write_empty_optimized_costs(opt_path, X_base)
+                    continue
+
+                # Recompute the daily budget from prior optimized spend if requested.
+                daily_budget = b
+                if args.dynamic_budget:
+                    try:
+                        daily_budget = calculate_dynamic_daily_budget(
+                            campaign_budget=b,
+                            start_dt=pd.to_datetime(start_dt),
+                            end_dt=pd.to_datetime(end_dt),
+                            opt_date=day,
+                            bids_dir=bids_dir,
+                        )
+                        print(f"  Dynamic budget for {day.date()}: ${daily_budget:.2f}")
+                    except ValueError as exc:
+                        if "No more campaign budget remaining" in str(exc):
+                            print(f"  {exc}")
+                            write_empty_optimized_costs(opt_path, X_base)
+                            budget_exhausted[b] = True
+                            continue
+                        raise
+
+                if daily_budget <= 0:
+                    print(f"  Budget exhausted for {day.date()} (budget={b}); writing empty placeholder.")
+                    write_empty_optimized_costs(opt_path, X_base)
+                    budget_exhausted[b] = True
+                    continue
+
                 # Optimize bids for day t
                 m, cost_vars, pred_vars, X_opt = optimize_bids(
                     X_base.copy(),
                     str(model_path),
-                    budget=b,
+                    budget=daily_budget,
                     kw_df=kw_df_daily,
                     order_budget=order_budget,
                     max_purch=max_purch,

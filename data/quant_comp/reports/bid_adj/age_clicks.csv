@@ -1,0 +1,225 @@
+Campaign,Age,Clicks
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,18 - 24,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,25 - 34,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,35 - 44,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,45 - 54,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,55 - 64,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,65+,0
+*Lifetime - Quantum -  B/Developing (Run 9) Mobile,Unknown,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,18 - 24,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,25 - 34,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,35 - 44,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,45 - 54,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,55 - 64,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,65+,0
+*Lifetime - Quantum - A/Developed (Run 10) #3,Unknown,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,18 - 24,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,25 - 34,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,35 - 44,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,45 - 54,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,55 - 64,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,65+,0
+*Lifetime - Quantum - A/Developed (Run 9) Mobile,Unknown,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,18 - 24,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,25 - 34,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,35 - 44,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,45 - 54,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,55 - 64,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,65+,0
+*Lifetime - Quantum - C/India (Run 9) Mobile,Unknown,0
+*Lifetime - Quantum - US (Run 10) #3,18 - 24,0
+*Lifetime - Quantum - US (Run 10) #3,25 - 34,0
+*Lifetime - Quantum - US (Run 10) #3,35 - 44,0
+*Lifetime - Quantum - US (Run 10) #3,45 - 54,0
+*Lifetime - Quantum - US (Run 10) #3,55 - 64,0
+*Lifetime - Quantum - US (Run 10) #3,65+,0
+*Lifetime - Quantum - US (Run 10) #3,Unknown,0
+*Lifetime - Quantum - US (Run 10) Mobile,18 - 24,0
+*Lifetime - Quantum - US (Run 10) Mobile,25 - 34,0
+*Lifetime - Quantum - US (Run 10) Mobile,35 - 44,0
+*Lifetime - Quantum - US (Run 10) Mobile,45 - 54,0
+*Lifetime - Quantum - US (Run 10) Mobile,55 - 64,0
+*Lifetime - Quantum - US (Run 10) Mobile,65+,0
+*Lifetime - Quantum - US (Run 10) Mobile,Unknown,0
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,18 - 24,4036
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,25 - 34,7253
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,35 - 44,5496
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,45 - 54,4149
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,55 - 64,2388
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,65+,1740
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - A/Developed,Unknown,9639
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,18 - 24,14843
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,25 - 34,10734
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,35 - 44,7257
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,45 - 54,4495
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,55 - 64,1758
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,65+,1196
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - B/Developing,Unknown,17163
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,18 - 24,2753
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,25 - 34,4883
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,35 - 44,4595
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,45 - 54,4008
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,55 - 64,2644
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,65+,2122
+*Program - Quantum Computing - Run 17 - Search - Lead Gen - US,Unknown,8045
+*QC - SP18 - A,18 - 24,0
+*QC - SP18 - A,25 - 34,0
+*QC - SP18 - A,35 - 44,0
+*QC - SP18 - A,45 - 54,0
+*QC - SP18 - A,55 - 64,0
+*QC - SP18 - A,65+,0
+*QC - SP18 - A,Unknown,0
+*QC - SP18 - B,18 - 24,0
+*QC - SP18 - B,25 - 34,0
+*QC - SP18 - B,35 - 44,0
+*QC - SP18 - B,45 - 54,0
+*QC - SP18 - B,55 - 64,0
+*QC - SP18 - B,65+,0
+*QC - SP18 - B,Unknown,0
+*QC - SP18 - US,18 - 24,0
+*QC - SP18 - US,25 - 34,0
+*QC - SP18 - US,35 - 44,0
+*QC - SP18 - US,45 - 54,0
+*QC - SP18 - US,55 - 64,0
+*QC - SP18 - US,65+,0
+*QC - SP18 - US,Unknown,0
+*QC - SP19 - Other A,18 - 24,0
+*QC - SP19 - Other A,25 - 34,0
+*QC - SP19 - Other A,35 - 44,0
+*QC - SP19 - Other A,45 - 54,0
+*QC - SP19 - Other A,55 - 64,0
+*QC - SP19 - Other A,65+,0
+*QC - SP19 - Other A,Unknown,0
+*QC - SP19 - Other B,18 - 24,0
+*QC - SP19 - Other B,25 - 34,0
+*QC - SP19 - Other B,35 - 44,0
+*QC - SP19 - Other B,45 - 54,0
+*QC - SP19 - Other B,55 - 64,0
+*QC - SP19 - Other B,65+,0
+*QC - SP19 - Other B,Unknown,0
+*QC - SP19 - US,18 - 24,0
+*QC - SP19 - US,25 - 34,0
+*QC - SP19 - US,35 - 44,0
+*QC - SP19 - US,45 - 54,0
+*QC - SP19 - US,55 - 64,0
+*QC - SP19 - US,65+,0
+*QC - SP19 - US,Unknown,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,18 - 24,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,25 - 34,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,35 - 44,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,45 - 54,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,55 - 64,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,65+,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,Unknown,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,18 - 24,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,25 - 34,4877
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,35 - 44,3561
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,45 - 54,2897
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,55 - 64,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,65+,0
+*Quantum Computing Program - xPRO - A - AW Lead Gen - Run 13 - 1T2023,Unknown,6968
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,18 - 24,0
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,25 - 34,6585
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,35 - 44,4651
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,45 - 54,2794
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,55 - 64,0
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,65+,0
+*Quantum Computing Program - xPRO - B - AW Lead Gen - Run 13 - 1T2023,Unknown,9008
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,18 - 24,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,25 - 34,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,35 - 44,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,45 - 54,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,55 - 64,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,65+,0
+*Quantum Computing Program - xPRO - C - AW Lead Gen - Run 10 - 2T2022,Unknown,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,18 - 24,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,25 - 34,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,35 - 44,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,45 - 54,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,55 - 64,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,65+,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 10 - 2T2022 - Targeted Adgroups,Unknown,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,18 - 24,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,25 - 34,3338
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,35 - 44,2922
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,45 - 54,2709
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,55 - 64,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,65+,0
+*Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023,Unknown,5948
+*Quantum SP19 - 2 - A/Developed,18 - 24,0
+*Quantum SP19 - 2 - A/Developed,25 - 34,0
+*Quantum SP19 - 2 - A/Developed,35 - 44,0
+*Quantum SP19 - 2 - A/Developed,45 - 54,0
+*Quantum SP19 - 2 - A/Developed,55 - 64,0
+*Quantum SP19 - 2 - A/Developed,65+,0
+*Quantum SP19 - 2 - A/Developed,Unknown,0
+*Quantum SP19 - 2 - B/Developing,18 - 24,0
+*Quantum SP19 - 2 - B/Developing,25 - 34,0
+*Quantum SP19 - 2 - B/Developing,35 - 44,0
+*Quantum SP19 - 2 - B/Developing,45 - 54,0
+*Quantum SP19 - 2 - B/Developing,55 - 64,0
+*Quantum SP19 - 2 - B/Developing,65+,0
+*Quantum SP19 - 2 - B/Developing,Unknown,0
+*Quantum SP19 - 2 - C/India,18 - 24,0
+*Quantum SP19 - 2 - C/India,25 - 34,0
+*Quantum SP19 - 2 - C/India,35 - 44,0
+*Quantum SP19 - 2 - C/India,45 - 54,0
+*Quantum SP19 - 2 - C/India,55 - 64,0
+*Quantum SP19 - 2 - C/India,65+,0
+*Quantum SP19 - 2 - C/India,Unknown,0
+*Quantum SP19 - 2 - US,18 - 24,0
+*Quantum SP19 - 2 - US,25 - 34,0
+*Quantum SP19 - 2 - US,35 - 44,0
+*Quantum SP19 - 2 - US,45 - 54,0
+*Quantum SP19 - 2 - US,55 - 64,0
+*Quantum SP19 - 2 - US,65+,0
+*Quantum SP19 - 2 - US,Unknown,0
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,18 - 24,72
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,25 - 34,186
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,35 - 44,206
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,45 - 54,255
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,55 - 64,130
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,65+,85
+Program - Quantum Computing - Run 22 - Search - Product Page - US + Canada,Unknown,569
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,18 - 24,32
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,25 - 34,88
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,35 - 44,62
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,45 - 54,55
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,55 - 64,16
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,65+,10
+Program - Quantum Computing - Run 22- Search - Product Page - A/Developed,Unknown,272
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,18 - 24,1374
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,25 - 34,3520
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,35 - 44,3483
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,45 - 54,2713
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,55 - 64,1413
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,65+,939
+Program - Quantum Computing - Run 23 - Search - Lead Gen - A/Developed,Unknown,7250
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,18 - 24,7121
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,25 - 34,6824
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,35 - 44,5246
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,45 - 54,3666
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,55 - 64,1479
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,65+,957
+Program - Quantum Computing - Run 23 - Search - Lead Gen - B/Developing,Unknown,11760
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,18 - 24,2424
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,25 - 34,5858
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,35 - 44,6452
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,45 - 54,5856
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,55 - 64,3358
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,65+,2819
+Program - Quantum Computing - Run 23 - Search - Lead Gen - US + Canada,Unknown,12232
+Quantum - SP19,18 - 24,0
+Quantum - SP19,25 - 34,0
+Quantum - SP19,35 - 44,0
+Quantum - SP19,45 - 54,0
+Quantum - SP19,55 - 64,0
+Quantum - SP19,65+,0
+Quantum - SP19,Unknown,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,18 - 24,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,25 - 34,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,35 - 44,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,45 - 54,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,55 - 64,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,65+,0
+Quantum Computing Program - xPRO - US - AW Lead Gen - Run 13 - 1T2023 #2,Unknown,0

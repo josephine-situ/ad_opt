@@ -38,6 +38,122 @@ from utils.embeddings import (
 )
 from config import COURSE_CONFIG
 
+
+EMPTY_EVAL_COLUMNS = [
+    "Day",
+    "k_policy",
+    "Budget",
+    "No_Observations",
+    "No_Optimized_Bids",
+    "t_Clicks_OptCost",
+    "t_Clicks_ActCost",
+    "tm1_Clicks_OptCost",
+    "Actual_Clicks",
+    "Opt_Cost",
+    "Act_Cost",
+    "Opt_Purch",
+    "Act_Purch",
+    "N_Opt",
+    "N_Obs",
+    "Avg_Cost_Change",
+    "Pct_New_Keywords",
+    "Oracle_k",
+    "Hist_MSE",
+    "Hist_R2",
+    "Hist_Bias",
+]
+
+SUMMARY_ORIGINS = ['new', 'existing', 'existing searches']
+SUMMARY_MATCH_TYPES = ['Exact match', 'Phrase match', 'Broad match']
+
+
+def _empty_eval_row(day, k_label, budget, oracle_k, hm):
+    return {
+        "Day": day.date(),
+        "k_policy": k_label,
+        "Budget": int(budget),
+        "No_Observations": True,
+        "No_Optimized_Bids": True,
+        "t_Clicks_OptCost": 0.0,
+        "t_Clicks_ActCost": 0.0,
+        "tm1_Clicks_OptCost": 0.0,
+        "Actual_Clicks": 0.0,
+        "Opt_Cost": 0.0,
+        "Act_Cost": 0.0,
+        "Opt_Purch": 0.0,
+        "Act_Purch": 0.0,
+        "N_Opt": 0,
+        "N_Obs": 0,
+        "Avg_Cost_Change": 0.0,
+        "Pct_New_Keywords": 0.0,
+        "Oracle_k": oracle_k,
+        "Hist_MSE": hm.get("Hist_MSE"),
+        "Hist_R2": hm.get("Hist_R2"),
+        "Hist_Bias": hm.get("Hist_Bias"),
+    }
+
+
+def _build_actual_breakdowns(obs_breakdown, rates_df):
+    act_clicks_region = obs_breakdown.groupby('Region')['t_Clicks_ActCost'].sum().reset_index()
+    act_cost_region = obs_breakdown.groupby('Region')['Cost'].sum().reset_index().rename(columns={'Cost': 'Act_Cost_Reg'})
+
+    act_clicks_reg_org = obs_breakdown.groupby(['Region', 'Origin'])['t_Clicks_ActCost'].sum().reset_index()
+    act_clicks_reg_mt = obs_breakdown.groupby(['Region', 'Match type'])['t_Clicks_ActCost'].sum().reset_index()
+
+    df_region = rates_df.merge(act_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_ActCost': 'Act_Clicks'})
+    df_region = df_region.merge(act_cost_region, on='Region', how='left').rename(columns={'Act_Cost_Reg': 'Act_Spend'})
+    df_region = df_region.fillna(0)
+    df_region['Act_Purchases'] = df_region['Act_Clicks'] * df_region['Purch_rate']
+
+    def calc_group_purchases(clicks_df, click_col, group_col):
+        merged = clicks_df.merge(rates_df, on='Region', how='left')
+        merged['Purch_rate'] = merged['Purch_rate'].fillna(0)
+        merged['Predicted_Purch'] = merged[click_col] * merged['Purch_rate']
+        return merged.groupby(group_col)['Predicted_Purch'].sum().to_dict()
+
+    return df_region, calc_group_purchases(act_clicks_reg_org, 't_Clicks_ActCost', 'Origin'), calc_group_purchases(act_clicks_reg_mt, 't_Clicks_ActCost', 'Match type')
+
+
+def _actual_only_eval_row(day, k_label, budget, oracle_k, hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks):
+    df_region, act_purch_origin_map, act_purch_mt_map = _build_actual_breakdowns(obs_breakdown, rates_df)
+
+    row = _empty_eval_row(day, k_label, budget, oracle_k, hm)
+    row.update({
+        "No_Observations": False,
+        "No_Optimized_Bids": True,
+        "t_Clicks_ActCost": val_act_clicks,
+        "Actual_Clicks": real_act_clicks,
+        "Act_Cost": act_cost,
+        "Act_Purch": df_region['Act_Purchases'].sum(),
+        "N_Obs": len(obs),
+    })
+
+    for reg in obs['Region'].unique():
+        row[f"Opt_Cost_Region_{reg}"] = 0.0
+        row[f"Act_Cost_Region_{reg}"] = obs.loc[obs['Region'] == reg, 'Cost'].sum()
+        row[f"Opt_Clicks_Region_{reg}"] = 0.0
+        row[f"Act_Clicks_Region_{reg}"] = obs_breakdown.loc[obs_breakdown['Region'] == reg, 't_Clicks_ActCost'].sum()
+        row[f"Opt_Purch_Region_{reg}"] = 0.0
+        row[f"Act_Purch_Region_{reg}"] = df_region.loc[df_region['Region'] == reg, 'Act_Purchases'].sum()
+
+    for org in SUMMARY_ORIGINS:
+        row[f"Opt_Cost_Origin_{org}"] = 0.0
+        row[f"Act_Cost_Origin_{org}"] = obs.loc[obs['Origin'] == org, 'Cost'].sum()
+        row[f"Opt_Clicks_Origin_{org}"] = 0.0
+        row[f"Act_Clicks_Origin_{org}"] = obs_breakdown.loc[obs_breakdown['Origin'] == org, 't_Clicks_ActCost'].sum()
+        row[f"Opt_Purch_Origin_{org}"] = 0.0
+        row[f"Act_Purch_Origin_{org}"] = act_purch_origin_map.get(org, 0.0)
+
+    for mt in SUMMARY_MATCH_TYPES:
+        row[f"Opt_Cost_Match_{mt}"] = 0.0
+        row[f"Act_Cost_Match_{mt}"] = obs.loc[obs['Match type'] == mt, 'Cost'].sum()
+        row[f"Opt_Clicks_Match_{mt}"] = 0.0
+        row[f"Act_Clicks_Match_{mt}"] = obs_breakdown.loc[obs_breakdown['Match type'] == mt, 't_Clicks_ActCost'].sum()
+        row[f"Opt_Purch_Match_{mt}"] = 0.0
+        row[f"Act_Purch_Match_{mt}"] = act_purch_mt_map.get(mt, 0.0)
+
+    return row
+
 def get_args():
     p = argparse.ArgumentParser()
     p.add_argument("--course", default="gen_ai", help="Course name")
@@ -61,17 +177,48 @@ def get_args():
                    help="SVD dim candidates for Oracle CV (default: 10 20 50 100 384).")
 
     args = p.parse_args()
-    if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
     # Map sentinel 0 → None (no SVD, full BERT embeddings)
     args.k_policy = [None if k == 0 else k for k in args.k_policy]
     return args
+
+
+def _load_campaign_budget(base_results_dir: Path) -> float | None:
+    """Load the campaign budget saved by the backtest launcher, if present."""
+    cfg_path = base_results_dir / "backtest_config.json"
+    if not cfg_path.exists():
+        return None
+
+    try:
+        cfg = json.loads(cfg_path.read_text())
+    except Exception:
+        return None
+
+    budget = cfg.get("campaign_budget")
+    if budget is None:
+        return None
+
+    try:
+        return float(budget)
+    except Exception:
+        return None
 
 
 def main():
     args = get_args()
 
     base_dir = Path(f"data/{args.course}")
+    base_results_root = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
+
+    if args.budget is None:
+        campaign_budget = _load_campaign_budget(base_results_root)
+        if campaign_budget is not None:
+            args.budget = [campaign_budget]
+        else:
+            try:
+                from scripts.run_pipeline import calculate_daily_budget
+                args.budget = [calculate_daily_budget(args.course)]
+            except ImportError as e:
+                raise ImportError("Could not import calculate_daily_budget. Please check config.") from e
 
     start_dt = pd.to_datetime(args.start)
     end_dt = pd.to_datetime(args.end)
@@ -210,6 +357,13 @@ def main():
             print(f"\nEvaluating Day: {day.date()} | k_policy={k_label}")
             obs = df[df["Day"] == day].copy()
 
+            if obs.empty:
+                print(f"  No observations found for {day.date()}; recording zero-row summary.")
+                hm = hist_metrics.get(day.date(), {})
+                for b in args.budget:
+                    eval_summary_rows.append(_empty_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm))
+                continue
+
             # Re-embed actuals with Oracle SVD
             if oracle_svd is not None and raw_emb_map is not None:
                 obs, _ = replace_embeddings(obs, raw_emb_map, oracle_svd)
@@ -232,6 +386,81 @@ def main():
 
             act_cost = obs["Cost"].sum()
             real_act_clicks = obs["Clicks"].sum()
+            hm = hist_metrics.get(day.date(), {})
+
+            def build_actual_only_row(budget: float, hm: dict) -> dict:
+                act_clicks_region = obs_breakdown.groupby('Region')['t_Clicks_ActCost'].sum().reset_index()
+                act_cost_region = obs_breakdown.groupby('Region')['Cost'].sum().reset_index().rename(columns={'Cost': 'Act_Cost_Reg'})
+
+                act_clicks_reg_org = obs_breakdown.groupby(['Region', 'Origin'])['t_Clicks_ActCost'].sum().reset_index()
+                act_clicks_reg_mt = obs_breakdown.groupby(['Region', 'Match type'])['t_Clicks_ActCost'].sum().reset_index()
+
+                df_region = rates_df.merge(act_clicks_region, on='Region', how='left').rename(columns={'t_Clicks_ActCost': 'Act_Clicks'})
+                df_region = df_region.merge(act_cost_region, on='Region', how='left').rename(columns={'Act_Cost_Reg': 'Act_Spend'})
+                df_region = df_region.fillna(0)
+                df_region['Act_Purchases'] = df_region['Act_Clicks'] * df_region['Purch_rate']
+
+                def calc_group_purchases(clicks_df, click_col, group_col):
+                    m = clicks_df.merge(rates_df, on='Region', how='left')
+                    m['Purch_rate'] = m['Purch_rate'].fillna(0)
+                    m['Predicted_Purch'] = m[click_col] * m['Purch_rate']
+                    return m.groupby(group_col)['Predicted_Purch'].sum().to_dict()
+
+                act_purch_origin_map = calc_group_purchases(act_clicks_reg_org, 't_Clicks_ActCost', 'Origin')
+                act_purch_mt_map = calc_group_purchases(act_clicks_reg_mt, 't_Clicks_ActCost', 'Match type')
+
+                row_dict = {
+                    "Day": day.date(),
+                    "k_policy": k_label,
+                    "Budget": int(budget),
+                    "No_Observations": False,
+                    "No_Optimized_Bids": True,
+                    "t_Clicks_OptCost": 0.0,
+                    "t_Clicks_ActCost": val_act_clicks,
+                    "tm1_Clicks_OptCost": 0.0,
+                    "Actual_Clicks": real_act_clicks,
+                    "Opt_Cost": 0.0,
+                    "Act_Cost": act_cost,
+                    "Opt_Purch": 0.0,
+                    "Act_Purch": df_region['Act_Purchases'].sum(),
+                    "N_Opt": 0,
+                    "N_Obs": len(obs),
+                    "Avg_Cost_Change": 0.0,
+                    "Pct_New_Keywords": 0.0,
+                    "Oracle_k": e_metrics.get("Oracle_k"),
+                    "Hist_MSE": hm.get("Hist_MSE"),
+                    "Hist_R2": hm.get("Hist_R2"),
+                    "Hist_Bias": hm.get("Hist_Bias"),
+                }
+
+                all_regions = set(obs['Region'].unique())
+                for reg in all_regions:
+                    row_dict[f"Opt_Cost_Region_{reg}"] = 0.0
+                    row_dict[f"Act_Cost_Region_{reg}"] = obs[obs['Region'] == reg]['Cost'].sum()
+                    row_dict[f"Opt_Clicks_Region_{reg}"] = 0.0
+                    row_dict[f"Act_Clicks_Region_{reg}"] = obs_breakdown[obs_breakdown['Region'] == reg]['t_Clicks_ActCost'].sum()
+                    row_dict[f"Opt_Purch_Region_{reg}"] = 0.0
+                    row_dict[f"Act_Purch_Region_{reg}"] = df_region[df_region['Region'] == reg]['Act_Purchases'].sum()
+
+                all_origins = ['new', 'existing', 'existing searches']
+                for org in all_origins:
+                    row_dict[f"Opt_Cost_Origin_{org}"] = 0.0
+                    row_dict[f"Act_Cost_Origin_{org}"] = obs[obs['Origin'] == org]['Cost'].sum()
+                    row_dict[f"Opt_Clicks_Origin_{org}"] = 0.0
+                    row_dict[f"Act_Clicks_Origin_{org}"] = obs_breakdown[obs_breakdown['Origin'] == org]['t_Clicks_ActCost'].sum()
+                    row_dict[f"Opt_Purch_Origin_{org}"] = 0.0
+                    row_dict[f"Act_Purch_Origin_{org}"] = act_purch_origin_map.get(org, 0.0)
+
+                all_match_types = ['Exact match', 'Phrase match', 'Broad match']
+                for mt in all_match_types:
+                    row_dict[f"Opt_Cost_Match_{mt}"] = 0.0
+                    row_dict[f"Act_Cost_Match_{mt}"] = obs[obs['Match type'] == mt]['Cost'].sum()
+                    row_dict[f"Opt_Clicks_Match_{mt}"] = 0.0
+                    row_dict[f"Act_Clicks_Match_{mt}"] = obs_breakdown[obs_breakdown['Match type'] == mt]['t_Clicks_ActCost'].sum()
+                    row_dict[f"Opt_Purch_Match_{mt}"] = 0.0
+                    row_dict[f"Act_Purch_Match_{mt}"] = act_purch_mt_map.get(mt, 0.0)
+
+                return row_dict
 
             # 3. For each param combo
             seed = int(day.strftime('%Y%m%d'))
@@ -257,13 +486,54 @@ def main():
 
                 if not bids_file.exists():
                     print(f"File not found: {bids_file}")
+                    if len(args.budget) == 1:
+                        fallback_budget = _load_campaign_budget(base_results_root)
+                        if fallback_budget is not None:
+                            fallback_run_dir = base_results_root / f"budget_{int(fallback_budget)}"
+                            fallback_bids_file = fallback_run_dir / "bids" / f"optimized_costs_{day.date()}.csv"
+                            if fallback_bids_file.exists():
+                                print(f"  Using campaign budget directory instead: {fallback_run_dir.name}")
+                                run_dir = fallback_run_dir
+                                bids_dir = fallback_run_dir / "bids"
+                                bids_file = fallback_bids_file
+                                act_file = bids_dir / f"actual_costs_{day.date()}.csv"
+                            else:
+                                eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                                continue
+                        else:
+                            eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                            continue
+                    else:
+                        eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                        continue
+
+                try:
+                    sol = pd.read_csv(bids_file)
+                except pd.errors.EmptyDataError:
+                    print(f"  Empty placeholder file at {bids_file}; recording actuals only.")
+                    eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
                     continue
 
-                sol = pd.read_csv(bids_file)
+                if sol.empty:
+                    print(f"  Empty placeholder file at {bids_file}; recording actuals only.")
+                    eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                    continue
+
+                required_cols = {"Keyword", "Region", "Match type", "Optimal Cost"}
+                if not required_cols.issubset(sol.columns):
+                    print(f"  Missing required columns in {bids_file}; recording actuals only.")
+                    eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                    continue
+
+                active_sol = sol[sol["Optimal Cost"] > 5e-4].copy()
+                if active_sol.empty:
+                    print(f"  No optimized bids in {bids_file}; recording actuals only.")
+                    eval_summary_rows.append(_actual_only_eval_row(day, k_label, b, e_metrics.get("Oracle_k"), hm, obs, obs_breakdown, rates_df, val_act_clicks, act_cost, real_act_clicks))
+                    continue
 
                 # Merge with X_base to get features
                 X_day = X_base.merge(
-                    sol[["Keyword", "Region", "Match type", "Origin", "Optimal Cost"]],
+                    active_sol[["Keyword", "Region", "Match type", "Origin", "Optimal Cost"]],
                     on=["Keyword", "Region", "Match type"],
                     how="right"
                 )
@@ -293,13 +563,13 @@ def main():
                 prev_day = day - pd.Timedelta(days=1)
                 prev_bids_file = bids_dir / f"optimized_costs_{prev_day.date()}.csv"
 
-                avg_cost_change = np.nan
-                pct_new_keywords = np.nan
+                avg_cost_change = 0.0
+                pct_new_keywords = 0.0
 
                 if prev_bids_file.exists():
                     prev_sol = pd.read_csv(prev_bids_file)
 
-                    curr_active = sol[sol["Optimal Cost"] > 1e-6].copy()
+                    curr_active = active_sol
                     prev_active = prev_sol[prev_sol["Optimal Cost"] > 1e-6].copy()
 
                     key_cols = ["Keyword", "Region", "Match type"]
@@ -392,8 +662,6 @@ def main():
                         obs_out["t_Clicks_ActCost"] = val_act_diff
                         obs_out.to_csv(act_file, index=False)
 
-                hm = hist_metrics.get(day.date(), {})
-
                 # --- Dynamic Compilation of Summary Row ---
                 row_dict = {
                     "Day": day.date(),
@@ -454,9 +722,12 @@ def main():
         # Save results per k_policy
         if eval_summary_rows:
             res_df = pd.DataFrame(eval_summary_rows)
-            out_path = base_results_dir / "evaluation_results.csv"
-            res_df.to_csv(out_path, index=False)
-            print(f"Saved evaluation results to {out_path}")
+        else:
+            res_df = pd.DataFrame(columns=EMPTY_EVAL_COLUMNS)
+
+        out_path = base_results_dir / "evaluation_results.csv"
+        res_df.to_csv(out_path, index=False)
+        print(f"Saved evaluation results to {out_path}")
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,7 @@ Supports both TF-IDF and BERT embeddings for keyword representations.
 
 Usage:
     python scripts/tidy_get_data.py --course ml # Use this
-    python scripts/tidy_get_data.py --force-reload # Force full recompute if you updated source data
+    python scripts/tidy_get_data.py --use-cache # Use cached data if available
 
 LLMs:
     request gpus with salloc -p pi_dbertsim --gpus=1
@@ -22,7 +22,6 @@ Output files:
     data/<course>/clean/train_<emb>.csv             Training split
     data/<course>/clean/test_<emb>.csv              Test split
     data/<course>/clean/unique_keyword_embeddings_<emb>.csv
-    data/<course>/clean/bert_pipeline_50d.pkl       (BERT only) SVD + normalizer pipeline
     data/<course>/cache/step*.parquet               Intermediate pipeline caches
     logs/tidy_get_data_<course>_*.log               Run log
 
@@ -54,14 +53,14 @@ from utils import (
 from utils.date_features import COURSE_START_DATES_MAP, COURSE_MIN_DATES
 
 
-def load_or_cache(func, cache_path, force_reload=False, *args, **kwargs):
+def load_or_cache(func, cache_path, use_cache=False, *args, **kwargs):
     """
     Load data from cache if exists, otherwise compute and cache.
     
     Args:
         func: Function to call if cache doesn't exist
         cache_path: Path to parquet cache file
-        force_reload: If True, ignore cache and recompute
+        use_cache: If True, use cache when available. If False, recompute.
         *args, **kwargs: Arguments to pass to func
     
     Returns:
@@ -69,7 +68,7 @@ def load_or_cache(func, cache_path, force_reload=False, *args, **kwargs):
     """
     cache_path = Path(cache_path)
     
-    if cache_path.exists() and not force_reload:
+    if cache_path.exists() and use_cache:
         try:
             print(f"  [Cache] Loading from {cache_path.name}")
             return pd.read_parquet(cache_path)
@@ -115,9 +114,9 @@ def main():
         help='Input data directory (default: data/{course}/reports)'
     )
     parser.add_argument(
-        '--force-reload',
+        '--use-cache',
         action='store_true',
-        help='Force reload from source files, skip all caches'
+        help='Use cached intermediate representations when available'
     )
     parser.add_argument(
         '--log-file',
@@ -159,7 +158,7 @@ def main():
     print(f"Course: {args.course}")
     print(f"Embedding method: {args.embedding_method}")
     print(f"N components: {args.n_components}")
-    print(f"Force reload: {args.force_reload}")
+    print(f"Use cache: {args.use_cache}")
     print("=" * 70)
     
     try:
@@ -174,7 +173,7 @@ def main():
         kw_df = load_or_cache(
             load_and_combine_keyword_data,
             cache_path / 'step1_combined.parquet',
-            args.force_reload,
+            args.use_cache,
             args.data_dir
         )
         
@@ -185,7 +184,7 @@ def main():
         kw_df = load_or_cache(
             get_date_features,
             cache_path / 'step3_features.parquet',
-            args.force_reload,
+            args.use_cache,
             kw_df,
             COURSE_START_DATES_MAP.get(args.course, [])
         )
@@ -194,7 +193,7 @@ def main():
         kw_df = load_or_cache(
             filter_data_by_date,
             cache_path / 'step4_filtered.parquet',
-            args.force_reload,
+            args.use_cache,
             kw_df,
             COURSE_MIN_DATES.get(args.course, '2024-11-03')
         )
@@ -210,7 +209,7 @@ def main():
         merged_df = load_or_cache(
             merge_with_ads_data,
             cache_path / 'step6_merged.parquet',
-            args.force_reload,
+            args.use_cache,
             kw_df,
             gkp_df,
             use_fuzzy_matching=True,
@@ -222,7 +221,7 @@ def main():
         cleaned_df = load_or_cache(
             lambda df: df[df['Avg. CPC'] < 50] if 'Avg. CPC' in df.columns else df,  # Example: remove rows with CPC >= 10,000
             cache_path / 'step6_5_cleaned.parquet',
-            args.force_reload,
+            args.use_cache,
             merged_df
         )  
         
@@ -230,7 +229,7 @@ def main():
         df = load_or_cache(
             add_embeddings,
             cache_path / f'step8_embeddings_{args.embedding_method}.parquet',
-            args.force_reload,
+            args.use_cache,
             cleaned_df,
             args.embedding_method,
             args.n_components,

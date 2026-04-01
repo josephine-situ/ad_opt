@@ -33,7 +33,7 @@ import scipy.sparse as sp
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import setup_tee_logging
+from utils.tee_logging import setup_tee_logging
 
 def _to_float32_csr(X):
     """Cast matrices to float32; prefer CSR for sparse.
