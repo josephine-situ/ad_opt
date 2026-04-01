@@ -1,7 +1,24 @@
 
+from typing import TypedDict
+
+
 # Configuration for AD Optimization Project
 
-COURSE_CONFIG = {
+class CourseConfig(TypedDict):
+    start_dates: list[str]
+    min_date: str
+    budgets: list[float]
+    course_title_base: str
+    regions: dict[str, list[str]]
+    conversion_actions: list[str]
+    purchase_actions: list[str]
+    match_types: list[str]
+    default_daily_budget_micros: int
+    budget_change_threshold: float
+    cpc_change_threshold: float
+
+
+COURSE_CONFIG: dict[str, CourseConfig] = {
     'gen_ai': {
         'start_dates': [
             '2024-10-15', '2025-02-10', '2025-09-29', '2026-02-09'
@@ -23,6 +40,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'ml': {
         'start_dates': [
@@ -47,6 +65,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,  # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'sys_eng': {
         'start_dates': [
@@ -71,6 +90,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'sys_think': {
         'start_dates': [
@@ -96,6 +116,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,   # Can we use "budgets" or does this need to be separate?
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'quant_comp': {
         'start_dates': [], # TODO: add start dates
@@ -114,6 +135,7 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     'dai': {
         'start_dates': [], # TODO: add start dates
@@ -132,5 +154,6 @@ COURSE_CONFIG = {
         'match_types': ["Exact", "Phrase", "Broad"],
         'default_daily_budget_micros': 1_000_000,
         'budget_change_threshold': 0.5,  # Warn if budget changes by more than 50%
+        'cpc_change_threshold': 0.5,  # Warn if keyword CPC changes by more than 50%
     }
 }
