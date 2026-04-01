@@ -76,8 +76,6 @@ def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     to be added for a specific ad group easily.
     """
     keywords = defaultdict(list)
-    # TODO: Should this be `optimized_costs.csv` since that's what we'll end up altering?
-    # Could use a different file for input vs updates if we'd prefer.
     csv_path = (
         Path(__file__).parent.parent / "opt_results" / course / "bids" / f"optimized_costs.csv"
     )
@@ -173,7 +171,7 @@ def create_ad_group_keyword_operations(
         google_ads_client: The Google Ads client instance.
         ad_group_resource_name: The resource name of the ad group to add the keyword to.
         keywords: List of keyword text values (e.g. "machine learning course").
-        match_type: The keyword match type — one of "EXACT", "PHRASE", or "BROAD".
+        match_type: The keyword match type — one of "exact", "phrase", or "broad".
 
     Returns:
         An AdGroupCriterionOperation ready to be submitted via AdGroupCriterionService.
