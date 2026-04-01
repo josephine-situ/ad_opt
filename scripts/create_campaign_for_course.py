@@ -25,7 +25,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
     AdGroupCriterionOperation,
 )
 
-from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP
+from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -463,23 +463,32 @@ def create_campaigns_for_course(
     for spec in campaign_specs:
         ad_group_resource_name = spec.ad_group_resource_name
         match_type = spec.match_type
-        keywords = region_match_type_to_keywords[(spec.region_label, spec.match_type.upper())]
-        keyword_operations.extend(
-            create_ad_group_keyword_operations(
-                google_ads_client, ad_group_resource_name, keywords, match_type
+        keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type.upper()), [])
+        if not keywords:
+            print(
+                f"Warning: No keywords found for campaign '{spec.campaign_name}' with region '{spec.region_label}' and match type '{spec.match_type}'."
             )
-        )
+        else:
+            keyword_operations.extend(
+                create_ad_group_keyword_operations(
+                    google_ads_client, ad_group_resource_name, keywords, match_type
+                )
+            )
 
-    # TODO: Chunk this up. We'll have too many keywords to create them all in one batch.
+    total_created = 0
     try:
-        request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
-        request.customer_id = customer_id
-        request.operations = keyword_operations
-        ad_schedule_response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
-        print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
+        for i in range(0, len(keyword_operations), BATCH_SIZE):
+            batch = keyword_operations[i : i + BATCH_SIZE]
+            request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+            request.customer_id = customer_id
+            request.operations = batch
+            response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+            total_created += len(response.results)
+            print(f"✓ Created {len(response.results)} keyword criteria (batch {i // BATCH_SIZE + 1})")
     except Exception as e:
-        print(f"✗ Error creating ad schedules: {e}")
+        print(f"✗ Error creating keyword criteria: {e}")
         sys.exit(1)
+    print(f"✓ Created {total_created} keyword criteria in total")
 
     # Batch create ad schedules for all campaigns
     print(f"\n{'='*60}")
