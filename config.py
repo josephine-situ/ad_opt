@@ -49,9 +49,9 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             '2025-09-29', '2026-02-02', '2026-04-27'
         ],
         'min_date': '2022-07-01',
-        'campaign_budget': 10000.0, # TODO: update campaign config with actuals
-        'current_campaign_start_date': '2026-02-02',
-        'current_campaign_end_date': '2026-04-15',
+        'campaign_budget': 15000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-03',
+        'current_campaign_end_date': '2026-04-27',
         'course_title_base': "Program - MLx",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {
@@ -101,9 +101,9 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             '2026-04-06'
         ],
         'min_date': '2022-07-01', # Start of search history
-        'campaign_budget': 50000.0, # TODO: update campaign config with actuals
-        'current_campaign_start_date': '2026-02-02',
-        'current_campaign_end_date': '2026-04-15',
+        'campaign_budget': 24000.0, # TODO: update campaign config with actuals
+        'current_campaign_start_date': '2026-02-03',
+        'current_campaign_end_date': '2026-04-06',
         'course_title_base': "Course - System Thinking",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
         'regions': {

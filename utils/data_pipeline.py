@@ -600,7 +600,7 @@ def add_embeddings(
     - cleaned_df (pd.DataFrame): Data with keywords.
     - embedding_method (str): 'tfidf', 'bert', or 'llm'.
     - n_components (int): Target embedding dimensionality (for tfidf/bert only).
-    - save_models (bool): If True, save vectorizer/SVD/normalizer for later use.
+    - save_models (bool): If True, save the non-BERT model artifacts for later use.
     - model_dir (str): Directory to save models. Default 'models'.
     - course (str): Course identifier for LLM scoring. Default 'gen_ai'.
     - cache_dir (str): Directory for caching LLM scores. Default None.
@@ -642,15 +642,8 @@ def add_embeddings(
             return_model=True
         )
         embedding_df.rename(columns={'text': 'Keyword'}, inplace=True)
-        
         if save_models:
-            model_path = Path(model_dir) / f'bert_pipeline_{n_components}d.pkl'
-            model_path.parent.mkdir(parents=True, exist_ok=True)
-            # Store model name in the pipeline dict for consistent reloading
-            bert_models['model_name'] = 'all-MiniLM-L6-v2'
-            with open(model_path, 'wb') as f:
-                pickle.dump(bert_models, f)
-            print(f"  Saved BERT pipeline to {model_path}")
+            print("  Skipping BERT pipeline pickle save; run_pipeline now uses cached raw embeddings and a fitted normalizer instead.")
             
     elif embedding_method.lower() == 'llm':
         # Use LLM-based relevance scoring instead of embeddings

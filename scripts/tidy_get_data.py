@@ -22,7 +22,6 @@ Output files:
     data/<course>/clean/train_<emb>.csv             Training split
     data/<course>/clean/test_<emb>.csv              Test split
     data/<course>/clean/unique_keyword_embeddings_<emb>.csv
-    data/<course>/clean/bert_pipeline_50d.pkl       (BERT only) SVD + normalizer pipeline
     data/<course>/cache/step*.parquet               Intermediate pipeline caches
     logs/tidy_get_data_<course>_*.log               Run log
 

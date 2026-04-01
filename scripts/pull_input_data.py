@@ -32,6 +32,12 @@ SEMRUSH_PHRASE_MAPPING = {
     "dai": "deploying ai course",
 }
 
+def _gkp_month_header_sort_key(header: str) -> tuple[int, int]:
+    month_str, year_str = header.replace("Searches: ", "", 1).rsplit(" ", 1)
+    month_number = datetime.strptime(month_str, "%b").month
+    return int(year_str), month_number
+
+
 def validate_environment_variables(datasets: Iterable[str]) -> bool:
     """Validate that required environment variables are set for the given dataset."""
     required_vars = []
@@ -84,8 +90,10 @@ def pull_ads_reports(
 
 def generate_rows_from_gkp_response(
     response: Any,
-    date_headers: list[str],
-) -> Iterator[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
+    rows = []
+    monthly_headers = set()
+
     for result in response.results:
         metrics = result.keyword_metrics
         keyword = result.text
