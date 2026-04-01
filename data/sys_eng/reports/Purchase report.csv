@@ -1,12 +1,26 @@
-Campaign,Conversion action,Conversions
-Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,38.26
-Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,1.00
-Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,12.57
-Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,58.51
-Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,4.00
-Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,20.00
-Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,4.00
-Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,1.00
+Campaign,Conversion action,All conv.
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,105.87
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,39.20
+Program - SysEng - Run 21 - Search - Lead Gen - US,Purchase,223.97
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,14.00
+Program - SysEng - Run 22 - Search - Lead Gen - B,Purchase,2.07
+Program - SysEng - Run 22 - Search - Lead Gen - C,Purchase,23.00
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,Purchase,47.00
 Program - SysEng - Run 24 - Search - Remarketing - A,Purchase,1.00
+Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,1.00
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,12.57
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,38.26
 Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,2.00
-Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,24.10
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,20.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,25.60
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,87.18
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),Purchase,4.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),Purchase,2.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,11.00
+Program - SysEng - Run 27 - Search - Prospecting - B,Purchase,4.00
+Program - SysEng - Run 27 - Search - Prospecting - C,Purchase,1.00
+Program - SysEng - Run 27 - Search - Prospecting - USA,Purchase,27.00
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,Purchase,4.00

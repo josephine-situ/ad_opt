@@ -8,14 +8,57 @@ import pandas as pd
 import argparse
 from pathlib import Path
 import numpy as np
+import json
+
+
+def _load_backtest_config(base_results_dir):
+    cfg_path = base_results_dir / "backtest_config.json"
+    if not cfg_path.exists():
+        return {}
+
+    try:
+        return json.loads(cfg_path.read_text())
+    except Exception:
+        return {}
+
+
+def _resolve_results_dir(course, exp_name):
+    base_dir = Path(f"opt_results/{course}/backtests/{exp_name}")
+    if (base_dir / "evaluation_results.csv").exists():
+        return base_dir
+
+    k_full_dir = base_dir / "k_full"
+    if (k_full_dir / "evaluation_results.csv").exists():
+        return k_full_dir
+
+    return base_dir
+
+
+def _find_no_observation_dates(base_results_dir, eval_df):
+    if "No_Observations" in eval_df.columns and "Day" in eval_df.columns:
+        no_obs_days = (
+            pd.to_datetime(eval_df.loc[eval_df["No_Observations"].eq(True), "Day"])
+            .dt.normalize()
+            .dt.date
+            .unique()
+        )
+        return sorted(day.isoformat() for day in no_obs_days)
+
+    config = _load_backtest_config(base_results_dir)
+    start_day = config.get("start_day")
+    end_day = config.get("end_day")
+    if not start_day or not end_day or "Day" not in eval_df.columns:
+        return []
+
+    expected_days = pd.date_range(pd.to_datetime(start_day), pd.to_datetime(end_day), freq="D")
+    observed_days = set(pd.to_datetime(eval_df["Day"]).dt.normalize().dt.date)
+    return [day.date().isoformat() for day in expected_days if day.date() not in observed_days]
 
 def generate_performance_table(summary_df):
     # Create a copy to avoid SettingWithCopyWarning on the original df
     df = summary_df.copy()
     df = df.sort_values(by=['Budget'], ascending=[True], na_position='last')
-
-    # Identify "Best" Row (max improvement in clicks)
-    best_idx = df['improvement in clicks'].idxmax()
+    best_idx = pd.to_numeric(summary_df['improvement in clicks'], errors='coerce').idxmax()
 
     # --- FORMATTING ---
     df['Budget'] = df['Budget'].apply(lambda x: f"{x:.0f}")
@@ -40,7 +83,6 @@ def generate_performance_table(summary_df):
     
     # Bold best improvement in clicks
     if 'improvement in clicks' in df.columns:
-        best_idx = df['improvement in clicks'].str.rstrip(r'\%').astype(float).idxmax()
         for col in df.columns:
             current_val = df.at[best_idx, col]
             df.at[best_idx, col] = f"\\textbf{{{str(current_val)}}}"
@@ -472,6 +514,105 @@ def compute_share_row(source_df, categories, prefix, infix, totals, display_name
                 row[f"{display_metric} {display_cat}"] = 0
     return row
 
+
+def generate_keyword_spend_table(base_results_dir, budget, day_count, bid_multiplier=1.3):
+    """Aggregate per-day optimized costs into an average daily keyword table."""
+    run_dir = base_results_dir / f"budget_{int(float(budget))}"
+    bids_dir = run_dir / "bids"
+    daily_files = sorted(bids_dir.glob("optimized_costs_*.csv"))
+
+    if not daily_files or day_count <= 0:
+        return None
+
+    frames = []
+    for fpath in daily_files:
+        try:
+            daily_df = pd.read_csv(
+                fpath,
+                usecols=[
+                    "Keyword",
+                    "Region",
+                    "Match type",
+                    "Optimal Cost",
+                    "Gurobi Pred over Base",
+                    "t_Clicks_OptCost",
+                ],
+            )
+        except ValueError:
+            daily_df = pd.read_csv(fpath)
+            available_cols = [
+                c
+                for c in [
+                    "Keyword",
+                    "Region",
+                    "Match type",
+                    "Optimal Cost",
+                    "Gurobi Pred over Base",
+                    "t_Clicks_OptCost",
+                ]
+                if c in daily_df.columns
+            ]
+            if len(available_cols) < 4:
+                continue
+            daily_df = daily_df[available_cols].copy()
+
+        if "Optimal Cost" not in daily_df.columns:
+            continue
+
+        frames.append(daily_df)
+
+    if not frames:
+        return None
+
+    spend_df = pd.concat(frames, ignore_index=True)
+    spend_df["Optimal Cost"] = pd.to_numeric(spend_df["Optimal Cost"], errors="coerce").fillna(0.0)
+    if "Gurobi Pred over Base" in spend_df.columns:
+        spend_df["Gurobi Pred over Base"] = pd.to_numeric(
+            spend_df["Gurobi Pred over Base"], errors="coerce"
+        ).fillna(0.0)
+    else:
+        spend_df["Gurobi Pred over Base"] = 0.0
+
+    if "t_Clicks_OptCost" in spend_df.columns:
+        spend_df["t_Clicks_OptCost"] = pd.to_numeric(
+            spend_df["t_Clicks_OptCost"], errors="coerce"
+        ).fillna(0.0)
+    else:
+        spend_df["t_Clicks_OptCost"] = 0.0
+
+    spend_df["daily_bid"] = np.where(
+        spend_df["Gurobi Pred over Base"] > 0,
+        (spend_df["Optimal Cost"] / spend_df["Gurobi Pred over Base"]) * float(bid_multiplier),
+        0.0,
+    )
+
+    agg_df = (
+        spend_df.groupby(["Keyword", "Match type", "Region"], as_index=False)
+        .agg(
+            total_spend=("Optimal Cost", "sum"),
+            total_clicks=("t_Clicks_OptCost", "sum"),
+            total_bid=("daily_bid", "sum"),
+        )
+        .sort_values(["total_spend", "Keyword"], ascending=[False, True])
+        .reset_index(drop=True)
+    )
+    agg_df["Budget"] = budget
+    agg_df["avg_daily_spend"] = agg_df["total_spend"] / float(day_count)
+    agg_df["avg_daily_clicks"] = agg_df["total_clicks"] / float(day_count)
+    agg_df["avg_daily_bid"] = agg_df["total_bid"] / float(day_count)
+    return agg_df[[
+        "Budget",
+        "Keyword",
+        "Match type",
+        "Region",
+        "avg_daily_spend",
+        "avg_daily_clicks",
+        "avg_daily_bid",
+        "total_spend",
+        "total_clicks",
+        "total_bid",
+    ]]
+
 def main():
 
     p = argparse.ArgumentParser()
@@ -479,7 +620,7 @@ def main():
     p.add_argument("--course", default="gen_ai", help="Course name")
     args = p.parse_args()
     
-    base_results_dir = Path(f"opt_results/{args.course}/backtests/{args.exp_name}")
+    base_results_dir = _resolve_results_dir(args.course, args.exp_name)
     eval_csv = base_results_dir / "evaluation_results.csv"
 
     if not eval_csv.exists():
@@ -487,6 +628,11 @@ def main():
         return
 
     full_results = pd.read_csv(eval_csv)
+    no_observation_dates = _find_no_observation_dates(base_results_dir, full_results)
+    if no_observation_dates:
+        print(f"No-observation dates: {', '.join(no_observation_dates)}")
+    else:
+        print("No-observation dates: none")
     
     # Handle different evaluation formats
     if 'Budget' not in full_results.columns:
@@ -507,6 +653,7 @@ def main():
     origin_rows = []
     match_type_rows = []
     stability_rows = []
+    keyword_spend_rows = []
     
     grouped = full_results.groupby('Budget', dropna=False)
 
@@ -641,12 +788,23 @@ def main():
         mt_row.update(compute_share_row(df_group, match_types, 'Opt', 'Match', opt_totals))
         match_type_rows.append(mt_row)
 
+        keyword_spend_df = generate_keyword_spend_table(
+            base_results_dir,
+            budget,
+            df_group["Day"].nunique(),
+        )
+        if keyword_spend_df is not None:
+            keyword_spend_rows.append(keyword_spend_df)
+
     if not summary_rows:
         print("No results found.")
         return
 
     # --- Output Performance Table ---
     summary_df = pd.DataFrame(summary_rows)
+    no_observation_dates_str = ", ".join(no_observation_dates)
+    summary_df["n_no_observation_days"] = len(no_observation_dates)
+    summary_df["no_observation_dates"] = no_observation_dates_str
     out_csv = base_results_dir / "backtest_summary.csv"
     summary_df.to_csv(out_csv, index=False)
     
@@ -705,6 +863,13 @@ def main():
         f.write(latex_mt)
     print(f"\nMatch Type Table saved to {out_mt_tex}")
     print(latex_mt)
+
+    # --- Output Keyword Spend Table ---
+    if keyword_spend_rows:
+        keyword_spend_df = pd.concat(keyword_spend_rows, ignore_index=True)
+        out_kw_spend_csv = base_results_dir / "keyword_match_region_avg_daily_spend.csv"
+        keyword_spend_df.to_csv(out_kw_spend_csv, index=False)
+        print(f"\nKeyword spend table saved to {out_kw_spend_csv}")
 
     # --- Output Country Table (Best Budget) ---
     # Find best budget based on clicks improvement

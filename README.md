@@ -16,7 +16,19 @@ Planner stats ───────┘        │                  │          
 
 ### Steps
 
-1. **Keyword curation** — `compare_keywords.py` merges new Semrush keywords with existing Google Ads search terms and keywords, deduplicates, and classifies each as `existing`, `existing searches`, or `new`.
+1. **Keyword curation** — Manually download new keywords from Semrush. Then, fill in the 'Intent' column of this raw file using Gemini 3.1 Pro (in the UI) with the following prompt:
+
+   > In the attached .csv file, the intent column is partially filled.
+   > 
+   > Each keyword is tagged with one of four intent types, showing what users want to accomplish:
+   > Informational: Users want to learn something or find an answer. Example: "how to tie a tie"
+   > Navigational: Users want to find a specific website or page. Example: "facebook login"
+   > Commercial: Users are researching products or services before buying. Example: "best running shoes for beginners"
+   > Transactional: Users are ready to take action or make a purchase. Example: "buy nike running shoes"
+   > 
+   > Fill in the blanks in the intent column. If the keyword should be tagged with multiple intent types, separate the intent types with commas (e.g., "Informational, Commercial").
+   
+   After the columns are filled in, save the file as `semrush_new_kws`. `compare_keywords.py` filters for only keywords with Commercial and Transactional intents (alternatively, intent can be tagged using a predefined list of term-matching rules), merges these with existing Google Ads search terms (which are already filtered for positive conversions in `pull_input_data.py`) and keywords, and deduplicates. After deduplication, it classifies each as `existing`, `existing searches`, or `new`. Keywords found in the course's `excl_list.csv` are then dropped. Any keywords that are already used in other courses (found in their raw input to models reports) are then excluded entirely from the final list to prevent overlap between courses. Note that keywords used in other courses are treated as fixed (so `keywords_classified.csv` is not updated during each daily run with other courses' keywords; the cross-course keyword exclusion is primarily performed when reviewing new Semrush keywords or existing search terms).
 2. **Google Keyword Planner** — Paste the keyword list into GKP to obtain historical search volume, competition index, and bid ranges.
 3. **Configuration** — Set course start dates, minimum data dates, and budgets in `config.py`.
 4. **Data preparation** — `tidy_get_data.py` loads reports, cleans data, extracts temporal features, merges GKP statistics, generates keyword embeddings (BERT 50-d or LLM relevance scores), imputes missing values, and creates train/test splits.

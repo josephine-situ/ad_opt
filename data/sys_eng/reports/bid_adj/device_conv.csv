@@ -1,0 +1,41 @@
+Campaign,Conversion action,Device,All conv.
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Computers,84.92
+Program - SysEng - Run 21 - Search - Lead Gen - A/Developed,Purchase,Mobile phones,20.95
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Computers,28.90
+Program - SysEng - Run 21 - Search - Lead Gen - B/Developing,Purchase,Mobile phones,10.30
+Program - SysEng - Run 21 - Search - Lead Gen - US,Purchase,Computers,193.98
+Program - SysEng - Run 21 - Search - Lead Gen - US,Purchase,Mobile phones,29.99
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Computers,12.98
+Program - SysEng - Run 22 - Search - Lead Gen - A,Purchase,Mobile phones,1.02
+Program - SysEng - Run 22 - Search - Lead Gen - B,Purchase,Computers,2.07
+Program - SysEng - Run 22 - Search - Lead Gen - C,Purchase,Computers,21.00
+Program - SysEng - Run 22 - Search - Lead Gen - C,Purchase,Mobile phones,2.00
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,Purchase,Computers,41.99
+Program - SysEng - Run 22 - Search - Lead Gen - US + CA,Purchase,Mobile phones,5.01
+Program - SysEng - Run 24 - Search - Remarketing - A,Purchase,Mobile phones,1.00
+Program - SysEng - Run 24 - Search - Remarketing - C,Purchase,Mobile phones,1.00
+Program - SysEng - Run 24 - Search - Remarketing - US + CA,Purchase,Computers,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Computers,10.67
+Program - SysEng - Run 25 - Search - Lead Gen - A (broad),Purchase,Mobile phones,1.90
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Computers,28.33
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Mobile phones,8.93
+Program - SysEng - Run 25 - Search - Lead Gen - A (exact + phrase),Purchase,Tablets,1.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (broad),Purchase,Computers,2.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Computers,14.00
+Program - SysEng - Run 25 - Search - Lead Gen - B (exact + phrase),Purchase,Mobile phones,6.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (broad),Purchase,Mobile phones,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - C (exact + phrase),Purchase,Computers,4.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,Computers,23.67
+Program - SysEng - Run 25 - Search - Lead Gen - USA (broad),Purchase,Mobile phones,1.93
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,Computers,74.18
+Program - SysEng - Run 25 - Search - Lead Gen - USA (exact),Purchase,Mobile phones,13.00
+Program - SysEng - Run 25 - Search - Lead Gen - USA (phrase),Purchase,Computers,4.33
+Program - SysEng - Run 25 - Search - Lead Gen - USA (v2 test),Purchase,Computers,2.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Computers,9.00
+Program - SysEng - Run 27 - Search - Prospecting - A,Purchase,Mobile phones,2.00
+Program - SysEng - Run 27 - Search - Prospecting - B,Purchase,Computers,2.00
+Program - SysEng - Run 27 - Search - Prospecting - B,Purchase,Mobile phones,2.00
+Program - SysEng - Run 27 - Search - Prospecting - C,Purchase,Computers,1.00
+Program - SysEng - Run 27 - Search - Prospecting - USA,Purchase,Computers,24.00
+Program - SysEng - Run 27 - Search - Prospecting - USA,Purchase,Mobile phones,3.00
+Program - SysEng - Run 27 - Search - Prospecting - USA - TEST: Brand Excluded + Targeting,Purchase,Computers,4.00

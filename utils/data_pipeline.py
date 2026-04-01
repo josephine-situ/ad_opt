@@ -214,18 +214,46 @@ def get_gkp_data(gkp_dir=None):
         return pd.DataFrame()  # Return empty dataframe
     
     # Find files matching the pattern
-    gkp_files = list(gkp_path.glob('Saved Keywords Stats*.csv'))
+    gkp_files = list(gkp_path.glob('Saved Keyword* Stats*.csv'))
     
     if not gkp_files:
-        print(f"  Warning: No 'Saved Keywords Stats*.csv' files found in {gkp_path}")
+        print(f"  Warning: No 'Saved Keyword* Stats*.csv' files found in {gkp_path}")
         return pd.DataFrame()  # Return empty dataframe
     
     # Use the most recent file (by modification time)
     gkp_file = max(gkp_files, key=lambda f: f.stat().st_mtime)
     print(f"  Found GKP file: {gkp_file.name}")
 
-    # File is UTF-16 encoded (like the 2025 keyword report)
-    gkp_df = pd.read_csv(gkp_file, sep='\t', encoding='utf-16')
+    # Support both legacy UTF-16 exports and the current UTF-8 tab-delimited
+    # files written by scripts/pull_input_data.py.
+    gkp_df = None
+    read_attempts = [
+        {"encoding": "utf-8-sig", "sep": "\t"},
+        {"encoding": "utf-8", "sep": "\t"},
+        {"encoding": "utf-8-sig", "sep": ","},
+        {"encoding": "utf-8", "sep": ","},
+        {"encoding": "utf-16", "sep": "\t"},
+        {"encoding": "utf-16", "sep": ","},
+    ]
+
+    last_error = None
+    for read_kwargs in read_attempts:
+        try:
+            gkp_df = pd.read_csv(gkp_file, **read_kwargs)
+            if 'Keyword' in gkp_df.columns:
+                break
+        except Exception as exc:
+            last_error = exc
+            gkp_df = None
+
+    if gkp_df is None:
+        raise UnicodeDecodeError(
+            'utf-8',
+            b'',
+            0,
+            0,
+            f"Unable to read GKP file {gkp_file.name} with supported encodings/delimiters: {last_error}",
+        )
     
     print(f"  Loaded {len(gkp_df)} rows from {gkp_file.name}")
     
@@ -240,7 +268,6 @@ def get_gkp_data(gkp_dir=None):
     search_cols = [col for col in gkp_df.columns if col.startswith('Searches:')]
     
     # Parse dates from search columns and sort to find most recent
-    from datetime import datetime
     search_dates = []
     for col in search_cols:
         # Format is "Searches: Mon YYYY"
@@ -573,7 +600,7 @@ def add_embeddings(
     - cleaned_df (pd.DataFrame): Data with keywords.
     - embedding_method (str): 'tfidf', 'bert', or 'llm'.
     - n_components (int): Target embedding dimensionality (for tfidf/bert only).
-    - save_models (bool): If True, save vectorizer/SVD/normalizer for later use.
+    - save_models (bool): If True, save the non-BERT model artifacts for later use.
     - model_dir (str): Directory to save models. Default 'models'.
     - course (str): Course identifier for LLM scoring. Default 'gen_ai'.
     - cache_dir (str): Directory for caching LLM scores. Default None.
@@ -615,15 +642,8 @@ def add_embeddings(
             return_model=True
         )
         embedding_df.rename(columns={'text': 'Keyword'}, inplace=True)
-        
         if save_models:
-            model_path = Path(model_dir) / f'bert_pipeline_{n_components}d.pkl'
-            model_path.parent.mkdir(parents=True, exist_ok=True)
-            # Store model name in the pipeline dict for consistent reloading
-            bert_models['model_name'] = 'all-MiniLM-L6-v2'
-            with open(model_path, 'wb') as f:
-                pickle.dump(bert_models, f)
-            print(f"  Saved BERT pipeline to {model_path}")
+            print("  Skipping BERT pipeline pickle save; run_pipeline now uses cached raw embeddings and a fitted normalizer instead.")
             
     elif embedding_method.lower() == 'llm':
         # Use LLM-based relevance scoring instead of embeddings
@@ -831,3 +851,4 @@ def get_conversion_rates(base_dir=None):
     print(f"[Sense-check] Conversion rates saved to {out_path}")
 
     return result
+

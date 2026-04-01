@@ -11,7 +11,6 @@ Input files:
     data/<course>/gkp/keywords_classified.csv                       [FROM GKP / compare_keywords.py]
     data/<course>/gkp/Saved Keywords Stats *.csv                    [FROM GOOGLE KEYWORD PLANNER]
     data/<course>/clean/unique_keyword_embeddings_bert.csv           (from tidy_get_data.py, BERT only)
-    data/<course>/clean/bert_pipeline_50d.pkl                        (from tidy_get_data.py, BERT only)
     models/<course>_xgb_clicks_model_<emb>.joblib                    (from modeling.py)
     data/<course>/reports/Purchase report.csv                        [FROM GOOGLE ADS REPORTS] (max-purch mode)
     config.py  (course start dates, budgets)
@@ -25,13 +24,10 @@ Estimated run time (HP Spectre x360, i7-1065G7 @ 1.30 GHz, 4C/8T, 16 GB RAM, no 
 """
 
 from datetime import datetime
-import pickle
 import sys
 import argparse
 import joblib
-import joblib
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 import numpy as np
 from itertools import product
 from pathlib import Path
@@ -46,6 +42,7 @@ from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
 from config import COURSE_CONFIG
 from utils.llm_scoring import get_llm_scores_cached
+from utils.embeddings import fit_svd_pipeline, get_raw_bert_embeddings_cached
 from tidy_get_data import load_or_cache
 from scripts.modeling import _to_float32_csr # necessary to read model correctly
 
@@ -77,27 +74,15 @@ def check_embeddings(embedding_df, base_dir=Path('data/gen_ai')):
 
 def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
 
-    # Read possible keywords and create embeddings for them
-    emb_pipe_file = base_dir / 'clean/bert_pipeline_50d.pkl'
-    with open(emb_pipe_file, 'rb') as f:
-        emb_pipeline = pickle.load(f)
+    # Read possible keywords and create full BERT embeddings, matching run_pipeline.
+    raw_emb_cache = base_dir / 'cache' / 'raw_bert_embeddings.pkl'
+    raw_emb_map = get_raw_bert_embeddings_cached(keywords, cache_path=raw_emb_cache)
 
-    svd = emb_pipeline['svd']
-    normalizer = emb_pipeline['normalizer']
+    raw_matrix = np.array([raw_emb_map[kw] for kw in keywords])
+    svd_pipeline = fit_svd_pipeline(raw_matrix, n_components=None)
+    embeddings = svd_pipeline['normalizer'].transform(raw_matrix)
 
-    model_name = emb_pipeline['model_name']
-    embedding_model = SentenceTransformer(model_name)
-
-    embeddings = embedding_model.encode(
-        keywords,
-        convert_to_numpy=True,
-    )
-
-    # Apply post embedding steps: SVD + Normalization
-    embeddings = svd.transform(embeddings)
-    embeddings = normalizer.transform(embeddings)
-
-    embedding_cols = [f'bert_{i}' for i in range(50)]
+    embedding_cols = [f'bert_{i}' for i in range(embeddings.shape[1])]
     embedding_df = pd.DataFrame(embeddings, columns=embedding_cols)
     embedding_df['Keyword'] = keywords
 
@@ -537,6 +522,12 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df = results_df[filt_opt_cost].reset_index(drop=True)
     print(f"[Info] Total clicks over base (cost=0): {results_df['Gurobi Pred over Base'].sum():.4f}")
 
+    if results_df.empty:
+        results_df['Actual Model Pred'] = pd.Series(dtype=float)
+        results_df['Diff'] = pd.Series(dtype=float)
+        print("[Info] Zero-bid optimum detected; returning empty optimization results.")
+        return results_df
+
     # 5. Validation and Boundary Adjustment
     # Run the Optimal Costs back through the actual XGBoost model to verify accuracy
     # If discrepancy is large, slightly adjust costs to move away from tree boundaries
@@ -576,7 +567,9 @@ def main():
     args = parser.parse_args()
 
     if args.budget is None:
-        args.budget = COURSE_CONFIG[args.course]['budgets']
+
+        from scripts.run_pipeline import calculate_daily_budget
+        args.budget = [calculate_daily_budget(args.course)]
 
     embedding_method = args.embedding_method
 
@@ -592,6 +585,11 @@ def main():
     # Step 1: Create feature matrix with caching
     kw_df = pd.read_csv(base_dir / 'gkp/keywords_classified.csv')
     keywords = kw_df['Keyword'].tolist()
+
+    raw_emb_cache = base_dir / 'cache' / 'raw_bert_embeddings.pkl'
+    raw_emb_map = get_raw_bert_embeddings_cached(keywords, cache_path=raw_emb_cache)
+    raw_matrix = np.array([raw_emb_map[kw] for kw in keywords])
+    svd_pipeline = fit_svd_pipeline(raw_matrix, n_components=None)
     
     cache_dir = Path(f'opt_results/{args.course}/cache')
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -602,11 +600,13 @@ def main():
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
-        False,  # force_reload
+        False,  # use_cache (defaults to False, meaning it will recompute)
         keywords,
         None, # opt_date (defaults to now)
         COURSE_START_DATES_MAP.get(args.course, []),
-        base_dir
+        base_dir,
+        raw_emb_map=raw_emb_map,
+        svd_pipeline=svd_pipeline,
     )
 
     X = X[X['Region'] != 'C']  # Filter out region C due to low EPC

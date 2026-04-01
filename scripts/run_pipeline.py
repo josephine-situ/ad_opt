@@ -74,15 +74,15 @@ from utils.embeddings import (
 from utils import setup_tee_logging
 
 
-def run_data_preparation(course: str, force_reload: bool = False) -> None:
+def run_data_preparation(course: str, use_cache: bool = False) -> None:
     """Run tidy_get_data.py as a subprocess for the given course."""
     cmd = [
         sys.executable, "scripts/tidy_get_data.py",
         "--course", course,
         "--embedding-method", "bert",
     ]
-    if force_reload:
-        cmd.append("--force-reload")
+    if use_cache:
+        cmd.append("--use-cache")
 
     print(f"\n{'='*70}")
     print(f"[Step 1] Data Preparation — {course}")
@@ -185,7 +185,7 @@ def run_optimization(
     if opt_date is None:
         opt_date = datetime.now() + timedelta(days=1)
     if budget is None:
-        budget = COURSE_CONFIG[course]["budgets"][0]
+        budget = calculate_daily_budget(course, opt_date=opt_date)
 
     print(f"\n{'='*70}")
     print(f"[Step 3] Optimization — {course}")
@@ -294,6 +294,64 @@ def run_post_processing(
         )
 
 
+def calculate_daily_budget(course: str, opt_date: datetime | None = None) -> float:
+    from config import COURSE_CONFIG
+    from pathlib import Path
+    import pandas as pd
+    
+    config = COURSE_CONFIG.get(course, {})
+    campaign_budget = config.get('campaign_budget')
+    start_date_str = config.get('current_campaign_start_date')
+    end_date_str = config.get('current_campaign_end_date')
+    
+    if campaign_budget is None or not start_date_str or not end_date_str:
+        raise ValueError(f"Missing campaign_budget, current_campaign_start_date, or current_campaign_end_date for {course}. Please check config.")
+        
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    if opt_date is None:
+        opt_date = datetime.now()
+        
+    if opt_date > end_date:
+        raise ValueError(f"Optimization date ({opt_date.date()}) is after campaign end_date ({end_date.date()}).")
+    
+    number_of_days_in_campaign = (end_date - start_date).days + 1
+    if number_of_days_in_campaign <= 0:
+        raise ValueError(f"Campaign start date ({start_date.date()}) is after end date ({end_date.date()}).")
+        
+    days_remaining = (end_date - opt_date).days + 1
+    if days_remaining <= 0:
+        raise ValueError(f"Days remaining is {days_remaining}, but should be > 0.")
+        
+    budget_used_from_report = 0.0
+    raw_input_path = Path(f"data/{course}/reports/Search keyword - raw input to models.csv")
+    
+    if raw_input_path.exists():
+        try:
+            df = pd.read_csv(raw_input_path, header=0, thousands=',', engine='python')
+            if 'Day' in df.columns:
+                df['Day'] = pd.to_datetime(df['Day'])
+                # Filter between start_date and opt_date - 1 (inclusive)
+                df = df[(df['Day'] >= start_date) & (df['Day'] < opt_date)]
+            if 'Cost' in df.columns:
+                budget_used_from_report = df['Cost'].fillna(0).sum()
+        except Exception as e:
+            print(f"[Warning] Could not read Cost from {raw_input_path}: {e}")
+            
+    # The additional term (1/8 * campaign budget / num days) accounts for delays in reporting (up to 3 hours).
+    budget_used = budget_used_from_report + (campaign_budget / 8.0) / number_of_days_in_campaign
+
+    if campaign_budget - budget_used <= 0:
+        raise ValueError(f"[Warning] No more campaign budget remaining for {course}. Campaign Budget: ${campaign_budget:.2f}, Used: ${budget_used:.2f}")
+
+    # / 2 is because Google Ads can spend up to 2x the daily budget in a given day.
+    daily_budget = min(
+        (campaign_budget - budget_used) / days_remaining,
+        (campaign_budget - budget_used) / 2.0
+    )
+    
+    return max(0.0, daily_budget)
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -339,8 +397,8 @@ def main():
         help="Skip data preparation (use existing clean data)",
     )
     parser.add_argument(
-        "--force-reload", action="store_true",
-        help="Force reload source data (ignore caches)",
+        "--use-cache", action="store_true",
+        help="Use cached intermediate data (ignoring cache by default)",
     )
 
     args = parser.parse_args()
@@ -376,11 +434,11 @@ def main():
         print(f"#  COURSE: {course.upper()}")
         print(f"{'#'*70}")
 
-        budget = args.budget or COURSE_CONFIG[course]["budgets"][0]
+        budget = args.budget or calculate_daily_budget(course, opt_date=opt_date)
 
         # ── Step 1: Data Preparation ────────────────────────────────────
         if not args.skip_data_prep:
-            run_data_preparation(course, force_reload=args.force_reload)
+            run_data_preparation(course, use_cache=args.use_cache)
         else:
             print(f"\n[Step 1] Skipping data preparation (--skip-data-prep)")
 
