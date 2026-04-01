@@ -453,10 +453,9 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
-    # TODO: Populate all created ad groups with keywords from input file
-    # - Read all keywords from search terms.csv for course
-    # - Each row will have a region, match type and keyword
-    # - Group keywords by region, match type then batch create ad group criteria for each campaign
+    # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
+    # As this works now, we attempt to create all keywords for all campaigns in one batch.
+    # Some courses have a dataset too large for this with API Basic Access quotas
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     region_match_type_to_keywords = get_keywords_to_create(course)
     keyword_operations = []
