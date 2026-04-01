@@ -6,8 +6,10 @@ Each campaign contains exactly one ad group.
 """
 
 import argparse
+import csv
 import os
 import sys
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -17,10 +19,13 @@ from google.ads.googleads.v23.services.types.campaign_budget_service import Camp
 from google.ads.googleads.v23.services.types.campaign_service import CampaignOperation
 from google.ads.googleads.v23.services.types.ad_group_service import AdGroupOperation
 from google.ads.googleads.v23.services.types.campaign_criterion_service import CampaignCriterionOperation
+from google.ads.googleads.v23.services.types.ad_group_criterion_service import AdGroupCriterionOperation
+
+from scripts.push_output_data import construct_campaign_name_for_args
+from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import COURSE_CONFIG
-
 
 # We may need to change this in the future, but for now this encapsulates the related resources we create for a campaign
 # We'll need to probably add the notion of run, but for now, this will scaffold out campaigns acceptably.
@@ -33,6 +38,7 @@ class CampaignSpec:
     budget_name: str
     default_budget: int
     region_label: str
+    match_type: str
     countries: list[str]
     budget_resource_name: Optional[str] = None
     campaign_resource_name: Optional[str] = None
@@ -55,6 +61,34 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
         if getattr(spec, field) == name:
             return spec
     return None
+
+def get_keywords_to_create(course: str) -> defaultdict[tuple[str, str], list[str]]:
+    """
+    Get keywords to create for a given course from the corresponding search terms CSV file.
+    Each row in the CSV should have the format: region, match_type, keyword_text
+    Returned dictionary is keyed by (region, match_type), so we can look up everything that needs
+    to be added for a specific ad group easily.
+    """
+    keywords = defaultdict(list)
+    # TODO: Should this be `optimized_costs.csv` since that's what we'll end up altering?
+    # Could use a different file for input vs updates if we'd prefer.
+    csv_path = Path(__file__).parent.parent / "data" / course / f"Search keyword - search terms.csv"
+
+    if not csv_path.exists():
+        print(f"Warning: Keywords CSV file not found for course '{course}' at {csv_path}. No keywords will be created.")
+        return keywords
+
+    with csv_path.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            # Region, match type and keyword are all required fields.
+            # If any are missing this is a malformed input
+            region = row["region"].strip()
+            match_type = row["match_type"].strip()
+            keyword_text = row["keyword_text"].strip()
+            keywords[(region, match_type)].append(keyword_text)
+
+    return keywords
 
 
 def create_campaign_budget_operation(
@@ -110,6 +144,39 @@ def create_ad_group_operation(
     ad_group.status = google_ads_client.enums.AdGroupStatusEnum.ENABLED
     ad_group.type_ = google_ads_client.enums.AdGroupTypeEnum.SEARCH_STANDARD
     return operation
+
+
+def create_ad_group_keyword_operations(
+    google_ads_client: GoogleAdsClient,
+    ad_group_resource_name: str,
+    keywords: list[str],
+    match_type: str,
+) -> list[AdGroupCriterionOperation]:
+    """
+    Create an operation to add a keyword criterion to an ad group.
+
+    Args:
+        google_ads_client: The Google Ads client instance.
+        ad_group_resource_name: The resource name of the ad group to add the keyword to.
+        keywords: List of keyword text values (e.g. "machine learning course").
+        match_type: The keyword match type — one of "EXACT", "PHRASE", or "BROAD".
+
+    Returns:
+        An AdGroupCriterionOperation ready to be submitted via AdGroupCriterionService.
+    """
+    operations = []
+    for keyword_text in keywords:
+        operation = google_ads_client.get_type("AdGroupCriterionOperation")
+        criterion = operation.create
+        criterion.ad_group = ad_group_resource_name
+        criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED
+        criterion.keyword.text = keyword_text
+        # TODO: Redo this match type setting. We should be more defensive
+        criterion.keyword.match_type = getattr(
+            google_ads_client.enums.KeywordMatchTypeEnum, match_type
+        )
+        operations.append(operation)
+    return operations
 
 
 def create_ad_schedule_operations(
@@ -249,9 +316,9 @@ def create_campaigns_for_course(
     campaign_specs = []
     for region_label, countries in regions.items():
         for match_type in match_types:
-            campaign_name = f"{course_title} - {region_label} - {match_type}"
-            ad_group_name = f"{course_title} - {region_label} - {match_type}"
-            budget_name = f"Budget - {course_title} - {region_label} - {match_type}"
+            campaign_name = construct_campaign_name_for_args(course_title, match_type, region_label)
+            ad_group_name = construct_ad_group_name_for_args(course_title, match_type, region_label)
+            budget_name = construct_budget_name_for_args(course_title, match_type, region_label)
 
             spec = CampaignSpec(
                 campaign_name=campaign_name,
@@ -260,13 +327,20 @@ def create_campaigns_for_course(
                 default_budget=default_budget,
                 region_label=region_label,
                 countries=countries,
+                match_type=match_type
             )
             campaign_specs.append(spec)
 
             print(f"Planned: {campaign_name}")
 
     if not execute:
-        print(f"\n[DRY RUN] Would create {len(campaign_specs)} campaigns with ad groups")
+        print(f"\n[DRY RUN] Would create {len(campaign_specs)} campaigns with ad groups:")
+        for spec in campaign_specs:
+            print(
+                f"  - Campaign: {spec.campaign_name} | Ad Group: {spec.ad_group_name} | "
+                f"Budget: {spec.budget_name} ({spec.default_budget} micros) | "
+                f"Region: {spec.region_label} | Countries: {', '.join(spec.countries)}"
+            )
         return []
 
     # Batch create all budgets
@@ -367,6 +441,35 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
+    # TODO: Populate all created ad groups with keywords from input file
+    # - Read all keywords from search terms.csv for course
+    # - Each row will have a region, match type and keyword
+    # - Group keywords by region, match type then batch create ad group criteria for each campaign
+    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
+    region_match_type_to_keywords = get_keywords_to_create(course_title)
+    keyword_operations = []
+    for spec in campaign_specs:
+        ad_group_resource_name = spec.ad_group_resource_name
+        match_type = spec.match_type
+        keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type), [])
+        keyword_operations.extend(create_ad_group_keyword_operations(
+            google_ads_client, ad_group_resource_name, keywords, match_type
+        ))
+
+    try:
+        request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+        request.customer_id = customer_id
+        request.operations = keyword_operations
+        ad_schedule_response = ad_group_criterion_service.mutate_campaign_criteria(request=request)
+        print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
+    except Exception as e:
+        print(f"✗ Error creating ad schedules: {e}")
+        sys.exit(1)
+
+
+
+
+
     # Batch create ad schedules for all campaigns
     print(f"\n{'='*60}")
     print(f"Creating ad schedules for {len(campaign_specs)} campaigns...")
@@ -460,10 +563,6 @@ def main() -> None:
 
     # Create campaigns
     create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute)
-
-    if not args.execute:
-        print("\n⚠️  DRY RUN MODE - No changes were made")
-        print("Run with --execute to create campaigns")
 
 
 if __name__ == "__main__":

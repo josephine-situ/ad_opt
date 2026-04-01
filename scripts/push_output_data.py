@@ -13,6 +13,8 @@ from typing import Any
 from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
+from utils.name_generation import construct_campaign_name_for_args
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.bid_adjustments import (
@@ -42,11 +44,9 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 # Map match type strings to enum values
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
-
 def construct_campaign_name_for_args(course: str, match_type: str, region: str) -> str:
     """Construct campaign name based on course, match type and region."""
     return f"{COURSE_CONFIG[course]['course_title_base']} - {region} - {match_type.split()[0]}"
-
 
 def warn_on_large_cpc_changes(
     new_cpc_bids: dict[tuple[int, str, str], float],
