@@ -18,14 +18,19 @@ from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.v23.services.types.campaign_budget_service import CampaignBudgetOperation
 from google.ads.googleads.v23.services.types.campaign_service import CampaignOperation
 from google.ads.googleads.v23.services.types.ad_group_service import AdGroupOperation
-from google.ads.googleads.v23.services.types.campaign_criterion_service import CampaignCriterionOperation
-from google.ads.googleads.v23.services.types.ad_group_criterion_service import AdGroupCriterionOperation
+from google.ads.googleads.v23.services.types.campaign_criterion_service import (
+    CampaignCriterionOperation,
+)
+from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
+    AdGroupCriterionOperation,
+)
 
-from scripts.push_output_data import construct_campaign_name_for_args
+from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import COURSE_CONFIG
+
 
 # We may need to change this in the future, but for now this encapsulates the related resources we create for a campaign
 # We'll need to probably add the notion of run, but for now, this will scaffold out campaigns acceptably.
@@ -62,7 +67,8 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
             return spec
     return None
 
-def get_keywords_to_create(course: str) -> defaultdict[tuple[str, str], list[str]]:
+
+def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     """
     Get keywords to create for a given course from the corresponding search terms CSV file.
     Each row in the CSV should have the format: region, match_type, keyword_text
@@ -72,10 +78,14 @@ def get_keywords_to_create(course: str) -> defaultdict[tuple[str, str], list[str
     keywords = defaultdict(list)
     # TODO: Should this be `optimized_costs.csv` since that's what we'll end up altering?
     # Could use a different file for input vs updates if we'd prefer.
-    csv_path = Path(__file__).parent.parent / "data" / course / f"Search keyword - search terms.csv"
+    csv_path = (
+        Path(__file__).parent.parent / "opt_results" / course / "bids" / f"optimized_costs.csv"
+    )
 
     if not csv_path.exists():
-        print(f"Warning: Keywords CSV file not found for course '{course}' at {csv_path}. No keywords will be created.")
+        print(
+            f"Warning: Keywords CSV file not found for course '{course}' at {csv_path}. No keywords will be created."
+        )
         return keywords
 
     with csv_path.open("r", encoding="utf-8") as f:
@@ -83,12 +93,16 @@ def get_keywords_to_create(course: str) -> defaultdict[tuple[str, str], list[str
         for row in reader:
             # Region, match type and keyword are all required fields.
             # If any are missing this is a malformed input
-            region = row["region"].strip()
-            match_type = row["match_type"].strip()
-            keyword_text = row["keyword_text"].strip()
+            region = row["Region"].strip()
+            match_type = row["Match type"].strip().split()[0].upper()
+            keyword_text = row["Keyword"].strip()
             keywords[(region, match_type)].append(keyword_text)
 
-    return keywords
+    print("Found keywords to create for the following region and match type combinations:")
+    for (region, match_type), kw_list in keywords.items():
+        print(f"  - {region} | {match_type}: {len(kw_list)} keywords")
+
+    return dict(keywords)
 
 
 def create_campaign_budget_operation(
@@ -172,9 +186,7 @@ def create_ad_group_keyword_operations(
         criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED
         criterion.keyword.text = keyword_text
         # TODO: Redo this match type setting. We should be more defensive
-        criterion.keyword.match_type = getattr(
-            google_ads_client.enums.KeywordMatchTypeEnum, match_type
-        )
+        criterion.keyword.match_type = match_type.upper()
         operations.append(operation)
     return operations
 
@@ -187,7 +199,7 @@ def create_ad_schedule_operations(
     Creates 6 four-hour windows starting at 00:00 (covering the full day).
     """
     operations = []
-    
+
     # Create 6 four-hour windows: 0-4, 4-8, 8-12, 12-16, 16-20, 20-24
     for window in range(6):
         start_hour = window * 4
@@ -203,13 +215,13 @@ def create_ad_schedule_operations(
             google_ads_client.enums.DayOfWeekEnum.SATURDAY,
             google_ads_client.enums.DayOfWeekEnum.SUNDAY,
         ]
-        
+
         for day_of_week in days_of_week:
             operation = google_ads_client.get_type("CampaignCriterionOperation")
             criterion = operation.create
             criterion.campaign = campaign_resource_name
             criterion.status = google_ads_client.enums.CampaignCriterionStatusEnum.ENABLED
-            
+
             # Set ad schedule
             ad_schedule = criterion.ad_schedule
             ad_schedule.start_hour = start_hour
@@ -217,9 +229,9 @@ def create_ad_schedule_operations(
             ad_schedule.end_hour = end_hour
             ad_schedule.end_minute = google_ads_client.enums.MinuteOfHourEnum.ZERO
             ad_schedule.day_of_week = day_of_week
-            
+
             operations.append(operation)
-    
+
     return operations
 
 
@@ -232,12 +244,12 @@ def get_location_ids_for_countries(
     """
     if not countries:
         return {}
-    
+
     ga_service = google_ads_client.get_service("GoogleAdsService")
-    
+
     # Build IN clause with all country names
     country_names = "', '".join(countries)
-    
+
     query = f"""
         SELECT
             geo_target_constant.id,
@@ -247,16 +259,16 @@ def get_location_ids_for_countries(
         FROM geo_target_constant
         WHERE geo_target_constant.name IN ('{country_names}')
     """
-    
+
     response = ga_service.search(customer_id=customer_id, query=query)
-    
-    location_map = {row.geo_target_constant.name : row.geo_target_constant.id for row in response}
-    
+
+    location_map = {row.geo_target_constant.name: row.geo_target_constant.id for row in response}
+
     # Check if all countries were found
     missing = set(countries) - set(location_map.keys())
     if missing:
         raise ValueError(f"Locations not found for countries: {missing}")
-    
+
     return location_map
 
 
@@ -270,18 +282,20 @@ def create_location_operations(
     Create location targeting operations for a campaign using pre-fetched location IDs.
     """
     operations = []
-    
+
     for country in countries:
         location_id = location_map[country]
-        
+
         operation = google_ads_client.get_type("CampaignCriterionOperation")
         criterion = operation.create
         criterion.campaign = campaign_resource_name
         criterion.status = google_ads_client.enums.CampaignCriterionStatusEnum.ENABLED
-        criterion.location.geo_target_constant = google_ads_client.get_service("GeoTargetConstantService").geo_target_constant_path(location_id)
-        
+        criterion.location.geo_target_constant = google_ads_client.get_service(
+            "GeoTargetConstantService"
+        ).geo_target_constant_path(location_id)
+
         operations.append(operation)
-    
+
     return operations
 
 
@@ -302,7 +316,7 @@ def create_campaigns_for_course(
     all_countries = set()
     for countries in regions.values():
         all_countries.update(countries)
-    
+
     # Fetch all location IDs in a single query
     print(f"\n{'='*60}")
     print(f"Fetching location IDs for {len(all_countries)} countries...")
@@ -325,7 +339,7 @@ def create_campaigns_for_course(
                 default_budget=default_budget,
                 region_label=region_label,
                 countries=countries,
-                match_type=match_type
+                match_type=match_type,
             )
             campaign_specs.append(spec)
 
@@ -449,24 +463,23 @@ def create_campaigns_for_course(
     for spec in campaign_specs:
         ad_group_resource_name = spec.ad_group_resource_name
         match_type = spec.match_type
-        keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type), [])
-        keyword_operations.extend(create_ad_group_keyword_operations(
-            google_ads_client, ad_group_resource_name, keywords, match_type
-        ))
+        keywords = region_match_type_to_keywords[(spec.region_label, spec.match_type.upper())]
+        keyword_operations.extend(
+            create_ad_group_keyword_operations(
+                google_ads_client, ad_group_resource_name, keywords, match_type
+            )
+        )
 
+    # TODO: Chunk this up. We'll have too many keywords to create them all in one batch.
     try:
         request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
         request.customer_id = customer_id
         request.operations = keyword_operations
-        ad_schedule_response = ad_group_criterion_service.mutate_campaign_criteria(request=request)
+        ad_schedule_response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
         print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
     except Exception as e:
         print(f"✗ Error creating ad schedules: {e}")
         sys.exit(1)
-
-
-
-
 
     # Batch create ad schedules for all campaigns
     print(f"\n{'='*60}")
@@ -477,16 +490,18 @@ def create_campaigns_for_course(
     # It's not much less efficient, and this lets us have more granular logging and error handling for each type of criterion if we need it.
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
     all_ad_schedule_operations = []
-    
+
     for spec in campaign_specs:
-        ad_schedule_ops = create_ad_schedule_operations(google_ads_client, spec.campaign_resource_name)
+        ad_schedule_ops = create_ad_schedule_operations(
+            google_ads_client, spec.campaign_resource_name
+        )
         all_ad_schedule_operations.extend(ad_schedule_ops)
-    
+
     try:
         request = google_ads_client.get_type("MutateCampaignCriteriaRequest")
         request.customer_id = customer_id
         request.operations = all_ad_schedule_operations
-        
+
         ad_schedule_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
         print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
     except Exception as e:
@@ -498,16 +513,18 @@ def create_campaigns_for_course(
     print(f"{'='*60}")
 
     all_location_operations = []
-    
+
     for spec in campaign_specs:
-        location_ops = create_location_operations(google_ads_client, spec.campaign_resource_name, spec.countries, location_map)
+        location_ops = create_location_operations(
+            google_ads_client, spec.campaign_resource_name, spec.countries, location_map
+        )
         all_location_operations.extend(location_ops)
-    
+
     try:
         request = google_ads_client.get_type("MutateCampaignCriteriaRequest")
         request.customer_id = customer_id
         request.operations = all_location_operations
-        
+
         location_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
         print(f"✓ Created {len(location_response.results)} location targeting criteria")
     except Exception as e:
@@ -515,7 +532,9 @@ def create_campaigns_for_course(
         sys.exit(1)
 
     print(f"\n{'='*60}")
-    print(f"Summary: Successfully created {len(campaign_specs)} campaigns with ad schedules and location targeting")
+    print(
+        f"Summary: Successfully created {len(campaign_specs)} campaigns with ad schedules and location targeting"
+    )
     print(f"{'='*60}")
 
     return campaign_specs
