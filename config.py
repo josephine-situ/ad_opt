@@ -7,7 +7,9 @@ from typing import TypedDict
 class CourseConfig(TypedDict):
     start_dates: list[str]
     min_date: str
-    budgets: list[float]
+    campaign_budget: float
+    current_campaign_start_date: str
+    current_campaign_end_date: str
     course_title_base: str
     regions: dict[str, list[str]]
     conversion_actions: list[str]
