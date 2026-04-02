@@ -26,6 +26,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 )
 
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
+from utils.bid_adjustments import AGE_RANGE_MAP
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -185,6 +186,21 @@ def create_ad_group_keyword_operations(
         criterion.keyword.text = keyword_text
         # TODO: Redo this match type setting. We should be more defensive
         criterion.keyword.match_type = match_type.upper()
+        operations.append(operation)
+    return operations
+
+
+def create_age_range_criteria_operations(
+    google_ads_client: GoogleAdsClient, ad_group_resource_name: str
+) -> list[AdGroupCriterionOperation]:
+    """Create age range criterion operations for all age groups in AGE_RANGE_MAP."""
+    operations = []
+    for age_range_type in AGE_RANGE_MAP.values():
+        operation = google_ads_client.get_type("AdGroupCriterionOperation")
+        criterion = operation.create
+        criterion.ad_group = ad_group_resource_name
+        criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.ENABLED
+        criterion.age_range.type_ = age_range_type
         operations.append(operation)
     return operations
 
@@ -487,6 +503,28 @@ def create_campaigns_for_course(
         sys.exit(1)
     print(f"✓ Created {total_created} keyword criteria in total")
 
+    # Batch create age range criteria for all ad groups
+    print(f"\n{'='*60}")
+    print(f"Creating age range criteria for {len(campaign_specs)} ad groups...")
+    print(f"{'='*60}")
+
+    all_age_range_operations = []
+    for spec in campaign_specs:
+        all_age_range_operations.extend(
+            create_age_range_criteria_operations(google_ads_client, spec.ad_group_resource_name)
+        )
+
+    try:
+        request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+        request.customer_id = customer_id
+        request.operations = all_age_range_operations
+
+        age_range_response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+        print(f"✓ Created {len(age_range_response.results)} age range criteria")
+    except Exception as e:
+        print(f"✗ Error creating age range criteria: {e}")
+        sys.exit(1)
+
     # Batch create ad schedules for all campaigns
     print(f"\n{'='*60}")
     print(f"Creating ad schedules for {len(campaign_specs)} campaigns...")
@@ -539,7 +577,7 @@ def create_campaigns_for_course(
 
     print(f"\n{'='*60}")
     print(
-        f"Summary: Successfully created {len(campaign_specs)} campaigns with ad schedules and location targeting"
+        f"Summary: Successfully created {len(campaign_specs)} campaigns with ad schedules, location targeting, and age range criteria"
     )
     print(f"{'='*60}")
 
