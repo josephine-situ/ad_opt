@@ -205,7 +205,8 @@ def push_cpc(
         criterion_id = result.ad_group_criterion.criterion_id
         keyword_text = result.ad_group_criterion.keyword.text
         match_type = result.ad_group_criterion.keyword.match_type.name
-        status = result.ad_group_criterion.status
+        # The result from the API is the enum value, so we'll convert it to the name to match our inputs
+        status = google_ads_client.enums.AdGroupCriterionStatusEnum(result.ad_group_criterion.status).name
 
         cpc_bid_micros = result.ad_group_criterion.cpc_bid_micros
         key = (ad_group_id, keyword_text.lower(), match_type)
@@ -272,6 +273,7 @@ def push_cpc(
         # The overwhelming majority of keywords are paused in any given run so this should
         # substantially reduce the number of API calls we make each run
         if not status_changed and not cpc_changed:
+            print(f'Skipping update for keyword "{keyword}" ({match_type}) in ad group {ad_group_id} - no changes detected')
             continue
 
         # Create update operation
