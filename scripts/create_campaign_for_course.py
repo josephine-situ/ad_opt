@@ -26,6 +26,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 )
 
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
+from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME, SELECT_AD_GROUPS_BY_NAME
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -296,9 +297,103 @@ def create_location_operations(
 
     return operations
 
+def create_remaining_keyword_criteria(
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    course: str,
+    campaign_specs: list[CampaignSpec],
+) -> None:
+    """
+    Create keyword criteria for existing ad groups based on the provided campaign specifications.
+    This is used in --only-keywords mode, where we assume campaigns and ad groups have already been created in a previous run with --skip-keywords.
+    We look up ad groups by name to find their resource names, query all already-existing keyword
+    criteria for those ad groups, and only create keywords that are not yet present.
+    """
+    google_ads_service = google_ads_client.get_service("GoogleAdsService")
+    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
+    region_match_type_to_keywords = get_keywords_to_create(course)
+
+    # Query 1: get resource names for all ad groups by name, regardless of keyword population state.
+    print(f"\nFetching ad group resource names for {len(campaign_specs)} ad groups...")
+    ad_group_names_list = "', '".join(spec.ad_group_name for spec in campaign_specs)
+    ag_stream = google_ads_service.search_stream(
+        customer_id=customer_id,
+        query=SELECT_AD_GROUPS_BY_NAME.format(ad_group_names_list=ad_group_names_list),
+    )
+    ad_group_count = 0
+    for batch in ag_stream:
+        for row in batch.results:
+            spec = find_spec_by_name(campaign_specs, row.ad_group.name, "ad_group_name")
+            spec.ad_group_resource_name = row.ad_group.resource_name
+            ad_group_count += 1
+
+    print(f"Found {ad_group_count} of {len(campaign_specs)} ad groups.")
+
+    # Query 2: fetch all existing keyword criteria for those ad groups to avoid duplicates.
+    print(f"Fetching existing keyword criteria for {ad_group_count} ad groups...")
+    existing_keywords: set[tuple[str, str, str]] = set()
+    if ad_group_count:
+        kw_stream = google_ads_service.search_stream(
+            customer_id=customer_id,
+            query=SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME.format(ad_group_names_list=ad_group_names_list),
+        )
+        for batch in kw_stream:
+            for row in batch.results:
+                existing_keywords.add((
+                    row.ad_group.name,
+                    row.ad_group_criterion.keyword.text.lower(),
+                    row.ad_group_criterion.keyword.match_type.name,
+                ))
+    print(f"Found {len(existing_keywords)} existing keyword criteria.")
+
+    # Create only keywords not already present in each ad group
+    for spec in campaign_specs:
+        ad_group_resource_name = spec.ad_group_resource_name
+        if not ad_group_resource_name:
+            continue
+
+        match_type = spec.match_type
+        all_keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type.upper()), [])
+        if not all_keywords:
+            print(
+                f"Warning: No keywords found for campaign '{spec.campaign_name}' with region '{spec.region_label}' and match type '{spec.match_type}'."
+            )
+            continue
+
+        new_keywords = [
+            kw for kw in all_keywords
+            if (spec.ad_group_name, kw.lower(), match_type.upper()) not in existing_keywords
+        ]
+
+        skipped = len(all_keywords) - len(new_keywords)
+        if skipped:
+            print(f"Skipping {skipped} already-existing keywords for ad group '{spec.ad_group_name}'.")
+        if not new_keywords:
+            print(f"All keywords already exist for ad group '{spec.ad_group_name}'. Nothing to create.")
+            continue
+
+        operations = create_ad_group_keyword_operations(
+            google_ads_client, ad_group_resource_name, new_keywords, match_type
+        )
+
+        try:
+            for i in range(0, len(operations), BATCH_SIZE):
+                batch = operations[i : i + BATCH_SIZE]
+                request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+                request.customer_id = customer_id
+                request.operations = batch
+                response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                print(f"✓ Created {len(response.results)} keyword criteria for ad group '{spec.ad_group_name}' (batch {i // BATCH_SIZE + 1})")
+        except Exception as e:
+            print(f"✗ Error creating keyword criteria for ad group '{spec.ad_group_name}': {e}")
 
 def create_campaigns_for_course(
-    google_ads_client: GoogleAdsClient, customer_id: str, course: str, execute: bool
+    google_ads_client: GoogleAdsClient,
+    customer_id: str,
+    course: str,
+    execute: bool,
+    skip_keywords: bool = False,
+    only_keywords: bool = False,
 ) -> list[CampaignSpec]:
     """Create all campaigns and ad groups for a given course."""
     course_config = COURSE_CONFIG.get(course)
@@ -352,6 +447,13 @@ def create_campaigns_for_course(
                 f"Region: {spec.region_label} | Countries: {', '.join(spec.countries)}"
             )
         return []
+
+    if only_keywords:
+        print("\n[KEYWORD-ONLY MODE] Only creating keyword criteria for existing ad groups.")
+        print("Assuming campaigns and ad groups have already been created in a previous run with --skip-keywords.")
+        print("Will attempt to find ad groups by name and add keywords to them, but will not create any new campaigns or ad groups.")
+        create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs)
+        return
 
     # Batch create all budgets
     print(f"\n{'='*60}")
@@ -451,41 +553,44 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
-    # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
-    # As this works now, we attempt to create all keywords for all campaigns in one batch.
-    # Some courses have a dataset too large for this with API Basic Access quotas
-    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
-    region_match_type_to_keywords = get_keywords_to_create(course)
-    keyword_operations = []
-    for spec in campaign_specs:
-        ad_group_resource_name = spec.ad_group_resource_name
-        match_type = spec.match_type
-        keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type.upper()), [])
-        if not keywords:
-            print(
-                f"Warning: No keywords found for campaign '{spec.campaign_name}' with region '{spec.region_label}' and match type '{spec.match_type}'."
-            )
-        else:
-            keyword_operations.extend(
-                create_ad_group_keyword_operations(
-                    google_ads_client, ad_group_resource_name, keywords, match_type
+    if skip_keywords:
+        print("\nSkipping keyword criteria population (--skip-keywords flag set).")
+    else:
+        # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
+        # As this works now, we attempt to create all keywords for all campaigns in one batch.
+        # Some courses have a dataset too large for this with API Basic Access quotas
+        ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
+        region_match_type_to_keywords = get_keywords_to_create(course)
+        keyword_operations = []
+        for spec in campaign_specs:
+            ad_group_resource_name = spec.ad_group_resource_name
+            match_type = spec.match_type
+            keywords = region_match_type_to_keywords.get((spec.region_label, spec.match_type.upper()), [])
+            if not keywords:
+                print(
+                    f"Warning: No keywords found for campaign '{spec.campaign_name}' with region '{spec.region_label}' and match type '{spec.match_type}'."
                 )
-            )
+            else:
+                keyword_operations.extend(
+                    create_ad_group_keyword_operations(
+                        google_ads_client, ad_group_resource_name, keywords, match_type
+                    )
+                )
 
-    total_created = 0
-    try:
-        for i in range(0, len(keyword_operations), BATCH_SIZE):
-            batch = keyword_operations[i : i + BATCH_SIZE]
-            request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
-            request.customer_id = customer_id
-            request.operations = batch
-            response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
-            total_created += len(response.results)
-            print(f"✓ Created {len(response.results)} keyword criteria (batch {i // BATCH_SIZE + 1})")
-    except Exception as e:
-        print(f"✗ Error creating keyword criteria: {e}")
-        sys.exit(1)
-    print(f"✓ Created {total_created} keyword criteria in total")
+        total_created = 0
+        try:
+            for i in range(0, len(keyword_operations), BATCH_SIZE):
+                batch = keyword_operations[i : i + BATCH_SIZE]
+                request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+                request.customer_id = customer_id
+                request.operations = batch
+                response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                total_created += len(response.results)
+                print(f"✓ Created {len(response.results)} keyword criteria (batch {i // BATCH_SIZE + 1})")
+        except Exception as e:
+            print(f"✗ Error creating keyword criteria: {e}")
+            sys.exit(1)
+        print(f"✓ Created {total_created} keyword criteria in total")
 
     # Batch create ad schedules for all campaigns
     print(f"\n{'='*60}")
@@ -576,6 +681,19 @@ def main() -> None:
         help="Google Ads customer ID",
     )
 
+    parser.add_argument(
+        "--skip-keywords",
+        action="store_true",
+        default=False,
+        help="Skip populating keyword criteria for ad groups",
+    )
+    parser.add_argument(
+        "--only-keywords",
+        action="store_true",
+        default=False,
+        help="Only create keyword criteria for existing ad groups. Assumes this script has been run w/ --skip-keywords previously",
+    )
+
     args = parser.parse_args()
 
     yaml_path = args.google_ads_yaml
@@ -585,7 +703,7 @@ def main() -> None:
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
 
     # Create campaigns
-    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute)
+    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute, args.skip_keywords, args.only_keywords)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,26 @@ SELECT_KEYWORD_CRITERION_IN_AD_GROUP = """
         AND ad_group_criterion.type = 'KEYWORD'
     """
 
+SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME = """
+        SELECT
+            ad_group.name,
+            ad_group_criterion.keyword.text,
+            ad_group_criterion.keyword.match_type
+        FROM ad_group_criterion
+        WHERE ad_group.name IN ('{ad_group_names_list}')
+        AND ad_group_criterion.type = 'KEYWORD'
+        AND campaign.advertising_channel_type = 'SEARCH'
+    """
+
+SELECT_AD_GROUPS_BY_NAME = """
+        SELECT
+            ad_group.name,
+            ad_group.resource_name
+        FROM ad_group
+        WHERE ad_group.name IN ('{ad_group_names_list}')
+        AND campaign.advertising_channel_type = 'SEARCH'
+    """
+
 SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS = """
         SELECT
             campaign.name,
