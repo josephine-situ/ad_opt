@@ -205,7 +205,8 @@ def push_cpc(
         criterion_id = result.ad_group_criterion.criterion_id
         keyword_text = result.ad_group_criterion.keyword.text
         match_type = result.ad_group_criterion.keyword.match_type.name
-        status = result.ad_group_criterion.status
+        # The result from the API is the enum value, so we'll convert it to the name to match our inputs
+        status = google_ads_client.enums.AdGroupCriterionStatusEnum(result.ad_group_criterion.status).name
 
         cpc_bid_micros = result.ad_group_criterion.cpc_bid_micros
         key = (ad_group_id, keyword_text.lower(), match_type)
@@ -261,7 +262,19 @@ def push_cpc(
             )
             continue
 
-        criterion_id, current_status, _ = gaql_keyword_lookup[key]
+        criterion_id, current_status, current_cpc_bid_micros = gaql_keyword_lookup[key]
+
+        new_cpc_bid_micros = int(round(Decimal(bid), 2) * 1_000_000)
+
+        status_changed = current_status != status
+        cpc_changed = new_cpc_bid_micros != current_cpc_bid_micros
+
+        # If neither the bid nor the status is changing, skip to avoid unnecessary API calls
+        # The overwhelming majority of keywords are paused in any given run so this should
+        # substantially reduce the number of API calls we make each run
+        if not status_changed and not cpc_changed:
+            print(f'Skipping update for keyword "{keyword}" ({match_type}) in ad group {ad_group_id} - no changes detected')
+            continue
 
         # Create update operation
         operation = google_ads_client.get_type("AdGroupCriterionOperation")
@@ -270,16 +283,12 @@ def push_cpc(
             customer_id, ad_group_id, criterion_id
         )
 
-        # Enable if status is ENABLED. If enabling, also set the bid.
-        if status == "PAUSED":
-            if current_status != google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED:
-                criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED
-        else:
-            # Enable keyword if currently disabled
-            if current_status == google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED:
-                criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.ENABLED
+        criterion.cpc_bid_micros = new_cpc_bid_micros
 
-            criterion.cpc_bid_micros = int(round(Decimal(bid), 2) * 1_000_000)
+        if status == "PAUSED":
+            criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.PAUSED
+        else:
+            criterion.status = google_ads_client.enums.AdGroupCriterionStatusEnum.ENABLED
 
         print(
             f'Updating keyword "{keyword}" ({match_type}) in ad group {ad_group_id}: optimal cost ${bid:.2f}, status {status}'
