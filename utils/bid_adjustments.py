@@ -218,12 +218,10 @@ def get_hour_of_day_bid_adjustments(
                         google_ads_client.copy_from(operation.update_mask, field_mask)
 
                         operations.append(operation)
+                        print(
+                            f"Prepared hour-of-day adjustment: {campaign_name}, Hours {hour_group} {day.name} -> {bid_adjustment:.2%}")
                     else:
                         print(
                             f"Warning: Ad schedule criterion not found for {campaign_name}, Hours {hour_group}, Day {day} - skipping")
-
-                if operations:
-                    print(
-                        f"Prepared hour-of-day adjustment: {campaign_name}, Hours {hour_group} (all days) -> {bid_adjustment:.2%}")
 
     return operations
