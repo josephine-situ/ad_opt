@@ -45,6 +45,10 @@ dev = [
     "black>=23.3.0",
     "pylint>=2.12.2",
     "mypy>=1.0.0",
+    "types-python-dateutil>=2.9.0.20260402",
+    "types-pyyaml>=6.0.12.20250915",
+    "types-requests>=2.33.0.20260402",
+    "types-tabulate>=0.10.0.20260308",
 ]
 
 plotting = [
