@@ -11,17 +11,8 @@ GET_CAMPAIGN_BUDGETS_BY_NAMES = """
         campaign_budget.amount_micros
     FROM campaign
     WHERE campaign.name IN ('{campaign_names}')
+    AND campaign.status != 'REMOVED'
     AND campaign.advertising_channel_type = 'SEARCH'
-"""
-
-GET_AD_GROUP_FOR_CAMPAIGN = """
-    SELECT
-        ad_group.id,
-        ad_group.name
-    FROM ad_group
-    WHERE campaign.name = '{campaign_name}'
-    AND campaign.advertising_channel_type = 'SEARCH'
-    LIMIT 1
 """
 
 GET_KEYWORD_CRITERION_IN_AD_GROUP = """
@@ -48,6 +39,47 @@ SELECT_KEYWORD_CRITERION_IN_AD_GROUP = """
         FROM ad_group_criterion
         WHERE ad_group_criterion.ad_group IN ('{ad_group_list}')
         AND ad_group_criterion.type = 'KEYWORD'
+    """
+
+SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME = """
+        SELECT
+            ad_group.name,
+            ad_group_criterion.keyword.text,
+            ad_group_criterion.keyword.match_type
+        FROM ad_group_criterion
+        WHERE ad_group.name IN ('{ad_group_names_list}')
+        AND ad_group_criterion.type = 'KEYWORD'
+        AND campaign.advertising_channel_type = 'SEARCH'
+    """
+
+SELECT_AD_GROUPS_BY_NAME = """
+        SELECT
+            ad_group.name,
+            ad_group.resource_name
+        FROM ad_group
+        WHERE ad_group.name IN ('{ad_group_names_list}')
+        AND campaign.advertising_channel_type = 'SEARCH'
+    """
+
+SELECT_AD_GROUPS_BY_CAMPAIGN_NAME = """
+        SELECT
+            campaign.name,
+            ad_group.resource_name
+        FROM ad_group
+        WHERE campaign.name IN ('{campaign_names_list}')
+        AND campaign.status != 'REMOVED'
+        AND campaign.advertising_channel_type = 'SEARCH'
+    """
+
+SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE = """
+        SELECT
+            ad_group.resource_name,
+            ad_group_criterion.keyword.text,
+            ad_group_criterion.keyword.match_type
+        FROM ad_group_criterion
+        WHERE ad_group_criterion.ad_group IN ('{ad_group_resource_names_list}')
+        AND ad_group_criterion.type = 'KEYWORD'
+        AND campaign.advertising_channel_type = 'SEARCH'
     """
 
 SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS = """
