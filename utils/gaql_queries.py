@@ -11,17 +11,8 @@ GET_CAMPAIGN_BUDGETS_BY_NAMES = """
         campaign_budget.amount_micros
     FROM campaign
     WHERE campaign.name IN ('{campaign_names}')
+    AND campaign.status != 'REMOVED'
     AND campaign.advertising_channel_type = 'SEARCH'
-"""
-
-GET_AD_GROUP_FOR_CAMPAIGN = """
-    SELECT
-        ad_group.id,
-        ad_group.name
-    FROM ad_group
-    WHERE campaign.name = '{campaign_name}'
-    AND campaign.advertising_channel_type = 'SEARCH'
-    LIMIT 1
 """
 
 GET_KEYWORD_CRITERION_IN_AD_GROUP = """
