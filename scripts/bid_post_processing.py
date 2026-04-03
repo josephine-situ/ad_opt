@@ -104,12 +104,12 @@ def clean_string_column(series: pd.Series) -> pd.Series:
 
 
 def group_hours(hour: int) -> str:
-    """Group hours into 4-hour bins: 0-3, 4-7, 8-11, etc."""
+    """Group hours into 4-hour bins: 0-4, 4-8, 8-12, etc."""
     if pd.isna(hour):
         return None
     hour = int(hour)
     start = (hour // 4) * 4
-    end = start + 3
+    end = start + 4
     return f"{start} - {end}"
 
 
@@ -295,9 +295,9 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     hod_clicks = bid_adj_dir / 'hod_clicks.csv'
     hod_conv = bid_adj_dir / 'hod_conv.csv'
     if hod_clicks.exists() and hod_conv.exists():
-        print("  Processing Hour of Day adjustments (grouped 0-3, 4-7, etc.)...")
+        print("  Processing Hour of Day adjustments (grouped 0-4, 4-8, etc.)...")
         df, _ = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
-        # Group hours into 4-hour bins
+        # Group hours into 4-hour bins with exclusive upper bounds
         df['Hour Group'] = df['Hour of the day'].apply(group_hours)
         # Aggregate by the new hour groups
         df = df.groupby(['Campaign', 'Hour Group']).agg({
