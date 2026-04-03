@@ -26,7 +26,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 )
 
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
-from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME, SELECT_AD_GROUPS_BY_NAME
+from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE, SELECT_AD_GROUPS_BY_CAMPAIGN_NAME
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -306,41 +306,46 @@ def create_remaining_keyword_criteria(
     """
     Create keyword criteria for existing ad groups based on the provided campaign specifications.
     This is used in --only-keywords mode, where we assume campaigns and ad groups have already been created in a previous run with --skip-keywords.
-    We look up ad groups by name to find their resource names, query all already-existing keyword
-    criteria for those ad groups, and only create keywords that are not yet present.
+    We look up ad groups by campaign name (which we control and is reliable) to get their resource
+    names, query all already-existing keyword criteria for those ad groups by resource name, and
+    only create keywords that are not yet present.
     """
     google_ads_service = google_ads_client.get_service("GoogleAdsService")
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     region_match_type_to_keywords = get_keywords_to_create(course)
 
-    # Query 1: get resource names for all ad groups by name, regardless of keyword population state.
-    print(f"\nFetching ad group resource names for {len(campaign_specs)} ad groups...")
-    ad_group_names_list = "', '".join(spec.ad_group_name for spec in campaign_specs)
+    # Query 1: get ad group resource names via campaign name to avoid ambiguity from non-unique ad group names.
+    print(f"\nFetching ad group resource names for {len(campaign_specs)} campaigns...")
+    campaign_names_list = "', '".join(spec.campaign_name for spec in campaign_specs)
     ag_stream = google_ads_service.search_stream(
         customer_id=customer_id,
-        query=SELECT_AD_GROUPS_BY_NAME.format(ad_group_names_list=ad_group_names_list),
+        query=SELECT_AD_GROUPS_BY_CAMPAIGN_NAME.format(campaign_names_list=campaign_names_list),
     )
     ad_group_count = 0
     for batch in ag_stream:
         for row in batch.results:
-            spec = find_spec_by_name(campaign_specs, row.ad_group.name, "ad_group_name")
+            spec = find_spec_by_name(campaign_specs, row.campaign.name, "campaign_name")
             spec.ad_group_resource_name = row.ad_group.resource_name
             ad_group_count += 1
 
     print(f"Found {ad_group_count} of {len(campaign_specs)} ad groups.")
 
-    # Query 2: fetch all existing keyword criteria for those ad groups to avoid duplicates.
+    # Query 2: fetch existing keyword criteria by ad group resource name to avoid duplicate creation.
     print(f"Fetching existing keyword criteria for {ad_group_count} ad groups...")
     existing_keywords: set[tuple[str, str, str]] = set()
-    if ad_group_count:
+    resource_names = [spec.ad_group_resource_name for spec in campaign_specs if spec.ad_group_resource_name]
+    if resource_names:
+        ad_group_resource_names_list = "', '".join(resource_names)
         kw_stream = google_ads_service.search_stream(
             customer_id=customer_id,
-            query=SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_NAME.format(ad_group_names_list=ad_group_names_list),
+            query=SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE.format(
+                ad_group_resource_names_list=ad_group_resource_names_list
+            ),
         )
         for batch in kw_stream:
             for row in batch.results:
                 existing_keywords.add((
-                    row.ad_group.name,
+                    row.ad_group.resource_name,
                     row.ad_group_criterion.keyword.text.lower(),
                     row.ad_group_criterion.keyword.match_type.name,
                 ))
@@ -362,7 +367,7 @@ def create_remaining_keyword_criteria(
 
         new_keywords = [
             kw for kw in all_keywords
-            if (spec.ad_group_name, kw.lower(), match_type.upper()) not in existing_keywords
+            if (ad_group_resource_name, kw.lower(), match_type.upper()) not in existing_keywords
         ]
 
         skipped = len(all_keywords) - len(new_keywords)
