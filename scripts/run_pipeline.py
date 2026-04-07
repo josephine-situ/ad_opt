@@ -176,6 +176,7 @@ def run_optimization(
     max_purch: bool = True,
     min_spend: float | None = 1.0,
     embedding_method: str = "bert",
+    time_limit: float | None = None,
 ) -> pd.DataFrame | None:
     """Build feature matrix for *opt_date* and solve the Gurobi MIP.
 
@@ -195,6 +196,7 @@ def run_optimization(
     print(f"Order budget: {order_budget}")
     print(f"Max purch:    {max_purch}")
     print(f"Min spend:    {min_spend}")
+    print(f"Time limit:   {time_limit}")
 
     base_dir = Path(f"data/{course}")
     kw_df = pd.read_csv(base_dir / "gkp/keywords_classified.csv")
@@ -251,7 +253,7 @@ def run_optimization(
         max_purch=max_purch,
         base_dir=base_dir,
         min_spend=min_spend,
-        time_limit=None,
+        time_limit=time_limit,
     )
 
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X_opt)
@@ -400,6 +402,10 @@ def main():
         "--use-cache", action="store_true",
         help="Use cached intermediate data (ignoring cache by default)",
     )
+    parser.add_argument(
+        "--time-limit", type=float, default=None,
+        help="Time limit for Gurobi optimization in seconds (default: no limit)",
+    )
 
     args = parser.parse_args()
 
@@ -427,6 +433,7 @@ def main():
     print(f"Max purchases:  {not args.no_max_purch}")
     print(f"Skip data prep: {args.skip_data_prep}")
     print(f"Log file:       {log_path}")
+    print(f"Time limit:     {args.time_limit}")
     print("=" * 70)
 
     for course in args.course:
@@ -455,6 +462,7 @@ def main():
             order_budget=not args.no_order_budget,
             max_purch=not args.no_max_purch,
             min_spend=args.min_spend,
+            time_limit=args.time_limit,
         )
 
         if results is None:
