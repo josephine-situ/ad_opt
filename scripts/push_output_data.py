@@ -246,7 +246,7 @@ def push_cpc(
 
         if campaign_name not in campaign_to_ad_group:
             print(
-                f"Warning: No ad group found for campaign '{campaign_name}', skipping keyword '{keyword}'"
+                f"WARNING: No ad group found for campaign '{campaign_name}', skipping keyword '{keyword}'"
             )
             continue
 
@@ -258,7 +258,7 @@ def push_cpc(
         # For now, we'll assume that manual ad groups have been set up and just need statuses to be flipped.
         if key not in gaql_keyword_lookup:
             print(
-                f"Warning: Keyword '{keyword}' ({match_type}) not found in ad group {ad_group_id}, skipping"
+                f"WARNING: Keyword '{keyword}' ({match_type}) not found in ad group {ad_group_id}, skipping"
             )
             continue
 
@@ -334,7 +334,7 @@ def push_bid_adjustments(
     campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, output_course)
 
     if not campaigns:
-        print(f"Warning: No campaigns found for course {output_course}")
+        print(f"WARNING: No campaigns found for course {output_course}")
         return
 
     print(f"Found {len(campaigns)} campaigns for {output_course}")
