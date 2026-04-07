@@ -251,7 +251,7 @@ def run_optimization(
         max_purch=max_purch,
         base_dir=base_dir,
         min_spend=min_spend,
-        time_limit=None,
+        time_limit=1800.00,  # 30 min time limit
     )
 
     results_df = extract_solution(model, cost_vars, pred_vars, model_path, X_opt)
