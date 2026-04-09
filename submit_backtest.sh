@@ -4,19 +4,20 @@
 #SBATCH --time=12:00:00
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=16
-#SBATCH --array=0-132%2
+#SBATCH --array=0-60%2
 #SBATCH --output=logs/backtest_%A_%a.out
 #SBATCH --error=logs/backtest_%A_%a.err
 
 # ── Configurable parameters ──────────────────────────────────────────
 # Override via environment variables or edit defaults below.
-EXP_NAME="${EXP_NAME:-dynamic_daily_budget}"
-COURSES="${COURSES:-ml sys_think}"                  # space-separated course names
-START_DAY="${START_DAY:-2025-10-01}"
-END_DAY="${END_DAY:-2026-02-10}"
+EXP_NAME="${EXP_NAME:-large_budget}"
+COURSES="${COURSES:-sys_think}"                  # space-separated course names
+START_DAY="${START_DAY:-2025-12-04}"
+END_DAY="${END_DAY:-2026-02-02}"
 EMBEDDING_METHOD="${EMBEDDING_METHOD:-bert}"
 K_POLICY="${K_POLICY:-0}"                     # 0 = full BERT, no SVD
 EXTRA_ARGS="${EXTRA_ARGS:---order-budget --max-purch --min-spend 1}"
+CAMPAIGN_BUDGET="${CAMPAIGN_BUDGET:-40000}"
 
 # ── Environment setup ────────────────────────────────────────────────
 cd "${SLURM_SUBMIT_DIR:-$PWD}"
@@ -29,32 +30,6 @@ echo "Submit dir: ${SLURM_SUBMIT_DIR:-$PWD}"
 echo "PWD: $PWD"
 echo "Courses: $COURSES"
 echo "==============================="
-
-compute_campaign_budget() {
-    local course="$1"
-    python - <<PY
-from pathlib import Path
-import pandas as pd
-
-course = "$course"
-start_day = pd.Timestamp("$START_DAY")
-end_day = pd.Timestamp("$END_DAY")
-raw_path = Path(f"data/{course}/reports/Search keyword - raw input to models.csv")
-
-if not raw_path.exists():
-    raise SystemExit(f"Missing raw input file: {raw_path}")
-
-df = pd.read_csv(raw_path, header=0, thousands=',', engine='python')
-if 'Day' in df.columns:
-    df['Day'] = pd.to_datetime(df['Day'])
-    df = df[(df['Day'] >= start_day) & (df['Day'] <= end_day)]
-
-if 'Cost' not in df.columns:
-    raise SystemExit(f"Missing Cost column in {raw_path}")
-
-print(float(pd.to_numeric(df['Cost'], errors='coerce').fillna(0.0).sum()))
-PY
-}
 
 echo "Load modules..."
 module load miniforge
@@ -109,7 +84,6 @@ for COURSE in $COURSES; do
     echo "  Course: $COURSE | Day: $DAY"
     echo "############################################################"
 
-    CAMPAIGN_BUDGET=$(compute_campaign_budget "$COURSE")
     echo "Campaign budget for $COURSE ($START_DAY to $END_DAY): $CAMPAIGN_BUDGET"
 
     # Save config once from task 0
