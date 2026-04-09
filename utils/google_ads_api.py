@@ -66,12 +66,11 @@ def should_skip_campaign(
     return False
 
 def get_enabled_campaigns_for_course(
-    google_ads_service: Any, customer_id: str, output_course: str
+    google_ads_service: Any, customer_id: str,  campaign_names_list: Iterable[str]
 ) -> dict[str, int]:
     """Get all campaign IDs for a given course."""
-    course_title = COURSE_CONFIG[output_course]["course_title_base"]
-
-    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
+    campaign_names = "', '".join(campaign_names_list)
+    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(campaign_names=campaign_names)
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
     
