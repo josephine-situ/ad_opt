@@ -40,13 +40,13 @@ def should_skip_campaign(
 ) -> bool:
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
-    Campaign name format: "{course_title} - {region} - {match_type}"
+    Campaign name format: "{course_title} - {region} - {match_type} - Experiment"
     Uses regex to validate exact position of each component.
     """
     # Parse campaign name using regex
-    # Pattern: "{any course title} - {region} - {match type}"
+    # Pattern: "{any course title} - {region} - {match type} - Experiment"
     # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
-    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?)$"
+    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?) - Experiment$"
     match = re.match(pattern, campaign_name)
 
     if not match:
