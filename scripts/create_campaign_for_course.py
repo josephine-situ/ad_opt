@@ -262,8 +262,10 @@ def get_location_ids_for_countries(
 
     ga_service = google_ads_client.get_service("GoogleAdsService")
 
-    # Build IN clause with all country names
-    country_names = "', '".join(countries)
+    # Build IN clause with all country names.
+    # Note that countries with apostrophes cause some hiccups here, such as Cote d'Ivoire
+    # This is why these use double quotes instead of single quotes.
+    country_names = '", "'.join(countries)
 
     query = f"""
         SELECT
@@ -272,8 +274,9 @@ def get_location_ids_for_countries(
             geo_target_constant.country_code,
             geo_target_constant.target_type
         FROM geo_target_constant
-        WHERE geo_target_constant.name IN ('{country_names}')
+        WHERE geo_target_constant.name IN ("{country_names}")
     """
+    print(query)
 
     response = ga_service.search(customer_id=customer_id, query=query)
 
