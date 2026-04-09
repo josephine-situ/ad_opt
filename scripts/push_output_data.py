@@ -80,6 +80,16 @@ def warn_on_large_budget_changes(
                 print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
 
 
+def generate_campaign_names_for_configured_course(output_course: str) -> set[str]:
+    """Generate the set of campaign names we expect to exist for a given course based on the config."""
+    campaign_names = set()
+    course_config = COURSE_CONFIG[output_course]
+    for region in course_config["regions"]:
+        for match_type in course_config["match_types"]:
+            campaign_name = construct_campaign_name_for_args(output_course, match_type, region)
+            campaign_names.add(campaign_name)
+    return campaign_names
+
 def push_budget(
     google_ads_client: GoogleAdsClient,
     customer_id: str,
@@ -331,7 +341,8 @@ def push_bid_adjustments(
 
     # Get all campaigns for this course
     ga_service = google_ads_client.get_service("GoogleAdsService")
-    campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, output_course)
+    campaign_names = generate_campaign_names_for_configured_course(output_course)
+    campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, campaign_names)
 
     if not campaigns:
         print(f"WARNING: No campaigns found for course {output_course}")

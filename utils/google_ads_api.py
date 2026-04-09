@@ -40,13 +40,13 @@ def should_skip_campaign(
 ) -> bool:
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
-    Campaign name format: "{course_title} - {region} - {match_type}"
+    Campaign name format: "{course_title} - {region} - {match_type} - Experiment"
     Uses regex to validate exact position of each component.
     """
     # Parse campaign name using regex
-    # Pattern: "{any course title} - {region} - {match type}"
+    # Pattern: "{any course title} - {region} - {match type} - Experiment"
     # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
-    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?)$"
+    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?) - Experiment$"
     match = re.match(pattern, campaign_name)
 
     if not match:
@@ -66,12 +66,11 @@ def should_skip_campaign(
     return False
 
 def get_enabled_campaigns_for_course(
-    google_ads_service: Any, customer_id: str, output_course: str
+    google_ads_service: Any, customer_id: str,  campaign_names_list: Iterable[str]
 ) -> dict[str, int]:
     """Get all campaign IDs for a given course."""
-    course_title = COURSE_CONFIG[output_course]["course_title_base"]
-
-    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
+    campaign_names = "', '".join(campaign_names_list)
+    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(campaign_names=campaign_names)
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
     

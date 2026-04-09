@@ -113,13 +113,11 @@ GET_ENABLED_CAMPAIGNS_FOR_COURSE = """
         SELECT campaign.id, campaign.name
         FROM campaign
         WHERE campaign.name NOT LIKE 'EXCLUDE%'
+        AND campaign.name IN ('{campaign_names}')
         AND campaign.advertising_channel_type = 'SEARCH'
         AND campaign.status = 'ENABLED'
     """
 
-# TODO: It only appears that you have age range criteria provisioned if you've set a bid adjustment for age ranges once.
-# As soon as I set it, even to 0, they show up, but before that they don't appear to exist at all.
-# We'll need to address this somehow.
 GET_AGE_CRITERIA_FOR_CAMPAIGNS = """
         SELECT
             campaign.id,
