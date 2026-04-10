@@ -275,8 +275,8 @@ def get_location_ids_for_countries(
             geo_target_constant.target_type
         FROM geo_target_constant
         WHERE geo_target_constant.name IN ("{country_names}")
+        AND geo_target_constant.target_type IN ("Country", "Region")
     """
-    print(query)
 
     response = ga_service.search(customer_id=customer_id, query=query)
 
