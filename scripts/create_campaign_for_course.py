@@ -28,6 +28,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
 from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE, SELECT_AD_GROUPS_BY_CAMPAIGN_NAME
 from utils.bid_adjustments import AGE_RANGE_MAP
+from utils.google_ads_api import get_location_resource_names_for_countries
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -248,36 +249,6 @@ def create_ad_schedule_operations(
             operations.append(operation)
 
     return operations
-
-
-def get_location_resource_names_for_countries(
-    google_ads_client: GoogleAdsClient, countries: Iterable[str]
-) -> dict[str, str]:
-    """
-    Get geo target constant resource names for a list of country/region names.
-    Returns a dict mapping country name to geo target constant resource name.
-    """
-    countries = list(countries)
-    if not countries:
-        return {}
-
-    geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
-    location_map: dict[str, str] = {}
-
-    for name in countries:
-        request = google_ads_client.get_type("SuggestGeoTargetConstantsRequest")
-        request.location_names.names.append(name)
-        request.locale = "en"
-
-        suggestions = geo_target_service.suggest_geo_target_constants(request=request)
-
-        if not suggestions.geo_target_constant_suggestions:
-            raise ValueError(f"Location not found for country/region: '{name}'")
-
-        # Use the first (best) suggestion
-        location_map[name] = suggestions.geo_target_constant_suggestions[0].geo_target_constant.resource_name
-
-    return location_map
 
 
 def create_location_operations(
