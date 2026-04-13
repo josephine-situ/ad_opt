@@ -9,7 +9,6 @@ from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
 from config import COURSE_CONFIG
-from scripts.interpret_xgb import unique_keywords
 from utils.gaql_queries import (
     GET_ENABLED_CAMPAIGNS_FOR_COURSE,
     GET_CRITERIA_FOR_CAMPAIGNS,
@@ -205,11 +204,11 @@ def get_location_bid_adjustments(
         reader = csv.DictReader(csvfile)
         for row in reader:
             rows.append(row)
-            countries.add(row["Target Country"])
+            countries.add(row["Targeted location"])
 
     geo_target_cache: dict[str, str] = get_location_resource_names_for_countries(google_ads_client, countries)
 
-    for row in reader:
+    for row in rows:
         region = row["Region"]
         location = row["Targeted location"]
         bid_adj_decimal = row.get("BidAdjustment", "")
