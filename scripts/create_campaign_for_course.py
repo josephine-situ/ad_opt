@@ -321,6 +321,7 @@ def create_remaining_keyword_criteria(
     customer_id: str,
     course: str,
     campaign_specs: list[CampaignSpec],
+    keywords_limit: int
 ) -> None:
     """
     Create keyword criteria for existing ad groups based on the provided campaign specifications.
@@ -371,6 +372,8 @@ def create_remaining_keyword_criteria(
     print(f"Found {len(existing_keywords)} existing keyword criteria.")
 
     # Create only keywords not already present in each ad group
+    remaining_keyword_operations = keywords_limit
+    exhausted_limit = False
     for spec in campaign_specs:
         ad_group_resource_name = spec.ad_group_resource_name
         if not ad_group_resource_name:
@@ -400,6 +403,15 @@ def create_remaining_keyword_criteria(
             google_ads_client, ad_group_resource_name, new_keywords, match_type
         )
 
+        # If we have a keyword limit set
+        if remaining_keyword_operations and len(operations) > remaining_keyword_operations:
+            print(f"Keyword operations for ad group '{spec.ad_group_name}' exceed remaining limit of {remaining_keyword_operations}. Only creating a portion of keywords for this ad group.")  # noqa: E501
+            operations = operations[:remaining_keyword_operations]
+            remaining_keyword_operations = 0
+            exhausted_limit = True
+        elif remaining_keyword_operations:
+            remaining_keyword_operations -= len(operations)
+
         try:
             for i in range(0, len(operations), BATCH_SIZE):
                 batch = operations[i : i + BATCH_SIZE]
@@ -411,6 +423,10 @@ def create_remaining_keyword_criteria(
         except Exception as e:
             print(f"✗ Error creating keyword criteria for ad group '{spec.ad_group_name}': {e}")
 
+        if exhausted_limit:
+            print(f"Keyword limit reached, skipping additional keywords.")
+            return
+
 def create_campaigns_for_course(
     google_ads_client: GoogleAdsClient,
     customer_id: str,
@@ -418,6 +434,7 @@ def create_campaigns_for_course(
     execute: bool,
     skip_keywords: bool = False,
     only_keywords: bool = False,
+    keywords_limit: int = 0,
 ) -> list[CampaignSpec]:
     """Create all campaigns and ad groups for a given course."""
     course_config = COURSE_CONFIG.get(course)
@@ -476,8 +493,8 @@ def create_campaigns_for_course(
         print("\n[KEYWORD-ONLY MODE] Only creating keyword criteria for existing ad groups.")
         print("Assuming campaigns and ad groups have already been created in a previous run with --skip-keywords.")
         print("Will attempt to find ad groups by name and add keywords to them, but will not create any new campaigns or ad groups.")
-        create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs)
-        return
+        create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs, keywords_limit)
+        return []
 
     # Batch create all budgets
     print(f"\n{'='*60}")
@@ -577,13 +594,14 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
+
+    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     if skip_keywords:
         print("\nSkipping keyword criteria population (--skip-keywords flag set).")
     else:
         # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
         # As this works now, we attempt to create all keywords for all campaigns in one batch.
         # Some courses have a dataset too large for this with API Basic Access quotas
-        ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
         region_match_type_to_keywords = get_keywords_to_create(course)
         keyword_operations = []
         for spec in campaign_specs:
@@ -739,6 +757,12 @@ def main() -> None:
         default=False,
         help="Only create keyword criteria for existing ad groups. Assumes this script has been run w/ --skip-keywords previously",
     )
+    parser.add_argument(
+        "--keywords-limit",
+        type=int,
+        default=0,
+        help="When specified with --only-keywords, limits the number of operations to perform.",
+    )
 
     args = parser.parse_args()
 
@@ -749,7 +773,7 @@ def main() -> None:
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
 
     # Create campaigns
-    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute, args.skip_keywords, args.only_keywords)
+    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute, args.skip_keywords, args.only_keywords, args.keywords_limit)
 
 
 if __name__ == "__main__":
