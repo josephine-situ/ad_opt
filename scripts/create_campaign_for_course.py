@@ -28,6 +28,7 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
 from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE, SELECT_AD_GROUPS_BY_CAMPAIGN_NAME
 from utils.bid_adjustments import AGE_RANGE_MAP
+from utils.google_ads_api import get_location_resource_names_for_countries
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -250,67 +251,23 @@ def create_ad_schedule_operations(
     return operations
 
 
-def get_location_ids_for_countries(
-    google_ads_client: GoogleAdsClient, customer_id: str, countries: Iterable[str]
-) -> dict[str, int]:
-    """
-    Get location criterion IDs for a list of country names in a single query.
-    Returns a dict mapping country name to location ID.
-    """
-    if not countries:
-        return {}
-
-    ga_service = google_ads_client.get_service("GoogleAdsService")
-
-    # Build IN clause with all country names.
-    # Note that countries with apostrophes cause some hiccups here, such as Cote d'Ivoire
-    # This is why these use double quotes instead of single quotes.
-    country_names = '", "'.join(countries)
-
-    query = f"""
-        SELECT
-            geo_target_constant.id,
-            geo_target_constant.name,
-            geo_target_constant.country_code,
-            geo_target_constant.target_type
-        FROM geo_target_constant
-        WHERE geo_target_constant.name IN ("{country_names}")
-        AND geo_target_constant.target_type IN ("Country", "Region")
-    """
-
-    response = ga_service.search(customer_id=customer_id, query=query)
-
-    location_map = {row.geo_target_constant.name: row.geo_target_constant.id for row in response}
-
-    # Check if all countries were found
-    missing = set(countries) - set(location_map.keys())
-    if missing:
-        raise ValueError(f"Locations not found for countries: {missing}")
-
-    return location_map
-
-
 def create_location_operations(
     google_ads_client: GoogleAdsClient,
     campaign_resource_name: str,
     countries: list[str],
-    location_map: dict[str, int],
+    location_map: dict[str, str],
 ) -> list[CampaignCriterionOperation]:
     """
-    Create location targeting operations for a campaign using pre-fetched location IDs.
+    Create location targeting operations for a campaign using pre-fetched geo target resource names.
     """
     operations = []
 
     for country in countries:
-        location_id = location_map[country]
-
         operation = google_ads_client.get_type("CampaignCriterionOperation")
         criterion = operation.create
         criterion.campaign = campaign_resource_name
         criterion.status = google_ads_client.enums.CampaignCriterionStatusEnum.ENABLED
-        criterion.location.geo_target_constant = google_ads_client.get_service(
-            "GeoTargetConstantService"
-        ).geo_target_constant_path(location_id)
+        criterion.location.geo_target_constant = location_map[country]
 
         operations.append(operation)
 
@@ -451,12 +408,12 @@ def create_campaigns_for_course(
     for countries in regions.values():
         all_countries.update(countries)
 
-    # Fetch all location IDs in a single query
+    # Fetch all location resource names via GeoTargetConstantService
     print(f"\n{'='*60}")
-    print(f"Fetching location IDs for {len(all_countries)} countries...")
+    print(f"Fetching geo target constants for {len(all_countries)} countries...")
     print(f"{'='*60}")
-    location_map = get_location_ids_for_countries(google_ads_client, customer_id, all_countries)
-    print(f"✓ Retrieved {len(location_map)} location IDs")
+    location_map = get_location_resource_names_for_countries(google_ads_client, all_countries)
+    print(f"✓ Retrieved {len(location_map)} geo target constants")
 
     # Prepare all campaign specifications
     campaign_specs = []
