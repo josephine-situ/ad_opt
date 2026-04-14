@@ -494,7 +494,7 @@ def create_campaigns_for_course(
         print("Assuming campaigns and ad groups have already been created in a previous run with --skip-keywords.")
         print("Will attempt to find ad groups by name and add keywords to them, but will not create any new campaigns or ad groups.")
         create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs, keywords_limit)
-        return
+        return []
 
     # Batch create all budgets
     print(f"\n{'='*60}")
@@ -594,13 +594,14 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
+
+    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     if skip_keywords:
         print("\nSkipping keyword criteria population (--skip-keywords flag set).")
     else:
         # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
         # As this works now, we attempt to create all keywords for all campaigns in one batch.
         # Some courses have a dataset too large for this with API Basic Access quotas
-        ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
         region_match_type_to_keywords = get_keywords_to_create(course)
         keyword_operations = []
         for spec in campaign_specs:
