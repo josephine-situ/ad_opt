@@ -54,7 +54,7 @@ class GoogleAdsMetricsClient(MetricsClient):
 
 def get_metrics_client() -> GoogleAdsMetricsClient:
     import os
-    url = os.getenv("METRICS_URL")
+    url = os.getenv("GRAFANA_URL")
     username = os.getenv("GRAFANA_USERNAME")
     token = os.getenv("GRAFANA_TOKEN")
     return GoogleAdsMetricsClient(url, username, token)
