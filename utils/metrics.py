@@ -21,7 +21,7 @@ class MetricsClient():
         self.metric_prefix = "google_ads_optimization"
 
     # Emits a single metric of the following format:
-    def emit_metric(self, metric_name:str, value:float, labels: Dict[str: str], metric_prefix: str | None = None, ) -> None:
+    def emit_metric(self, metric_name:str, value:float, labels: Dict[str, str], metric_prefix: str | None = None, ) -> None:
 
         if not all([self.url, self.username, self.token]):
             print(f"Credentials not set, skipping metric {metric_name} with value {value} and labels {labels}")
@@ -30,7 +30,7 @@ class MetricsClient():
         try:
             if not metric_prefix:
                 metric_prefix = self.metric_prefix
-            labels_string = ",".join([f'{key}="{value}"' for key, value in labels.items()])
+            labels_string = ",".join([f'{key}={value}' for key, value in labels.items()])
             payload = f'{metric_prefix},{labels_string} {metric_name}={value}'
             response = requests.post(self.url,
                                      headers=REQUEST_HEADERS,
@@ -44,6 +44,7 @@ class MetricsClient():
             print(traceback.format_exc())
 
 # Thin wrapper class to inject specific tags or other formatting for Google Ads related metrics
+# These seem approximately correct when we use sum_over_time in to query.
 class GoogleAdsMetricsClient(MetricsClient):
     def __init__(self, url: str, username: str, token: str) -> None:
         super().__init__(url, username, token)
