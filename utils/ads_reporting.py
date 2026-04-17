@@ -16,6 +16,7 @@ from utils.gaql_queries import (
     LOC_CONVERSIONS_REPORT_QUERY,
     SEARCH_TERM_REPORT_QUERY,
 )
+from utils.metrics import GoogleAdsMetricsClient, google_ads_metrics_client
 from utils.report_row_generators import *
 
 """
@@ -86,6 +87,7 @@ def generate_search_keyword_report(
         "Cost",
     ]
     write_to_file(header_parts, generate_search_keyword_rows(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -114,6 +116,7 @@ def generate_search_terms_report(
         "Conversions",
     ]
     write_to_file(header_parts, generate_search_terms_row(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -138,6 +141,7 @@ def generate_purchase_report(
 
     header_parts = ["Campaign", "Conversion action", "All conv."]
     write_to_file(header_parts, generate_purchase_report_rows(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -178,6 +182,7 @@ def generate_hod_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -218,6 +223,7 @@ def generate_age_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -258,6 +264,7 @@ def generate_device_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -304,4 +311,5 @@ def generate_loc_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
