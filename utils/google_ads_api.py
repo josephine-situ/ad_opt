@@ -16,6 +16,7 @@ from utils.gaql_queries import (
     GET_CAMPAIGN_BUDGETS_BY_NAMES,
     SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS, BUILD_LOCATION_CACHE_QUERY,
 )
+from utils.metrics import google_ads_metrics_client
 
 LOCATION_CACHE = {}
 GEO_TARGET_BATCH_SIZE = 25  # API limit per SuggestGeoTargetConstantsRequest
@@ -77,6 +78,8 @@ def get_enabled_campaigns_for_course(
     for batch in stream:
         for row in batch.results:
             campaigns[row.campaign.name] = row.campaign.id
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaigns
 
 
@@ -118,6 +121,7 @@ def get_existing_campaign_criteria(
                 geo_target = row.campaign_criterion.location.geo_target_constant
                 criteria["location"][(campaign_id, geo_target)] = criterion_id
 
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return criteria
 
 
@@ -147,6 +151,7 @@ def get_existing_ad_group_age_for_campaigns(
             key = (campaign_id, age_range_type)
             criteria[key] = (ad_group_id, criterion_id)
 
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return criteria
 
 def get_location_resource_names_for_countries(
@@ -179,6 +184,9 @@ def get_location_resource_names_for_countries(
             if search_term not in location_map:
                 location_map[search_term] = suggestion.geo_target_constant.resource_name
 
+    # It's not entirely clear if this will count as one request or not
+    # See https://developers.google.com/google-ads/api/docs/best-practices/quotas for more details
+    google_ads_metrics_client.track_google_ads_operation_count('suggest_geo_target_constants', 1)
     missing = set(unique_countries) - set(location_map.keys())
     if missing:
         raise ValueError(f"Locations not found for countries: {missing}")
@@ -195,7 +203,6 @@ def get_location_bid_adjustments(
 ) -> list[Any]:
     """Push location bid adjustments to Google Ads."""
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
-    geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
     operations = []
 
     countries = set()
@@ -272,6 +279,8 @@ def get_campaign_budget_info(
                 "current_budget_amount": row.campaign_budget.amount_micros / 1_000_000,
                 "budget_resource_id": row.campaign.campaign_budget,
             }
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaign_budget_resources
 
 
@@ -291,6 +300,8 @@ def get_ad_groups_for_enabled_campaigns(
             # Take first ad group per campaign
             if campaign_name not in campaign_to_ad_group:
                 campaign_to_ad_group[campaign_name] = ad_group_id
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaign_to_ad_group
 
 # This is only here for the moment because it directly modifies the shared cache
@@ -319,7 +330,9 @@ def build_location_cache(
         # Build a query with all criterion IDs
         ids_str = ", ".join(str(id) for id in valid_ids)
         query = BUILD_LOCATION_CACHE_QUERY.format(ids_str=ids_str)
+        # TODO: Replace with search_stream.
         response = ads_service.search(customer_id=customer_id, query=query)
+        google_ads_metrics_client.track_google_ads_operation_count('search', 1)
 
         for row in response:
             criterion_id = row.geo_target_constant.id

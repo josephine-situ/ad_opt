@@ -13,6 +13,7 @@ from typing import Any
 from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
+from utils.metrics import google_ads_metrics_client
 from utils.name_generation import construct_campaign_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -159,6 +160,7 @@ def push_budget(
         response = campaign_budget_service.mutate_campaign_budgets(
             customer_id=customer_id, operations=operations
         )
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_budgets', len(operations))
         print(f"Successfully updated {len(response.results)} campaign budgets")
 
 
@@ -205,7 +207,9 @@ def push_cpc(
         f"customers/{customer_id}/adGroups/{ag_id}" for ag_id in ad_group_ids
     )
     query = SELECT_KEYWORD_CRITERION_IN_AD_GROUP.format(ad_group_list=ad_group_list)
+    # TODO: Change to use search_stream
     response = google_ads_service.search(customer_id=customer_id, query=query)
+    google_ads_metrics_client.track_google_ads_operation_count('search', 1)
 
     # Build lookup: (ad_group_id, keyword_text, match_type) -> (criterion_id, status, cpc_bid_micros)
     # This represents the keywords in google ads for the specified campaigns.
@@ -319,6 +323,7 @@ def push_cpc(
             response = ad_group_criterion_service.mutate_ad_group_criteria(
                 customer_id=customer_id, operations=batch
             )
+            google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
             print(f"Updated {len(response.results)} keywords (batch {i//BATCH_SIZE + 1})")
 
         print(f"Successfully updated {len(operations)} total keywords")
@@ -436,6 +441,7 @@ def push_bid_adjustments(
                 response = ad_group_criterion_service.mutate_ad_group_criteria(
                     customer_id=customer_id, operations=batch
                 )
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 print(
                     f"Successfully applied {len(response.results)} age bid adjustments (batch {i//BATCH_SIZE + 1})"
                 )
@@ -459,6 +465,7 @@ def push_bid_adjustments(
                 response = campaign_criterion_service.mutate_campaign_criteria(
                     customer_id=customer_id, operations=batch
                 )
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria', len(batch))
                 print(
                     f"Successfully applied {len(response.results)} device/schedule/location bid adjustments (batch {i//BATCH_SIZE + 1})"
                 )
