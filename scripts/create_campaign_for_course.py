@@ -7,12 +7,11 @@ Each campaign contains exactly one ad group.
 
 import argparse
 import csv
-import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Iterable
+from typing import Optional
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.v23.services.types.campaign_budget_service import CampaignBudgetOperation
@@ -29,6 +28,7 @@ from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYP
 from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE, SELECT_AD_GROUPS_BY_CAMPAIGN_NAME
 from utils.bid_adjustments import AGE_RANGE_MAP
 from utils.google_ads_api import get_location_resource_names_for_countries
+from utils.metrics import google_ads_metrics_client
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -298,6 +298,7 @@ def create_remaining_keyword_criteria(
         customer_id=customer_id,
         query=SELECT_AD_GROUPS_BY_CAMPAIGN_NAME.format(campaign_names_list=campaign_names_list),
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     ad_group_count = 0
     for batch in ag_stream:
         for row in batch.results:
@@ -319,6 +320,7 @@ def create_remaining_keyword_criteria(
                 ad_group_resource_names_list=ad_group_resource_names_list
             ),
         )
+        google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
         for batch in kw_stream:
             for row in batch.results:
                 existing_keywords.add((
@@ -376,6 +378,7 @@ def create_remaining_keyword_criteria(
                 request.customer_id = customer_id
                 request.operations = batch
                 response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 print(f"✓ Created {len(response.results)} keyword criteria for ad group '{spec.ad_group_name}' (batch {i // BATCH_SIZE + 1})")
         except Exception as e:
             print(f"✗ Error creating keyword criteria for ad group '{spec.ad_group_name}': {e}")
@@ -475,6 +478,7 @@ def create_campaigns_for_course(
         )
 
         budget_response = campaign_budget_service.mutate_campaign_budgets(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_budgets', len(budget_operations))
         print(f"✓ Created {len(budget_response.results)} budgets")
 
         # Map each result back to the corresponding spec using the budget name from response
@@ -507,6 +511,7 @@ def create_campaigns_for_course(
         )
 
         campaign_response = campaign_service.mutate_campaigns(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaigns', len(campaign_operations))
         print(f"✓ Created {len(campaign_response.results)} campaigns")
 
         for result in campaign_response.results:
@@ -540,6 +545,7 @@ def create_campaigns_for_course(
         )
 
         ad_group_response = ad_group_service.mutate_ad_groups(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_groups', len(ad_group_operations))
         print(f"✓ Created {len(ad_group_response.results)} ad groups")
 
         for result in ad_group_response.results:
@@ -584,6 +590,7 @@ def create_campaigns_for_course(
                 request.customer_id = customer_id
                 request.operations = batch
                 response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 total_created += len(response.results)
                 print(f"✓ Created {len(response.results)} keyword criteria (batch {i // BATCH_SIZE + 1})")
         except Exception as e:
@@ -608,6 +615,7 @@ def create_campaigns_for_course(
         request.operations = all_age_range_operations
 
         age_range_response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(all_age_range_operations))
         print(f"✓ Created {len(age_range_response.results)} age range criteria")
     except Exception as e:
         print(f"✗ Error creating age range criteria: {e}")
@@ -635,6 +643,8 @@ def create_campaigns_for_course(
         request.operations = all_ad_schedule_operations
 
         ad_schedule_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria',
+                                                                   len(all_ad_schedule_operations))
         print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
     except Exception as e:
         print(f"✗ Error creating ad schedules: {e}")
@@ -658,6 +668,8 @@ def create_campaigns_for_course(
         request.operations = all_location_operations
 
         location_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria',
+                                                                   len(all_location_operations))
         print(f"✓ Created {len(location_response.results)} location targeting criteria")
     except Exception as e:
         print(f"✗ Error creating location targeting: {e}")
