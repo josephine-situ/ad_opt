@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.v23.services import MutateAdGroupCriteriaRequest
 from google.api_core import protobuf_helpers
 
 from utils.metrics import google_ads_metrics_client
@@ -28,6 +29,7 @@ from utils.google_ads_api import (
     get_enabled_campaigns_for_course,
     get_location_bid_adjustments,
     get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_enabled_campaigns,
+    is_partial_failure_error_present, get_first_failing_operation,
 )
 
 from utils.gaql_queries import (
@@ -320,11 +322,20 @@ def push_cpc(
 
         for i in range(0, len(operations), BATCH_SIZE):
             batch = operations[i : i + BATCH_SIZE]
+            request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+            request.customer_id = customer_id
+            request.operations = batch
+            request.partial_failure = True
             response = ad_group_criterion_service.mutate_ad_group_criteria(
-                customer_id=customer_id, operations=batch
+                request=request
             )
             google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
             print(f"Updated {len(response.results)} keywords (batch {i//BATCH_SIZE + 1})")
+            if is_partial_failure_error_present(response):
+                print(f"WARNING: Partial failure detected in batch {i//BATCH_SIZE + 1}:")
+                print(f"WARNING: First failure on operation: {get_first_failing_operation(response, request)}")
+
+
 
         print(f"Successfully updated {len(operations)} total keywords")
     else:

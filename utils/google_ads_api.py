@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.v23.errors.types.errors import GoogleAdsFailure
+from google.ads.googleads.v23.services import MutateAdGroupCriteriaRequest, MutateAdGroupCriteriaResponse
 from google.api_core import protobuf_helpers
 
-from config import COURSE_CONFIG
 from utils.gaql_queries import (
     GET_ENABLED_CAMPAIGNS_FOR_COURSE,
     GET_CRITERIA_FOR_CAMPAIGNS,
@@ -25,6 +26,54 @@ This file contains utility functions for interacting with the Google Ads account
 These functions should not persist their results or modify state within a google ads account, 
 but may read state from a specified account. 
 """
+
+def is_partial_failure_error_present(response: MutateAdGroupCriteriaResponse) -> bool:
+    """Checks whether a response message has a partial failure error.
+
+    In Python the partial_failure_error attr is always present on a response
+    message and is represented by a google.rpc.Status message. So we can't
+    simply check whether the field is present, we must check that the code is
+    non-zero. Error codes are represented by the google.rpc.Code proto Enum:
+    https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+
+    Args:
+        response:  A MutateAdGroupsResponse message instance.
+
+    Returns: A boolean, whether or not the response message has a partial
+        failure error.
+    """
+    partial_failure: Any = getattr(response, "partial_failure_error", None)
+    code: int = int(getattr(partial_failure, "code", 0))  # Default to 0 if None
+    return code != 0
+
+def get_first_failing_operation(
+    response: MutateAdGroupCriteriaResponse,
+    request: MutateAdGroupCriteriaRequest,
+) -> Any | None:
+    """Returns the first failing operation from a MutateAdGroupCriteriaResponse.
+
+    Parses partial failure error details to find the index of the first failed
+    operation, then returns the corresponding operation from the original request.
+
+    Args:
+        response: A MutateAdGroupCriteriaResponse message instance.
+        request: The MutateAdGroupCriteriaRequest that produced the response.
+
+    Returns:
+        The first failing MutateAdGroupCriteriaOperation, or None if no failures.
+    """
+    if not is_partial_failure_error_present(response):
+        return None
+
+    for detail in response.partial_failure_error.details:
+        failure = GoogleAdsFailure.deserialize(detail.value)
+        for error in failure.errors:
+            for field_path_element in error.location.field_path_elements:
+                if field_path_element.field_name == "operations":
+                    return request.operations[field_path_element.index]
+
+    return None
+
 
 def normalize_bid_adjustment(bid_adj: str | float | Decimal) -> Decimal:
     """Normalize bid adjustment to be within Google Ads limits (0.1 to 10.0, or exactly 0 for device criteria)."""
