@@ -42,6 +42,7 @@ optimization = [
 
 dev = [
     "pytest>=7.3.1",
+    "pytest-cov>=4.0.0",
     "black>=23.3.0",
     "pylint>=2.12.2",
     "mypy>=1.0.0",
@@ -59,6 +60,7 @@ plotting = [
 
 [project.scripts]
 ad_opt_tests = "tests:run"
+ad_opt_coverage = "tests:coverage"
 
 [tool.setuptools]
 packages = ["utils", "scripts", "tests"]
