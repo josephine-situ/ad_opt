@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from google.ads.googleads.v23.enums.types.age_range_type import AgeRangeTypeEnum
 
-import utils.google_ads_api as gaa
 from utils.google_ads_api import (
     build_location_cache,
     get_ad_groups_for_enabled_campaigns,
@@ -12,10 +11,10 @@ from utils.google_ads_api import (
     get_enabled_campaigns_for_course,
     get_existing_ad_group_age_for_campaigns,
     get_existing_campaign_criteria,
-    get_from_location_cache,
     get_location_resource_names_for_countries,
     normalize_bid_adjustment,
     should_skip_campaign,
+    LOCATION_CACHE
 )
 
 
@@ -119,7 +118,7 @@ class TestLocationCache:
         with patch.dict("utils.google_ads_api.LOCATION_CACHE", {}, clear=True):
             with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
                 build_location_cache(client, CUSTOMER_ID, [10])
-            assert gaa.LOCATION_CACHE[10] == "Canada"
+            assert LOCATION_CACHE[10] == "Canada"
         mock_metrics.track_google_ads_operation_count.assert_called_once_with("search", 1)
 
     def test_build_location_cache_skips_already_cached_ids(self):
@@ -134,7 +133,7 @@ class TestLocationCache:
 
         with patch.dict("utils.google_ads_api.LOCATION_CACHE", {}, clear=True):
             build_location_cache(client, CUSTOMER_ID, [99])
-            assert gaa.LOCATION_CACHE[99] == "Location 99"
+            assert LOCATION_CACHE[99] == "Location 99"
 
 
 # ---------------------------------------------------------------------------
