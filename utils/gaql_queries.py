@@ -211,6 +211,7 @@ LOC_CLICKS_REPORT_QUERY = """
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name NOT LIKE 'EXCLUDE%'
     AND campaign.advertising_channel_type = 'SEARCH'
+    AND geographic_view.country_criterion_id IN ({country_criterion_ids})
     ORDER BY campaign.name, geographic_view.location_type
 """
 
@@ -273,6 +274,7 @@ LOC_CONVERSIONS_REPORT_QUERY = """
     AND campaign.advertising_channel_type = 'SEARCH'
     AND metrics.all_conversions > 0
     AND segments.conversion_action_name IN ('{purchase_action_list}')
+    AND geographic_view.country_criterion_id IN ({country_criterion_ids})
     ORDER BY campaign.name, segments.conversion_action_name, geographic_view.location_type
 """
 
