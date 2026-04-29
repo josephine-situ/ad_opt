@@ -71,6 +71,10 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
     return None
 
 
+def _get_keywords_csv_path(course: str) -> Path:
+    return Path(__file__).parent.parent / "opt_results" / course / "bids" / "optimized_costs.csv"
+
+
 def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     """
     Get keywords to create for a given course from the corresponding search terms CSV file.
@@ -79,9 +83,7 @@ def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     to be added for a specific ad group easily.
     """
     keywords = defaultdict(list)
-    csv_path = (
-        Path(__file__).parent.parent / "opt_results" / course / "bids" / f"optimized_costs.csv"
-    )
+    csv_path = _get_keywords_csv_path(course)
 
     if not csv_path.exists():
         print(

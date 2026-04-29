@@ -47,6 +47,7 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 # Map match type strings to enum values
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
+# TODO: Would be much nicer if we used a logger and also returned structured warning data
 def warn_on_large_cpc_changes(
     new_cpc_bids: dict[tuple[int, str, str], float],
     current_cpc_lookup: dict[tuple[int, str, str], tuple[int, Any, int]],
