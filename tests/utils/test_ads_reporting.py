@@ -342,6 +342,8 @@ class TestGenerateLocClicksAndConversionReport:
 
         with patch("utils.ads_reporting.Path", side_effect=[clicks_file, conv_file]), \
              patch("utils.ads_reporting.google_ads_metrics_client") as mock_metrics, \
+             patch("utils.ads_reporting.get_location_resource_names_for_countries",
+                   return_value={"United States": f"geoTargetConstants/{CRITERION_ID}"}), \
              patch("utils.report_row_generators.build_location_cache"), \
              patch.dict("utils.google_ads_api.LOCATION_CACHE", {CRITERION_ID: "United States"}):
             generate_loc_clicks_and_conversion_report(client, CUSTOMER_ID, OUTPUT_COURSE, START_DATE, END_DATE)
