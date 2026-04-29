@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from google.ads.googleads.v23.enums.types.age_range_type import AgeRangeTypeEnum
 
+from tests.utils.conftest import make_ads_client
 from utils.google_ads_api import (
     build_location_cache,
     get_ad_groups_for_enabled_campaigns,
@@ -11,25 +12,11 @@ from utils.google_ads_api import (
     get_enabled_campaigns_for_course,
     get_existing_ad_group_age_for_campaigns,
     get_existing_campaign_criteria,
+    LOCATION_CACHE,
     get_location_resource_names_for_countries,
     normalize_bid_adjustment,
     should_skip_campaign,
-    LOCATION_CACHE
 )
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_search_stream_service(rows):
-    """Return a mock ads service whose search_stream yields one batch of rows."""
-    batch = MagicMock()
-    batch.results = rows
-    service = MagicMock()
-    service.search_stream.return_value = [batch]
-    return service
-
 
 # ---------------------------------------------------------------------------
 # normalize_bid_adjustment
@@ -203,7 +190,7 @@ class TestGetEnabledCampaignsForCourse:
         row.campaign.name = VALID_COURSE
         row.campaign.id = 42
 
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_enabled_campaigns_for_course(service, CUSTOMER_ID, [VALID_COURSE])
@@ -212,7 +199,7 @@ class TestGetEnabledCampaignsForCourse:
         mock_metrics.track_google_ads_operation_count.assert_called_once_with("search_stream", 1)
 
     def test_empty_stream_returns_empty_dict(self):
-        service = _make_search_stream_service([])
+        _, service = make_ads_client([])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_enabled_campaigns_for_course(service, CUSTOMER_ID, [])
@@ -265,7 +252,7 @@ def _make_location_criterion_row(
 class TestGetExistingCampaignCriteria:
     def test_device_criterion_indexed_correctly(self):
         row = _make_device_criterion_row(CAMPAIGN_ID, device_type="MOBILE", criterion_id=7)
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_existing_campaign_criteria(service, CUSTOMER_ID, [CAMPAIGN_ID])
@@ -277,7 +264,7 @@ class TestGetExistingCampaignCriteria:
         row = _make_schedule_criterion_row(
             CAMPAIGN_ID, day="MONDAY", start_hour=9, end_hour=17, criterion_id=8
         )
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_existing_campaign_criteria(service, CUSTOMER_ID, [CAMPAIGN_ID])
@@ -289,7 +276,7 @@ class TestGetExistingCampaignCriteria:
         row = _make_location_criterion_row(
             CAMPAIGN_ID, geo_target="geoTargetConstants/2840", criterion_id=9
         )
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_existing_campaign_criteria(service, CUSTOMER_ID, [CAMPAIGN_ID])
@@ -310,7 +297,7 @@ class TestGetExistingAdGroupAgeForCampaigns:
         row.ad_group_criterion.criterion_id = 30
         row.ad_group_criterion.age_range.type_ = AgeRangeTypeEnum.AgeRangeType.AGE_RANGE_18_24
 
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_existing_ad_group_age_for_campaigns(service, CUSTOMER_ID, [10])
@@ -330,7 +317,7 @@ class TestGetCampaignBudgetInfo:
         row.campaign_budget.amount_micros = 5_000_000
         row.campaign.campaign_budget = f"customers/{CUSTOMER_ID}/campaignBudgets/99"
 
-        service = _make_search_stream_service([row])
+        _, service = make_ads_client([row])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_campaign_budget_info(service, CUSTOMER_ID, [VALID_COURSE])
@@ -355,7 +342,7 @@ class TestGetAdGroupsForEnabledCampaigns:
         row2.campaign.name = VALID_COURSE
         row2.ad_group.id = 102
 
-        service = _make_search_stream_service([row1, row2])
+        _, service = make_ads_client([row1, row2])
 
         with patch("utils.google_ads_api.google_ads_metrics_client") as mock_metrics:
             result = get_ad_groups_for_enabled_campaigns(service, CUSTOMER_ID, [VALID_COURSE])
