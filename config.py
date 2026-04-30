@@ -15,8 +15,7 @@ class CourseConfig(TypedDict):
     purchase_actions: list[str]
     match_types: list[str]
     default_daily_budget_micros: int
-    budget_change_threshold: float
-    cpc_change_threshold: float
+
 
 
 REGION_CONFIG = {
@@ -170,8 +169,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase - Gen AI"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "ml": {
         "start_dates": [
@@ -203,8 +200,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "sys_eng": {
         "start_dates": [
@@ -238,8 +233,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "sys_think": {
         "start_dates": [
@@ -278,8 +271,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "quant_comp": {
         "start_dates": [],  # TODO: add start dates
@@ -297,8 +288,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["idimension - Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "dai": {
         "start_dates": [],  # TODO: add start dates
@@ -317,7 +306,5 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "regions": REGION_CONFIG["ml"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
 }
