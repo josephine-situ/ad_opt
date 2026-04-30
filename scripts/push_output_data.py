@@ -6,6 +6,7 @@ Script to output to Google Ads. Can set overall budget, kw level max cpc and bid
 import argparse
 import csv
 import sys
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -48,12 +49,21 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
 # TODO: Would be much nicer if we used a logger and also returned structured warning data
+def compute_daily_spend(course: str) -> float:
+    """Return the campaign budget divided by the number of days in the current campaign."""
+    config = COURSE_CONFIG[course]
+    start = date.fromisoformat(config["current_campaign_start_date"])
+    end = date.fromisoformat(config["current_campaign_end_date"])
+    num_days = (end - start).days
+    return config["campaign_budget"] / num_days
+
+
 def warn_on_large_cpc_changes(
     new_cpc_bids: dict[tuple[int, str, str], float],
     current_cpc_lookup: dict[tuple[int, str, str], tuple[int, Any, int]],
     threshold: float,
 ) -> None:
-    # Compare with current CPC and warn if change is too large
+    # Warn if the absolute CPC change for any keyword exceeds the threshold (in dollars).
     for key, new_bid in new_cpc_bids.items():
         if key not in current_cpc_lookup:
             continue
@@ -61,11 +71,11 @@ def warn_on_large_cpc_changes(
         _, _, current_cpc_micros = current_cpc_lookup[key]
         current_bid = current_cpc_micros / 1_000_000
         if current_bid > 0:
-            pct_change = abs(new_bid - current_bid) / current_bid
-            if pct_change > threshold:
+            abs_change = abs(new_bid - current_bid)
+            if abs_change > threshold:
                 print(f"WARNING: Large CPC change detected for keyword '{keyword_text}' ({match_type}) in ad group {ad_group_id}:")
                 print(f"  Current: ${current_bid:.2f}, New: ${new_bid:.2f}")
-                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
+                print(f"  Change: ${abs_change:.2f} (threshold: ${threshold:.2f})")
 
 
 def warn_on_large_budget_changes(
@@ -73,15 +83,15 @@ def warn_on_large_budget_changes(
     current_budgets: dict[str, dict[str, Any]],
     threshold: float,
 ) -> None:
-    # Compare with current budget and warn if change is too large
+    # Warn if the absolute budget change for any campaign exceeds the threshold (in dollars).
     for campaign_name, new_budget in new_budgets.items():
         current_budget = current_budgets[campaign_name]["current_budget_amount"]
         if current_budget > 0:
-            pct_change = abs(new_budget - current_budget) / current_budget
-            if pct_change > threshold:
+            abs_change = abs(new_budget - current_budget)
+            if abs_change > threshold:
                 print(f"WARNING: Large budget change detected for {campaign_name}:")
                 print(f"  Current: ${current_budget:.2f}/day, New: ${new_budget:.2f}/day")
-                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
+                print(f"  Change: ${abs_change:.2f} (threshold: ${threshold:.2f})")
 
 
 def generate_campaign_names_for_configured_course(output_course: str) -> set[str]:
@@ -127,12 +137,10 @@ def push_budget(
         google_ads_service, customer_id, campaign_data.keys()
     )
 
-    # Get budget change threshold from config
-    budget_change_threshold = COURSE_CONFIG[output_course]["budget_change_threshold"]
-
-    # Iterate through existing campaign budgets and warn if there are any which are above the configured threshold
+    # Warn if any campaign budget would change by more than one day's spend
+    daily_spend = compute_daily_spend(output_course)
     warn_on_large_budget_changes(
-        campaign_data, current_campaign_budget_resources, budget_change_threshold
+        campaign_data, current_campaign_budget_resources, daily_spend
     )
 
     operations = []
@@ -231,8 +239,8 @@ def push_cpc(
 
     print(f"Found {len(gaql_keyword_lookup)} keywords")
 
-    # Warn if any keyword CPC would change by more than the configured threshold
-    cpc_change_threshold = COURSE_CONFIG[output_course]["cpc_change_threshold"]
+    # Warn if any keyword CPC would change by more than 10% of the daily campaign spend
+    cpc_change_threshold = 0.1 * compute_daily_spend(output_course)
     new_cpc_bids = {}
     for row in rows:
         if row["Status"] == "PAUSED":
