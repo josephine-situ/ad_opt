@@ -89,6 +89,44 @@ def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
     check_embeddings(embedding_df, base_dir)
 
     return embedding_df
+
+
+def load_impression_multiplier_lookup(base_dir=None):
+    """Load region/match-type impression multipliers from impr_multi.csv.
+
+    The file is expected to contain a Region column plus one column each for
+    Exact, Phrase, and Broad multipliers.
+    """
+
+    if base_dir is None:
+        return {}
+
+    mult_path = Path(base_dir) / 'gkp' / 'impr_multi.csv'
+    if not mult_path.exists():
+        print(f"[Info] Impression multiplier file not found: {mult_path}. Using 1.0 for all caps.")
+        return {}
+
+    mult_df = pd.read_csv(mult_path)
+    required_cols = {'Region', 'Exact', 'Phrase', 'Broad'}
+    if not required_cols.issubset(mult_df.columns):
+        missing = sorted(required_cols.difference(mult_df.columns))
+        raise ValueError(f"impr_multi.csv is missing expected columns: {missing}")
+
+    match_type_to_col = {
+        'Exact match': 'Exact',
+        'Phrase match': 'Phrase',
+        'Broad match': 'Broad',
+    }
+
+    lookup = {}
+    for _, row in mult_df.iterrows():
+        region = str(row['Region']).strip()
+        for match_type, col_name in match_type_to_col.items():
+            value = pd.to_numeric(row[col_name], errors='coerce')
+            if pd.notna(value):
+                lookup[(region, match_type)] = float(value)
+
+    return lookup
     
 
 def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_dir=Path('data/gen_ai'), embedding_method='bert', course='gen_ai', raw_emb_map=None, svd_pipeline=None):
@@ -182,7 +220,7 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
 
     return X
 
-def embed_xgb(model, model_path, X, budget=400):
+def embed_xgb(model, model_path, X, budget=400, base_dir=None):
     """
     Embed XGBoost model into Gurobi.
     """
@@ -197,6 +235,8 @@ def embed_xgb(model, model_path, X, budget=400):
     # Get Base Score
     config = json.loads(booster.save_config())
     base_score = float(config['learner']['learner_model_param']['base_score'])
+
+    impression_multiplier_lookup = load_impression_multiplier_lookup(base_dir=base_dir)
 
     # 2. Filter Logic
     # We set Cost=0 to check the intercept (base validity)
@@ -354,15 +394,17 @@ def embed_xgb(model, model_path, X, budget=400):
         model.addConstr(pred_var == tree_vars_sum + base_score, name=f"def_pred_{i}")
         pred_vars.append(pred_var)
 
-        # Constraint: pred_opt - pred_base < historical_searches. Preds are on clicks scale, last_month_searches is log1p.
-        # This ensures predicted incremental clicks don't exceed search volume (exact match only)
-        if X.iloc[i]['Match type'] == 'Exact match':
-            historical_searches = X.iloc[i]['last_month_searches']
-            base_pred = pred_clicks_cost0[valid_indices[i]]
-            model.addConstr(
-                pred_var - base_pred <= np.expm1(historical_searches),
-                name=f"search_volume_cap_{i}"
-            )
+        # Cap incremental clicks by an impression-adjusted daily search volume.
+        match_type = X.iloc[i]['Match type']
+        region = X.iloc[i]['Region']
+        multiplier = impression_multiplier_lookup.get((region, match_type), 1.0)
+        historical_searches = X.iloc[i]['last_month_searches']
+        base_pred = pred_clicks_cost0[valid_indices[i]]
+        daily_search_volume = (np.expm1(historical_searches) + 1.0) / 30.0
+        model.addConstr(
+            pred_var - base_pred <= multiplier * daily_search_volume,
+            name=f"search_volume_cap_{i}"
+        )
     
     model.update()
     return cost_vars, pred_vars, X
@@ -390,7 +432,7 @@ def optimize_bids(X, model_path, budget=400, kw_df=None, order_budget=False, max
         model.setParam('TimeLimit', time_limit)
     model.setParam('MIPGap', 0.01)
 
-    cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget)
+    cost_vars, pred_vars, X = embed_xgb(model, model_path, X, budget=budget, base_dir=base_dir)
 
     if kw_df is not None:
         X = X.merge(

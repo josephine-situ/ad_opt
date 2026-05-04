@@ -1,0 +1,4 @@
+Region,Exact,Phrase,Broad
+USA,1.0,2.5,85.0
+A,1.0,1.5,25.0
+B,0.5,1.0,60.0
