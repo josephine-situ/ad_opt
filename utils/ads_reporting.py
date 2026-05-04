@@ -16,6 +16,8 @@ from utils.gaql_queries import (
     LOC_CONVERSIONS_REPORT_QUERY,
     SEARCH_TERM_REPORT_QUERY,
 )
+from utils.google_ads_api import get_location_resource_names_for_countries
+from utils.metrics import GoogleAdsMetricsClient, google_ads_metrics_client
 from utils.report_row_generators import *
 
 """
@@ -86,6 +88,7 @@ def generate_search_keyword_report(
         "Cost",
     ]
     write_to_file(header_parts, generate_search_keyword_rows(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -114,6 +117,7 @@ def generate_search_terms_report(
         "Conversions",
     ]
     write_to_file(header_parts, generate_search_terms_row(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -138,6 +142,7 @@ def generate_purchase_report(
 
     header_parts = ["Campaign", "Conversion action", "All conv."]
     write_to_file(header_parts, generate_purchase_report_rows(stream), output_path, delimiter=",")
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     print(f"Generated: {output_path}")
 
 
@@ -178,6 +183,7 @@ def generate_hod_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -218,6 +224,7 @@ def generate_age_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -258,6 +265,7 @@ def generate_device_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")
 
 
@@ -271,9 +279,19 @@ def generate_loc_clicks_and_conversion_report(
     """Generate location clicks report for bid adjustments."""
     output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks.csv")
 
+    regions = COURSE_CONFIG[output_course]["regions"]
+    all_locations = []
+    for locs in regions.values():
+        all_locations.extend(locs)
+    location_resource_names = get_location_resource_names_for_countries(google_ads_client, all_locations)
+    country_criterion_ids = ", ".join(
+        name.split("/")[-1] for name in location_resource_names.values()
+    )
+
     query = LOC_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
+        country_criterion_ids=country_criterion_ids,
     )
 
     ads_service = google_ads_client.get_service("GoogleAdsService")
@@ -295,6 +313,7 @@ def generate_loc_clicks_and_conversion_report(
         start_date=start_date,
         end_date=end_date,
         purchase_action_list="', '".join(purchase_actions),
+        country_criterion_ids=country_criterion_ids,
     )
     stream_conv = ads_service.search_stream(customer_id=customer_id, query=query_conv)
     header_parts_conv = ["Campaign", "Conversion action", "Targeted location", "All conv."]
@@ -304,4 +323,5 @@ def generate_loc_clicks_and_conversion_report(
         output_path_conv,
         delimiter=",",
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 2)
     print(f"Generated: {output_path_conv}")

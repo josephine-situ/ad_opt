@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.v23.errors.types.errors import GoogleAdsFailure
+from google.ads.googleads.v23.services import MutateAdGroupCriteriaRequest, MutateAdGroupCriteriaResponse
 from google.api_core import protobuf_helpers
 
-from config import COURSE_CONFIG
 from utils.gaql_queries import (
     GET_ENABLED_CAMPAIGNS_FOR_COURSE,
     GET_CRITERIA_FOR_CAMPAIGNS,
@@ -16,14 +17,62 @@ from utils.gaql_queries import (
     GET_CAMPAIGN_BUDGETS_BY_NAMES,
     SELECT_AD_GROUPS_FOR_ENABLED_CAMPAIGNS, BUILD_LOCATION_CACHE_QUERY,
 )
+from utils.metrics import google_ads_metrics_client
 
 LOCATION_CACHE = {}
-
+GEO_TARGET_BATCH_SIZE = 25  # API limit per SuggestGeoTargetConstantsRequest
 """
 This file contains utility functions for interacting with the Google Ads account state
 These functions should not persist their results or modify state within a google ads account, 
 but may read state from a specified account. 
 """
+
+def is_partial_failure_error_present(response: MutateAdGroupCriteriaResponse) -> bool:
+    """Checks whether a response message has a partial failure error.
+
+    In Python the partial_failure_error attr is always present on a response
+    message and is represented by a google.rpc.Status message. So we can't
+    simply check whether the field is present, we must check that the code is
+    non-zero. Error codes are represented by the google.rpc.Code proto Enum:
+    https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+
+    Args:
+        response:  A MutateAdGroupsResponse message instance.
+
+    Returns: A boolean, whether or not the response message has a partial
+        failure error.
+    """
+    partial_failure: Any = getattr(response, "partial_failure_error", None)
+    code: int = int(getattr(partial_failure, "code", 0))  # Default to 0 if None
+    return code != 0
+
+def get_first_failing_operation(
+    response: MutateAdGroupCriteriaResponse,
+    request: MutateAdGroupCriteriaRequest,
+) -> Any | None:
+    """Returns the first failing operation from a MutateAdGroupCriteriaResponse.
+
+    Parses partial failure error details to find the index of the first failed
+    operation, then returns the corresponding operation from the original request.
+
+    Args:
+        response: A MutateAdGroupCriteriaResponse message instance.
+        request: The MutateAdGroupCriteriaRequest that produced the response.
+
+    Returns:
+        The first failing MutateAdGroupCriteriaOperation, or None if no failures.
+    """
+    if not is_partial_failure_error_present(response):
+        return None
+
+    for detail in response.partial_failure_error.details:
+        failure = GoogleAdsFailure.deserialize(detail.value)
+        for error in failure.errors:
+            for field_path_element in error.location.field_path_elements:
+                if field_path_element.field_name == "operations":
+                    return request.operations[field_path_element.index]
+
+    return None
 
 
 def normalize_bid_adjustment(bid_adj: str | float | Decimal) -> Decimal:
@@ -40,13 +89,13 @@ def should_skip_campaign(
 ) -> bool:
     """Determine whether to skip a campaign based on its name and the specified region, match_type or course name.
 
-    Campaign name format: "{course_title} - {region} - {match_type}"
+    Campaign name format: "{course_title} - {region} - {match_type} - Experiment"
     Uses regex to validate exact position of each component.
     """
     # Parse campaign name using regex
-    # Pattern: "{any course title} - {region} - {match type}"
+    # Pattern: "{any course title} - {region} - {match type} - Experiment"
     # TODO: We may need to make this more flexible. The titles that exist at the moment are a bit less well-structured
-    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?)$"
+    pattern = r"^(Course|Program) - (.+?) - (.+?) - (.+?) - Experiment$"
     match = re.match(pattern, campaign_name)
 
     if not match:
@@ -66,12 +115,11 @@ def should_skip_campaign(
     return False
 
 def get_enabled_campaigns_for_course(
-    google_ads_service: Any, customer_id: str, output_course: str
+    google_ads_service: Any, customer_id: str,  campaign_names_list: Iterable[str]
 ) -> dict[str, int]:
     """Get all campaign IDs for a given course."""
-    course_title = COURSE_CONFIG[output_course]["course_title_base"]
-
-    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(course_title=course_title)
+    campaign_names = "', '".join(campaign_names_list)
+    query = GET_ENABLED_CAMPAIGNS_FOR_COURSE.format(campaign_names=campaign_names)
 
     stream = google_ads_service.search_stream(customer_id=customer_id, query=query)
     
@@ -79,6 +127,8 @@ def get_enabled_campaigns_for_course(
     for batch in stream:
         for row in batch.results:
             campaigns[row.campaign.name] = row.campaign.id
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaigns
 
 
@@ -120,6 +170,7 @@ def get_existing_campaign_criteria(
                 geo_target = row.campaign_criterion.location.geo_target_constant
                 criteria["location"][(campaign_id, geo_target)] = criterion_id
 
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return criteria
 
 
@@ -149,7 +200,47 @@ def get_existing_ad_group_age_for_campaigns(
             key = (campaign_id, age_range_type)
             criteria[key] = (ad_group_id, criterion_id)
 
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return criteria
+
+def get_location_resource_names_for_countries(
+    google_ads_client: GoogleAdsClient, unique_countries: Iterable[str]
+) -> dict[str, str]:
+    """
+    Get geo target constant resource names for a list of country/region names.
+    Returns a dict mapping each input name to its geo target constant resource name.
+    Sends names in batches of up to 25 (API limit) and raises ValueError for any unresolved names.
+    """
+    unique_countries = list(set(unique_countries))
+    if not unique_countries:
+        return {}
+
+    geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
+    location_map: dict[str, str] = {}
+
+    for i in range(0, len(unique_countries), GEO_TARGET_BATCH_SIZE):
+        batch = unique_countries[i: i + GEO_TARGET_BATCH_SIZE]
+        request = google_ads_client.get_type("SuggestGeoTargetConstantsRequest")
+        request.location_names.names.extend(batch)
+        request.locale = "en"
+
+        suggestions = geo_target_service.suggest_geo_target_constants(request=request)
+
+        # Each suggestion includes a search_term that maps it back to the input name.
+        # When multiple suggestions share the same search_term, keep only the first (best) match.
+        for suggestion in suggestions.geo_target_constant_suggestions:
+            search_term = suggestion.search_term
+            if search_term not in location_map:
+                location_map[search_term] = suggestion.geo_target_constant.resource_name
+
+    # It's not entirely clear if this will count as one request or not
+    # See https://developers.google.com/google-ads/api/docs/best-practices/quotas for more details
+    google_ads_metrics_client.track_google_ads_operation_count('suggest_geo_target_constants', 1)
+    missing = set(unique_countries) - set(location_map.keys())
+    if missing:
+        raise ValueError(f"Locations not found for countries: {missing}")
+
+    return location_map
 
 
 def get_location_bid_adjustments(
@@ -161,87 +252,61 @@ def get_location_bid_adjustments(
 ) -> list[Any]:
     """Push location bid adjustments to Google Ads."""
     campaign_criterion_service = google_ads_client.get_service("CampaignCriterionService")
-    geo_target_service = google_ads_client.get_service("GeoTargetConstantService")
     operations = []
 
-    # Cache for geo target lookups to avoid repeated API calls
-    geo_target_cache: dict[str, str | None] = {}
-
+    countries = set()
+    rows = []
     with open(adj_location_filepath) as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            region = row["Region"]
-            location = row["Targeted location"]
-            bid_adj_decimal = row.get("BidAdjustment", "")
+            rows.append(row)
+            countries.add(row["Targeted location"])
 
-            # Skip if no bid adjustment calculated
-            if not bid_adj_decimal:
+    geo_target_cache: dict[str, str] = get_location_resource_names_for_countries(google_ads_client, countries)
+
+    for row in rows:
+        region = row["Region"]
+        location = row["Targeted location"]
+        bid_adj_decimal = row.get("BidAdjustment", "")
+
+        # Skip if no bid adjustment calculated
+        if not bid_adj_decimal:
+            continue
+
+        bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
+
+        geo_target_constant = geo_target_cache[location]
+
+        # Apply to all campaigns for this region
+        for campaign_name, campaign_id in campaigns.items():
+            if should_skip_campaign(campaign_name, check_region=region):
                 continue
 
-            bid_adjustment = normalize_bid_adjustment(bid_adj_decimal)
+            # Check if criterion exists
+            key = (str(campaign_id), geo_target_constant)
+            if key in existing_criteria["location"]:
+                criterion_id = existing_criteria["location"][key]
 
-            # Look up geo target constant for this location
-            if location not in geo_target_cache:
-                try:
-                    # Create request with location names
-                    request = google_ads_client.get_type("SuggestGeoTargetConstantsRequest")
-                    request.location_names.names.append(location)
-                    request.locale = "en"
+                # Update existing criterion
+                operation = google_ads_client.get_type("CampaignCriterionOperation")
+                criterion = operation.update
+                criterion.resource_name = campaign_criterion_service.campaign_criterion_path(
+                    customer_id, campaign_id, criterion_id
+                )
+                criterion.bid_modifier = bid_adjustment
 
-                    suggestions = geo_target_service.suggest_geo_target_constants(request=request)
+                # Set field mask
+                field_mask = protobuf_helpers.field_mask(None, criterion._pb)
+                google_ads_client.copy_from(operation.update_mask, field_mask)
 
-                    if not suggestions.geo_target_constant_suggestions:
-                        print(
-                            f"Warning: Could not find geo target for location '{location}', skipping"
-                        )
-                        geo_target_cache[location] = None
-                        continue
-
-                    # Use the first (best) suggestion
-                    geo_target_constant = suggestions.geo_target_constant_suggestions[
-                        0
-                    ].geo_target_constant.resource_name
-                    geo_target_cache[location] = geo_target_constant
-
-                except Exception as e:
-                    print(f"Error looking up geo target for location '{location}': {e}")
-                    geo_target_cache[location] = None
-                    continue
-
-            geo_target_constant = geo_target_cache[location]
-            if geo_target_constant is None:
-                continue
-
-            # Apply to all campaigns for this region
-            for campaign_name, campaign_id in campaigns.items():
-                if should_skip_campaign(campaign_name, check_region=region):
-                    continue
-
-                # Check if criterion exists
-                key = (str(campaign_id), geo_target_constant)
-                if key in existing_criteria["location"]:
-                    criterion_id = existing_criteria["location"][key]
-
-                    # Update existing criterion
-                    operation = google_ads_client.get_type("CampaignCriterionOperation")
-                    criterion = operation.update
-                    criterion.resource_name = campaign_criterion_service.campaign_criterion_path(
-                        customer_id, campaign_id, criterion_id
-                    )
-                    criterion.bid_modifier = bid_adjustment
-
-                    # Set field mask
-                    field_mask = protobuf_helpers.field_mask(None, criterion._pb)
-                    google_ads_client.copy_from(operation.update_mask, field_mask)
-
-                    operations.append(operation)
-                    print(
-                        f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}"
-                    )
-                else:
-                    print(
-                        f"Warning: Location criterion not found for {campaign_name}, {location} - skipping"
-                    )
+                operations.append(operation)
+                print(
+                    f"Prepared location adjustment: {campaign_name}, {location} -> {bid_adjustment:.2%}"
+                )
+            else:
+                print(
+                    f"Warning: Location criterion not found for {campaign_name}, {location} - skipping"
+                )
 
     return operations
 
@@ -263,6 +328,8 @@ def get_campaign_budget_info(
                 "current_budget_amount": row.campaign_budget.amount_micros / 1_000_000,
                 "budget_resource_id": row.campaign.campaign_budget,
             }
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaign_budget_resources
 
 
@@ -282,9 +349,10 @@ def get_ad_groups_for_enabled_campaigns(
             # Take first ad group per campaign
             if campaign_name not in campaign_to_ad_group:
                 campaign_to_ad_group[campaign_name] = ad_group_id
+
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     return campaign_to_ad_group
 
-# TODO: Pull this out into google_ads_api.py.
 # This is only here for the moment because it directly modifies the shared cache
 def build_location_cache(
     google_ads_client: GoogleAdsClient,
@@ -311,7 +379,9 @@ def build_location_cache(
         # Build a query with all criterion IDs
         ids_str = ", ".join(str(id) for id in valid_ids)
         query = BUILD_LOCATION_CACHE_QUERY.format(ids_str=ids_str)
+        # TODO: Replace with search_stream.
         response = ads_service.search(customer_id=customer_id, query=query)
+        google_ads_metrics_client.track_google_ads_operation_count('search', 1)
 
         for row in response:
             criterion_id = row.geo_target_constant.id

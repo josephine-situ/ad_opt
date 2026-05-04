@@ -6,13 +6,16 @@ Script to output to Google Ads. Can set overall budget, kw level max cpc and bid
 import argparse
 import csv
 import sys
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.v23.services import MutateAdGroupCriteriaRequest
 from google.api_core import protobuf_helpers
 
+from utils.metrics import google_ads_metrics_client
 from utils.name_generation import construct_campaign_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,6 +30,7 @@ from utils.google_ads_api import (
     get_enabled_campaigns_for_course,
     get_location_bid_adjustments,
     get_existing_ad_group_age_for_campaigns, get_campaign_budget_info, get_ad_groups_for_enabled_campaigns,
+    is_partial_failure_error_present, get_first_failing_operation,
 )
 
 from utils.gaql_queries import (
@@ -44,12 +48,22 @@ VALID_DATASETS = {BUDGET, CPC, BID_ADJ}
 # Map match type strings to enum values
 MATCH_TYPE_MAP = {"Exact match": "EXACT", "Phrase match": "PHRASE", "Broad match": "BROAD"}
 
+# TODO: Would be much nicer if we used a logger and also returned structured warning data
+def compute_daily_spend(course: str) -> float:
+    """Return the campaign budget divided by the number of days in the current campaign."""
+    config = COURSE_CONFIG[course]
+    start = date.fromisoformat(config["current_campaign_start_date"])
+    end = date.fromisoformat(config["current_campaign_end_date"])
+    num_days = (end - start).days
+    return config["campaign_budget"] / num_days
+
+
 def warn_on_large_cpc_changes(
     new_cpc_bids: dict[tuple[int, str, str], float],
     current_cpc_lookup: dict[tuple[int, str, str], tuple[int, Any, int]],
     threshold: float,
 ) -> None:
-    # Compare with current CPC and warn if change is too large
+    # Warn if the absolute CPC change for any keyword exceeds the threshold (in dollars).
     for key, new_bid in new_cpc_bids.items():
         if key not in current_cpc_lookup:
             continue
@@ -57,11 +71,11 @@ def warn_on_large_cpc_changes(
         _, _, current_cpc_micros = current_cpc_lookup[key]
         current_bid = current_cpc_micros / 1_000_000
         if current_bid > 0:
-            pct_change = abs(new_bid - current_bid) / current_bid
-            if pct_change > threshold:
+            abs_change = abs(new_bid - current_bid)
+            if abs_change > threshold:
                 print(f"WARNING: Large CPC change detected for keyword '{keyword_text}' ({match_type}) in ad group {ad_group_id}:")
                 print(f"  Current: ${current_bid:.2f}, New: ${new_bid:.2f}")
-                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
+                print(f"  Change: ${abs_change:.2f} (threshold: ${threshold:.2f})")
 
 
 def warn_on_large_budget_changes(
@@ -69,16 +83,26 @@ def warn_on_large_budget_changes(
     current_budgets: dict[str, dict[str, Any]],
     threshold: float,
 ) -> None:
-    # Compare with current budget and warn if change is too large
+    # Warn if the absolute budget change for any campaign exceeds the threshold (in dollars).
     for campaign_name, new_budget in new_budgets.items():
         current_budget = current_budgets[campaign_name]["current_budget_amount"]
         if current_budget > 0:
-            pct_change = abs(new_budget - current_budget) / current_budget
-            if pct_change > threshold:
+            abs_change = abs(new_budget - current_budget)
+            if abs_change > threshold:
                 print(f"WARNING: Large budget change detected for {campaign_name}:")
                 print(f"  Current: ${current_budget:.2f}/day, New: ${new_budget:.2f}/day")
-                print(f"  Change: {pct_change * 100:.1f}% (threshold: {threshold * 100:.1f}%)")
+                print(f"  Change: ${abs_change:.2f} (threshold: ${threshold:.2f})")
 
+
+def generate_campaign_names_for_configured_course(output_course: str) -> set[str]:
+    """Generate the set of campaign names we expect to exist for a given course based on the config."""
+    campaign_names = set()
+    course_config = COURSE_CONFIG[output_course]
+    for region in course_config["regions"]:
+        for match_type in course_config["match_types"]:
+            campaign_name = construct_campaign_name_for_args(output_course, match_type, region)
+            campaign_names.add(campaign_name)
+    return campaign_names
 
 def push_budget(
     google_ads_client: GoogleAdsClient,
@@ -113,12 +137,10 @@ def push_budget(
         google_ads_service, customer_id, campaign_data.keys()
     )
 
-    # Get budget change threshold from config
-    budget_change_threshold = COURSE_CONFIG[output_course]["budget_change_threshold"]
-
-    # Iterate through existing campaign budgets and warn if there are any which are above the configured threshold
+    # Warn if any campaign budget would change by more than one day's spend
+    daily_spend = compute_daily_spend(output_course)
     warn_on_large_budget_changes(
-        campaign_data, current_campaign_budget_resources, budget_change_threshold
+        campaign_data, current_campaign_budget_resources, daily_spend
     )
 
     operations = []
@@ -149,6 +171,7 @@ def push_budget(
         response = campaign_budget_service.mutate_campaign_budgets(
             customer_id=customer_id, operations=operations
         )
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_budgets', len(operations))
         print(f"Successfully updated {len(response.results)} campaign budgets")
 
 
@@ -195,7 +218,9 @@ def push_cpc(
         f"customers/{customer_id}/adGroups/{ag_id}" for ag_id in ad_group_ids
     )
     query = SELECT_KEYWORD_CRITERION_IN_AD_GROUP.format(ad_group_list=ad_group_list)
+    # TODO: Change to use search_stream
     response = google_ads_service.search(customer_id=customer_id, query=query)
+    google_ads_metrics_client.track_google_ads_operation_count('search', 1)
 
     # Build lookup: (ad_group_id, keyword_text, match_type) -> (criterion_id, status, cpc_bid_micros)
     # This represents the keywords in google ads for the specified campaigns.
@@ -214,8 +239,8 @@ def push_cpc(
 
     print(f"Found {len(gaql_keyword_lookup)} keywords")
 
-    # Warn if any keyword CPC would change by more than the configured threshold
-    cpc_change_threshold = COURSE_CONFIG[output_course]["cpc_change_threshold"]
+    # Warn if any keyword CPC would change by more than 10% of the daily campaign spend
+    cpc_change_threshold = 0.1 * compute_daily_spend(output_course)
     new_cpc_bids = {}
     for row in rows:
         if row["Status"] == "PAUSED":
@@ -306,10 +331,20 @@ def push_cpc(
 
         for i in range(0, len(operations), BATCH_SIZE):
             batch = operations[i : i + BATCH_SIZE]
+            request = google_ads_client.get_type("MutateAdGroupCriteriaRequest")
+            request.customer_id = customer_id
+            request.operations = batch
+            request.partial_failure = True
             response = ad_group_criterion_service.mutate_ad_group_criteria(
-                customer_id=customer_id, operations=batch
+                request=request
             )
+            google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
             print(f"Updated {len(response.results)} keywords (batch {i//BATCH_SIZE + 1})")
+            if is_partial_failure_error_present(response):
+                print(f"WARNING: Partial failure detected in batch {i//BATCH_SIZE + 1}:")
+                print(f"WARNING: First failure on operation: {get_first_failing_operation(response, request)}")
+
+
 
         print(f"Successfully updated {len(operations)} total keywords")
     else:
@@ -331,7 +366,8 @@ def push_bid_adjustments(
 
     # Get all campaigns for this course
     ga_service = google_ads_client.get_service("GoogleAdsService")
-    campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, output_course)
+    campaign_names = generate_campaign_names_for_configured_course(output_course)
+    campaigns = get_enabled_campaigns_for_course(ga_service, customer_id, campaign_names)
 
     if not campaigns:
         print(f"WARNING: No campaigns found for course {output_course}")
@@ -425,6 +461,7 @@ def push_bid_adjustments(
                 response = ad_group_criterion_service.mutate_ad_group_criteria(
                     customer_id=customer_id, operations=batch
                 )
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 print(
                     f"Successfully applied {len(response.results)} age bid adjustments (batch {i//BATCH_SIZE + 1})"
                 )
@@ -448,6 +485,7 @@ def push_bid_adjustments(
                 response = campaign_criterion_service.mutate_campaign_criteria(
                     customer_id=customer_id, operations=batch
                 )
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria', len(batch))
                 print(
                     f"Successfully applied {len(response.results)} device/schedule/location bid adjustments (batch {i//BATCH_SIZE + 1})"
                 )

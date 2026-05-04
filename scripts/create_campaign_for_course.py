@@ -7,12 +7,11 @@ Each campaign contains exactly one ad group.
 
 import argparse
 import csv
-import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Iterable
+from typing import Optional
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.v23.services.types.campaign_budget_service import CampaignBudgetOperation
@@ -28,6 +27,8 @@ from google.ads.googleads.v23.services.types.ad_group_criterion_service import (
 from scripts.push_output_data import construct_campaign_name_for_args, MATCH_TYPE_MAP, BATCH_SIZE
 from utils.gaql_queries import SELECT_EXISTING_KEYWORDS_BY_AD_GROUP_RESOURCE, SELECT_AD_GROUPS_BY_CAMPAIGN_NAME
 from utils.bid_adjustments import AGE_RANGE_MAP
+from utils.google_ads_api import get_location_resource_names_for_countries
+from utils.metrics import google_ads_metrics_client
 from utils.name_generation import construct_ad_group_name_for_args, construct_budget_name_for_args
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -70,6 +71,10 @@ def find_spec_by_name(specs: list[CampaignSpec], name: str, field: str) -> Optio
     return None
 
 
+def _get_keywords_csv_path(course: str) -> Path:
+    return Path(__file__).parent.parent / "opt_results" / course / "bids" / "optimized_costs.csv"
+
+
 def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     """
     Get keywords to create for a given course from the corresponding search terms CSV file.
@@ -78,9 +83,7 @@ def get_keywords_to_create(course: str) -> dict[tuple[str, str], list[str]]:
     to be added for a specific ad group easily.
     """
     keywords = defaultdict(list)
-    csv_path = (
-        Path(__file__).parent.parent / "opt_results" / course / "bids" / f"optimized_costs.csv"
-    )
+    csv_path = _get_keywords_csv_path(course)
 
     if not csv_path.exists():
         print(
@@ -250,64 +253,23 @@ def create_ad_schedule_operations(
     return operations
 
 
-def get_location_ids_for_countries(
-    google_ads_client: GoogleAdsClient, customer_id: str, countries: Iterable[str]
-) -> dict[str, int]:
-    """
-    Get location criterion IDs for a list of country names in a single query.
-    Returns a dict mapping country name to location ID.
-    """
-    if not countries:
-        return {}
-
-    ga_service = google_ads_client.get_service("GoogleAdsService")
-
-    # Build IN clause with all country names
-    country_names = "', '".join(countries)
-
-    query = f"""
-        SELECT
-            geo_target_constant.id,
-            geo_target_constant.name,
-            geo_target_constant.country_code,
-            geo_target_constant.target_type
-        FROM geo_target_constant
-        WHERE geo_target_constant.name IN ('{country_names}')
-    """
-
-    response = ga_service.search(customer_id=customer_id, query=query)
-
-    location_map = {row.geo_target_constant.name: row.geo_target_constant.id for row in response}
-
-    # Check if all countries were found
-    missing = set(countries) - set(location_map.keys())
-    if missing:
-        raise ValueError(f"Locations not found for countries: {missing}")
-
-    return location_map
-
-
 def create_location_operations(
     google_ads_client: GoogleAdsClient,
     campaign_resource_name: str,
     countries: list[str],
-    location_map: dict[str, int],
+    location_map: dict[str, str],
 ) -> list[CampaignCriterionOperation]:
     """
-    Create location targeting operations for a campaign using pre-fetched location IDs.
+    Create location targeting operations for a campaign using pre-fetched geo target resource names.
     """
     operations = []
 
     for country in countries:
-        location_id = location_map[country]
-
         operation = google_ads_client.get_type("CampaignCriterionOperation")
         criterion = operation.create
         criterion.campaign = campaign_resource_name
         criterion.status = google_ads_client.enums.CampaignCriterionStatusEnum.ENABLED
-        criterion.location.geo_target_constant = google_ads_client.get_service(
-            "GeoTargetConstantService"
-        ).geo_target_constant_path(location_id)
+        criterion.location.geo_target_constant = location_map[country]
 
         operations.append(operation)
 
@@ -318,6 +280,7 @@ def create_remaining_keyword_criteria(
     customer_id: str,
     course: str,
     campaign_specs: list[CampaignSpec],
+    keywords_limit: int
 ) -> None:
     """
     Create keyword criteria for existing ad groups based on the provided campaign specifications.
@@ -337,6 +300,7 @@ def create_remaining_keyword_criteria(
         customer_id=customer_id,
         query=SELECT_AD_GROUPS_BY_CAMPAIGN_NAME.format(campaign_names_list=campaign_names_list),
     )
+    google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
     ad_group_count = 0
     for batch in ag_stream:
         for row in batch.results:
@@ -358,6 +322,7 @@ def create_remaining_keyword_criteria(
                 ad_group_resource_names_list=ad_group_resource_names_list
             ),
         )
+        google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
         for batch in kw_stream:
             for row in batch.results:
                 existing_keywords.add((
@@ -368,6 +333,8 @@ def create_remaining_keyword_criteria(
     print(f"Found {len(existing_keywords)} existing keyword criteria.")
 
     # Create only keywords not already present in each ad group
+    remaining_keyword_operations = keywords_limit
+    exhausted_limit = False
     for spec in campaign_specs:
         ad_group_resource_name = spec.ad_group_resource_name
         if not ad_group_resource_name:
@@ -397,6 +364,15 @@ def create_remaining_keyword_criteria(
             google_ads_client, ad_group_resource_name, new_keywords, match_type
         )
 
+        # If we have a keyword limit set
+        if remaining_keyword_operations and len(operations) > remaining_keyword_operations:
+            print(f"Keyword operations for ad group '{spec.ad_group_name}' exceed remaining limit of {remaining_keyword_operations}. Only creating a portion of keywords for this ad group.")  # noqa: E501
+            operations = operations[:remaining_keyword_operations]
+            remaining_keyword_operations = 0
+            exhausted_limit = True
+        elif remaining_keyword_operations:
+            remaining_keyword_operations -= len(operations)
+
         try:
             for i in range(0, len(operations), BATCH_SIZE):
                 batch = operations[i : i + BATCH_SIZE]
@@ -404,9 +380,14 @@ def create_remaining_keyword_criteria(
                 request.customer_id = customer_id
                 request.operations = batch
                 response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 print(f"✓ Created {len(response.results)} keyword criteria for ad group '{spec.ad_group_name}' (batch {i // BATCH_SIZE + 1})")
         except Exception as e:
             print(f"✗ Error creating keyword criteria for ad group '{spec.ad_group_name}': {e}")
+
+        if exhausted_limit:
+            print(f"Keyword limit reached, skipping additional keywords.")
+            return
 
 def create_campaigns_for_course(
     google_ads_client: GoogleAdsClient,
@@ -415,6 +396,7 @@ def create_campaigns_for_course(
     execute: bool,
     skip_keywords: bool = False,
     only_keywords: bool = False,
+    keywords_limit: int = 0,
 ) -> list[CampaignSpec]:
     """Create all campaigns and ad groups for a given course."""
     course_config = COURSE_CONFIG.get(course)
@@ -431,12 +413,12 @@ def create_campaigns_for_course(
     for countries in regions.values():
         all_countries.update(countries)
 
-    # Fetch all location IDs in a single query
+    # Fetch all location resource names via GeoTargetConstantService
     print(f"\n{'='*60}")
-    print(f"Fetching location IDs for {len(all_countries)} countries...")
+    print(f"Fetching geo target constants for {len(all_countries)} countries...")
     print(f"{'='*60}")
-    location_map = get_location_ids_for_countries(google_ads_client, customer_id, all_countries)
-    print(f"✓ Retrieved {len(location_map)} location IDs")
+    location_map = get_location_resource_names_for_countries(google_ads_client, all_countries)
+    print(f"✓ Retrieved {len(location_map)} geo target constants")
 
     # Prepare all campaign specifications
     campaign_specs = []
@@ -473,8 +455,8 @@ def create_campaigns_for_course(
         print("\n[KEYWORD-ONLY MODE] Only creating keyword criteria for existing ad groups.")
         print("Assuming campaigns and ad groups have already been created in a previous run with --skip-keywords.")
         print("Will attempt to find ad groups by name and add keywords to them, but will not create any new campaigns or ad groups.")
-        create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs)
-        return
+        create_remaining_keyword_criteria(google_ads_client, customer_id, course, campaign_specs, keywords_limit)
+        return []
 
     # Batch create all budgets
     print(f"\n{'='*60}")
@@ -498,6 +480,7 @@ def create_campaigns_for_course(
         )
 
         budget_response = campaign_budget_service.mutate_campaign_budgets(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_budgets', len(budget_operations))
         print(f"✓ Created {len(budget_response.results)} budgets")
 
         # Map each result back to the corresponding spec using the budget name from response
@@ -530,6 +513,7 @@ def create_campaigns_for_course(
         )
 
         campaign_response = campaign_service.mutate_campaigns(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaigns', len(campaign_operations))
         print(f"✓ Created {len(campaign_response.results)} campaigns")
 
         for result in campaign_response.results:
@@ -563,6 +547,7 @@ def create_campaigns_for_course(
         )
 
         ad_group_response = ad_group_service.mutate_ad_groups(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_groups', len(ad_group_operations))
         print(f"✓ Created {len(ad_group_response.results)} ad groups")
 
         for result in ad_group_response.results:
@@ -574,13 +559,14 @@ def create_campaigns_for_course(
         print(f"✗ Error creating ad groups: {e}")
         sys.exit(1)
 
+
+    ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
     if skip_keywords:
         print("\nSkipping keyword criteria population (--skip-keywords flag set).")
     else:
         # TODO: We may need to pull this out to allow for partial execution of keywords if we dont get standard api access
         # As this works now, we attempt to create all keywords for all campaigns in one batch.
         # Some courses have a dataset too large for this with API Basic Access quotas
-        ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
         region_match_type_to_keywords = get_keywords_to_create(course)
         keyword_operations = []
         for spec in campaign_specs:
@@ -606,6 +592,7 @@ def create_campaigns_for_course(
                 request.customer_id = customer_id
                 request.operations = batch
                 response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+                google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(batch))
                 total_created += len(response.results)
                 print(f"✓ Created {len(response.results)} keyword criteria (batch {i // BATCH_SIZE + 1})")
         except Exception as e:
@@ -630,6 +617,7 @@ def create_campaigns_for_course(
         request.operations = all_age_range_operations
 
         age_range_response = ad_group_criterion_service.mutate_ad_group_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_ad_group_criteria', len(all_age_range_operations))
         print(f"✓ Created {len(age_range_response.results)} age range criteria")
     except Exception as e:
         print(f"✗ Error creating age range criteria: {e}")
@@ -657,6 +645,8 @@ def create_campaigns_for_course(
         request.operations = all_ad_schedule_operations
 
         ad_schedule_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria',
+                                                                   len(all_ad_schedule_operations))
         print(f"✓ Created {len(ad_schedule_response.results)} ad schedule criteria")
     except Exception as e:
         print(f"✗ Error creating ad schedules: {e}")
@@ -680,6 +670,8 @@ def create_campaigns_for_course(
         request.operations = all_location_operations
 
         location_response = campaign_criterion_service.mutate_campaign_criteria(request=request)
+        google_ads_metrics_client.track_google_ads_operation_count('mutate_campaign_criteria',
+                                                                   len(all_location_operations))
         print(f"✓ Created {len(location_response.results)} location targeting criteria")
     except Exception as e:
         print(f"✗ Error creating location targeting: {e}")
@@ -736,6 +728,12 @@ def main() -> None:
         default=False,
         help="Only create keyword criteria for existing ad groups. Assumes this script has been run w/ --skip-keywords previously",
     )
+    parser.add_argument(
+        "--keywords-limit",
+        type=int,
+        default=0,
+        help="When specified with --only-keywords, limits the number of operations to perform.",
+    )
 
     args = parser.parse_args()
 
@@ -746,7 +744,7 @@ def main() -> None:
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
 
     # Create campaigns
-    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute, args.skip_keywords, args.only_keywords)
+    create_campaigns_for_course(google_ads_client, customer_id, args.course, args.execute, args.skip_keywords, args.only_keywords, args.keywords_limit)
 
 
 if __name__ == "__main__":

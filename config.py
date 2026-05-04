@@ -15,61 +15,138 @@ class CourseConfig(TypedDict):
     purchase_actions: list[str]
     match_types: list[str]
     default_daily_budget_micros: int
-    budget_change_threshold: float
-    cpc_change_threshold: float
+
 
 
 REGION_CONFIG = {
-    "USA": ["United States"],
-    "A": [
-        "Japan",
-        "Italy",
-        "United Kingdom",
-        "Belgium",
-        "Canada",
-        "Germany",
-        "Switzerland",
-        "France",
-        "Denmark",
-        "Spain",
-        "Netherlands",
-        "Sweden",
-        "South Korea",
-        "Israel",
-        "Australia",
-        "Norway",
-        "Mexico",
-        "Luxembourg",
-    ],
-    "B": [
-        "Bolivia",
-        "Portugal",
-        "Argentina",
-        "Saudi Arabia",
-        "Austria",
-        "Singapore",
-        "Poland",
-        "Morocco",
-        "Ghana",
-        "Russia",
-        "China",
-        "Chile",
-        "Brazil",
-        "Slovakia",
-        "Iceland",
-        "Peru",
-        "Greece",
-        "Colombia",
-        "Thailand",
-        "Hong Kong",
-        "South Africa",
-        "Qatar",
-        "Croatia",
-        "United Arab Emirates",
-        "Taiwan",
-        "Indonesia",
-        "Ecuador",
-    ],
+    "ml": {
+        "USA": ["United States"],
+        "A": [
+            "Japan",
+            "Italy",
+            "United Kingdom",
+            "Belgium",
+            "Canada",
+            "Germany",
+            "Switzerland",
+            "France",
+            "Denmark",
+            "Spain",
+            "Netherlands",
+            "Sweden",
+            "South Korea",
+            "Israel",
+            "Australia",
+            "Norway",
+            "Mexico",
+            "Luxembourg",
+        ],
+        "B": [
+            "Bolivia",
+            "Portugal",
+            "Argentina",
+            "Saudi Arabia",
+            "Austria",
+            "Singapore",
+            "Poland",
+            "Morocco",
+            "Ghana",
+            "Russia",
+            "China",
+            "Chile",
+            "Brazil",
+            "Slovakia",
+            "Iceland",
+            "Peru",
+            "Greece",
+            "Colombia",
+            "Thailand",
+            "Hong Kong",
+            "South Africa",
+            "Qatar",
+            "Croatia",
+            "United Arab Emirates",
+            "Taiwan",
+            "Indonesia",
+            "Ecuador",
+        ],
+    },
+    "sys_think": {
+        "USA": ["United States"],
+        "A": [
+            "France",
+            "Switzerland",
+            "Sweden",
+            "Canada",
+            "New Zealand",
+            "Netherlands",
+            "United Kingdom",
+            "Japan",
+            "Spain",
+            "Denmark",
+            "Australia",
+            "Ireland",
+            "Germany",
+            "Norway",
+            "Belgium",
+            "Mexico",
+            "Italy",
+        ],
+        "B": [
+            "Indonesia",
+            "Philippines",
+            "Uganda",
+            "Morocco",
+            "Tanzania",
+            "Zimbabwe",
+            "Tunisia",
+            "Sri Lanka",
+            "Liberia",
+            "Thailand",
+            "Turkiye",
+            "Cote d'Ivoire",
+            "Peru",
+            "Jordan",
+            "Argentina",
+            "Senegal",
+            "Saudi Arabia",
+            "Malaysia",
+            "Singapore",
+            "Colombia",
+            "Chile",
+            "Armenia",
+            "China",
+            "Georgia",
+            "Hong Kong",
+            "Israel",
+            "Romania",
+            "Bulgaria",
+            "Trinidad and Tobago",
+            "Serbia",
+            "Poland",
+            "Lithuania",
+            "Greece",
+            "Qatar",
+            "Bolivia",
+            "Portugal",
+            "Bahrain",
+            "Paraguay",
+            "Austria",
+            "Hungary",
+            "Moldova",
+            "United Arab Emirates",
+            "Czechia",
+            "South Korea",
+            "Taiwan",
+            "Croatia",
+            "Estonia",
+            "Iceland",
+            "Slovakia",
+            "Finland",
+            "Luxembourg",
+            "Monaco",
+        ],
+    },
 }
 
 
@@ -83,7 +160,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         # Used to derive course names when pushing to Google Ads.
         "course_title_base": "Course - Generative AI",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["ml"],
         "conversion_actions": [
             "Purchase - Gen AI",
             "Add to Cart - Gen AI",
@@ -92,8 +169,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase - Gen AI"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "ml": {
         "start_dates": [
@@ -115,7 +190,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "current_campaign_end_date": "2026-04-27",
         "course_title_base": "Program - MLx",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["ml"],
         # TODO: We need to add these for all other accounts too.
         "conversion_actions": [
             "Purchase",
@@ -125,8 +200,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "sys_eng": {
         "start_dates": [
@@ -151,7 +224,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "current_campaign_end_date": "2026-04-15",
         "course_title_base": "Program - SysEng",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["ml"],
         "conversion_actions": [
             "Purchase",
             "SysEng - Add to cart - iDimension",
@@ -160,8 +233,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "sys_think": {
         "start_dates": [
@@ -182,14 +253,15 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             "2025-10-06",
             "2026-02-02",
             "2026-04-06",
+            "2026-06-15",
         ],
         "min_date": "2022-07-01",  # Start of search history
-        "campaign_budget": 24000.0,  # TODO: update campaign config with actuals
-        "current_campaign_start_date": "2026-02-03",
-        "current_campaign_end_date": "2026-04-06",
+        "campaign_budget": 40000.0,
+        "current_campaign_start_date": "2026-04-28",
+        "current_campaign_end_date": "2026-06-15",
         "course_title_base": "Course - System Thinking",
         # Regions is not reflective of production data and is only used for create_campaign_for_course.py
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["sys_think"],
         "conversion_actions": [
             "Purchase",
             "System Thinking - Add to cart",
@@ -199,8 +271,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "quant_comp": {
         "start_dates": [],  # TODO: add start dates
@@ -209,7 +279,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "current_campaign_start_date": "2026-02-02",
         "current_campaign_end_date": "2026-04-15",
         "course_title_base": "Course - Quantum Computing",
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["ml"],
         "conversion_actions": [
             "idimension - Purchase",
             "idimension - QCX = Add to cart",
@@ -218,8 +288,6 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["idimension - Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
     "dai": {
         "start_dates": [],  # TODO: add start dates
@@ -235,10 +303,8 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             "Account Creation",
         ],
         "purchase_actions": ["Purchase"],
-        "regions": REGION_CONFIG,
+        "regions": REGION_CONFIG["ml"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,
-        "budget_change_threshold": 0.5,  # Warn if budget changes by more than 50%
-        "cpc_change_threshold": 0.5,  # Warn if keyword CPC changes by more than 50%
     },
 }

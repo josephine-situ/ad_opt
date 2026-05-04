@@ -224,6 +224,7 @@ def pull_keyword_planning(
     output_file = output_dir / f"Saved Keyword Stats {date_str} at {time_str}.csv"
 
     write_to_file(header_parts, rows, output_file)
+    google_ads_metrics_client.track_google_ads_operation_count('generate_keyword_historical_metrics', 1)
     print(f"Keyword planning data written to: {output_file}")
 
 
