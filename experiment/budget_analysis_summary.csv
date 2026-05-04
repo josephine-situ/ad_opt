@@ -1,0 +1,9 @@
+Region,Search keyword match type,Total_Budget,Total_Spend,Spend_vs_Budget,Spend_Status
+A,Broad match,812.1600000000001,708.43,-103.73000000000013,Under Budget
+A,Exact match,409.26,26.87,-382.39,Under Budget
+A,Phrase match,818.58,434.69,-383.89000000000004,Under Budget
+B,Broad match,57.88,163.53,105.65,Over Budget
+B,Phrase match,22.93,2.14,-20.79,Under Budget
+USA,Broad match,774.9000000000001,593.1999999999999,-181.70000000000016,Under Budget
+USA,Exact match,867.78,537.6800000000001,-330.0999999999999,Under Budget
+USA,Phrase match,813.6600000000001,535.93,-277.73000000000013,Under Budget

@@ -1,0 +1,218 @@
+Region,Search keyword match type,Search keyword,keyword_norm,Impressions,Keyword,Last month searches,Multiplier
+A,Broad match,project management methodologies,project management methodologies,471,project management methodologies,1600.0,0.00980637101811368
+A,Broad match,system design certification,system design certification,2763,system design certification,90.0,1.012087912087912
+A,Broad match,system dynamics course,system dynamics course,83,system dynamics course,30.0,0.08924731182795699
+A,Broad match,systems thinking certificate,systems thinking certificate,3415,,,113.83333333333333
+A,Broad match,systems thinking course,systems thinking course,365,,,12.166666666666666
+A,Exact match,MIT systems thinking course,mit systems thinking course,118,,,3.933333333333333
+A,Exact match,MIT xPRO systems thinking,mit xpro systems thinking,84,,,2.8
+A,Exact match,best critical thinking courses,best critical thinking courses,52,best critical thinking courses,20.0,0.08253968253968254
+A,Exact match,best systems thinking courses,best systems thinking courses,4,best systems thinking courses,10.0,0.012121212121212121
+A,Exact match,business systems course,business systems course,2,business systems course,10.0,0.006060606060606061
+A,Exact match,business systems courses,business systems courses,2,,,0.06666666666666667
+A,Exact match,how to learn to think strategically,how to learn to think strategically,49,how to learn to think strategically,20.0,0.07777777777777778
+A,Exact match,introduction to systems thinking,introduction to systems thinking,11,introduction to systems thinking,110.0,0.0033033033033033035
+A,Exact match,mit system dynamics course,mit system dynamics course,26,mit system dynamics course,10.0,0.0787878787878788
+A,Exact match,mit systems thinking,mit systems thinking,98,,,3.2666666666666666
+A,Exact match,mit systems thinking course online,mit systems thinking course online,8,mit systems thinking course online,10.0,0.024242424242424242
+A,Exact match,mit xpro systems thinking,mit xpro systems thinking,4,,,0.13333333333333333
+A,Exact match,project management cert,project management cert,199,project management cert,49500.0,0.00013400402685467635
+A,Exact match,software architecture course,software architecture course,27,software architecture course,170.0,0.005263157894736842
+A,Exact match,system design certification,system design certification,21,system design certification,90.0,0.007692307692307693
+A,Exact match,system dynamics course,system dynamics course,35,system dynamics course,30.0,0.03763440860215054
+A,Exact match,system engineering online course,system engineering online course,40,,,1.3333333333333333
+A,Exact match,system thinking course,system thinking course,212,system thinking course,140.0,0.05011820330969267
+A,Exact match,systems thinking course,systems thinking course,197,,,6.566666666666666
+A,Exact match,systems thinking education,systems thinking education,4,systems thinking education,40.0,0.0032520325203252032
+A,Exact match,systems thinking mit,systems thinking mit,133,,,4.433333333333334
+A,Exact match,systems thinking program MIT xPRO,systems thinking program mit xpro,6,systems thinking program mit xpro,0.0,0.2
+A,Phrase match,best online certificate programs for project management,best online certificate programs for project management,5,best online certificate programs for project management,10.0,0.01515151515151515
+A,Phrase match,best project management certification,best project management certification,1,best project management certification,1000.0,3.33000333000333e-05
+A,Phrase match,best system design course,best system design course,23,best system design course,210.0,0.0036334913112164298
+A,Phrase match,business systems courses,business systems courses,239,,,7.966666666666667
+A,Phrase match,business systems design,business systems design,15,business systems design,30.0,0.016129032258064516
+A,Phrase match,certificate course on business management,certificate course on business management,1717,certificate course on business management,10.0,5.203030303030303
+A,Phrase match,construction management courses,construction management courses,397,,,13.233333333333333
+A,Phrase match,critical thinking and problem solving,critical thinking and problem solving,649,critical thinking and problem solving,1000.0,0.02161172161172161
+A,Phrase match,critical thinking class,critical thinking class,43,critical thinking class,320.0,0.004465212876427829
+A,Phrase match,critical thinking short course,critical thinking short course,1,critical thinking short course,10.0,0.0030303030303030303
+A,Phrase match,designing distributed systems,designing distributed systems,4,designing distributed systems,210.0,0.0006319115323854661
+A,Phrase match,how to develop problem solving skills,how to develop problem solving skills,81,how to develop problem solving skills,140.0,0.01914893617021277
+A,Phrase match,how to learn to think strategically,how to learn to think strategically,184,how to learn to think strategically,20.0,0.2920634920634921
+A,Phrase match,learn product management,learn product management,77,learn product management,90.0,0.028205128205128206
+A,Phrase match,learn software architecture,learn software architecture,12,learn software architecture,20.0,0.019047619047619046
+A,Phrase match,learn system architecture,learn system architecture,53,learn system architecture,10.0,0.1606060606060606
+A,Phrase match,learning system design,learning system design,91,,,3.033333333333333
+A,Phrase match,lms learning program,lms learning program,1137,lms learning program,10.0,3.4454545454545453
+A,Phrase match,logical thinking training,logical thinking training,20,logical thinking training,10.0,0.0606060606060606
+A,Phrase match,mit project management,mit project management,3,mit project management,90.0,0.001098901098901099
+A,Phrase match,mit systems thinking,mit systems thinking,92,,,3.066666666666667
+A,Phrase match,mit xpro project management,mit xpro project management,1,mit xpro project management,20.0,0.0015873015873015873
+A,Phrase match,modeling complex systems,modeling complex systems,15,,,0.5
+A,Phrase match,open university systems thinking,open university systems thinking,6,open university systems thinking,10.0,0.01818181818181818
+A,Phrase match,phd systems thinking,phd systems thinking,1,phd systems thinking,10.0,0.0030303030303030303
+A,Phrase match,pmp certification,pmp certification,32,pmp certification,135000.0,7.901176040671304e-06
+A,Phrase match,product development courses,product development courses,12,,,0.4
+A,Phrase match,product management certification,product management certification,8,,,0.26666666666666666
+A,Phrase match,product management courses,product management courses,10,,,0.3333333333333333
+A,Phrase match,product manager certificate,product manager certificate,2,,,0.06666666666666667
+A,Phrase match,project management cert,project management cert,453,project management cert,49500.0,0.00030504434253853457
+A,Phrase match,project management program,project management program,1,project management program,1300.0,2.5621316935690495e-05
+A,Phrase match,project management techniques,project management techniques,197,project management techniques,260.0,0.025159642401021712
+A,Phrase match,project management training,project management training,190,project management training,3600.0,0.0017587707118393039
+A,Phrase match,project manager course,project manager course,340,,,11.333333333333334
+A,Phrase match,scrum master certification,scrum master certification,37,scrum master certification,12100.0,0.0001019199515191582
+A,Phrase match,solve complex problems,solve complex problems,44,,,1.4666666666666666
+A,Phrase match,strategic thinking in complex problem solving,strategic thinking in complex problem solving,2,strategic thinking in complex problem solving,20.0,0.0031746031746031746
+A,Phrase match,sysml,sysml,4,sysml,2900.0,4.596116281741928e-05
+A,Phrase match,system analysis and design course,system analysis and design course,156,system analysis and design course,40.0,0.12682926829268293
+A,Phrase match,system architecture course,system architecture course,106,system architecture course,110.0,0.03183183183183183
+A,Phrase match,system design,system design,308,,,10.266666666666667
+A,Phrase match,system design and architecture,system design and architecture,5,system design and architecture,480.0,0.0003465003465003465
+A,Phrase match,system design certification,system design certification,1,system design certification,90.0,0.00036630036630036635
+A,Phrase match,system dynamics course,system dynamics course,3,system dynamics course,30.0,0.0032258064516129032
+A,Phrase match,system dynamics course online,system dynamics course online,1,system dynamics course online,10.0,0.0030303030303030303
+A,Phrase match,system dynamics modeling tools for learning in a complex world,system dynamics modeling tools for learning in a complex world,1,system dynamics modeling tools for learning in a complex world,10.0,0.0030303030303030303
+A,Phrase match,system engineering online course,system engineering online course,47,,,1.5666666666666667
+A,Phrase match,system modeling course,system modeling course,1,system modeling course,0.0,0.03333333333333333
+A,Phrase match,system thinking training,system thinking training,48,system thinking training,30.0,0.05161290322580645
+A,Phrase match,systems design engineering,systems design engineering,2,,,0.06666666666666667
+A,Phrase match,systems thinking and system dynamics,systems thinking and system dynamics,44,systems thinking and system dynamics,0.0,1.4666666666666666
+A,Phrase match,systems thinking certificate,systems thinking certificate,128,,,4.266666666666667
+A,Phrase match,systems thinking certification,systems thinking certification,44,,,1.4666666666666666
+A,Phrase match,systems thinking course online,systems thinking course online,3,systems thinking course online,10.0,0.00909090909090909
+A,Phrase match,systems thinking coursera,systems thinking coursera,3,systems thinking coursera,20.0,0.0047619047619047615
+A,Phrase match,systems thinking courses,systems thinking courses,264,,,8.8
+A,Phrase match,systems thinking education,systems thinking education,3,systems thinking education,40.0,0.0024390243902439024
+A,Phrase match,systems thinking for managers,systems thinking for managers,8,systems thinking for managers,0.0,0.26666666666666666
+A,Phrase match,systems thinking in business,systems thinking in business,180,systems thinking in business,40.0,0.14634146341463417
+A,Phrase match,systems thinking in healthcare,systems thinking in healthcare,1,,,0.03333333333333333
+A,Phrase match,systems thinking online certificate,systems thinking online certificate,2,systems thinking online certificate,0.0,0.06666666666666667
+A,Phrase match,systems thinking online course,systems thinking online course,8,,,0.26666666666666666
+A,Phrase match,systems thinking process improvement,systems thinking process improvement,20,systems thinking process improvement,0.0,0.6666666666666666
+A,Phrase match,systems thinking professional certificate,systems thinking professional certificate,1,systems thinking professional certificate,0.0,0.03333333333333333
+A,Phrase match,systems thinking short course,systems thinking short course,7,systems thinking short course,10.0,0.021212121212121213
+A,Phrase match,technical project management,technical project management,1,technical project management,1600.0,2.0820320632937746e-05
+A,Phrase match,the systems thinker,the systems thinker,8,the systems thinker,110.0,0.0024024024024024023
+A,Phrase match,thinking in systems a primer,thinking in systems a primer,169,thinking in systems a primer,5400.0,0.0010430167252977844
+A,Phrase match,thinking in systems course,thinking in systems course,5,thinking in systems course,0.0,0.16666666666666666
+A,Phrase match,waters center for systems thinking,waters center for systems thinking,1,waters center for systems thinking,70.0,0.00046948356807511736
+A,Phrase match,what is system thinking,what is system thinking,1046,,,34.86666666666667
+B,Broad match,project management methodologies,project management methodologies,362,project management methodologies,1600.0,0.007536956069123465
+B,Broad match,system design certification,system design certification,6351,system design certification,90.0,2.326373626373626
+B,Broad match,systems thinking certificate,systems thinking certificate,6482,,,216.06666666666666
+B,Broad match,systems thinking course,systems thinking course,267,,,8.9
+B,Broad match,systems thinking professional certificate MIT,systems thinking professional certificate mit,2087,systems thinking professional certificate mit,0.0,69.56666666666666
+B,Exact match,MIT systems thinking course,mit systems thinking course,60,,,2.0
+B,Exact match,MIT xPRO systems thinking,mit xpro systems thinking,35,,,1.1666666666666667
+B,Exact match,best critical thinking courses,best critical thinking courses,71,best critical thinking courses,20.0,0.1126984126984127
+B,Exact match,best systems thinking courses,best systems thinking courses,5,best systems thinking courses,10.0,0.01515151515151515
+B,Exact match,how to learn to think strategically,how to learn to think strategically,18,how to learn to think strategically,20.0,0.02857142857142857
+B,Exact match,introduction to systems thinking,introduction to systems thinking,13,introduction to systems thinking,110.0,0.003903903903903904
+B,Exact match,mit system dynamics course,mit system dynamics course,3,mit system dynamics course,10.0,0.00909090909090909
+B,Exact match,mit systems thinking,mit systems thinking,38,,,1.2666666666666666
+B,Exact match,mit systems thinking course online,mit systems thinking course online,1,mit systems thinking course online,10.0,0.0030303030303030303
+B,Exact match,mit xpro systems thinking,mit xpro systems thinking,12,,,0.4
+B,Exact match,project management cert,project management cert,122,project management cert,49500.0,8.215322249382168e-05
+B,Exact match,system design certification,system design certification,30,system design certification,90.0,0.010989010989010988
+B,Exact match,system dynamics course,system dynamics course,16,system dynamics course,30.0,0.017204301075268817
+B,Exact match,system engineering online course,system engineering online course,1,,,0.03333333333333333
+B,Exact match,system thinking course,system thinking course,114,system thinking course,140.0,0.026950354609929075
+B,Exact match,systems thinking course,systems thinking course,35,,,1.1666666666666667
+B,Exact match,systems thinking education,systems thinking education,7,systems thinking education,40.0,0.005691056910569106
+B,Exact match,systems thinking mit,systems thinking mit,79,,,2.6333333333333333
+B,Exact match,systems thinking program MIT xPRO,systems thinking program mit xpro,2,systems thinking program mit xpro,0.0,0.06666666666666667
+B,Phrase match,best project management certification,best project management certification,2,best project management certification,1000.0,6.66000666000666e-05
+B,Phrase match,business systems courses,business systems courses,5,,,0.16666666666666666
+B,Phrase match,certificate course on business management,certificate course on business management,261,certificate course on business management,10.0,0.7909090909090909
+B,Phrase match,complex systems mit,complex systems mit,2,complex systems mit,10.0,0.006060606060606061
+B,Phrase match,construction management courses,construction management courses,1,,,0.03333333333333333
+B,Phrase match,critical thinking and problem solving,critical thinking and problem solving,776,critical thinking and problem solving,1000.0,0.02584082584082584
+B,Phrase match,critical thinking certification,critical thinking certification,2,,,0.06666666666666667
+B,Phrase match,engineering manager course,engineering manager course,1,engineering manager course,170.0,0.0001949317738791423
+B,Phrase match,how to develop problem solving skills,how to develop problem solving skills,150,how to develop problem solving skills,140.0,0.03546099290780142
+B,Phrase match,how to learn to think strategically,how to learn to think strategically,8,how to learn to think strategically,20.0,0.012698412698412698
+B,Phrase match,how to solve algorithm problems,how to solve algorithm problems,2,how to solve algorithm problems,10.0,0.006060606060606061
+B,Phrase match,how to train problem solving skills,how to train problem solving skills,1,how to train problem solving skills,10.0,0.0030303030303030303
+B,Phrase match,lean manufacturing online course,lean manufacturing online course,12,lean manufacturing online course,20.0,0.019047619047619046
+B,Phrase match,learn product management,learn product management,1,learn product management,90.0,0.00036630036630036635
+B,Phrase match,learn system architecture,learn system architecture,1,learn system architecture,10.0,0.0030303030303030303
+B,Phrase match,learning system design,learning system design,39,,,1.3
+B,Phrase match,lms learning program,lms learning program,582,lms learning program,10.0,1.7636363636363634
+B,Phrase match,logical thinking training,logical thinking training,25,logical thinking training,10.0,0.07575757575757576
+B,Phrase match,mit project management,mit project management,1,mit project management,90.0,0.00036630036630036635
+B,Phrase match,mit system dynamics group,mit system dynamics group,1,mit system dynamics group,10.0,0.0030303030303030303
+B,Phrase match,pmp certification,pmp certification,19,pmp certification,135000.0,4.691323274148587e-06
+B,Phrase match,product management certification,product management certification,2,,,0.06666666666666667
+B,Phrase match,product management courses,product management courses,12,,,0.4
+B,Phrase match,project management cert,project management cert,414,project management cert,49500.0,0.0002787822468232965
+B,Phrase match,project management online course,project management online course,2,,,0.06666666666666667
+B,Phrase match,project management program,project management program,1,project management program,1300.0,2.5621316935690495e-05
+B,Phrase match,project management techniques,project management techniques,48,project management techniques,260.0,0.006130268199233717
+B,Phrase match,project management training,project management training,126,project management training,3600.0,0.00116634268258817
+B,Phrase match,project manager course,project manager course,2,,,0.06666666666666667
+B,Phrase match,scrum master certification,scrum master certification,4,scrum master certification,12100.0,1.101837313720629e-05
+B,Phrase match,software architecture course,software architecture course,8,software architecture course,170.0,0.0015594541910331384
+B,Phrase match,solve complex problems,solve complex problems,1,,,0.03333333333333333
+B,Phrase match,sysml,sysml,1,sysml,2900.0,1.149029070435482e-05
+B,Phrase match,system analysis and design course,system analysis and design course,9,system analysis and design course,40.0,0.007317073170731708
+B,Phrase match,system architecture course,system architecture course,8,system architecture course,110.0,0.0024024024024024023
+B,Phrase match,system architecture program,system architecture program,13,system architecture program,0.0,0.43333333333333335
+B,Phrase match,system design,system design,424,,,14.133333333333333
+B,Phrase match,system design and architecture,system design and architecture,2,system design and architecture,480.0,0.00013860013860013862
+B,Phrase match,system design certification,system design certification,128,system design certification,90.0,0.04688644688644689
+B,Phrase match,system dynamics course online,system dynamics course online,7,system dynamics course online,10.0,0.021212121212121213
+B,Phrase match,system engineering online course,system engineering online course,135,,,4.5
+B,Phrase match,system thinking training,system thinking training,3,system thinking training,30.0,0.0032258064516129032
+B,Phrase match,systems design engineering,systems design engineering,4,,,0.13333333333333333
+B,Phrase match,systems thinking and system dynamics,systems thinking and system dynamics,56,systems thinking and system dynamics,0.0,1.8666666666666667
+B,Phrase match,systems thinking certificate,systems thinking certificate,64,,,2.1333333333333333
+B,Phrase match,systems thinking certification,systems thinking certification,11,,,0.36666666666666664
+B,Phrase match,systems thinking coursera,systems thinking coursera,9,systems thinking coursera,20.0,0.014285714285714285
+B,Phrase match,systems thinking courses,systems thinking courses,95,,,3.1666666666666665
+B,Phrase match,systems thinking in business,systems thinking in business,83,systems thinking in business,40.0,0.06747967479674796
+B,Phrase match,systems thinking in healthcare,systems thinking in healthcare,2,,,0.06666666666666667
+B,Phrase match,systems thinking online course,systems thinking online course,1,,,0.03333333333333333
+B,Phrase match,technical problem solving,technical problem solving,1,technical problem solving,90.0,0.00036630036630036635
+B,Phrase match,technical project management,technical project management,1,technical project management,1600.0,2.0820320632937746e-05
+B,Phrase match,the systems thinker,the systems thinker,3,the systems thinker,110.0,0.0009009009009009009
+B,Phrase match,thinking in systems a primer,thinking in systems a primer,62,thinking in systems a primer,5400.0,0.00038264518916250075
+B,Phrase match,waters center for systems thinking,waters center for systems thinking,1,waters center for systems thinking,70.0,0.00046948356807511736
+B,Phrase match,what is system thinking,what is system thinking,739,,,24.633333333333333
+USA,Broad match,project management methodologies,project management methodologies,610,project management methodologies,1600.0,0.012700395586092027
+USA,Broad match,system design certification,system design certification,950,system design certification,90.0,0.34798534798534797
+USA,Broad match,system dynamics course,system dynamics course,67,system dynamics course,30.0,0.07204301075268817
+USA,Broad match,systems thinking certificate,systems thinking certificate,8754,,,291.8
+USA,Broad match,systems thinking course,systems thinking course,641,,,21.366666666666667
+USA,Broad match,systems thinking professional certificate MIT,systems thinking professional certificate mit,5920,systems thinking professional certificate mit,0.0,197.33333333333334
+USA,Exact match,MIT systems thinking course,mit systems thinking course,103,,,3.433333333333333
+USA,Exact match,MIT xPRO systems thinking,mit xpro systems thinking,127,,,4.233333333333333
+USA,Exact match,best critical thinking courses,best critical thinking courses,224,best critical thinking courses,20.0,0.3555555555555555
+USA,Exact match,best systems thinking courses,best systems thinking courses,8,best systems thinking courses,10.0,0.024242424242424242
+USA,Exact match,business systems course,business systems course,4,business systems course,10.0,0.012121212121212121
+USA,Exact match,how to learn to think strategically,how to learn to think strategically,151,how to learn to think strategically,20.0,0.2396825396825397
+USA,Exact match,introduction to systems thinking,introduction to systems thinking,96,introduction to systems thinking,110.0,0.02882882882882883
+USA,Exact match,mit system dynamics course,mit system dynamics course,50,mit system dynamics course,10.0,0.15151515151515152
+USA,Exact match,mit systems thinking,mit systems thinking,93,,,3.1
+USA,Exact match,mit systems thinking course online,mit systems thinking course online,12,mit systems thinking course online,10.0,0.03636363636363636
+USA,Exact match,mit xpro systems thinking,mit xpro systems thinking,19,,,0.6333333333333333
+USA,Exact match,project management cert,project management cert,189,project management cert,49500.0,0.00012727015615846143
+USA,Exact match,software architecture course,software architecture course,19,software architecture course,170.0,0.0037037037037037034
+USA,Exact match,system design certification,system design certification,87,system design certification,90.0,0.03186813186813187
+USA,Exact match,system dynamics course,system dynamics course,81,system dynamics course,30.0,0.08709677419354839
+USA,Exact match,system engineering online course,system engineering online course,45,,,1.5
+USA,Exact match,system thinking course,system thinking course,312,system thinking course,140.0,0.07375886524822696
+USA,Exact match,systems thinking course,systems thinking course,134,,,4.466666666666667
+USA,Exact match,systems thinking education,systems thinking education,50,systems thinking education,40.0,0.04065040650406504
+USA,Exact match,systems thinking for managers,systems thinking for managers,24,systems thinking for managers,0.0,0.8
+USA,Exact match,systems thinking mit,systems thinking mit,157,,,5.233333333333333
+USA,Exact match,systems thinking program MIT xPRO,systems thinking program mit xpro,1,systems thinking program mit xpro,0.0,0.03333333333333333
+USA,Phrase match,system dynamics certificate,system dynamics certificate,1,,,0.03333333333333333
+USA,Phrase match,system modeling course,system modeling course,84,system modeling course,0.0,2.8
+USA,Phrase match,systems thinking and system dynamics,systems thinking and system dynamics,301,systems thinking and system dynamics,0.0,10.033333333333333
+USA,Phrase match,systems thinking course online,systems thinking course online,3,systems thinking course online,10.0,0.00909090909090909
+USA,Phrase match,systems thinking for business leaders,systems thinking for business leaders,3,,,0.1
+USA,Phrase match,systems thinking for project managers,systems thinking for project managers,2,,,0.06666666666666667
+USA,Phrase match,systems thinking leadership,systems thinking leadership,12,systems thinking leadership,90.0,0.004395604395604396
+USA,Phrase match,systems thinking online course,systems thinking online course,9,,,0.3
+USA,Phrase match,systems thinking process improvement,systems thinking process improvement,285,systems thinking process improvement,0.0,9.5

@@ -10,7 +10,7 @@
 
 # ── Configurable parameters ──────────────────────────────────────────
 # Override via environment variables or edit defaults below.
-EXP_NAME="${EXP_NAME:-large_budget}"
+EXP_NAME="${EXP_NAME:-impr_multi}"
 COURSES="${COURSES:-sys_think}"                  # space-separated course names
 START_DAY="${START_DAY:-2025-12-04}"
 END_DAY="${END_DAY:-2026-02-02}"

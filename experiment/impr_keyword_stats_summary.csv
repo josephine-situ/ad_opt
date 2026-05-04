@@ -1,0 +1,10 @@
+Region,Search keyword match type,Average_multiplier,Merged_keywords,Total_impressions,Total_last_month_searches
+A,Broad match,25.422228318986797,5,7097,1720.0
+A,Exact match,1.0510118332823766,21,1332,50160.0
+A,Phrase match,1.607250659031281,72,8824,216010.0
+B,Broad match,59.37344878315521,5,15549,1690.0
+B,Exact match,0.4719314043466883,18,662,49980.0
+B,Phrase match,0.9927456045537322,57,4374,215530.0
+USA,Broad match,85.15545479238735,6,16942,1720.0
+USA,Exact match,1.114493083332569,21,1986,50160.0
+USA,Phrase match,2.538535538535539,9,700,100.0
