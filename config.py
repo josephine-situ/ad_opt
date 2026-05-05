@@ -267,6 +267,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             "System Thinking - Add to cart",
             "idimension - account create",
             "Add to cart - iDimension",
+            "HubSpot - Customers"
         ],
         "purchase_actions": ["Purchase", "HubSpot - Customers"],
         "match_types": ["Exact", "Phrase", "Broad"],
