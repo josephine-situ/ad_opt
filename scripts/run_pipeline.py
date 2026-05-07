@@ -270,7 +270,7 @@ def run_optimization(
 
 def run_post_processing(
     course: str,
-    bid_multiplier: float = 1.3,
+    bid_multiplier: float = 1.0,
     skip_adjustments: bool = False,
 ) -> None:
     """Run bid_post_processing.py as a subprocess."""
@@ -377,8 +377,8 @@ def main():
         help="Total daily budget (default: from config.py)",
     )
     parser.add_argument(
-        "--bid-multiplier", type=float, default=1.3,
-        help="Bid multiplier (default: 1.3)",
+        "--bid-multiplier", type=float, default=1.0,
+        help="Bid multiplier (default: 1.0)",
     )
     parser.add_argument(
         "--min-spend", type=float, default=1.0,

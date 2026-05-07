@@ -358,7 +358,7 @@ def save_bid_adjustments(results: dict, output_dir: Path):
 
 def add_bid_column_to_file(
     file_path: Path,
-    bid_multiplier: float = 1.3,
+    bid_multiplier: float = 1.0,
     output_dir: Path = None,
     keywords_path: Path = None,
 ) -> pd.DataFrame:
@@ -374,7 +374,7 @@ def add_bid_column_to_file(
 
     Args:
         file_path: Path to the bids CSV file (from optimization.py).
-        bid_multiplier: Multiplier for bid calculation (default: 1.3).
+        bid_multiplier: Multiplier for bid calculation (default: 1.0).
         output_dir: Output directory (if None, overwrites original).
         keywords_path: Path to keywords_classified.csv.  When provided the
             output will contain every keyword x match-type x region.
@@ -449,7 +449,7 @@ def add_bid_column_to_file(
 
 def process_bids(
     bids_path: Path, 
-    bid_multiplier: float = 1.3,
+    bid_multiplier: float = 1.0,
     output_dir: Path = None,
     keywords_path: Path = None,
 ):
@@ -566,8 +566,8 @@ def main():
     parser.add_argument(
         '--bid-multiplier',
         type=float,
-        default=1.3,
-        help='Multiplier for bid calculation: bid = Optimal Cost / Gurobi Pred over Base * multiplier (default: 1.3)'
+        default=1.0,
+        help='Multiplier for bid calculation: bid = Optimal Cost / Gurobi Pred over Base * multiplier (default: 1.0)'
     )
     parser.add_argument(
         '--data-dir',

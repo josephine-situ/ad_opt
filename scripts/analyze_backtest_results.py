@@ -515,7 +515,7 @@ def compute_share_row(source_df, categories, prefix, infix, totals, display_name
     return row
 
 
-def generate_keyword_spend_table(base_results_dir, budget, day_count, bid_multiplier=1.3):
+def generate_keyword_spend_table(base_results_dir, budget, day_count, bid_multiplier=1.0):
     """Aggregate per-day optimized costs into an average daily keyword table."""
     run_dir = base_results_dir / f"budget_{int(float(budget))}"
     bids_dir = run_dir / "bids"

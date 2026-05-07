@@ -143,7 +143,7 @@ def generate_latex_table(results: dict, output_file: Path, min_clicks: int, top_
 def generate_example_bid_table(
     bids_path: Path,
     output_dir: Path,
-    bid_multiplier: float = 1.3,
+    bid_multiplier: float = 1.0,
     top_n: int = 20,
 ):
     """
@@ -319,8 +319,8 @@ def main():
     )
     parser.add_argument('--budget', type=int, help='Budget value for experiment directory')
     parser.add_argument(
-        '--bid-multiplier', type=float, default=1.3,
-        help='Multiplier for bid calculation (default: 1.3)',
+        '--bid-multiplier', type=float, default=1.0,
+        help='Multiplier for bid calculation (default: 1.0)',
     )
     parser.add_argument(
         '--min-clicks', type=int, default=5000,
