@@ -267,8 +267,9 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
             "System Thinking - Add to cart",
             "idimension - account create",
             "Add to cart - iDimension",
+            "HubSpot - Customers"
         ],
-        "purchase_actions": ["Purchase"],
+        "purchase_actions": ["Purchase", "HubSpot - Customers"],
         "match_types": ["Exact", "Phrase", "Broad"],
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
