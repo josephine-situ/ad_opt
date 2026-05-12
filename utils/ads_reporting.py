@@ -152,9 +152,10 @@ def generate_hod_clicks_and_conversion_report(
     output_course: str,
     start_date: str,
     end_date: str,
+    output_suffix: str = "",
 ) -> None:
     """Generate hour-of-day clicks report for bid adjustments."""
-    output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks.csv")
+    output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks{output_suffix}.csv")
 
     query = HOD_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
@@ -169,7 +170,7 @@ def generate_hod_clicks_and_conversion_report(
     print(f"Generated: {output_path}")
 
     # Generate conversions report
-    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/hod_conv.csv")
+    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/hod_conv{output_suffix}.csv")
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
