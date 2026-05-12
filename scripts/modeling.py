@@ -29,7 +29,12 @@ import xgboost as xgb
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.inspection import permutation_importance
+from sklearn.neighbors import NearestNeighbors
 import scipy.sparse as sp
+import shap
+import json
+import datetime
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -305,11 +310,75 @@ def main():
         test_metrics = evaluate_model(best_model, df_test[features], df_test[target])
         print(f"Held-out test metrics: {test_metrics}")
 
+    # Compute SHAP and PFI for Cost
+    # Assuming 'Cost' is in features and it's a numeric column
+    cost_pfi = 0.0
+    cost_shap = 0.0
+    feature_space_dist = 0.0
+    
+    if 'Cost' in features:
+        print("Computing PFI and SHAP for 'Cost'...")
+        # Permutation Feature Importance
+        pfi_results = permutation_importance(best_model, df_fit[features], df_fit[target], n_repeats=5, random_state=42)
+        cost_idx = features.index('Cost')
+        cost_pfi = pfi_results.importances_mean[cost_idx]
+        
+        # SHAP
+        preprocessor = best_model.named_steps['preprocess']
+        cast_step = best_model.named_steps['cast']
+        xgb_model = best_model.named_steps['model']
+        
+        X_trans = preprocessor.transform(df_fit[features])
+        X_cast = cast_step.transform(X_trans)
+        
+        explainer = shap.TreeExplainer(xgb_model)
+        shap_values = explainer.shap_values(X_cast)
+        
+        # Determine index of 'Cost' after preprocessing.
+        # It's in the 'num' transformer which is first.
+        cat_cols = list(df_fit[features].select_dtypes(include=["object", "category", "bool"]).columns)
+        num_cols = [c for c in features if c not in cat_cols]
+        if 'Cost' in num_cols:
+            cost_trans_idx = num_cols.index('Cost')
+            cost_shap = np.abs(shap_values[:, cost_trans_idx]).mean()
+
+    # Train NearestNeighbors on numerical features
+    print("Computing Feature Space Distance...")
+    cat_cols = list(df_fit[features].select_dtypes(include=["object", "category", "bool"]).columns)
+    num_cols = [c for c in features if c not in cat_cols]
+    if len(num_cols) > 0 and len(df_fit) > 1:
+        X_num = StandardScaler().fit_transform(df_fit[num_cols])
+        # Find 2 neighbors (1st neighbor is the point itself, 2nd is the nearest other point)
+        nn = NearestNeighbors(n_neighbors=2).fit(X_num)
+        distances, _ = nn.kneighbors(X_num)
+        feature_space_dist = distances[:, 1].mean()
+    else:
+        feature_space_dist = 0.0
+
     # Save the best model
     # Use course-specific and embedding-specific model name
     xgb_path = Path(f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib')
     joblib.dump(best_model, xgb_path)
     print(f"Saved best model to {xgb_path}")
+    
+    date_str = datetime.datetime.now().strftime('%Y%m%d')
+    output_dir = Path(f'models/{args.course}')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metadata_path = output_dir / f'metadata_{date_str}.json'
+    
+    metadata = {
+        'in_sample_r2': float(in_sample_r2),
+        'shap_cost': float(cost_shap),
+        'pfi_cost': float(cost_pfi),
+        'feature_space_distance': float(feature_space_dist),
+        'date': date_str,
+        'course': args.course
+    }
+    
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=4)
+        
+    print(f"Saved metadata to {metadata_path}")
 
 if __name__ == '__main__':
     main()

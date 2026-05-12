@@ -212,7 +212,7 @@ def create_feature_matrix(keywords, opt_date=None, course_start_dts=None, base_d
         'is_public_holiday', 'days_to_next_course_start', 'last_month_searches',
         'three_month_avg', 'six_month_avg', 'mom_change', 'search_trend',
         'Competition (indexed value)', 'Top of page bid (low range)',
-        'Top of page bid (high range)'
+        'Top of page bid (high range)', 'Feature Space Distance', 'Leaf Uncertainty'
     ]
     features.extend(embedding_cols)
 
@@ -553,7 +553,10 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
     # 4. Construct Results DataFrame
     # Pull metadata from the valid rows of X
-    results_df = X[['Keyword', 'Region', 'Match type', 'Origin']].copy()
+    meta_cols = ['Keyword', 'Region', 'Match type', 'Origin']
+    if 'Feature Space Distance' in X.columns:
+        meta_cols.append('Feature Space Distance')
+    results_df = X[meta_cols].copy()
     
     # Extract values from Gurobi variables
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
@@ -580,6 +583,41 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df['Actual Model Pred'] = pipeline.predict(X_validate)
     results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
     
+    # Feature Space Distance and Leaf Uncertainty
+    X_val_proc = pipeline[:-1].transform(X_validate)
+    booster = pipeline.named_steps['model'].get_booster()
+    if "cast" in pipeline.named_steps:
+        import scipy.sparse as sp
+        if sp.issparse(X_val_proc):
+            X_val_proc_sparse = pipeline.named_steps['cast'].transform(X_val_proc)
+        else:
+            X_val_proc_sparse = X_val_proc
+    else:
+        X_val_proc_sparse = X_val_proc
+        
+    import xgboost as xgb
+    dmatrix = xgb.DMatrix(X_val_proc_sparse)
+
+    import joblib
+    import os
+    import numpy as np
+    from pathlib import Path
+    
+    course = model_path.split(os.sep)[-2] 
+    nn_path = Path(model_path).parent / "feature_nn.joblib"
+    if nn_path.exists():
+        nn = joblib.load(str(nn_path))
+        X_val_num = X_validate.select_dtypes(include=["number"]).copy()
+        X_val_num = X_val_num.fillna(0)
+        distances, _ = nn.kneighbors(X_val_num)
+        results_df['Feature Space Distance'] = distances.mean(axis=1)
+    else:
+        results_df['Feature Space Distance'] = np.nan
+
+    num_trees = booster.best_iteration + 1 if hasattr(booster, 'best_iteration') and booster.best_iteration is not None else booster.num_boosted_rounds()
+    tree_preds = [booster.predict(dmatrix, iteration_range=(i, i+1)) for i in range(num_trees)]
+    results_df['Leaf Uncertainty'] = np.var(tree_preds, axis=0)
+
     # Identify rows with significant discrepancy and attempt adjustment
     DISCREPANCY_THRESHOLD = 0.1
     high_disc_mask = results_df['Diff'].abs() > DISCREPANCY_THRESHOLD
