@@ -86,6 +86,7 @@ def generate_search_keyword_report(
         "Conv. value",
         "Currency code",
         "Cost",
+        "First page CPC",
     ]
     write_to_file(header_parts, generate_search_keyword_rows(stream), output_path, delimiter=",")
     google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
