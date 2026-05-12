@@ -336,7 +336,8 @@ def calculate_daily_budget(course: str, opt_date: datetime | None = None) -> flo
                 # Filter between start_date and opt_date - 1 (inclusive)
                 df = df[(df['Day'] >= start_date) & (df['Day'] < opt_date)]
             if 'Campaign' in df.columns:
-                df = df[df['Campaign'].str.contains('Experiment', case=False, na=False)]
+                exp_label = COURSE_CONFIG[course].get('exp_label', 'Experiment')
+                df = df[df['Campaign'].str.contains(exp_label, case=False, na=False)]
             if 'Cost' in df.columns:
                 budget_used_from_report = df['Cost'].fillna(0).sum()
         except Exception as e:

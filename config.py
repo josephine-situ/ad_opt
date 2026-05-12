@@ -14,6 +14,7 @@ class CourseConfig(TypedDict):
     conversion_actions: list[str]
     purchase_actions: list[str]
     match_types: list[str]
+    exp_label: str
     default_daily_budget_micros: int
 
 
@@ -168,6 +169,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         ],
         "purchase_actions": ["Purchase - Gen AI"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     "ml": {
@@ -199,6 +201,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         ],
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     "sys_eng": {
@@ -232,6 +235,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         ],
         "purchase_actions": ["Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     "sys_think": {
@@ -271,6 +275,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         ],
         "purchase_actions": ["Purchase", "HubSpot - Customers"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,  # Can we use "budgets" or does this need to be separate?
     },
     "quant_comp": {
@@ -288,6 +293,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         ],
         "purchase_actions": ["idimension - Purchase"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,
     },
     "dai": {
@@ -306,6 +312,7 @@ COURSE_CONFIG: dict[str, CourseConfig] = {
         "purchase_actions": ["Purchase"],
         "regions": REGION_CONFIG["ml"],
         "match_types": ["Exact", "Phrase", "Broad"],
+        "exp_label": "Experiment",
         "default_daily_budget_micros": 1_000_000,
     },
 }
