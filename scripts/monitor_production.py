@@ -1,3 +1,46 @@
+"""Production monitoring for the ad optimization pipeline (Step 5).
+
+Aligns a target calendar day (default: yesterday via ``lag``) with optimizer
+outputs and realized performance, merges predictions with actual clicks and cost,
+scores forecasts (MSE, R², bias, CPC aggregates), and optionally computes
+production permutation feature importance for cost-related features using the
+dated XGBoost model. The text report includes ideal vs applied bid-adjustment
+sections when the underlying CSVs exist.
+
+**Input files** (paths relative to repo root; ``YYYYMMDD`` / ``YYYY-MM-DD`` are
+the evaluation date after applying ``lag`` / ``base_date``):
+
+* ``data/<course>/clean/ad_opt_data_bert.csv`` — daily actuals; rows for the
+  target day supply clicks, cost, and optional ``first_page_bid``.
+* ``opt_results/<course>/bids/optimized_costs_YYYYMMDD.csv`` — optimizer output
+  for that day (predictions and features merged into the report).
+* ``models/<course>/metadata_YYYYMMDD.json`` — training-side R², SHAP, and PFI
+  fields copied into the daily history row.
+* ``models/<course>/xgb_clicks_model_bert_YYYYMMDD.joblib`` or, if missing,
+  ``xgb_clicks_model_llm_YYYYMMDD.joblib`` — loaded for production PFI when
+  computable (otherwise skipped with a warning).
+* ``data/<course>/reports/bid_adj/*`` — ideal adjustments from 7-day segment
+  reports used by ``process_bid_adjustments(..., file_suffix="_7d")``:
+  ``hod_clicks_7d.csv`` / ``hod_conv_7d.csv``, ``device_clicks_7d.csv`` /
+  ``device_conv_7d.csv``, ``loc_clicks_7d.csv`` / ``loc_conv_7d.csv``,
+  ``age_clicks_7d.csv`` / ``age_conv_7d.csv`` (optional; warnings if absent).
+* ``opt_results/<course>/bid_adjustments/bid_adj_hour_of_day.csv``,
+  ``bid_adj_device.csv``, ``bid_adj_location.csv``, ``bid_adj_age.csv`` —
+  applied adjustments for the same segments (optional; read if present).
+
+**Output files:**
+
+* ``opt_results/analysis/<course>/production_report_YYYY-MM-DD.txt`` — narrative
+  metrics, segment error tables, and bid-adjustment comparison sections.
+* ``opt_results/analysis/<course>/production_merged_YYYY-MM-DD.csv`` — merged
+  predictions and actuals restricted to enabled / active keyword rows.
+* ``opt_results/analysis/<course>/daily_metrics_history.csv`` — one row per date
+  appended (or file created), including rolling 7-day columns.
+
+CLI: ``python -m scripts.monitor_production`` with ``--course``, ``--lag``, and
+optional ``--base_date`` (YYYY-MM-DD) for reproducible or backfilled runs.
+"""
+
 import pandas as pd
 import numpy as np
 import argparse
