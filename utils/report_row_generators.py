@@ -20,6 +20,10 @@ def generate_search_keyword_rows(stream: Any) -> Iterator[dict[str, Any]]:
     """Generate rows for search keyword report."""
     for batch in stream:
         for row in batch.results:
+            first_page_bid = ""
+            if row.ad_group_criterion.position_estimates.first_page_cpc_micros:
+                first_page_bid = f"{Decimal(row.ad_group_criterion.position_estimates.first_page_cpc_micros) / 1_000_000:.2f}"
+            
             yield {
                 "Day": row.segments.date,
                 "Search keyword": row.ad_group_criterion.keyword.text,
@@ -31,6 +35,7 @@ def generate_search_keyword_rows(stream: Any) -> Iterator[dict[str, Any]]:
                 "Conv. value": f"{row.metrics.all_conversions_value:.2f}",
                 "Currency code": row.customer.currency_code,
                 "Cost": f"{Decimal(row.metrics.cost_micros) / 1_000_000:.2f}",
+                "First page CPC": first_page_bid,
             }
 
 

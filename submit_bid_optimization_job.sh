@@ -27,6 +27,6 @@ conda activate adopt_env
 # Run cost optimization
 echo "Running optimization.py"
 
-python -u scripts/optimization.py
+python -u scripts/optimization.py --date "$(date +%F)"
 
 echo "End: $(date)"

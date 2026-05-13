@@ -29,7 +29,12 @@ import xgboost as xgb
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.inspection import permutation_importance
+from sklearn.neighbors import NearestNeighbors
 import scipy.sparse as sp
+import shap
+import json
+import datetime
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -69,6 +74,85 @@ def evaluate_model(model, X_test, y_test):
     }
 
     return metrics
+
+
+def compute_model_diagnostics(best_model, df_fit, features, course, output_dir, date_str, train_metrics=None):
+    """Compute and persist Cost diagnostics for a fitted model.
+
+    Returns a dict with pfi_cost, shap_cost, and feature_space_distance.
+    Also persists the nearest-neighbor artifact used for feature-space distance.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    train_metrics = train_metrics or {}
+
+    cost_pfi = 0.0
+    cost_shap = 0.0
+    feature_space_dist = 0.0
+    diag_sample_size = min(500, len(df_fit))
+    if len(df_fit) > diag_sample_size: # Sample to make it faster to run
+        df_diag = df_fit.sample(n=diag_sample_size, random_state=42)
+    else:
+        df_diag = df_fit
+
+    if 'Cost' in features:
+        print("Computing PFI and SHAP for 'Cost'...")
+        pfi_results = permutation_importance(
+            best_model,
+            df_diag[features],
+            df_diag['Clicks'],
+            n_repeats=5,
+            random_state=42,
+        )
+        cost_idx = features.index('Cost')
+        cost_pfi = pfi_results.importances_mean[cost_idx]
+
+        preprocessor = best_model.named_steps['preprocess']
+        cast_step = best_model.named_steps['cast']
+        xgb_model = best_model.named_steps['model']
+
+        X_trans = preprocessor.transform(df_diag[features])
+        X_cast = cast_step.transform(X_trans)
+
+        explainer = shap.TreeExplainer(xgb_model)
+        shap_values = explainer.shap_values(X_cast)
+
+        cat_cols = list(df_diag[features].select_dtypes(include=["object", "category", "bool"]).columns)
+        num_cols = [c for c in features if c not in cat_cols]
+        if 'Cost' in num_cols:
+            cost_trans_idx = num_cols.index('Cost')
+            cost_shap = np.abs(shap_values[:, cost_trans_idx]).mean()
+    print("Computing Feature Space Distance...")
+    cat_cols = list(df_fit[features].select_dtypes(include=["object", "category", "bool"]).columns)
+    num_cols = [c for c in features if c not in cat_cols]
+    if len(num_cols) > 0 and len(df_fit) > 1:
+        X_num = StandardScaler().fit_transform(df_fit[num_cols])
+        nn = NearestNeighbors(n_neighbors=2).fit(X_num)
+        distances, _ = nn.kneighbors(X_num)
+        feature_space_dist = distances[:, 1].mean()
+
+        nn_path = output_dir / 'feature_nn.joblib'
+        joblib.dump({'nn': nn, 'num_cols': num_cols}, nn_path)
+        print(f"Saved feature-space nearest-neighbor model to {nn_path}")
+
+    metadata = {
+        'course': course,
+        'date': date_str,
+        **train_metrics,
+        'pfi_cost': float(cost_pfi),
+        'shap_cost': float(cost_shap),
+        'feature_space_distance': float(feature_space_dist),
+    }
+    metadata_path = output_dir / f'metadata_{date_str}.json'
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=4)
+    print(f"Saved metadata to {metadata_path}")
+
+    return {
+        'pfi_cost': float(cost_pfi),
+        'shap_cost': float(cost_shap),
+        'feature_space_distance': float(feature_space_dist),
+    }
 
 def train_best_model(df_day, features, day_date):
     """
@@ -305,11 +389,30 @@ def main():
         test_metrics = evaluate_model(best_model, df_test[features], df_test[target])
         print(f"Held-out test metrics: {test_metrics}")
 
+    date_str = datetime.datetime.now().strftime('%Y%m%d')
+    diagnostics = compute_model_diagnostics(
+        best_model,
+        df_fit,
+        features,
+        args.course,
+        Path(f'models/{args.course}'),
+        date_str,
+        {
+            'in_sample_mse': float(in_sample_mse),
+            'in_sample_r2': float(in_sample_r2),
+            'in_sample_bias': float(in_sample_bias),
+        },
+    )
+
+    cost_pfi = diagnostics['pfi_cost']
+    cost_shap = diagnostics['shap_cost']
+    feature_space_dist = diagnostics['feature_space_distance']
+
     # Save the best model
     # Use course-specific and embedding-specific model name
     xgb_path = Path(f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib')
     joblib.dump(best_model, xgb_path)
     print(f"Saved best model to {xgb_path}")
-
+    
 if __name__ == '__main__':
     main()

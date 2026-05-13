@@ -86,6 +86,7 @@ def generate_search_keyword_report(
         "Conv. value",
         "Currency code",
         "Cost",
+        "First page CPC",
     ]
     write_to_file(header_parts, generate_search_keyword_rows(stream), output_path, delimiter=",")
     google_ads_metrics_client.track_google_ads_operation_count('search_stream', 1)
@@ -152,9 +153,10 @@ def generate_hod_clicks_and_conversion_report(
     output_course: str,
     start_date: str,
     end_date: str,
+    output_suffix: str = "",
 ) -> None:
     """Generate hour-of-day clicks report for bid adjustments."""
-    output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks.csv")
+    output_path = Path(f"data/{output_course}/reports/bid_adj/hod_clicks{output_suffix}.csv")
 
     query = HOD_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
@@ -169,7 +171,7 @@ def generate_hod_clicks_and_conversion_report(
     print(f"Generated: {output_path}")
 
     # Generate conversions report
-    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/hod_conv.csv")
+    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/hod_conv{output_suffix}.csv")
     query_conv = HOD_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
@@ -193,9 +195,10 @@ def generate_age_clicks_and_conversion_report(
     output_course: str,
     start_date: str,
     end_date: str,
+    output_suffix: str = "",
 ) -> None:
     """Generate age demographics clicks report for bid adjustments."""
-    output_path = Path(f"data/{output_course}/reports/bid_adj/age_clicks.csv")
+    output_path = Path(f"data/{output_course}/reports/bid_adj/age_clicks{output_suffix}.csv")
 
     query = AGE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
@@ -210,7 +213,7 @@ def generate_age_clicks_and_conversion_report(
     print(f"Generated: {output_path}")
 
     # Generate conversions report
-    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/age_conv.csv")
+    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/age_conv{output_suffix}.csv")
     query_conv = AGE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
@@ -234,9 +237,10 @@ def generate_device_clicks_and_conversion_report(
     output_course: str,
     start_date: str,
     end_date: str,
+    output_suffix: str = "",
 ) -> None:
     """Generate device clicks report for bid adjustments."""
-    output_path = Path(f"data/{output_course}/reports/bid_adj/device_clicks.csv")
+    output_path = Path(f"data/{output_course}/reports/bid_adj/device_clicks{output_suffix}.csv")
 
     query = DEVICE_CLICKS_REPORT_QUERY.format(
         start_date=start_date,
@@ -251,7 +255,7 @@ def generate_device_clicks_and_conversion_report(
     print(f"Generated: {output_path}")
 
     # Generate conversions report
-    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/device_conv.csv")
+    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/device_conv{output_suffix}.csv")
     query_conv = DEVICE_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,
@@ -275,9 +279,10 @@ def generate_loc_clicks_and_conversion_report(
     output_course: str,
     start_date: str,
     end_date: str,
+    output_suffix: str = "",
 ) -> None:
     """Generate location clicks report for bid adjustments."""
-    output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks.csv")
+    output_path = Path(f"data/{output_course}/reports/bid_adj/loc_clicks{output_suffix}.csv")
 
     regions = COURSE_CONFIG[output_course]["regions"]
     all_locations = []
@@ -308,7 +313,7 @@ def generate_loc_clicks_and_conversion_report(
 
     # Generate conversions report
     purchase_actions = COURSE_CONFIG[output_course]["purchase_actions"]
-    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/loc_conv.csv")
+    output_path_conv = Path(f"data/{output_course}/reports/bid_adj/loc_conv{output_suffix}.csv")
     query_conv = LOC_CONVERSIONS_REPORT_QUERY.format(
         start_date=start_date,
         end_date=end_date,

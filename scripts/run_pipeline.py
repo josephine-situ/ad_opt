@@ -59,12 +59,13 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config import COURSE_CONFIG
-from scripts.modeling import train_best_model
+from scripts.modeling import compute_model_diagnostics, train_best_model
 from scripts.optimization import (
     create_feature_matrix,
     extract_solution,
     optimize_bids,
 )
+from scripts.monitor_production import monitor_production
 from utils.date_features import COURSE_START_DATES_MAP
 from utils.embeddings import (
     fit_svd_pipeline,
@@ -74,7 +75,10 @@ from utils.embeddings import (
 from utils import setup_tee_logging
 
 
-def run_data_preparation(course: str, use_cache: bool = False) -> None:
+def run_data_preparation(
+    course: str,
+    use_cache: bool = False,
+) -> None:
     """Run tidy_get_data.py as a subprocess for the given course."""
     cmd = [
         sys.executable, "scripts/tidy_get_data.py",
@@ -99,11 +103,12 @@ def run_data_preparation(course: str, use_cache: bool = False) -> None:
 def train_model(
     course: str,
     embedding_method: str = "bert",
-) -> tuple[object, dict, list[str]]:
+    opt_date: datetime | None = None,
+) -> tuple[object, dict, list[str], dict, Path, pd.DataFrame, str, dict]:
     """Train XGBoost model on full BERT embeddings (no SVD).
 
     Returns:
-        (model_pipeline, svd_pipeline_dict, feature_names)
+        (model_pipeline, svd_pipeline_dict, feature_names, raw_embedding_map, model_path, df, date_str, train_metrics)
     """
     print(f"\n{'='*70}")
     print(f"[Step 2] Model Training — {course} (full BERT, no SVD)")
@@ -153,23 +158,35 @@ def train_model(
     print(f"CV MSE / R²:   {cv_mse:.4f} / {cv_r2:.4f}")
     print(f"In-sample:     MSE={in_mse:.4f}  R²={in_r2:.4f}  Bias={in_bias:.4f}")
 
-    # Save model and SVD pipeline
-    model_path = Path(f"models/{course}_xgb_clicks_model_{embedding_method}.joblib")
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipe, model_path)
-    print(f"Saved model → {model_path}")
+    if opt_date is None:
+        date_str = datetime.now().strftime('%Y%m%d')
+    else:
+        date_str = opt_date.strftime('%Y%m%d')
+
+    # Save model and SVD pipeline with dated filenames
+    dated_model_path = Path(f"models/{course}/xgb_clicks_model_{embedding_method}_{date_str}.joblib")
+    dated_model_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(pipe, dated_model_path)
+    print(f"Saved model → {dated_model_path}")
 
     svd_path = Path(f"models/{course}_svd_pipeline.joblib")
     joblib.dump(svd_pipeline, svd_path)
     print(f"Saved SVD pipeline (normalizer) → {svd_path}")
 
-    return pipe, svd_pipeline, features, raw_emb_map
+    train_metrics = {
+        "in_sample_mse": float(in_mse),
+        "in_sample_r2": float(in_r2),
+        "in_sample_bias": float(in_bias),
+    }
+
+    return pipe, svd_pipeline, features, raw_emb_map, dated_model_path, df, date_str, train_metrics
 
 
 def run_optimization(
     course: str,
     svd_pipeline: dict,
     raw_emb_map: dict,
+    model_path: Path,
     opt_date: datetime | None = None,
     budget: float | None = None,
     order_budget: bool = True,
@@ -242,8 +259,6 @@ def run_optimization(
             f"Saved matrix for inspection at: {debug_path}"
         )
 
-    model_path = f"models/{course}_xgb_clicks_model_{embedding_method}.joblib"
-
     model, cost_vars, pred_vars, X_opt = optimize_bids(
         X.copy(),
         model_path,
@@ -261,9 +276,11 @@ def run_optimization(
     if results_df is not None:
         res_dir = Path(f"opt_results/{course}/bids")
         res_dir.mkdir(parents=True, exist_ok=True)
-        out_path = res_dir / "optimized_costs.csv"
-        results_df.to_csv(out_path, index=False)
-        print(f"Saved optimization results → {out_path}")
+        # Save dated optimized_costs only
+        dated_out = res_dir / f"optimized_costs_{opt_date.strftime('%Y%m%d')}.csv"
+        dated_out.parent.mkdir(parents=True, exist_ok=True)
+        results_df.to_csv(dated_out, index=False)
+        print(f"Saved optimization results → {dated_out}")
 
     return results_df
 
@@ -336,7 +353,8 @@ def calculate_daily_budget(course: str, opt_date: datetime | None = None) -> flo
                 # Filter between start_date and opt_date - 1 (inclusive)
                 df = df[(df['Day'] >= start_date) & (df['Day'] < opt_date)]
             if 'Campaign' in df.columns:
-                df = df[df['Campaign'].str.contains('Experiment', case=False, na=False)]
+                exp_label = COURSE_CONFIG[course].get('exp_label', 'Experiment')
+                df = df[df['Campaign'].str.contains(exp_label, case=False, na=False)]
             if 'Cost' in df.columns:
                 budget_used_from_report = df['Cost'].fillna(0).sum()
         except Exception as e:
@@ -443,6 +461,7 @@ def main():
         print(f"#  COURSE: {course.upper()}")
         print(f"{'#'*70}")
 
+        date_str = opt_date.strftime('%Y%m%d')
         budget = args.budget or calculate_daily_budget(course, opt_date=opt_date)
 
         # ── Step 1: Data Preparation ────────────────────────────────────
@@ -452,13 +471,28 @@ def main():
             print(f"\n[Step 1] Skipping data preparation (--skip-data-prep)")
 
         # ── Step 2: Model Training (full BERT, no SVD) ──────────────────
-        pipe, svd_pipeline, features, raw_emb_map = train_model(course)
+        pipe, svd_pipeline, features, raw_emb_map, dated_model_path, df_fit, date_str, train_metrics = train_model(
+            course,
+            opt_date=opt_date,
+        )
+
+        diagnostics = compute_model_diagnostics(
+            pipe,
+            df_fit,
+            features,
+            course,
+            dated_model_path.parent,
+            date_str,
+            train_metrics,
+        )
+        print(f"[Step 2] Diagnostics: {diagnostics}")
 
         # ── Step 3: Optimization ────────────────────────────────────────
         results = run_optimization(
             course,
             svd_pipeline=svd_pipeline,
             raw_emb_map=raw_emb_map,
+            model_path=dated_model_path,
             opt_date=opt_date,
             budget=budget,
             order_budget=not args.no_order_budget,
@@ -477,6 +511,11 @@ def main():
             bid_multiplier=args.bid_multiplier,
             skip_adjustments=args.skip_adjustments,
         )
+
+        try:
+            monitor_production(course=course, lag=1)
+        except Exception as exc:
+            print(f"[Warning] monitor_production failed for {course}: {type(exc).__name__}: {exc}")
 
     print(f"\n{'='*70}")
     print("Pipeline complete!")

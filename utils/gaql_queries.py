@@ -140,7 +140,8 @@ SEARCH_KEYWORD_REPORT_QUERY = """
         metrics.clicks,
         metrics.all_conversions_value,
         customer.currency_code,
-        metrics.cost_micros
+        metrics.cost_micros,
+        ad_group_criterion.position_estimates.first_page_cpc_micros
     FROM keyword_view
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
     AND campaign.name NOT LIKE 'EXCLUDE%'

@@ -6,7 +6,7 @@ Script to pull input data from various sources (ads reports, keyword planning, S
 import argparse
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -53,16 +53,21 @@ def validate_environment_variables(datasets: Iterable[str]) -> bool:
 
     return True
 
+
 def pull_ads_reports(
     google_ads_client: GoogleAdsClient,
     customer_id: str,
     output_course: str,
     start_date: str | None = None,
     end_date: str | None = None,
+    bid_adj_effectiveness_end_date: str | None = None,
 ) -> None:
-    """Pull all ads reports data from Google Ads for a given course."""
+    """Pull all ads reports data from Google Ads for a given course.
 
-    # Default to last 12 months if not specified
+    This pulls two sets of bid-adjustment reports:
+    1. Full date range (unsuffixed) -- used by bid_post_processing.py
+    2. 7-day effectiveness window (*_7d.csv) -- used by monitor_production.py
+    """
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
     if not start_date:
@@ -84,6 +89,25 @@ def pull_ads_reports(
 
     for report in report_functions:
         report(google_ads_client, customer_id, output_course, start_date, end_date)
+
+    # 7-day effectiveness window (same reports with _7d suffix for monitor_production)
+    eff_end = bid_adj_effectiveness_end_date or (
+        datetime.now() - timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    eff_start = (
+        datetime.strptime(eff_end, "%Y-%m-%d") - timedelta(days=7)
+    ).strftime("%Y-%m-%d")
+
+    bid_adj_generators = [
+        generate_hod_clicks_and_conversion_report,
+        generate_age_clicks_and_conversion_report,
+        generate_device_clicks_and_conversion_report,
+        generate_loc_clicks_and_conversion_report,
+    ]
+    print(f"Pulling 7d bid adjustment effectiveness reports ({eff_start} to {eff_end})...")
+    for gen in bid_adj_generators:
+        gen(google_ads_client, customer_id, output_course, eff_start, eff_end,
+            output_suffix="_7d")
 
     print(f"Successfully generated all reports for {output_course}")
 
@@ -292,6 +316,15 @@ def main() -> None:
         type=int,
         help="Number of keywords to pull from SEMRush (default 100, max 10,000). Each keyword consumes 40 api units",
     )
+    parser.add_argument(
+        "--bid-adj-effectiveness-end-date",
+        type=str,
+        default="",
+        help=(
+            "YYYY-MM-DD end date for bid-adjustment effectiveness *_7d.csv reports (ads_reports only). "
+            "Defaults to yesterday when omitted."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -317,7 +350,13 @@ def main() -> None:
     customer_id = args.customer_id
 
     if ADS_REPORTS in requested_datasets:
-        pull_ads_reports(google_ads_client, customer_id, args.output_course)
+        eff_end = args.bid_adj_effectiveness_end_date.strip() or None
+        pull_ads_reports(
+            google_ads_client,
+            customer_id,
+            args.output_course,
+            bid_adj_effectiveness_end_date=eff_end,
+        )
         print(f"Successfully pulled ads_reports data")
 
     if KEYWORD_PLANNING in requested_datasets:

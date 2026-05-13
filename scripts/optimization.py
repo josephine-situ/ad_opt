@@ -10,7 +10,6 @@ Example usage:
 Input files:
     data/<course>/gkp/keywords_classified.csv                       [FROM GKP / compare_keywords.py]
     data/<course>/gkp/Saved Keywords Stats *.csv                    [FROM GOOGLE KEYWORD PLANNER]
-    data/<course>/clean/unique_keyword_embeddings_bert.csv           (from tidy_get_data.py, BERT only)
     models/<course>_xgb_clicks_model_<emb>.joblib                    (from modeling.py)
     data/<course>/reports/Purchase report.csv                        [FROM GOOGLE ADS REPORTS] (max-purch mode)
     config.py  (course start dates, budgets)
@@ -42,51 +41,23 @@ from utils.data_pipeline import get_date_features, get_gkp_data, impute_missing_
 from utils.date_features import COURSE_START_DATES, COURSE_START_DATES_MAP
 from config import COURSE_CONFIG
 from utils.llm_scoring import get_llm_scores_cached
-from utils.embeddings import fit_svd_pipeline, get_raw_bert_embeddings_cached
+from utils.embeddings import apply_svd_pipeline, fit_svd_pipeline, get_raw_bert_embeddings_cached
 from tidy_get_data import load_or_cache
 from scripts.modeling import _to_float32_csr # necessary to read model correctly
 
-def check_embeddings(embedding_df, base_dir=Path('data/gen_ai')):
-    '''Test consistency of embeddings'''
-
-    # Load saved embeddings
-    saved_emb = pd.read_csv(base_dir / 'clean/unique_keyword_embeddings_bert.csv')
-
-    # 1. Ensure both are indexed by Keyword for easy alignment
-    df1 = embedding_df.set_index('Keyword').sort_index()
-    df2 = saved_emb.set_index('Keyword').sort_index()
-
-    # 2. Find common keywords to avoid "Key Not Found" errors
-    common_keywords = df1.index.intersection(df2.index)
-    df1_shared = df1.loc[common_keywords]
-    df2_shared = df2.loc[common_keywords]
-
-    # This checks if the values are the same within a tiny tolerance (default 1e-08)
-    is_consistent = np.allclose(df1_shared.values, df2_shared.values, atol=1e-5)
-
-    if is_consistent:
-        print("✅ Consistency Check Passed: Embeddings are identical.")
-    else:
-        # Calculate the average difference to see how far off they are
-        diff = np.abs(df1_shared.values - df2_shared.values).mean()
-        print(f"❌ Consistency Check Failed: Mean Absolute Difference is {diff}")
-
-
 def get_emb_from_pipeline(keywords, base_dir=Path('data/gen_ai')):
+    """Create full BERT (no-SVD) embeddings from raw cache at runtime."""
 
-    # Read possible keywords and create full BERT embeddings, matching run_pipeline.
     raw_emb_cache = base_dir / 'cache' / 'raw_bert_embeddings.pkl'
     raw_emb_map = get_raw_bert_embeddings_cached(keywords, cache_path=raw_emb_cache)
 
     raw_matrix = np.array([raw_emb_map[kw] for kw in keywords])
     svd_pipeline = fit_svd_pipeline(raw_matrix, n_components=None)
-    embeddings = svd_pipeline['normalizer'].transform(raw_matrix)
+    embeddings = apply_svd_pipeline(raw_matrix, svd_pipeline)
 
     embedding_cols = [f'bert_{i}' for i in range(embeddings.shape[1])]
     embedding_df = pd.DataFrame(embeddings, columns=embedding_cols)
     embedding_df['Keyword'] = keywords
-
-    check_embeddings(embedding_df, base_dir)
 
     return embedding_df
 
@@ -553,7 +524,10 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
 
     # 4. Construct Results DataFrame
     # Pull metadata from the valid rows of X
-    results_df = X[['Keyword', 'Region', 'Match type', 'Origin']].copy()
+    meta_cols = ['Keyword', 'Region', 'Match type', 'Origin']
+    if 'Feature Space Distance' in X.columns:
+        meta_cols.append('Feature Space Distance')
+    results_df = X[meta_cols].copy()
     
     # Extract values from Gurobi variables
     results_df['Optimal Cost'] = [var.X for var in cost_vars]
@@ -580,6 +554,49 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     results_df['Actual Model Pred'] = pipeline.predict(X_validate)
     results_df['Diff'] = results_df['Gurobi Pred'] - results_df['Actual Model Pred']
     
+    # Feature Space Distance and Leaf Uncertainty
+    X_val_proc = pipeline[:-1].transform(X_validate)
+    booster = pipeline.named_steps['model'].get_booster()
+    if "cast" in pipeline.named_steps:
+        import scipy.sparse as sp
+        if sp.issparse(X_val_proc):
+            X_val_proc_sparse = pipeline.named_steps['cast'].transform(X_val_proc)
+        else:
+            X_val_proc_sparse = X_val_proc
+    else:
+        X_val_proc_sparse = X_val_proc
+        
+    import xgboost as xgb
+    dmatrix = xgb.DMatrix(X_val_proc_sparse)
+
+    import os
+    import numpy as np
+    from pathlib import Path
+    
+    nn_path = Path(model_path).parent / "feature_nn.joblib"
+    if nn_path.exists():
+        nn_payload = joblib.load(str(nn_path))
+        if isinstance(nn_payload, dict):
+            nn = nn_payload["nn"]
+            nn_num_cols = nn_payload.get("num_cols")
+        else:
+            nn = nn_payload
+            nn_num_cols = None
+
+        if nn_num_cols:
+            X_val_num = X_validate[nn_num_cols].copy()
+        else:
+            X_val_num = X_validate.select_dtypes(include=["number"]).copy()
+        X_val_num = X_val_num.fillna(0)
+        distances, _ = nn.kneighbors(X_val_num)
+        results_df['Feature Space Distance'] = distances.mean(axis=1)
+    else:
+        results_df['Feature Space Distance'] = np.nan
+
+    num_trees = booster.best_iteration + 1 if hasattr(booster, 'best_iteration') and booster.best_iteration is not None else booster.num_boosted_rounds()
+    tree_preds = [booster.predict(dmatrix, iteration_range=(i, i+1)) for i in range(num_trees)]
+    results_df['Leaf Uncertainty'] = np.var(tree_preds, axis=0)
+
     # Identify rows with significant discrepancy and attempt adjustment
     DISCREPANCY_THRESHOLD = 0.1
     high_disc_mask = results_df['Diff'].abs() > DISCREPANCY_THRESHOLD
@@ -593,6 +610,20 @@ def extract_solution(model, cost_vars, pred_vars, model_path, X):
     print(f"[Info] Max discrepancy between Gurobi and XGBoost: {max_diff:.6f}")
     print(f"[Info] Mean absolute discrepancy: {mean_diff:.6f}")
 
+    # Append model feature columns (active rows only) so monitor_production can
+    # compute out-of-sample PFI directly from optimized_costs without a separate
+    # actuals file containing embeddings.
+    if hasattr(pipeline, 'feature_names_in_'):
+        feat_cols_to_add = [
+            c for c in pipeline.feature_names_in_
+            if c in X_validate.columns and c not in results_df.columns
+        ]
+        if feat_cols_to_add:
+            results_df = pd.concat(
+                [results_df, X_validate[feat_cols_to_add].reset_index(drop=True)],
+                axis=1,
+            )
+
     print("[Info] Sample of Optimization Results:")
     print(results_df.head())
 
@@ -602,11 +633,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--course', required=True, help='Course name (e.g. gen_ai, ml, sys_eng, sys_think)')
     parser.add_argument('--embedding-method', default='bert', choices=['bert', 'llm'], help='Embedding method: bert or llm (default: bert)')
+    parser.add_argument('--date', required=True, help='Optimization date (YYYY-MM-DD) used to select the exact dated model and output file')
     parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
     parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
     parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
     parser.add_argument('--min-spend', type=float, default=None, help='Minimum spend per active keyword (e.g. 1.0). If not set, no minimum-spend constraint is used.')
     args = parser.parse_args()
+
+    opt_date = datetime.strptime(args.date, '%Y-%m-%d')
 
     if args.budget is None:
 
@@ -638,13 +672,15 @@ def main():
     
     res_dir = Path(f'opt_results/{args.course}/bids')
     res_dir.mkdir(parents=True, exist_ok=True)
+
+    date_str = opt_date.strftime('%Y%m%d')
     
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
         False,  # use_cache (defaults to False, meaning it will recompute)
         keywords,
-        None, # opt_date (defaults to now)
+        opt_date,
         COURSE_START_DATES_MAP.get(args.course, []),
         base_dir,
         raw_emb_map=raw_emb_map,
@@ -654,7 +690,9 @@ def main():
     X = X[X['Region'] != 'C']  # Filter out region C due to low EPC
     
     # Optimize bids using Gurobi
-    model_path = f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib'
+    model_path = Path(f'models/{args.course}/xgb_clicks_model_{embedding_method}_{date_str}.joblib')
+    if not model_path.exists():
+        raise FileNotFoundError(f"Expected model file not found: {model_path}")
 
     for b in args.budget:
         print(f"\n--- Budget: {b} ---")
@@ -667,9 +705,10 @@ def main():
         # Extract solution and validate predictions
         results_df = extract_solution(model, cost_vars, pred_vars, model_path, X_opt)
         if results_df is not None:
-            out_path = res_dir / f'optimized_costs.csv'
-            results_df.to_csv(out_path, index=False)
-            print(f"[Info] Optimization results saved to '{out_path}'.")
+            dated_out = res_dir / f"optimized_costs_{date_str}.csv"
+            dated_out.parent.mkdir(parents=True, exist_ok=True)
+            results_df.to_csv(dated_out, index=False)
+            print(f"[Info] Optimization results saved to '{dated_out}'.")
 
 
 if __name__ == '__main__':
