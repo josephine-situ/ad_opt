@@ -59,12 +59,13 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config import COURSE_CONFIG
-from scripts.modeling import train_best_model
+from scripts.modeling import compute_model_diagnostics, train_best_model
 from scripts.optimization import (
     create_feature_matrix,
     extract_solution,
     optimize_bids,
 )
+from scripts.monitor_production import monitor_production
 from utils.date_features import COURSE_START_DATES_MAP
 from utils.embeddings import (
     fit_svd_pipeline,
@@ -74,7 +75,10 @@ from utils.embeddings import (
 from utils import setup_tee_logging
 
 
-def run_data_preparation(course: str, use_cache: bool = False) -> None:
+def run_data_preparation(
+    course: str,
+    use_cache: bool = False,
+) -> None:
     """Run tidy_get_data.py as a subprocess for the given course."""
     cmd = [
         sys.executable, "scripts/tidy_get_data.py",
@@ -99,11 +103,12 @@ def run_data_preparation(course: str, use_cache: bool = False) -> None:
 def train_model(
     course: str,
     embedding_method: str = "bert",
-) -> tuple[object, dict, list[str], Path]:
+    opt_date: datetime | None = None,
+) -> tuple[object, dict, list[str], dict, Path, pd.DataFrame, str, dict]:
     """Train XGBoost model on full BERT embeddings (no SVD).
 
     Returns:
-        (model_pipeline, svd_pipeline_dict, feature_names)
+        (model_pipeline, svd_pipeline_dict, feature_names, raw_embedding_map, model_path, df, date_str, train_metrics)
     """
     print(f"\n{'='*70}")
     print(f"[Step 2] Model Training — {course} (full BERT, no SVD)")
@@ -153,8 +158,12 @@ def train_model(
     print(f"CV MSE / R²:   {cv_mse:.4f} / {cv_r2:.4f}")
     print(f"In-sample:     MSE={in_mse:.4f}  R²={in_r2:.4f}  Bias={in_bias:.4f}")
 
+    if opt_date is None:
+        date_str = datetime.now().strftime('%Y%m%d')
+    else:
+        date_str = opt_date.strftime('%Y%m%d')
+
     # Save model and SVD pipeline with dated filenames
-    date_str = datetime.now().strftime('%Y%m%d')
     dated_model_path = Path(f"models/{course}/xgb_clicks_model_{embedding_method}_{date_str}.joblib")
     dated_model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(pipe, dated_model_path)
@@ -164,7 +173,13 @@ def train_model(
     joblib.dump(svd_pipeline, svd_path)
     print(f"Saved SVD pipeline (normalizer) → {svd_path}")
 
-    return pipe, svd_pipeline, features, raw_emb_map, dated_model_path
+    train_metrics = {
+        "in_sample_mse": float(in_mse),
+        "in_sample_r2": float(in_r2),
+        "in_sample_bias": float(in_bias),
+    }
+
+    return pipe, svd_pipeline, features, raw_emb_map, dated_model_path, df, date_str, train_metrics
 
 
 def run_optimization(
@@ -446,6 +461,7 @@ def main():
         print(f"#  COURSE: {course.upper()}")
         print(f"{'#'*70}")
 
+        date_str = opt_date.strftime('%Y%m%d')
         budget = args.budget or calculate_daily_budget(course, opt_date=opt_date)
 
         # ── Step 1: Data Preparation ────────────────────────────────────
@@ -455,7 +471,21 @@ def main():
             print(f"\n[Step 1] Skipping data preparation (--skip-data-prep)")
 
         # ── Step 2: Model Training (full BERT, no SVD) ──────────────────
-        pipe, svd_pipeline, features, raw_emb_map, dated_model_path = train_model(course)
+        pipe, svd_pipeline, features, raw_emb_map, dated_model_path, df_fit, date_str, train_metrics = train_model(
+            course,
+            opt_date=opt_date,
+        )
+
+        diagnostics = compute_model_diagnostics(
+            pipe,
+            df_fit,
+            features,
+            course,
+            dated_model_path.parent,
+            date_str,
+            train_metrics,
+        )
+        print(f"[Step 2] Diagnostics: {diagnostics}")
 
         # ── Step 3: Optimization ────────────────────────────────────────
         results = run_optimization(
@@ -481,6 +511,11 @@ def main():
             bid_multiplier=args.bid_multiplier,
             skip_adjustments=args.skip_adjustments,
         )
+
+        try:
+            monitor_production(course=course, lag=1)
+        except Exception as exc:
+            print(f"[Warning] monitor_production failed for {course}: {type(exc).__name__}: {exc}")
 
     print(f"\n{'='*70}")
     print("Pipeline complete!")
