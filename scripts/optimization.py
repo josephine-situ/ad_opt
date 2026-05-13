@@ -640,11 +640,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--course', required=True, help='Course name (e.g. gen_ai, ml, sys_eng, sys_think)')
     parser.add_argument('--embedding-method', default='bert', choices=['bert', 'llm'], help='Embedding method: bert or llm (default: bert)')
+    parser.add_argument('--date', required=True, help='Optimization date (YYYY-MM-DD) used to select the exact dated model and output file')
     parser.add_argument('--budget', type=float, nargs='+', default=None, help='Total budget(s) to test (default: from config)')
     parser.add_argument('--order-budget', action='store_true', default=True, help='Use B_{USA} >= B_{A} >= B_{B}') # Default to True. Change here if want to remove.
     parser.add_argument('--max-purch', action='store_true', default=True, help='Use max purchases objective instead of clicks') # Default to True. Change here if want to remove.
     parser.add_argument('--min-spend', type=float, default=None, help='Minimum spend per active keyword (e.g. 1.0). If not set, no minimum-spend constraint is used.')
     args = parser.parse_args()
+
+    opt_date = datetime.strptime(args.date, '%Y-%m-%d')
 
     if args.budget is None:
 
@@ -676,13 +679,15 @@ def main():
     
     res_dir = Path(f'opt_results/{args.course}/bids')
     res_dir.mkdir(parents=True, exist_ok=True)
+
+    date_str = opt_date.strftime('%Y%m%d')
     
     X = load_or_cache(
         create_feature_matrix,
         cache_dir / 'feature_matrix.parquet',
         False,  # use_cache (defaults to False, meaning it will recompute)
         keywords,
-        None, # opt_date (defaults to now)
+        opt_date,
         COURSE_START_DATES_MAP.get(args.course, []),
         base_dir,
         raw_emb_map=raw_emb_map,
@@ -692,7 +697,9 @@ def main():
     X = X[X['Region'] != 'C']  # Filter out region C due to low EPC
     
     # Optimize bids using Gurobi
-    model_path = f'models/{args.course}_xgb_clicks_model_{embedding_method}.joblib'
+    model_path = Path(f'models/{args.course}/xgb_clicks_model_{embedding_method}_{date_str}.joblib')
+    if not model_path.exists():
+        raise FileNotFoundError(f"Expected model file not found: {model_path}")
 
     for b in args.budget:
         print(f"\n--- Budget: {b} ---")
@@ -705,9 +712,10 @@ def main():
         # Extract solution and validate predictions
         results_df = extract_solution(model, cost_vars, pred_vars, model_path, X_opt)
         if results_df is not None:
-            out_path = res_dir / f'optimized_costs.csv'
-            results_df.to_csv(out_path, index=False)
-            print(f"[Info] Optimization results saved to '{out_path}'.")
+            dated_out = res_dir / f"optimized_costs_{date_str}.csv"
+            dated_out.parent.mkdir(parents=True, exist_ok=True)
+            results_df.to_csv(dated_out, index=False)
+            print(f"[Info] Optimization results saved to '{dated_out}'.")
 
 
 if __name__ == '__main__':

@@ -99,7 +99,7 @@ def run_data_preparation(course: str, use_cache: bool = False) -> None:
 def train_model(
     course: str,
     embedding_method: str = "bert",
-) -> tuple[object, dict, list[str]]:
+) -> tuple[object, dict, list[str], Path]:
     """Train XGBoost model on full BERT embeddings (no SVD).
 
     Returns:
@@ -153,23 +153,25 @@ def train_model(
     print(f"CV MSE / R²:   {cv_mse:.4f} / {cv_r2:.4f}")
     print(f"In-sample:     MSE={in_mse:.4f}  R²={in_r2:.4f}  Bias={in_bias:.4f}")
 
-    # Save model and SVD pipeline
-    model_path = Path(f"models/{course}_xgb_clicks_model_{embedding_method}.joblib")
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipe, model_path)
-    print(f"Saved model → {model_path}")
+    # Save model and SVD pipeline with dated filenames
+    date_str = datetime.now().strftime('%Y%m%d')
+    dated_model_path = Path(f"models/{course}/xgb_clicks_model_{embedding_method}_{date_str}.joblib")
+    dated_model_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(pipe, dated_model_path)
+    print(f"Saved model → {dated_model_path}")
 
     svd_path = Path(f"models/{course}_svd_pipeline.joblib")
     joblib.dump(svd_pipeline, svd_path)
     print(f"Saved SVD pipeline (normalizer) → {svd_path}")
 
-    return pipe, svd_pipeline, features, raw_emb_map
+    return pipe, svd_pipeline, features, raw_emb_map, dated_model_path
 
 
 def run_optimization(
     course: str,
     svd_pipeline: dict,
     raw_emb_map: dict,
+    model_path: Path,
     opt_date: datetime | None = None,
     budget: float | None = None,
     order_budget: bool = True,
@@ -242,8 +244,6 @@ def run_optimization(
             f"Saved matrix for inspection at: {debug_path}"
         )
 
-    model_path = f"models/{course}_xgb_clicks_model_{embedding_method}.joblib"
-
     model, cost_vars, pred_vars, X_opt = optimize_bids(
         X.copy(),
         model_path,
@@ -261,9 +261,11 @@ def run_optimization(
     if results_df is not None:
         res_dir = Path(f"opt_results/{course}/bids")
         res_dir.mkdir(parents=True, exist_ok=True)
-        out_path = res_dir / "optimized_costs.csv"
-        results_df.to_csv(out_path, index=False)
-        print(f"Saved optimization results → {out_path}")
+        # Save dated optimized_costs only
+        dated_out = res_dir / f"optimized_costs_{opt_date.strftime('%Y%m%d')}.csv"
+        dated_out.parent.mkdir(parents=True, exist_ok=True)
+        results_df.to_csv(dated_out, index=False)
+        print(f"Saved optimization results → {dated_out}")
 
     return results_df
 
@@ -453,13 +455,14 @@ def main():
             print(f"\n[Step 1] Skipping data preparation (--skip-data-prep)")
 
         # ── Step 2: Model Training (full BERT, no SVD) ──────────────────
-        pipe, svd_pipeline, features, raw_emb_map = train_model(course)
+        pipe, svd_pipeline, features, raw_emb_map, dated_model_path = train_model(course)
 
         # ── Step 3: Optimization ────────────────────────────────────────
         results = run_optimization(
             course,
             svd_pipeline=svd_pipeline,
             raw_emb_map=raw_emb_map,
+            model_path=dated_model_path,
             opt_date=opt_date,
             budget=budget,
             order_budget=not args.no_order_budget,

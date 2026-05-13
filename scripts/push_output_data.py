@@ -179,6 +179,7 @@ def push_cpc(
     google_ads_client: GoogleAdsClient,
     customer_id: str,
     output_course: str,
+    bids_date: str,
     execute: bool,
 ) -> None:
     """
@@ -186,7 +187,9 @@ def push_cpc(
     Note that this will only be visible if the associated campaign is using a manual CPC bidding strategy.
     """
     budget_output_dir = Path(f"opt_results/{output_course}/bids")
-    optimized_costs_filepath = budget_output_dir / "optimized_costs.csv"
+    optimized_costs_filepath = budget_output_dir / f"optimized_costs_{bids_date}.csv"
+    if not optimized_costs_filepath.exists():
+        raise FileNotFoundError(f"Expected optimized costs file not found: {optimized_costs_filepath}")
 
     google_ads_service = google_ads_client.get_service("GoogleAdsService")
     ad_group_criterion_service = google_ads_client.get_service("AdGroupCriterionService")
@@ -535,6 +538,12 @@ def main() -> None:
         required=True,
         help="Google Ads customer ID",
     )
+    parser.add_argument(
+        "--bids-date",
+        type=str,
+        required=True,
+        help="Date suffix for optimized_costs_YYYYMMDD.csv to use",
+    )
 
     args = parser.parse_args()
 
@@ -552,6 +561,7 @@ def main() -> None:
     google_ads_client = GoogleAdsClient.load_from_storage(yaml_path)
     customer_id = args.customer_id
     output_course = args.output_course
+    bids_date = args.bids_date
     execute = args.execute
 
     if BUDGET in requested_datasets:
@@ -559,7 +569,7 @@ def main() -> None:
         print(f"Successfully pushed budget")
 
     if CPC in requested_datasets:
-        push_cpc(google_ads_client, customer_id, output_course, execute)
+        push_cpc(google_ads_client, customer_id, output_course, bids_date, execute)
         print(f"Successfully pushed max cpc data")
 
     if BID_ADJ in requested_datasets:
