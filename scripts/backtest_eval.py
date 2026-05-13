@@ -475,6 +475,8 @@ def main():
                 course_start_dts=COURSE_START_DATES_MAP.get(args.course, []),
                 embedding_method=embedding_method,
                 course=args.course,
+                raw_emb_map=raw_emb_map,
+                svd_pipeline=oracle_svd,
             )
 
             for b in args.budget:

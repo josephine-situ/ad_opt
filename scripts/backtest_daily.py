@@ -335,9 +335,10 @@ def main():
                 # features already set above; hist already has llm columns
                 pass
             else:
-                # Fallback: use pre-computed bert_* columns (original behaviour)
-                emb_cols_existing = [c for c in df.columns if c.startswith("bert_")]
-                features = features_base + emb_cols_existing
+                raise ValueError(
+                    "BERT mode requires raw_emb_map for runtime embedding replacement. "
+                    "Ensure raw BERT cache is available."
+                )
 
             # Train best model using CV
             pipe, best_params, best_cv, hist_mse, hist_r2, hist_bias = train_best_model(hist, features=features, day_date=day)
