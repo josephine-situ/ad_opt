@@ -165,3 +165,7 @@ notebooks
 *.snm
 
 google-ads.yaml
+uv.lock
+paper
+
+*cache*
