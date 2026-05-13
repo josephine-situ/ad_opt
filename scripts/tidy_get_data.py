@@ -40,6 +40,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils import (
     load_and_combine_keyword_data,
     format_keyword_data,
+    get_model_feature_columns,
     get_date_features,
     filter_data_by_date,
     get_gkp_data,
@@ -247,7 +248,7 @@ def main():
         print("\n[Step 9] Preparing train-test split and saving outputs...")
         df_train, df_test = prepare_train_test_split(df)
         save_outputs(df, df_train, df_test, embedding_method=args.embedding_method, output_dir=args.output_dir)
-        
+
         print("=" * 70)
         print("✓ Pipeline completed successfully!")
         print("=" * 70)

@@ -35,6 +35,7 @@ from .llm_scoring import (
 from .data_pipeline import (
     load_and_combine_keyword_data,
     format_keyword_data,
+    get_model_feature_columns,
     get_date_features,
     filter_data_by_date,
     get_gkp_data,
@@ -70,6 +71,7 @@ __all__ = [
     # Data pipeline
     'load_and_combine_keyword_data',
     'format_keyword_data',
+    'get_model_feature_columns',
     'get_date_features',
     'filter_data_by_date',
     'get_gkp_data',

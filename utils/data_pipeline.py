@@ -14,7 +14,7 @@ from .date_features import (
     _is_holiday,
     calculate_days_to_next,
 )
-from .embeddings import get_tfidf_embeddings, get_bert_embeddings_pipeline
+from .embeddings import get_tfidf_embeddings
 from .keyword_matching import fuzzy_fill_from_gkp
 from .llm_scoring import get_llm_scores_cached
 
@@ -48,6 +48,7 @@ def load_and_combine_keyword_data(data_dir=None):
     rename_map = {
         'Search keyword': 'Keyword',
         'Search keyword match type': 'Match type',
+        'First page CPC': 'first_page_bid',
     }
     kw_df = kw_df.rename(columns={k: v for k, v in rename_map.items() if k in kw_df.columns})
 
@@ -63,7 +64,9 @@ def load_and_combine_keyword_data(data_dir=None):
     kw_df = kw_df.dropna(subset=['Day'])
 
     # Ensure numeric types (some exports may include currency formatting)
-    for col in ['Clicks', 'Cost']:
+    for col in ['Clicks', 'Cost', 'first_page_bid']:
+        if col not in kw_df.columns:
+            continue
         if kw_df[col].dtype == 'object':
             kw_df[col] = kw_df[col].astype(str).apply(clean_currency)
         kw_df[col] = pd.to_numeric(kw_df[col], errors='coerce')
@@ -78,6 +81,21 @@ def load_and_combine_keyword_data(data_dir=None):
     print(f"  Total rows: {len(kw_df)}")
     
     return kw_df
+
+
+def get_model_feature_columns(df):
+    """Return the model feature columns used during training and monitoring."""
+    embedding_cols = [col for col in df.columns if 'tfidf' in col or 'bert' in col]
+    embedding_cols.extend([col for col in df.columns if col == 'llm_relevance_score'])
+
+    return [
+        'Match type', 'Region', 'day_of_week', 'is_weekend', 'month',
+        'is_public_holiday', 'days_to_next_course_start',
+        'last_month_searches', 'three_month_avg', 'six_month_avg',
+        'mom_change', 'search_trend',
+        'Competition (indexed value)',
+        'Top of page bid (low range)', 'Top of page bid (high range)', 'Cost',
+    ] + embedding_cols
 
 
 def _extract_region_from_campaign(campaign):
@@ -119,7 +137,10 @@ def format_keyword_data(kw_df, regions_only=False):
         kw_df['Keyword'] = kw_df['Keyword'].str.replace(r'["\[\]]', '', regex=True).str.lower().str.strip()
         kw_df['Day'] = pd.to_datetime(kw_df['Day'])
         
-        kw_df = kw_df[['Day', 'Keyword', 'Match type', 'Region', 'Cost', 'Clicks']].copy()
+        keep_cols = ['Day', 'Keyword', 'Match type', 'Region', 'Cost', 'Clicks']
+        if 'first_page_bid' in kw_df.columns:
+            keep_cols.append('first_page_bid')
+        kw_df = kw_df[keep_cols].copy()
         
         return kw_df
 
@@ -595,18 +616,22 @@ def add_embeddings(
 ):
     """
     Add keyword embeddings or LLM relevance scores.
-    
+
+    For 'bert', this is a no-op: full BERT embeddings are computed at training
+    time in run_pipeline.py from the raw-embedding cache, so nothing is added
+    to the dataframe here.
+
     Args:
     - cleaned_df (pd.DataFrame): Data with keywords.
     - embedding_method (str): 'tfidf', 'bert', or 'llm'.
-    - n_components (int): Target embedding dimensionality (for tfidf/bert only).
-    - save_models (bool): If True, save the non-BERT model artifacts for later use.
+    - n_components (int): Target embedding dimensionality (tfidf only).
+    - save_models (bool): If True, save non-BERT model artifacts for later use.
     - model_dir (str): Directory to save models. Default 'models'.
     - course (str): Course identifier for LLM scoring. Default 'gen_ai'.
     - cache_dir (str): Directory for caching LLM scores. Default None.
-    
+
     Returns:
-    - df (pd.DataFrame): Data with embedding/score columns added.
+    - df (pd.DataFrame): Data with embedding/score columns added (unchanged for bert).
     """
     import pickle
     from pathlib import Path
@@ -634,17 +659,11 @@ def add_embeddings(
             print(f"  Saved TF-IDF pipeline to {model_path}")
             
     elif embedding_method.lower() == 'bert':
-        embedding_df, bert_models = get_bert_embeddings_pipeline(
-            unique_keywords,
-            n_components=n_components,
-            model_name='all-MiniLM-L6-v2',
-            batch_size=32,
-            return_model=True
-        )
-        embedding_df.rename(columns={'text': 'Keyword'}, inplace=True)
-        if save_models:
-            print("  Skipping BERT pipeline pickle save; run_pipeline now uses cached raw embeddings and a fitted normalizer instead.")
-            
+        # Raw BERT embeddings are computed at training time (run_pipeline.py) from
+        # the cache, so there is nothing to pre-compute here.
+        print("  BERT: skipping pre-computation (full embeddings applied at training time).")
+        return cleaned_df
+
     elif embedding_method.lower() == 'llm':
         # Use LLM-based relevance scoring instead of embeddings
         llm_cache_path = None
@@ -692,23 +711,9 @@ def prepare_train_test_split(df, test_size=0.25, random_state=42):
     """
     print("[Step 9] Preparing train-test split...")
     
-    # Identify embedding columns (tfidf, bert, or llm score)
-    embedding_cols = [col for col in df.columns if 'tfidf' in col or 'bert' in col]
-    
-    # Check for LLM relevance score column
-    llm_cols = [col for col in df.columns if col == 'llm_relevance_score']
-    embedding_cols.extend(llm_cols)
-    
-    # Feature and target columns
-    # Use new time series statistics columns (from merge_with_ads_data)
-    feature_cols = [
-        'Match type', 'Region', 'day_of_week', 'is_weekend', 'month', 
-        'is_public_holiday', 'days_to_next_course_start', 
-        'last_month_searches', 'three_month_avg', 'six_month_avg',
-        'mom_change', 'search_trend',
-        'Competition (indexed value)', 
-        'Top of page bid (low range)', 'Top of page bid (high range)', 'Cost'
-    ] + embedding_cols
+    # Feature and target columns.
+    # Keep this in sync with the production feature matrix.
+    feature_cols = get_model_feature_columns(df)
     
     # Check for missing required columns
     missing_cols = [col for col in feature_cols if col not in df.columns]
@@ -754,32 +759,30 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
     
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True, parents=True)
-    
-    # Save full dataset
-    full_output = output_path / f'ad_opt_data_{embedding_method}.csv'
-    df.to_csv(full_output, index=False)
-    print(f"  Saved: {full_output}")
-    
-    # Save train/test
-    train_output = output_path / f'train_{embedding_method}.csv'
-    test_output = output_path / f'test_{embedding_method}.csv'
-    
-    df_train.to_csv(train_output, index=False)
-    df_test.to_csv(test_output, index=False)
-    print(f"  Saved: {train_output}")
-    print(f"  Saved: {test_output}")
-    
-    # Extract and save unique keyword embeddings/scores without NAs
+
+    # Identify embedding columns (extracted first so we can strip them from the
+    # main CSVs while still writing unique_keyword_embeddings_*.csv)
     embedding_prefix = embedding_method.lower()
-    
-    # Handle different column naming for LLM vs embedding methods
     if embedding_method.lower() == 'llm':
         embedding_cols = ['llm_relevance_score']
     else:
         embedding_cols = [col for col in df.columns if col.startswith(f'{embedding_prefix}_')]
-    
-    # Filter to columns that exist
     embedding_cols = [col for col in embedding_cols if col in df.columns]
+
+    # Save full dataset without embedding columns (training replaces them with
+    # full BERT embeddings anyway, so storing the reduced ones wastes space)
+    full_output = output_path / f'ad_opt_data_{embedding_method}.csv'
+    df.drop(columns=embedding_cols, errors='ignore').to_csv(full_output, index=False)
+    print(f"  Saved: {full_output}")
+    
+    # Save train/test (also drop embedding cols for the same reason)
+    train_output = output_path / f'train_{embedding_method}.csv'
+    test_output = output_path / f'test_{embedding_method}.csv'
+    
+    df_train.drop(columns=embedding_cols, errors='ignore').to_csv(train_output, index=False)
+    df_test.drop(columns=embedding_cols, errors='ignore').to_csv(test_output, index=False)
+    print(f"  Saved: {train_output}")
+    print(f"  Saved: {test_output}")
     
     if embedding_cols:
         # Get unique keywords with their embeddings/scores, dropping rows with NaN
@@ -790,7 +793,7 @@ def save_outputs(df, df_train, df_test, embedding_method='bert', output_dir=None
         embeddings_output = output_path / f'unique_keyword_embeddings_{embedding_method}.csv'
         unique_kw_embeddings.to_csv(embeddings_output, index=False)
         print(f"  Saved: {embeddings_output} ({len(unique_kw_embeddings)} rows)")
-    else:
+    elif embedding_method.lower() != 'bert':
         print(f"  Warning: No embedding/score columns found for method '{embedding_method}'")
 
 
