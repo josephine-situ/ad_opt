@@ -165,7 +165,7 @@ def load_bid_adj_report(clicks_file: Path, conv_file: Path, segment_col: str,
     
     # Merge clicks and conversions
     merged = clicks_agg.merge(conv_agg, on=['Campaign', segment_col], how='left')
-    merged['All conv.'] = merged['All conv.'].fillna(0)
+    merged['All conv.'] = pd.to_numeric(merged['All conv.'], errors='coerce').fillna(0)
     
     return merged, segment_col
 
@@ -273,13 +273,15 @@ def calculate_bid_adjustments(
     return agg_df
 
 
-def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
+def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000, file_suffix: str = "") -> dict:
     """
     Process all bid adjustment segments for a course.
     
     Args:
         base_dir: Base data directory (e.g., data/gen_ai)
         min_clicks: Minimum clicks threshold
+        file_suffix: Suffix appended to report filenames before the extension
+                     (e.g., "_7d" reads hod_clicks_7d.csv instead of hod_clicks.csv)
     
     Returns:
         Dictionary with bid adjustments for each segment type
@@ -292,14 +294,12 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
     results = {}
     
     # Hour of Day (grouped into 4-hour bins)
-    hod_clicks = bid_adj_dir / 'hod_clicks.csv'
-    hod_conv = bid_adj_dir / 'hod_conv.csv'
+    hod_clicks = bid_adj_dir / f'hod_clicks{file_suffix}.csv'
+    hod_conv = bid_adj_dir / f'hod_conv{file_suffix}.csv'
     if hod_clicks.exists() and hod_conv.exists():
         print("  Processing Hour of Day adjustments (grouped 0-4, 4-8, etc.)...")
         df, _ = load_bid_adj_report(hod_clicks, hod_conv, 'Hour of the day')
-        # Group hours into 4-hour bins with exclusive upper bounds
         df['Hour Group'] = df['Hour of the day'].apply(group_hours)
-        # Aggregate by the new hour groups
         df = df.groupby(['Campaign', 'Hour Group']).agg({
             'Clicks': 'sum',
             'All conv.': 'sum'
@@ -309,8 +309,8 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
         )
     
     # Device
-    device_clicks = bid_adj_dir / 'device_clicks.csv'
-    device_conv = bid_adj_dir / 'device_conv.csv'
+    device_clicks = bid_adj_dir / f'device_clicks{file_suffix}.csv'
+    device_conv = bid_adj_dir / f'device_conv{file_suffix}.csv'
     if device_clicks.exists() and device_conv.exists():
         print("  Processing Device adjustments...")
         df, _ = load_bid_adj_report(device_clicks, device_conv, 'Device',
@@ -320,8 +320,8 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
         )
     
     # Location
-    loc_clicks = bid_adj_dir / 'loc_clicks.csv'
-    loc_conv = bid_adj_dir / 'loc_conv.csv'
+    loc_clicks = bid_adj_dir / f'loc_clicks{file_suffix}.csv'
+    loc_conv = bid_adj_dir / f'loc_conv{file_suffix}.csv'
     if loc_clicks.exists() and loc_conv.exists():
         print("  Processing Location adjustments...")
         df, loc_col = load_bid_adj_report(
@@ -333,8 +333,8 @@ def process_bid_adjustments(base_dir: Path, min_clicks: int = 1000) -> dict:
         )
     
     # Age
-    age_clicks = bid_adj_dir / 'age_clicks.csv'
-    age_conv = bid_adj_dir / 'age_conv.csv'
+    age_clicks = bid_adj_dir / f'age_clicks{file_suffix}.csv'
+    age_conv = bid_adj_dir / f'age_conv{file_suffix}.csv'
     if age_clicks.exists() and age_conv.exists():
         print("  Processing Age adjustments...")
         df, _ = load_bid_adj_report(age_clicks, age_conv, 'Age')
